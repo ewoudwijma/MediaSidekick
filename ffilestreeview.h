@@ -15,7 +15,6 @@ private slots:
     void this_customContextMenuRequested(const QPoint &point);
     void onTrim();
     void onFileDelete();
-    void onProperties();
     void onIndexClicked(QModelIndex index);
 private:
     QFileSystemModel *fileModel;
@@ -27,6 +26,8 @@ public slots:
     void onFolderIndexClicked(QModelIndex index);
 signals:
     void indexClicked(QModelIndex index);
+    void fileDelete(QString fileName);
+    void trim(QString fileName);
 
 };
 

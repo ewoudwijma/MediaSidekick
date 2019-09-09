@@ -47,7 +47,12 @@ public slots:
     void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
     void onFileIndexClicked(QModelIndex index);
 
-    void onPositionChanged(int progress);
+    void onVideoPositionChanged(int progress, int row, int relativeProgress);
+private slots:
+    void onScrubberSeeked(int mseconds);
+signals:
+    void timelinePositionChanged(int position, int editRow, int relativeProgress);
+
 };
 
 #endif // FTIMELINE_H

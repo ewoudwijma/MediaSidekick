@@ -33,6 +33,8 @@ SOURCES += \
         ffilestreeview.cpp \
         ffoldertreeview.cpp \
         fglobal.cpp \
+        flogitemdelegate.cpp \
+        flogtableview.cpp \
         fprocessmanager.cpp \
         fpropertyitemdelegate.cpp \
         fpropertysortfilterproxymodel.cpp \
@@ -55,6 +57,8 @@ HEADERS += \
         ffilestreeview.h \
         ffoldertreeview.h \
         fglobal.h \
+        flogitemdelegate.h \
+        flogtableview.h \
         fprocessmanager.h \
         fpropertyitemdelegate.h \
         fpropertysortfilterproxymodel.h \

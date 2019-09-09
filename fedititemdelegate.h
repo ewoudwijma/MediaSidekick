@@ -27,3 +27,4 @@ private slots:
 };
 
 #endif // FEDITITEMDELEGATE_H
+

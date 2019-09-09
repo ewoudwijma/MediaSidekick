@@ -60,6 +60,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->videoWidget, &FVideoWidget::onFolderIndexClicked);
 
     connect(ui->filesTreeView, &FFilesTreeView::indexClicked, ui->editTableView, &FEditTableView::onFileIndexClicked);
+    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onFileDelete);
+    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->editTableView, &FEditTableView::onFileDelete);
+    connect(ui->filesTreeView, &FFilesTreeView::trim, ui->editTableView, &FEditTableView::onTrim);
 
     connect(ui->editTableView, &FEditTableView::folderIndexClickedItemModel, ui->tagsListView, &FTagsListView::onFolderIndexClicked);
     connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, ui->timelineWidget, &FTimeline::onFolderIndexClicked);
@@ -71,10 +74,15 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->editTableView, &FEditTableView::editsChanged, ui->timelineWidget,  &FTimeline::onEditsChanged);
     connect(ui->editTableView, &FEditTableView::editsChangedFromVideo, ui->timelineWidget,  &FTimeline::onEditsChanged);
 
-    connect(ui->videoWidget, &FVideoWidget::positionChanged, ui->editTableView, &FEditTableView::onPositionChanged);
-    connect(ui->videoWidget, &FVideoWidget::positionChanged, ui->timelineWidget, &FTimeline::onPositionChanged);
+    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->editTableView, &FEditTableView::onVideoPositionChanged);
+    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->timelineWidget, &FTimeline::onVideoPositionChanged);
     connect(ui->videoWidget, &FVideoWidget::inChanged, ui->editTableView, &FEditTableView::onInChanged);
     connect(ui->videoWidget, &FVideoWidget::outChanged, ui->editTableView, &FEditTableView::onOutChanged);
+
+    connect(ui->timelineWidget, &FTimeline::timelinePositionChanged, ui->videoWidget, &FVideoWidget::onTimelinePositionChanged);
+
+    connect(ui->propertyTreeView, &FPropertyTreeView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    connect(ui->propertyTreeView, &FPropertyTreeView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
 
     connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &FPropertyTreeView::onPropertyFilterChanged);
     connect(this, &MainWindow::editFilterChanged, ui->editTableView, &FEditTableView::onEditFilterChanged);
@@ -93,6 +101,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
 //    ui->tagsListView->loadModel(ui->editTableView->editItemModel);
+    ui->defaultMinSpinBox->setValue(25);
+    ui->defaultPlusSpinBox->setValue(50);
 
 }
 
@@ -289,4 +299,9 @@ void MainWindow::on_actionSave_triggered()
 void MainWindow::on_actionPlay_Pause_triggered()
 {
     ui->videoWidget->togglePlayPaused();
+}
+
+void MainWindow::on_actionNew_triggered()
+{
+    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*40, ui->defaultPlusSpinBox->value()*40);
 }

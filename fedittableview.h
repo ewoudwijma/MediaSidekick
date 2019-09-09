@@ -3,6 +3,7 @@
 
 #include "fedititemmodel.h"
 #include "feditsortfilterproxymodel.h"
+#include "fprocessmanager.h"
 #include "fstareditor.h"
 
 #include <QDir>
@@ -30,15 +31,17 @@ public slots:
 
     void onInChanged(int row, int in);
     void onOutChanged(int row, int out);
-    void onPositionChanged(int progress);
+    void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView);
+    void onFileDelete(QString fileName);
+    void onTrim(QString fileName);
 private:
     QString selectedFolderName;
     QString selectedFileName;
     FEditItemModel *editItemModel;
     void loadModel(QString folderName);
     void scanDir(QDir dir);
-    QStandardItemModel *read(QUrl mediaFilePath);
+    QStandardItemModel *read(QString folderName, QString fileName);
     QMenu *editContextMenu;
     int position;
     void selectEdits();
@@ -46,6 +49,8 @@ private:
     FEditSortFilterProxyModel *editProxyModel;
     int highLightedRow;
     int editCounter;
+    FProcessManager *processManager;
+
 signals:
     void indexClicked(QModelIndex index);
     void editAdded(QModelIndex editInIndex);
@@ -54,6 +59,9 @@ signals:
     void folderIndexClickedItemModel(FEditItemModel *model);
     void folderIndexClickedProxyModel(FEditSortFilterProxyModel *editProxyModel);
     void fileIndexClicked(QModelIndex index);
+    void addLogEntry(QString function);
+    void addLogToEntry(QString function, QString log);
+
 
 };
 

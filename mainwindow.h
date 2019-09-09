@@ -54,6 +54,8 @@ private slots:
 
     void on_actionPlay_Pause_triggered();
 
+    void on_actionNew_triggered();
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;

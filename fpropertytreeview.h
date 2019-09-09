@@ -40,6 +40,9 @@ protected:
       QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) override;
       void scrollTo (const QModelIndex & index, ScrollHint hint = EnsureVisible) override;
 
+signals:
+      void addLogEntry(QString function);
+      void addLogToEntry(QString function, QString log);
 };
 
 #endif // FPROPERTYTREEVIEW_H

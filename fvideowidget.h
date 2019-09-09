@@ -46,22 +46,26 @@ private:
     QString selectedFolderName;
     QString selectedFileName;
 
+    bool isTimelinePlaymode;
+
 public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index);
     void onEditIndexClicked(QModelIndex index);
     void togglePlayPaused();
     void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
+    void onTimelinePositionChanged(int progress, int row, int relativeProgress);
+    void onFileDelete(QString fileName);
 private slots:
     void onDurationChanged(int duration);
-    void onPositionChanged(int progress);
+    void onPlayerPositionChanged(int progress);
     void onScrubberSeeked(int mseconds);
     void onSpinnerChanged(int mseconds);
     void onPlayerStateChanged(QMediaPlayer::State state);
     void onScrubberInChanged(int row, int in);
     void onScrubberOutChanged(int row, int out);
 signals:
-    void positionChanged(int position);
+    void videoPositionChanged(int position, int editRow, int relativeProgress);
     void inChanged(int row, int in);
     void outChanged(int row, int out);
 

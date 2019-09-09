@@ -2,6 +2,7 @@
 
 #include <QHeaderView>
 #include <QMenu>
+#include <QMessageBox>
 #include <QSettings>
 
 #include <QDebug>
@@ -66,10 +67,6 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
 
     fileContextMenu->addSeparator();
 
-    fileContextMenu->addAction(new QAction("Properties",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onProperties);
-
-
 }
 
 void FFilesTreeView::onIndexClicked(QModelIndex index)
@@ -101,16 +98,68 @@ void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
 
 void FFilesTreeView::onTrim()
 {
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            emit trim(indexList[i].data().toString());
+//            qDebug()<<"indexList[i].data()"<<indexList[i].row()<<indexList[i].column()<<indexList[i].data();
+
+        }
+    }
 
 }
 
 void FFilesTreeView::onFileDelete()
 {
+    QStringList fileNameList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+//            qDebug()<<"indexList[i].data()"<<indexList[i].row()<<indexList[i].column()<<indexList[i].data();
+            fileNameList << indexList[i].data().toString();
+        }
+    }
 
-}
+    QString folderName = QSettings().value("LastFolder").toString();
 
-void FFilesTreeView::onProperties()
-{
+    QMessageBox::StandardButton reply;
+     reply = QMessageBox::question(this, "Delete " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete " + fileNameList.join(", ") + " and its supporting files (srt and txt)?",
+                                   QMessageBox::Yes|QMessageBox::No);
+     if (reply == QMessageBox::Yes)
+     {
+
+         for (int i=0; i< fileNameList.count();i++)
+         {
+             QString fileName = fileNameList[i];
+             emit fileDelete(fileName);
+             QFile file(folderName + fileName);
+             if (file.exists())
+                file.remove();
+
+             int lastIndex = fileName.lastIndexOf(".");
+             if (lastIndex > -1)
+             {
+                 QString srtFileName = fileName.left(lastIndex) + ".srt";
+                 QFile *file = new QFile(folderName + srtFileName);
+                 if (file->exists())
+                    file->remove();
+                 srtFileName = fileName.left(lastIndex) + ".txt";
+                 file = new QFile(folderName + srtFileName);
+                 if (file->exists())
+                    file->remove();
+             }
+         }
+     }
+
+//    for (int i = 0; i< selectedIndexes().count();i++)
+//    {
+//        qDebug()<<""<<
+//    }
+     fileContextMenu->close();
 
 }
 

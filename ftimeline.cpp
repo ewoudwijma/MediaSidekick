@@ -37,6 +37,10 @@ FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
     m_scrubber->setFramerate(25);
     m_scrubber->setScale(10000);
     m_scrubber->onSeek(0);
+//    m_scrubber->readOnly = false;
+
+    connect(m_scrubber, &SScrubBar::seeked, this, &FTimeline::onScrubberSeeked);
+
 
     toolbar = new QToolBar(tr("Transport Controls"), this);
     int s = style()->pixelMetric(QStyle::PM_SmallIconSize);
@@ -159,7 +163,7 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
         reorderMap[editProxyModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
     }
 
-    qDebug()<<"FTimeline::onEditsChanged"<<editProxyModel->rowCount();
+//    qDebug()<<"FTimeline::onEditsChanged"<<editProxyModel->rowCount();
 
     QMapIterator<int, int> orderIterator(reorderMap);
     while (orderIterator.hasNext()) //all files
@@ -192,9 +196,28 @@ void FTimeline::onFileIndexClicked(QModelIndex index)
     qDebug()<<"FTimeline::onFileIndexClicked"<<index.data();
 }
 
-void FTimeline::onPositionChanged(int progress)
+void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
 {
-    m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(25, progress));
-    m_positionSpinner->setValue(FGlobal().msec_to_frames(25, progress));
+    int *relativeProgressl = new int();
+    m_scrubber->rowToPosition(row, relativeProgressl);
+
+    if (*relativeProgressl != -1)
+    {
+        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(25, relativeProgress + *relativeProgressl));
+        m_positionSpinner->setValue(FGlobal().msec_to_frames(25, relativeProgress + *relativeProgressl));
+    }
+
 }
 
+void FTimeline::onScrubberSeeked(int mseconds)
+{
+    int *row = new int();
+    int *relativeProgress = new int();
+    m_scrubber->progressToRow(mseconds, row, relativeProgress);
+
+    qDebug()<<"FTimeline::onScrubberSeeked"<<mseconds<< *row<< *relativeProgress;
+//    if (m_player->state() != QMediaPlayer::PausedState)
+//        m_player->pause();
+//    m_player->setPosition(mseconds);
+    emit timelinePositionChanged(mseconds, *row, *relativeProgress);
+}

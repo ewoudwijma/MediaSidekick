@@ -171,13 +171,12 @@ void SScrubBar::setMarkers(const QList<int> &list)
 
 void SScrubBar::mousePressEvent(QMouseEvent * event)
 {
-    if (readOnly)
-        return;
 //    qDebug()<<"mousePressEvent";
     int x = event->x() - margin;
     int head = m_head * m_scale;
     int pos = CLAMP(x / m_scale, 0, m_max);
 
+    if (!readOnly)
     foreach (EditInOutStruct inOut, m_in_out_list)
     {
 
@@ -230,8 +229,8 @@ void SScrubBar::mousePressEvent(QMouseEvent * event)
 
 void SScrubBar::mouseReleaseEvent(QMouseEvent * event)
 {
-    if (readOnly)
-        return;
+//    if (readOnly)
+//        return;
 //    qDebug()<<"mouseReleaseEvent";
     Q_UNUSED(event)
     m_activeControl = CONTROL_NONE;
@@ -239,14 +238,13 @@ void SScrubBar::mouseReleaseEvent(QMouseEvent * event)
 
 void SScrubBar::mouseMoveEvent(QMouseEvent * event)
 {
-    if (readOnly)
-        return;
 //    qDebug()<<"mouseMoveEvent"<<m_in<<m_out;
     int x = event->x() - margin;
     int pos = CLAMP(x / m_scale, 0, m_max);
 
     if (event->buttons() & Qt::LeftButton)
     {
+        if (!readOnly)
         foreach (EditInOutStruct inOut, m_in_out_list)
         {
 
@@ -323,6 +321,32 @@ bool SScrubBar::onSeek(int value)
     const int w = qAbs(oldPos - m_cursorPosition);
     update(margin + x - offset, 0, w + 2 * offset, height());
     return true;
+}
+
+void SScrubBar::progressToRow(int position, int* row, int* relativePosition)
+{
+    *row = -1;
+    *relativePosition = -1;
+    foreach (EditInOutStruct inOut, m_in_out_list)
+    {
+        if (inOut.in <= position && inOut.out >= position)
+        {
+            *row = inOut.row;
+            *relativePosition = position - inOut.in;
+        }
+    }
+}
+
+void SScrubBar::rowToPosition(int row, int* relativePosition)
+{
+    *relativePosition = -1;
+    foreach (EditInOutStruct inOut, m_in_out_list)
+    {
+        if (inOut.row == row)
+        {
+            *relativePosition = inOut.in;
+        }
+    }
 }
 
 void SScrubBar::paintEvent(QPaintEvent *e)

@@ -142,6 +142,8 @@ void FPropertyTreeView::loadModel(QString folderName)
         QMap<QString, QString> fileMediaMap;
         QMap<QString, QStandardItem *> labelMap;
 
+        emit propertyTreeView->addLogEntry("PropertyLoad");
+
         for (int resultIndex=0;resultIndex<result.count();resultIndex++)
         {
             int indexOf = result[resultIndex].indexOf("======== ");
@@ -188,6 +190,8 @@ void FPropertyTreeView::loadModel(QString folderName)
         {
             iFile.next();
             labels<<iFile.key();
+            emit propertyTreeView->addLogToEntry("PropertyLoad", iFile.key());
+
         }
         propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(labels);
 
