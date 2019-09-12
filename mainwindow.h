@@ -1,6 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "feditsortfilterproxymodel.h"
+#include "fedittableview.h"
 #include "fstareditor.h"
 
 #include <QCheckBox>
@@ -56,15 +58,28 @@ private slots:
 
     void on_actionNew_triggered();
 
+    void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
+    void on_tagFilter1ListView_indexesMoved(const QModelIndexList &indexes);
+
+    void on_transitionTimeSpinBox_valueChanged(int arg1);
+
+    void on_TransitionTimeCheckBox_clicked(bool checked);
+
+    void on_stretchedDurationCheckBox_clicked(bool checked);
+
+    void on_stretchedDurationSpinBox_valueChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;
     QStandardItemModel *tagFilter2Model;
 
+    QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void editFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView);
     void giveStars(int starCount);
+    void timelineWidgetsChanged(int transitionTime, Qt::CheckState transitionChecked, int stretchTime, Qt::CheckState stretchChecked, FEditTableView *editTableView);
 };
 
 #endif // MAINWINDOW_H

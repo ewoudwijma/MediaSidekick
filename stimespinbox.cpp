@@ -51,7 +51,7 @@ QValidator::State STimeSpinBox::validate(QString &input, int &pos) const
 
 int STimeSpinBox::valueFromText(const QString &text) const
 {
-    return FGlobal().time_to_frames(25, text.toLatin1().constData());
+    return FGlobal().time_to_frames(text.toLatin1().constData());
 //    if (MLT.producer() && MLT.producer()->is_valid()) {
 //        return MLT.producer()->time_to_frames(text.toLatin1().constData());
 //    } else {
@@ -62,7 +62,7 @@ int STimeSpinBox::valueFromText(const QString &text) const
 
 QString STimeSpinBox::textFromValue(int val) const
 {
-    return FGlobal().frames_to_time(25, val);
+    return FGlobal().frames_to_time(val);
 //    if (MLT.producer() && MLT.producer()->is_valid()) {
 //        return MLT.producer()->frames_to_time(val);
 //    } else {

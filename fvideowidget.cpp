@@ -10,19 +10,6 @@
 
 #include <QStyle>
 
-static const int orderBeforeLoadIndex = 0;
-static const int orderAtLoadIndex = 1;
-static const int orderAfterMovingIndex = 2;
-static const int folderIndex = 3;
-static const int fileIndex = 4;
-static const int inIndex = 5;
-static const int outIndex = 6;
-static const int durationIndex = 7;
-static const int ratingIndex = 8;
-static const int repeatIndex = 9;
-static const int hintIndex = 10;
-static const int tagIndex = 11;
-
 //http://digital-thinking.de/cv-opengl-and-qt-video-as-a-texture/
 //https://stackoverflow.com/questions/26229633/use-of-qabstractvideosurface
 //https://stackoverflow.com/questions/32952429/how-to-implement-qabstractvideosurface-and-monitor-video-per-frame-in-qtcreator
@@ -47,12 +34,9 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
 
     m_player->setVideoOutput(this);
 
-    m_player->setNotifyInterval(40);
-
     connect(m_player, &QMediaPlayer::durationChanged, this, &FVideoWidget::onDurationChanged);
     connect(m_player, &QMediaPlayer::positionChanged, this, &FVideoWidget::onPlayerPositionChanged);
     connect(m_player, &QMediaPlayer::stateChanged, this, &FVideoWidget::onPlayerStateChanged);
-
 
     m_scrubber = new SScrubBar(this);
 //    m_scrubber->setFocusPolicy(Qt::NoFocus);
@@ -61,15 +45,16 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
 //    m_scrubber->setMinimumSize(200,200);
 //        parentLayout->insertWidget(-1, m_scrubber);
     m_scrubber->setEnabled(true);
-    m_scrubber->setFramerate(25);
     m_scrubber->setScale(20000);
     m_scrubber->readOnly = false;
     m_scrubber->onSeek(0);
 
     connect(actionPlay, SIGNAL(triggered()), this, SLOT(togglePlayPaused()));
 //    connect(actionPause, SIGNAL(triggered()), this, SLOT(pause()));
-//    connect(actionFastForward, SIGNAL(triggered()), this, SLOT(fastForward()));
-//    connect(actionRewind, SIGNAL(triggered()), this, SLOT(rewind()));
+    connect(actionFastForward, SIGNAL(triggered()), this, SLOT(fastForward()));
+    connect(actionRewind, SIGNAL(triggered()), this, SLOT(rewind()));
+    connect(actionSkipNext, SIGNAL(triggered()), this, SLOT(skipNext()));
+    connect(actionSkipPrevious, SIGNAL(triggered()), this, SLOT(skipPrevious()));
     connect(m_scrubber, &SScrubBar::seeked, this, &FVideoWidget::onScrubberSeeked);
     connect(m_scrubber, &SScrubBar::inChanged, this, &FVideoWidget::onScrubberInChanged);
     connect(m_scrubber, &SScrubBar::outChanged, this, &FVideoWidget::onScrubberOutChanged);
@@ -111,7 +96,7 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
     toolbar->addWidget(spacer);
 
 
-//    connect(m_positionSpinner, SIGNAL(valueChanged(int)), this, SLOT(onSpinnerChanged(int)));
+    connect(m_positionSpinner, SIGNAL(valueChanged(int)), this, SLOT(onSpinnerPositionChanged(int)));
 
     isTimelinePlaymode = false;
 
@@ -169,10 +154,20 @@ void FVideoWidget::onFileIndexClicked(QModelIndex index)
 {
     selectedFileName = index.data().toString();
 
-    qDebug()<<"FVideoWidget::onFileIndexClicked"<<index.data()<<selectedFolderName + selectedFileName;
+    QString *fpsValue = new QString();
+    emit getPropertyValue(selectedFileName, "VideoFrameRate", fpsValue);
+    fpsRounded = int( round(QString(*fpsValue).toDouble() / 5) * 5);
+//    FGlobal().setFramesPerSecond(fpsRounded);
+
+    qDebug()<<"FVideoWidget::onFileIndexClicked"<<index.data()<<selectedFolderName + selectedFileName<<frameRate;
     m_player->setMedia(QUrl(selectedFolderName + selectedFileName));
     m_player->play();
     m_player->setMuted(true);
+    m_player->setNotifyInterval(1000 / frameRate);
+    m_scrubber->setFramerate(frameRate);
+
+    emit fpsChanged(fpsRounded);
+
 }
 
 void FVideoWidget::onEditIndexClicked(QModelIndex index)
@@ -185,10 +180,18 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
     qDebug()<<"FVideoWidget::onEditIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
     if (QUrl(folderFileName) != m_player->media().canonicalUrl())
     {
+        QString *fpsValue = new QString();
+        emit getPropertyValue(selectedFileName, "VideoFrameRate", fpsValue);
+        fpsRounded = int( round(QString(*fpsValue).toDouble() / 5) * 5);
+//        FGlobal().setFramesPerSecond(fpsRounded);
+
+        qDebug()<<"FVideoWidget::onEditIndexClicked"<<index.data()<<selectedFolderName + selectedFileName<<frameRate;
         m_player->setMedia(QUrl(folderFileName));
         m_player->play();
         m_player->pause();
         m_player->setMuted(true);
+        m_player->setNotifyInterval(1000 / frameRate);
+        m_scrubber->setFramerate(frameRate);
     }
     if (index.column() == inIndex)
     {
@@ -235,8 +238,8 @@ void FVideoWidget::onDurationChanged(int duration)
 //    m_duration = duration / 1000;
 //    ui->lcdDuration->display(QTime::fromMSecsSinceStartOfDay(duration).toString("HH:mm:ss.zzz"));
 
-    m_scrubber->setScale(FGlobal().msec_rounded_to_fps(25, duration));
-    m_durationLabel->setText(FGlobal().msec_to_time(25, duration).prepend(" / "));
+    m_scrubber->setScale(FGlobal().msec_rounded_to_fps(duration));
+    m_durationLabel->setText(FGlobal().msec_to_time(duration).prepend(" / "));
 
     m_isSeekable = true;
 
@@ -249,17 +252,20 @@ void FVideoWidget::onDurationChanged(int duration)
 
 void FVideoWidget::onPlayerPositionChanged(int progress)
 {
-    int *row = new int();
-    int *relativeProgress = new int();
-    m_scrubber->progressToRow(progress, row, relativeProgress);
-//    qDebug()<<"FVideoWidget::onPlayerPositionChanged"<<progress<<*row<<*relativeProgress;
-   m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(25, progress));
-   m_positionSpinner->setValue(FGlobal().msec_to_frames(25, progress));
-
+//    qDebug()<<"FVideoWidget::onPlayerPositionChanged"<<progress<<*row<<*relativeProgress<<FGlobal().msec_to_frames(progress);
+   m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(progress));
+//   m_positionSpinner->blockSignals(true);
+   m_positionSpinner->setValue(FGlobal().msec_to_frames(progress));
+//   m_positionSpinner->blockSignals(false);
 
 //   if (m_player->state() == QMediaPlayer::PlayingState)
    if (!isTimelinePlaymode)
-        emit videoPositionChanged(FGlobal().msec_rounded_to_fps(25, progress), *row, *relativeProgress);
+   {
+       int *row = new int();
+       int *relativeProgress = new int();
+       m_scrubber->progressToRow(progress, row, relativeProgress);
+       emit videoPositionChanged(FGlobal().msec_rounded_to_fps(progress), *row, *relativeProgress);
+   }
 }
 
 void FVideoWidget::onTimelinePositionChanged(int progress, int row, int relativeProgress)
@@ -270,8 +276,24 @@ void FVideoWidget::onTimelinePositionChanged(int progress, int row, int relative
 
 //    if (*relativeProgressl != -1)
 //    {
-//        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(25, relativeProgress + *relativeProgressl));
-//        m_positionSpinner->setValue(FGlobal().msec_to_frames(25, relativeProgress + *relativeProgressl));
+//        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
+//        m_positionSpinner->setValue(FGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
+//    }
+
+}
+
+void FVideoWidget::onSpinnerPositionChanged(int progress)
+{
+//    qDebug()<<"FVideoWidget::onSpinnerPositionChanged"<<progress;
+    isTimelinePlaymode = false;
+//    m_player->setPosition(progress);
+//    int *relativeProgressl = new int();
+//    m_scrubber->rowToPosition(row, relativeProgressl);
+
+//    if (*relativeProgressl != -1)
+//    {
+//        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
+//        m_positionSpinner->setValue(FGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
 //    }
 
 }
@@ -307,6 +329,66 @@ void FVideoWidget::togglePlayPaused()
         m_player->stop();
 }
 
+void FVideoWidget::fastForward()
+{
+    if (m_player->state() != QMediaPlayer::PausedState)
+        m_player->pause();
+    if (m_player->position() < m_player->duration() - 1000 / frameRate)
+        m_player->setPosition(m_player->position() + 1000 / frameRate);
+    qDebug()<<"onNextKeyframeButtonClicked"<<m_player->position();
+
+}
+
+void FVideoWidget::rewind()
+{
+    if (m_player->state() != QMediaPlayer::PausedState)
+        m_player->pause();
+    if (m_player->position() > 1000 / frameRate)
+        m_player->setPosition(m_player->position() - 1000 / frameRate);
+    qDebug()<<"onPreviousKeyframeButtonClicked"<<m_player->position();
+}
+
+void FVideoWidget::skipNext()
+{
+    int *row = new int();
+    int *relativeProgress = new int();
+    m_scrubber->progressToRow(m_player->position(), row, relativeProgress);
+
+    int *relativeProgressl = new int();
+    m_scrubber->rowToPosition(*row+1, relativeProgressl);
+
+    qDebug()<<"FVideoWidget::skipNext"<<m_player->position()<<row<<*relativeProgress<<*relativeProgressl;
+
+    if (*relativeProgressl != -1)
+    {
+//        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(*relativeProgressl));
+//        m_positionSpinner->setValue(FGlobal().msec_to_frames(*relativeProgressl));
+        m_player->setPosition(*relativeProgressl);
+    }
+
+//    emit videoPositionChanged(FGlobal().msec_rounded_to_fps(progress), *row+1, *relativeProgressl);
+}
+
+void FVideoWidget::skipPrevious()
+{
+    int *row = new int();
+    int *relativeProgress = new int();
+    m_scrubber->progressToRow(m_player->position(), row, relativeProgress);
+
+    int *relativeProgressl = new int();
+    m_scrubber->rowToPosition(*row-1, relativeProgressl);
+
+    qDebug()<<"FVideoWidget::skipPrevious"<<m_player->position()<<row<<*relativeProgress<<*relativeProgressl;
+
+    if (*relativeProgressl != -1)
+    {
+//        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(*relativeProgressl));
+//        m_positionSpinner->setValue(FGlobal().msec_to_frames(*relativeProgressl));
+        m_player->setPosition(*relativeProgressl);
+    }
+
+}
+
 void FVideoWidget::onScrubberSeeked(int mseconds)
 {
     isTimelinePlaymode = false;
@@ -332,9 +414,11 @@ void FVideoWidget::onScrubberOutChanged(int row, int out)
 }
 
 
-void FVideoWidget::onSpinnerChanged(int mseconds)
-{
-    isTimelinePlaymode = false;
-//    qDebug()<<"seek"<<mseconds;
-    m_player->setPosition(mseconds);
-}
+//void FVideoWidget::onSpinnerChanged(int mseconds)
+//{
+//    if (m_player->state() != QMediaPlayer::PausedState)
+//        m_player->pause();
+//    isTimelinePlaymode = false;
+////    qDebug()<<"seek"<<mseconds;
+//    m_player->setPosition(mseconds);
+//}

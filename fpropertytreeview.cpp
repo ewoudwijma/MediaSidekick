@@ -121,6 +121,7 @@ void FPropertyTreeView::loadModel(QString folderName)
                                    , nullptr
                                    , [] (QWidget *parent, QString , QStringList result)
      {
+//        QModelIndex lastIndex;
         FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
 
         QStringList topLevelItemNames;
@@ -195,10 +196,10 @@ void FPropertyTreeView::loadModel(QString folderName)
         }
         propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(labels);
 
-        for (int i=firstFileColumnIndex; i< propertyTreeView->propertyItemModel->columnCount(); i++)
-        {
+//        for (int i=firstFileColumnIndex; i< propertyTreeView->propertyItemModel->columnCount(); i++)
+//        {
 //            propertyTreeView->setColumnWidth(i, propertyTreeView->columnWidth(i) * 2);
-        }
+//        }
 
         QMapIterator<QString, QStandardItem *> iLabel(labelMap);
         while (iLabel.hasNext()) //all labels
@@ -231,6 +232,8 @@ void FPropertyTreeView::loadModel(QString folderName)
             }
             if (valueFound)
                 iLabel.value()->appendRow(sublevelItems);
+//            propertyTreeView->setCurrentIndex(item->index());
+//            lastIndex = item->index();
         }
 
         for (int col = 1; col < propertyTreeView->model()->columnCount(); ++col)
@@ -243,9 +246,13 @@ void FPropertyTreeView::loadModel(QString folderName)
         propertyTreeView->expandAll();
         propertyTreeView->frozenTableView->expandAll();
 
+//        propertyTreeView->setCurrentIndex(lastIndex);
+
+
 //        propertyTreeView->scrollTo(propertyTreeView->propertyItemModel->index(3,propertyTreeView->propertyItemModel->columnCount()-1), QAbstractItemView::EnsureVisible);
 
 //        propertyTreeView->diffData(QModelIndex());
+        emit propertyTreeView->propertiesLoaded();
     });
 }
 
@@ -361,3 +368,42 @@ void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdi
     frozenTableView->expandAll();
 }
 
+void FPropertyTreeView::onGetPropertyValue(QString fileName, QString key, QString *value)
+{
+    *value = "testValue" + fileName + key;
+    //get column / file value
+    int fileColumnNr = -1;
+    for(int i = 0; i < propertyItemModel->columnCount(); i++)
+    {
+      if (propertyItemModel->headerData(i, Qt::Horizontal).toString() == fileName)
+      {
+          fileColumnNr = i;
+      }
+    }
+//    qDebug()<<"FPropertyTreeView::onGetPropertyValue"<<fileName<<fileColumnNr<<key<<propertyItemModel->rowCount();
+
+    if (fileColumnNr != -1)
+    {
+        //get row/ item value
+        for(int rowIndex = 0; rowIndex < propertyItemModel->rowCount(); rowIndex++)
+        {
+            QModelIndex topLevelIndex = propertyItemModel->index(rowIndex,0);
+
+            for (int childRowIndex=0; childRowIndex<propertyItemModel->rowCount(topLevelIndex); childRowIndex++)
+            {
+                QModelIndex sublevelIndex = propertyItemModel->index(childRowIndex,0, topLevelIndex);
+
+                if (sublevelIndex.data().toString() == key)
+                {
+                    *value = propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex).data().toString();
+//                    qDebug()<<  "FPropertyTreeView::onGetPropertyValue"<<topLevelIndex<<childRowIndex<<sublevelIndex.data().toString()<<*value;
+                    return;
+                }
+            }
+
+        }
+        *value = "";
+    }
+    else
+        *value = "";
+}

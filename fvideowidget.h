@@ -20,8 +20,10 @@ class FVideoWidget : public QVideoWidget
 
 public:
     FVideoWidget(QWidget *parent = nullptr);
-    QMediaPlayer *m_player;
+    int fpsRounded;
 private:
+    QMediaPlayer *m_player;
+
     QAction *actionPlay;
     QAction *actionPause;
     QAction *actionSkipNext;
@@ -53,14 +55,19 @@ public slots:
     void onFileIndexClicked(QModelIndex index);
     void onEditIndexClicked(QModelIndex index);
     void togglePlayPaused();
+    void fastForward();
+    void rewind();
     void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
     void onTimelinePositionChanged(int progress, int row, int relativeProgress);
     void onFileDelete(QString fileName);
+    void skipNext();
+    void skipPrevious();
+    void onSpinnerPositionChanged(int progress);
 private slots:
     void onDurationChanged(int duration);
     void onPlayerPositionChanged(int progress);
     void onScrubberSeeked(int mseconds);
-    void onSpinnerChanged(int mseconds);
+//    void onSpinnerChanged(int mseconds);
     void onPlayerStateChanged(QMediaPlayer::State state);
     void onScrubberInChanged(int row, int in);
     void onScrubberOutChanged(int row, int out);
@@ -68,6 +75,8 @@ signals:
     void videoPositionChanged(int position, int editRow, int relativeProgress);
     void inChanged(int row, int in);
     void outChanged(int row, int out);
+    void getPropertyValue(QString fileName, QString key, QString *value);
+    void fpsChanged(int fps);
 
 };
 

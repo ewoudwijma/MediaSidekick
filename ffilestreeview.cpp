@@ -7,18 +7,7 @@
 
 #include <QDebug>
 
-static const int orderBeforeLoadIndex = 0;
-static const int orderAtLoadIndex = 1;
-static const int orderAfterMovingIndex = 2;
-static const int folderIndex = 3;
-static const int fileIndex = 4;
-static const int inIndex = 5;
-static const int outIndex = 6;
-static const int durationIndex = 7;
-static const int ratingIndex = 8;
-static const int repeatIndex = 9;
-static const int hintIndex = 10;
-static const int tagIndex = 11;
+#include "fglobal.h"
 
 FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
 {

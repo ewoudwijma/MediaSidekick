@@ -7,19 +7,6 @@
 #include <QDebug>
 #include <QSettings>
 
-static const int orderBeforeLoadIndex = 0;
-static const int orderAtLoadIndex = 1;
-static const int orderAfterMovingIndex = 2;
-static const int folderIndex = 3;
-static const int fileIndex = 4;
-static const int inIndex = 5;
-static const int outIndex = 6;
-static const int durationIndex = 7;
-static const int ratingIndex = 8;
-static const int repeatIndex = 9;
-static const int hintIndex = 10;
-static const int tagIndex = 11;
-
 FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
 {
 
@@ -55,7 +42,7 @@ FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
     m_durationLabel = new QLabel(this);
     m_durationLabel->setToolTip(tr("Total Duration"));
     m_durationLabel->setText(" / 00:00:00:00");
-    m_durationLabel->setFixedWidth(m_positionSpinner->width());
+//    m_durationLabel->setFixedWidth(m_positionSpinner->width());
 //    m_inPointLabel = new QLabel(this);
 //    m_inPointLabel->setText("--:--:--:--");
 //    m_inPointLabel->setToolTip(tr("In Point"));
@@ -77,6 +64,8 @@ FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
     spacer->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
     toolbar->addWidget(spacer);
 
+    transitionTime = frameRate;
+    stretchTime = 0;
 
     QTimer::singleShot(0, this, [this]()->void
     {
@@ -132,12 +121,12 @@ void FTimeline::onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel)
 
 void FTimeline::onDurationChanged(int duration)
 {
-    qDebug()<<"onDurationChanged: " << duration;
+    qDebug()<<"FTimeline::onDurationChanged: " << duration;
 //    m_duration = duration / 1000;
 //    ui->lcdDuration->display(QTime::fromMSecsSinceStartOfDay(duration).toString("HH:mm:ss.zzz"));
 
-    m_scrubber->setScale(FGlobal().msec_rounded_to_fps(25, duration));
-    m_durationLabel->setText(FGlobal().msec_to_time(25, duration).prepend(" / "));
+    m_scrubber->setScale(FGlobal().msec_rounded_to_fps(duration));
+    m_durationLabel->setText(FGlobal().msec_to_time(duration).prepend(" / "));
 
     m_isSeekable = true;
 
@@ -152,10 +141,7 @@ void FTimeline::onDurationChanged(int duration)
 
 void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
 {
-    int duration = 0;
-    int previousDuration = 0;
-
-    m_scrubber->clearInOuts();
+    int originalDuration = 0;
 
     QMap<int,int> reorderMap;
     for (int row = 0; row < editProxyModel->rowCount();row++)
@@ -163,8 +149,8 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
         reorderMap[editProxyModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
     }
 
-//    qDebug()<<"FTimeline::onEditsChanged"<<editProxyModel->rowCount();
 
+    int row = 0;
     QMapIterator<int, int> orderIterator(reorderMap);
     while (orderIterator.hasNext()) //all files
     {
@@ -173,22 +159,77 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
         QTime inTime = QTime::fromString(editProxyModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
         QTime outTime = QTime::fromString(editProxyModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
-        int orderAfterMovingIndexx = editProxyModel->index(row, orderAfterMovingIndex).data().toInt();
-        int orderAtLoadIndexx = editProxyModel->index(row, orderAtLoadIndex).data().toInt();
+        int transitionTimeMSecs = transitionTime * 1000 / frameRate;
+
+        if (row == 0) //first
+            originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2 ;
+        else if (row == editProxyModel->rowCount() - 1) //last
+            originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2 ;
+        else
+            originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs ;
+
+        row++;
+    }
+
+    double multiplier = 1;
+    if (stretchTime != 0 && originalDuration != 0)
+    {
+        multiplier = double(stretchTime *1000/frameRate) / double(originalDuration);
+    }
+
+    m_scrubber->clearInOuts();
+    int duration = 0;
+    int previousDuration = 0;
+    row = 0;
+    orderIterator.toFront();
+    while (orderIterator.hasNext()) //all files
+    {
+        orderIterator.next();
+        int row = orderIterator.value();
+        QTime inTime = QTime::fromString(editProxyModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(editProxyModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+
+//        int orderAfterMovingIndexx = editProxyModel->index(row, orderAfterMovingIndex).data().toInt();
+//        int orderAtLoadIndexx = editProxyModel->index(row, orderAtLoadIndex).data().toInt();
         int editCounter = editProxyModel->index(row, orderBeforeLoadIndex).data().toInt();
 
-        duration+= inTime.msecsTo(outTime);
+        int transitionTimeMSecs = transitionTime * 1000 / frameRate;
+
+        if (row == 0)
+        {
+            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier -transitionTimeMSecs/2 ;
+            m_scrubber->setInOutPoint(editCounter, previousDuration, duration + transitionTimeMSecs / 2);
+        }
+        else if (row == editProxyModel->rowCount() - 1)
+        {
+            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2) * multiplier ;
+            m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration);
+
+        }
+        else
+        {
+            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier -transitionTimeMSecs ;
+            m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration + transitionTimeMSecs / 2);
+        }
 
 //        qDebug()<<"FTimeline::onEditsChanged"<<row<<orderAtLoadIndexx<<orderAfterMovingIndexx<<inTime<<outTime<<duration;
 
-//        m_scrubber->setInPoint(-1, previousDuration);
-//        m_scrubber->setOutPoint(-1, duration - 40);
-        m_scrubber->setInOutPoint(editCounter, previousDuration, duration - 40);
         previousDuration = duration;
+        row++;
     }
 
-    m_scrubber->setScale(FGlobal().msec_rounded_to_fps(25, duration));
-    m_durationLabel->setText(FGlobal().msec_to_time(25, duration).prepend(" / "));
+    qDebug()<<"FTimeline::onEditsChanged"<<editProxyModel->rowCount()<<stretchTime*1000/frameRate<<originalDuration<<multiplier<<duration;
+
+    if (stretchTime == 0)
+    {
+        m_scrubber->setScale(FGlobal().msec_rounded_to_fps(originalDuration));
+        m_durationLabel->setText(FGlobal().msec_to_time(originalDuration).prepend(" / "));
+    }
+    else
+    {
+        m_scrubber->setScale(FGlobal().msec_rounded_to_fps(stretchTime * 1000 / frameRate));
+        m_durationLabel->setText(FGlobal().msec_to_time(originalDuration).prepend(" / ") + FGlobal().msec_to_time(stretchTime* 1000 / frameRate).prepend(" -> "));
+    }
 }
 
 void FTimeline::onFileIndexClicked(QModelIndex index)
@@ -198,14 +239,32 @@ void FTimeline::onFileIndexClicked(QModelIndex index)
 
 void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
 {
+//    qDebug()<<"FTimeline::onVideoPositionChanged"<<progress;
     int *relativeProgressl = new int();
     m_scrubber->rowToPosition(row, relativeProgressl);
 
     if (*relativeProgressl != -1)
     {
-        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(25, relativeProgress + *relativeProgressl));
-        m_positionSpinner->setValue(FGlobal().msec_to_frames(25, relativeProgress + *relativeProgressl));
+        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
+        m_positionSpinner->setValue(FGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
     }
+
+}
+
+void FTimeline::onTimelineWidgetsChanged(int p_transitionTime, Qt::CheckState p_transitionChecked, int p_stretchTime, Qt::CheckState p_stretchChecked, FEditTableView *editTableView)
+{
+    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitionTime;
+    if (p_transitionChecked == Qt::Checked)
+        transitionTime = p_transitionTime;
+    else
+        transitionTime = 0;
+
+    if (p_stretchChecked == Qt::Checked)
+        stretchTime = p_stretchTime;
+    else
+        stretchTime = 0;
+//    transitionChecked = p_transitionChecked;
+    onEditsChanged(editTableView->editProxyModel);
 
 }
 

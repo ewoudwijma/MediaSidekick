@@ -12,24 +12,13 @@
 
 #include <QDebug>
 
-static const int orderBeforeLoadIndex = 0;
-static const int orderAtLoadIndex = 1;
-static const int orderAfterMovingIndex = 2;
-static const int folderIndex = 3;
-static const int fileIndex = 4;
-static const int inIndex = 5;
-static const int outIndex = 6;
-static const int durationIndex = 7;
-static const int ratingIndex = 8;
-static const int repeatIndex = 9;
-static const int hintIndex = 10;
-static const int tagIndex = 11;
+#include "fglobal.h"
 
 FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
 {
     editItemModel = new FEditItemModel(this);
     QStringList labels;
-    labels << "OrderBL" << "OrderAL"<<"OrderAM"<< "Path" << "File"<<"In"<<"Out"<<"Duration"<<"Rating"<<"Repeat"<<"Hint"<<"Tags";
+    labels << "OrderBL" << "OrderAL"<<"OrderAM"<< "Path" << "File"<<"Fps"<<"In"<<"Out"<<"Duration"<<"Rating"<<"Repeat"<<"Hint"<<"Tags";
     editItemModel->setHorizontalHeaderLabels(labels);
 
     editProxyModel = new FEditSortFilterProxyModel(this);
@@ -51,6 +40,7 @@ FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
     setColumnWidth(orderBeforeLoadIndex, 1);
     setColumnWidth(orderAtLoadIndex, 1);
     setColumnWidth(orderAfterMovingIndex, 1);
+    setColumnWidth(fpsIndex,int(columnWidth(ratingIndex) / 2));
     setColumnWidth(ratingIndex,int(columnWidth(ratingIndex) / 1.5));
     setColumnWidth(repeatIndex,columnWidth(repeatIndex) / 2);
 
@@ -203,7 +193,7 @@ void FEditTableView::selectEdits()
 void FEditTableView::addEdit(int minus, int plus)
 {
     QTime newInTime = QTime::fromMSecsSinceStartOfDay(position - minus);
-    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + plus - 40);
+    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + plus - 1000 / frameRate);
 
     int timeRow = -1;
     int fileRow = -1;
@@ -256,11 +246,16 @@ void FEditTableView::addEdit(int minus, int plus)
         items.append(new QStandardItem(QString::number(orderAFterMovingIndexx.data().toInt()-1)));
     }
 
+    QString *fpsValue = new QString();
+    emit getPropertyValue(selectedFileName, "VideoFrameRate", fpsValue);
+
+
     items.append(new QStandardItem(selectedFolderName));
     items.append(new QStandardItem(selectedFileName));
+    items.append(new QStandardItem(*fpsValue));
     items.append(new QStandardItem(newInTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newOutTime.toString("HH:mm:ss.zzz")));
-    items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(newOutTime) + 40).toString("HH:mm:ss.zzz"))); //durationIndex
+    items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(newOutTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"))); //durationIndex
     items.append(starItem);
     items.append(new QStandardItem(""));
     items.append(new QStandardItem(""));
@@ -324,7 +319,7 @@ void FEditTableView::onTrim(QString fileName)
         inTime = inTime.addMSecs(-deltaIn);
         int deltaOut = 1000;//fmin(1000, ui->videoWidget->m_player->duration() - outTime.msecsSinceStartOfDay());
         outTime = outTime.addMSecs(deltaOut);
-        int duration = inTime.msecsTo(outTime) + 40;
+        int duration = inTime.msecsTo(outTime) + 1000 / frameRate;
 
 //                qDebug()<<i<<srtItemModel->index(i,inIndex).data().toString()<<srtItemModel->index(i,outIndex).data().toString();
 //                qDebug()<<"times"<<inTime<< deltaIn<< outTime<< deltaOut<< duration<<ui->videoWidget->m_player->duration();
@@ -384,13 +379,23 @@ void FEditTableView::onTrim(QString fileName)
             QTextStream stream( &file );
 
             stream << 1 << endl;
-            stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  40).toString("HH:mm:ss.zzz") << endl;
+            stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  1000 / frameRate).toString("HH:mm:ss.zzz") << endl;
             stream << editItemModel->index(i,tagIndex).data().toString() << endl;
             stream << endl;
 
             file.close();
         }
     } //for
+}
+
+void FEditTableView::onPropertiesLoaded()
+{
+    for (int row=0; row<editItemModel->rowCount();row++)
+    {
+        QString *fpsValue = new QString();
+        emit getPropertyValue(editItemModel->index(row, fileIndex).data().toString(), "VideoFrameRate", fpsValue);
+        editItemModel->setData(editItemModel->index(row, fpsIndex), *fpsValue);
+    }
 }
 
 void FEditTableView::onEditDelete()
@@ -475,7 +480,7 @@ void FEditTableView::onInChanged(int row, int in)
             QTime outTime = QTime::fromString(editItemModel->index(i,outIndex).data().toString(),"HH:mm:ss.zzz");
 //            qDebug()<<"FEditTableView::onInChanged"<<i<< in<<newInTime;
             editItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(outTime) + 40).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(outTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
         //            setCurrentIndex(editItemModel->index(i,inIndex));
             emit editsChangedFromVideo(editProxyModel);
 
@@ -496,7 +501,7 @@ void FEditTableView::onOutChanged(int row, int out)
             QTime inTime = QTime::fromString(editItemModel->index(i,inIndex).data().toString(),"HH:mm:ss.zzz");
 //            qDebug()<<"FEditTableView::onOutChanged"<<i<< out<<newOutTime;
             editItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(newOutTime) + 40).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(newOutTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
         //            setCurrentIndex(editItemModel->index(i,inIndex));
             emit editsChangedFromVideo(editProxyModel);
         }
@@ -636,9 +641,10 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
             items.append(new QStandardItem(order));
             items.append(new QStandardItem( folderName));
             items.append(new QStandardItem( fileName));
+            items.append(new QStandardItem(""));
             items.append(new QStandardItem(inTime.toString("HH:mm:ss.zzz")));
             items.append(new QStandardItem(outTime.toString("HH:mm:ss.zzz")));
-            items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(outTime)+40).toString("HH:mm:ss.zzz"))); //durationIndex
+            items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(outTime)+1000 / frameRate).toString("HH:mm:ss.zzz"))); //durationIndex
             items.append(starItem);
             items.append(new QStandardItem(repeat));
             items.append(new QStandardItem(hint));
@@ -742,7 +748,7 @@ void FEditTableView::saveModel()
             srtContentString += "<o>" + editItemModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
             srtContentString += "<s>" + QString::number(starRating.starCount()) + "</s>";
             srtContentString += "<r>" + editItemModel->index(row,repeatIndex).data().toString() + "</r>";
-            srtContentString += "<h>" + editItemModel->index(row,hintIndex).data().toString() + "</h>";
+            srtContentString += "<h>" + editItemModel->index(row, FGlobal().hintIndex).data().toString() + "</h>";
             srtContentString += "<t>" + editItemModel->index(row,tagIndex).data().toString() + "</t>";
 
             stream << editPerFileCounter << endl;

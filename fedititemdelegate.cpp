@@ -13,19 +13,6 @@
 #include <QStandardItemModel>
 #include <QTime>
 
-static const int orderBeforeLoadIndex = 0;
-static const int orderAtLoadIndex = 1;
-static const int orderAfterMovingIndex = 2;
-static const int folderIndex = 3;
-static const int fileIndex = 4;
-static const int inIndex = 5;
-static const int outIndex = 6;
-static const int durationIndex = 7;
-static const int ratingIndex = 8;
-static const int repeatIndex = 9;
-static const int hintIndex = 10;
-static const int tagIndex = 11;
-
 void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
@@ -42,7 +29,7 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     {
         STimeSpinBox *spinBox = new STimeSpinBox();
         QTime inTime = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
-        spinBox->setValue(FGlobal().msec_to_frames(25, inTime.msecsSinceStartOfDay()));
+        spinBox->setValue(FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()));
 
         spinBox->setGeometry(option.rect);
 
@@ -181,7 +168,7 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
         QTime inTime = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
-        spinBox->setValue(FGlobal().msec_to_frames(25, inTime.msecsSinceStartOfDay()));
+        spinBox->setValue(FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()));
     }
     else if (index.column() == repeatIndex)
     {
@@ -225,7 +212,7 @@ void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
-        QTime time = QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(25, spinBox->value()));
+        QTime time = QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }
     else if (index.column() == repeatIndex)

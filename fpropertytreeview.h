@@ -20,6 +20,7 @@ public:
 public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void onFolderIndexClicked(QModelIndex index);
+    void onGetPropertyValue(QString fileName, QString key, QString *value);
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
@@ -43,6 +44,7 @@ protected:
 signals:
       void addLogEntry(QString function);
       void addLogToEntry(QString function, QString log);
+      void propertiesLoaded();
 };
 
 #endif // FPROPERTYTREEVIEW_H

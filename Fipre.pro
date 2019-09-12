@@ -46,6 +46,9 @@ SOURCES += \
         fvideowidget.cpp \
         main.cpp \
         mainwindow.cpp \
+        qedge.cpp \
+        qgraphwidget.cpp \
+        qnode.cpp \
         sscrubbar.cpp \
         stimespinbox.cpp
 
@@ -69,6 +72,9 @@ HEADERS += \
         ftimeline.h \
         fvideowidget.h \
         mainwindow.h \
+        qedge.h \
+        qgraphwidget.h \
+        qnode.h \
         sscrubbar.h \
         stimespinbox.h
 

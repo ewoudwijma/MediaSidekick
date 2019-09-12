@@ -20,6 +20,8 @@ public:
     void saveModel();
     void toggleRepeat();
     void giveStars(int starCount);
+    FEditItemModel *editItemModel;
+    FEditSortFilterProxyModel *editProxyModel;
 private slots:
     void onIndexClicked(QModelIndex index);
     void onEditRightClickMenu(const QPoint &point);
@@ -35,10 +37,10 @@ public slots:
     void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView);
     void onFileDelete(QString fileName);
     void onTrim(QString fileName);
+    void onPropertiesLoaded();
 private:
     QString selectedFolderName;
     QString selectedFileName;
-    FEditItemModel *editItemModel;
     void loadModel(QString folderName);
     void scanDir(QDir dir);
     QStandardItemModel *read(QString folderName, QString fileName);
@@ -46,7 +48,6 @@ private:
     int position;
     void selectEdits();
     void onTagsChanged(const QModelIndex &parent, int first, int last);
-    FEditSortFilterProxyModel *editProxyModel;
     int highLightedRow;
     int editCounter;
     FProcessManager *processManager;
@@ -61,7 +62,7 @@ signals:
     void fileIndexClicked(QModelIndex index);
     void addLogEntry(QString function);
     void addLogToEntry(QString function, QString log);
-
+    void getPropertyValue(QString fileName, QString key, QString *value);
 
 };
 

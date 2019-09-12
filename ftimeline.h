@@ -3,6 +3,7 @@
 
 #include "fedititemmodel.h"
 #include "feditsortfilterproxymodel.h"
+#include "fedittableview.h"
 #include "sscrubbar.h"
 #include "stimespinbox.h"
 
@@ -41,6 +42,10 @@ private:
 
     void setupActions(QWidget *widget);
 
+    int transitionTime;
+    int stretchTime;
+//    Qt::CheckState transitionChecked;
+
 public slots:
     void onDurationChanged(int duration);
     void onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel);
@@ -48,6 +53,8 @@ public slots:
     void onFileIndexClicked(QModelIndex index);
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
+    void onTimelineWidgetsChanged(int transitionTime, Qt::CheckState transitionChecked, int stretchTime, Qt::CheckState stretchChecked, FEditTableView *editTableView);
+
 private slots:
     void onScrubberSeeked(int mseconds);
 signals:

@@ -238,6 +238,16 @@
            </item>
           </layout>
          </widget>
+         <widget class="QWidget" name="tabGraph">
+          <attribute name="title">
+           <string>Graph</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_13">
+           <item>
+            <widget class="QGraphWidget" name="graphicsView"/>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </widget>
       </widget>
@@ -270,6 +280,22 @@
              <property name="text">
               <string/>
              </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Transition</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="transitionCcomboBox">
+             <item>
+              <property name="text">
+               <string>Cross dissolve</string>
+              </property>
+             </item>
             </widget>
            </item>
            <item>
@@ -683,6 +709,11 @@
    <class>FLogTableView</class>
    <extends>QTableView</extends>
    <header>flogtableview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QGraphWidget</class>
+   <extends>QGraphicsView</extends>
+   <header>qgraphwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
