@@ -114,7 +114,7 @@ void FTimeline::onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel)
 //    QString fileFolderName = QSettings().value("LastFolder").toString() + index.data().toString(); //+ "//"
     qDebug()<<"FTimeline::onFolderIndexClicked"<<editProxyModel->rowCount();
 
-    onEditsChanged(editProxyModel);
+    onEditsChangedFromVideo(editProxyModel);
 
 //    emit fileIndexClicked(index);
 }
@@ -139,16 +139,16 @@ void FTimeline::onDurationChanged(int duration)
 
 }
 
-void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
+void FTimeline::onEditsChangedFromVideo(FEditSortFilterProxyModel *editProxyModel)
 {
-    int originalDuration = 0;
+    double originalDuration = 0;
+    double transitionTimeMSecs = transitionTime * 1000 / frameRate;
 
     QMap<int,int> reorderMap;
     for (int row = 0; row < editProxyModel->rowCount();row++)
     {
         reorderMap[editProxyModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
     }
-
 
     int row = 0;
     QMapIterator<int, int> orderIterator(reorderMap);
@@ -158,8 +158,6 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
         int row = orderIterator.value();
         QTime inTime = QTime::fromString(editProxyModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
         QTime outTime = QTime::fromString(editProxyModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
-
-        int transitionTimeMSecs = transitionTime * 1000 / frameRate;
 
         if (row == 0) //first
             originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2 ;
@@ -172,14 +170,15 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
     }
 
     double multiplier = 1;
-    if (stretchTime != 0 && originalDuration != 0)
+    if (stretchTime != 0 && originalDuration > 0)
     {
-        multiplier = double(stretchTime *1000/frameRate) / double(originalDuration);
+//        multiplier = double(stretchTime *1000/frameRate - (editProxyModel->rowCount()-1) * transitionTimeMSecs) / double(originalDuration - (editProxyModel->rowCount()-1) * transitionTimeMSecs);
+        multiplier = (stretchTime *1000/frameRate ) / (originalDuration);
     }
 
     m_scrubber->clearInOuts();
-    int duration = 0;
-    int previousDuration = 0;
+    double duration = 0;
+    double previousDuration = 0;
     row = 0;
     orderIterator.toFront();
     while (orderIterator.hasNext()) //all files
@@ -193,32 +192,48 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
 //        int orderAtLoadIndexx = editProxyModel->index(row, orderAtLoadIndex).data().toInt();
         int editCounter = editProxyModel->index(row, orderBeforeLoadIndex).data().toInt();
 
-        int transitionTimeMSecs = transitionTime * 1000 / frameRate;
-
         if (row == 0)
         {
-            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier -transitionTimeMSecs/2 ;
-            m_scrubber->setInOutPoint(editCounter, previousDuration, duration + transitionTimeMSecs / 2);
+            double originalEditDuration = inTime.msecsTo(outTime) + 1000 / frameRate;
+            double addedEditDuration = originalDuration * (multiplier - 1); //can also be negative!
+
+            if (addedEditDuration > 0 && false)
+            {
+                duration+= addedEditDuration / 2;
+                m_scrubber->setInOutPoint(editCounter-1, previousDuration, duration);
+                previousDuration = duration;
+                duration += originalDuration;
+                m_scrubber->setInOutPoint(editCounter, previousDuration, duration);
+                previousDuration = duration;
+                duration+= addedEditDuration / 2;
+                m_scrubber->setInOutPoint(editCounter+1, previousDuration, duration);
+            }
+            else
+            {
+                duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier - transitionTimeMSecs/2 ;
+                m_scrubber->setInOutPoint(editCounter, previousDuration, duration + transitionTimeMSecs / 2);
+
+            }
         }
         else if (row == editProxyModel->rowCount() - 1)
         {
-            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2) * multiplier ;
+            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate ) * multiplier - transitionTimeMSecs/2  ;
             m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration);
 
         }
         else
         {
-            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier -transitionTimeMSecs ;
+            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier - transitionTimeMSecs;
             m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration + transitionTimeMSecs / 2);
         }
 
-//        qDebug()<<"FTimeline::onEditsChanged"<<row<<orderAtLoadIndexx<<orderAfterMovingIndexx<<inTime<<outTime<<duration;
+//        qDebug()<<"FTimeline::onEditsChangedFromVideo"<<row<<inTime.msecsTo(outTime)<<previousDuration<<duration;
 
         previousDuration = duration;
         row++;
     }
 
-    qDebug()<<"FTimeline::onEditsChanged"<<editProxyModel->rowCount()<<stretchTime*1000/frameRate<<originalDuration<<multiplier<<duration;
+//    qDebug()<<"FTimeline::onEditsChangedFromVideo"<<editProxyModel->rowCount()<<stretchTime*1000/frameRate<<originalDuration<<multiplier<<duration;
 
     if (stretchTime == 0)
     {
@@ -234,7 +249,7 @@ void FTimeline::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
 
 void FTimeline::onFileIndexClicked(QModelIndex index)
 {
-    qDebug()<<"FTimeline::onFileIndexClicked"<<index.data();
+    qDebug()<<"FTimeline::onFileIndexClicked"<<index.data().toString();
 }
 
 void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
@@ -264,7 +279,7 @@ void FTimeline::onTimelineWidgetsChanged(int p_transitionTime, Qt::CheckState p_
     else
         stretchTime = 0;
 //    transitionChecked = p_transitionChecked;
-    onEditsChanged(editTableView->editProxyModel);
+    onEditsChangedFromVideo(editTableView->editProxyModel);
 
 }
 

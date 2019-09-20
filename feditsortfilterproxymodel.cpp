@@ -14,7 +14,7 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
         const QModelIndex &sourceParent) const
 {
     QString expString = filterRegExp().pattern();
-    QStringList expList = expString.split(";");
+    QStringList expList = expString.split("|");
     QString starString = expList[0].toLower();
 //    if (expList.count()>0)
     QString tag1String;

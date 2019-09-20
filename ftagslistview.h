@@ -12,12 +12,14 @@ class FTagsListView: public QListView
     Q_OBJECT
 public:
     FTagsListView(QWidget *parent = nullptr);
-private:
     QStandardItemModel *tagsItemModel;
+private:
     void loadModel(QStandardItemModel *editItemModel);
 
 public slots:
     void onFolderIndexClicked(FEditItemModel *model);
+private slots:
+    void onDoubleClicked(const QModelIndex &index);
 };
 
 #endif // FTAGSLISTVIEW_H

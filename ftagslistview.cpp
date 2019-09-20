@@ -18,6 +18,7 @@ FTagsListView::FTagsListView(QWidget *parent) : QListView(parent)
     setHorizontalScrollMode(ScrollPerPixel);
     setVerticalScrollMode(ScrollPerPixel);
 //    setMaximumSize(100, size().height());
+    connect(this, &FTagsListView::doubleClicked, this, &FTagsListView::onDoubleClicked);
 }
 
 void FTagsListView::onFolderIndexClicked(FEditItemModel *model)
@@ -32,10 +33,13 @@ void FTagsListView::loadModel(QStandardItemModel *editItemModel)
     tagsItemModel->removeRows(0, tagsItemModel->rowCount());
     for (int i = 0; i < editItemModel->rowCount(); i++)
     {
-        QStringList splitted = editItemModel->index(i,tagIndex).data().toString().split(";");
-        for (int j=0; j < splitted.count(); j++)
+        QStringList tagList = editItemModel->index(i,tagIndex).data().toString().split(";");
+        if (tagList.count()==1 && tagList[0] == "")
+            tagList.clear();
+
+        for (int j=0; j < tagList.count(); j++)
         {
-            QList<QStandardItem *> foundItems = tagsItemModel->findItems(splitted[j].toLower());
+            QList<QStandardItem *> foundItems = tagsItemModel->findItems(tagList[j].toLower());
             if (foundItems.count() > 0)
             {
 //                    qDebug()<<"Taggg"<<foundItems.count() << foundItems.first()->row() <<foundItems.first()->column() << tagsItemModel->index(foundItems.first()->row(),1).data().toString();
@@ -44,14 +48,21 @@ void FTagsListView::loadModel(QStandardItemModel *editItemModel)
             else
             {
                 QList<QStandardItem *> items;
-                QStandardItem *item = new QStandardItem(splitted[j].toLower());
+                QStandardItem *item = new QStandardItem(tagList[j].toLower());
                 item->setBackground(QBrush(Qt::red));
-                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
+//                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
                 items.append(item);
-                items.append(new QStandardItem("I"));
+                items.append(new QStandardItem("I")); //nr of occurrences
                 tagsItemModel->appendRow(items);
             }
         }
     }
 
+}
+
+void FTagsListView::onDoubleClicked(const QModelIndex &index)
+{
+    qDebug()<<"FTagsListView::onDoubleClicked";
+    tagsItemModel->takeRow(index.row());
+    //tbd: move to addtagfield
 }

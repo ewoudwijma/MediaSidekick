@@ -69,6 +69,43 @@ private slots:
 
     void on_stretchedDurationSpinBox_valueChanged(int arg1);
 
+    void on_actionIn_triggered();
+
+    void on_actionOut_triggered();
+
+    void on_actionPrevious_frame_triggered();
+
+    void on_actionNext_frame_triggered();
+
+    void on_actionPrevious_in_out_triggered();
+
+    void on_actionNext_in_out_triggered();
+
+    void on_defaultMinSpinBox_valueChanged(int arg1);
+
+    void on_defaultPlusSpinBox_valueChanged(int arg1);
+
+//    void on_tagsListView_doubleClicked(const QModelIndex &index);
+
+//    void on_tagsListView_pressed(const QModelIndex &index);
+
+//    void on_tagsListView_activated(const QModelIndex &index);
+
+//    void on_tagsListView_clicked(const QModelIndex &index);
+
+//    void on_tagsListView_entered(const QModelIndex &index);
+
+    void on_actionAdd_tag_triggered();
+
+    void onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel);
+    void on_newTagLineEdit_returnPressed();
+
+    void on_generateButton_clicked();
+
+    void on_generateTargetComboBox_currentTextChanged(const QString &arg1);
+
+    void on_generateSizeComboBox_currentTextChanged(const QString &arg1);
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;

@@ -49,7 +49,7 @@ private:
 public slots:
     void onDurationChanged(int duration);
     void onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel);
-    void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
+    void onEditsChangedFromVideo(FEditSortFilterProxyModel *editProxyModel);
     void onFileIndexClicked(QModelIndex index);
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);

@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QUrl>
 #include <QScrollBar>
+#include "fglobal.h"
 
 static const int deltaIndex = 2;
 static const int firstFileColumnIndex = 3;
@@ -13,7 +14,6 @@ static const int firstFileColumnIndex = 3;
 FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
 {
     propertyItemModel = new QStandardItemModel(this);
-    pivotItemModel = new QStandardItemModel(this);
     QStringList labels;
     labels << "Property" << "Type" << "Diff";
     propertyItemModel->setHorizontalHeaderLabels(labels);
@@ -26,7 +26,7 @@ FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
 
     header()->setSectionResizeMode(QHeaderView::Interactive);
 //    header()->setSectionsMovable(true);
-    header()->setSectionsClickable(true);
+//    header()->setSectionsClickable(true);
 //    horizontalHeader()->stretchSectionCount();
 //    setSortingEnabled(true);
     setItemsExpandable(false);
@@ -36,6 +36,8 @@ FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
 //    setItemDelegate(propertyItemDelegate);
     setColumnHidden(1, true); //type column
     setColumnHidden(2, true); //diffcolumn
+
+    setSelectionMode(QAbstractItemView::MultiSelection);
 
     frozenTableView = new QTreeView(this);
 
@@ -73,39 +75,68 @@ void FPropertyTreeView::onFolderIndexClicked(QModelIndex index)
     loadModel(lastFolder);
 }
 
-
-void FPropertyTreeView::diffData(QModelIndex parent)
+void FPropertyTreeView::setCellStyle(QStringList fileNames)
 {
-    for (int i=0; i<propertyItemModel->rowCount(parent); i++)
+    QFont boldFont;
+    boldFont.setBold(true);
+    for (int parentRow=0; parentRow<propertyProxyModel->rowCount(); parentRow++)
     {
-        bool delta = false;
-        QString sameValue = propertyItemModel->index(i,firstFileColumnIndex, parent).data().toString();
-        for (int j=0; j<propertyItemModel->columnCount(parent); j++)
-        {
-            QModelIndex index = propertyItemModel->index(i,j, parent);
-            if (j > firstFileColumnIndex && sameValue != index.data().toString() && sameValue != "" && index.data().toString() != "")
-            {
-                delta = true;
-//                qDebug()<<"setting bold"<<i<<j<<parent.data().toString()<<index.data().toString();
-            }
-            if( propertyItemModel->hasChildren(index) )
-                diffData(index);
-        }
-        propertyItemModel->itemFromIndex(propertyItemModel->index(i,deltaIndex, parent))->setData(QVariant(delta), Qt::DisplayRole);
+        QModelIndex parentIndex = propertyProxyModel->index(parentRow, 0);
+        propertyProxyModel->setData(parentIndex, boldFont, Qt::FontRole);
 
-//        if (delta)
+        for (int childRow=0; childRow<propertyProxyModel->rowCount(parentIndex); childRow++)
         {
-            for (int j=firstFileColumnIndex; j<propertyItemModel->columnCount(parent); j++) //make all columns in row bold
+            for (int childColumn=0; childColumn<propertyProxyModel->columnCount(parentIndex);childColumn++)
             {
-                QFont boldFont;
-                boldFont.setBold(delta);
-                QModelIndex index = propertyItemModel->index(i,j, parent);
-                if (delta)
-                    qDebug()<<"setting bold"<<i<<j<<index.data();
-                propertyItemModel->itemFromIndex(index)->setData(boldFont, Qt::FontRole);
+                QModelIndex childIndex = propertyProxyModel->index(childRow, childColumn, parentIndex);
+                QVariant hItem = propertyItemModel->headerData(childColumn, Qt::Horizontal);
+
+                if (propertyProxyModel->index(childRow, deltaIndex, parentIndex).data().toBool())
+                    propertyProxyModel->setData(childIndex, boldFont, Qt::FontRole);
+                if ( fileNames.contains(hItem.toString()))
+                {
+//                    qDebug()<<"childColumn == 2"<<hItem.toString()<<childIndex.data().toString();
+//                    setCurrentIndex(childIndex);
+                    propertyProxyModel->setData(childIndex,  QVariant(palette().highlight()) , Qt::BackgroundRole);
+                }
+                else
+                {
+                    propertyProxyModel->setData(childIndex,  QVariant(palette().base()) , Qt::BackgroundRole);
+                }
             }
         }
     }
+
+    //        propertyTreeView->scrollTo(propertyTreeView->propertyItemModel->index(3,propertyTreeView->propertyItemModel->columnCount()-1), QAbstractItemView::EnsureVisible);
+    //    scrollTo(modelIndex);
+
+}
+
+void FPropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
+{
+    QStringList selectedFileNames;
+    for (int i=0;i<selectedIndices.count();i++)
+    {
+        QModelIndex index = selectedIndices[i];
+        if (index.column() == 0)
+        {
+            selectedFileNames << index.data().toString();
+        }
+    }
+    qDebug()<<"FPropertyTreeView::onFileIndexClicked"<<index.data().toString()<<selectedIndices.count()<<selectedFileNames.count();
+//    QModelIndexList *selectedIndices = index.model().selectionModel->sele;
+//    QModelIndex modelIndex = propertyProxyModel->index(propertyProxyModel->rowCount(),0);
+    setCellStyle(selectedFileNames);
+
+}
+
+void FPropertyTreeView::onEditIndexClicked(QModelIndex index)
+{
+//    qDebug()<<"FFilesTreeView::onEditIndexClicked"<<index;
+    QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
+    QStringList selectedFileNames;
+    selectedFileNames <<fileName;
+    setCellStyle(selectedFileNames);
 }
 
 void FPropertyTreeView::loadModel(QString folderName)
@@ -117,11 +148,17 @@ void FPropertyTreeView::loadModel(QString folderName)
     QString command = "exiftool -s -c \"%02.6f\" \"" + folderName.replace("/", "//") + "*\""; ////
 //    qDebug()<<"FPropertyTreeView::loadModel"<<folderName<<command<<processManager;
 
-    processManager->startProcess(command
-                                   , nullptr
-                                   , [] (QWidget *parent, QString , QStringList result)
+    QMap<QString, QString> parameters;
+    parameters["folderName"] = folderName;
+    emit addLogEntry("PropertyLoad " + folderName);
+    processManager->startProcess(command, parameters
+                                   , [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
+    {
+        FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
+        emit propertyTreeView->addLogToEntry("PropertyLoad " + parameters["folderName"], result);
+    }
+                                   , [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList result)
      {
-//        QModelIndex lastIndex;
         FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
 
         QStringList topLevelItemNames;
@@ -143,10 +180,9 @@ void FPropertyTreeView::loadModel(QString folderName)
         QMap<QString, QString> fileMediaMap;
         QMap<QString, QStandardItem *> labelMap;
 
-        emit propertyTreeView->addLogEntry("PropertyLoad");
-
         for (int resultIndex=0;resultIndex<result.count();resultIndex++)
         {
+//            emit propertyTreeView->addLogToEntry("PropertyLoad " + parameters["folderName"], result[resultIndex]);
             int indexOf = result[resultIndex].indexOf("======== ");
             if (indexOf > -1)
             {
@@ -191,7 +227,7 @@ void FPropertyTreeView::loadModel(QString folderName)
         {
             iFile.next();
             labels<<iFile.key();
-            emit propertyTreeView->addLogToEntry("PropertyLoad", iFile.key());
+            emit propertyTreeView->addLogToEntry("PropertyLoad " + parameters["folderName"], iFile.key() + "\n");
 
         }
         propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(labels);
@@ -246,12 +282,8 @@ void FPropertyTreeView::loadModel(QString folderName)
         propertyTreeView->expandAll();
         propertyTreeView->frozenTableView->expandAll();
 
-//        propertyTreeView->setCurrentIndex(lastIndex);
+        propertyTreeView->setCellStyle(QStringList()); //to set diff values
 
-
-//        propertyTreeView->scrollTo(propertyTreeView->propertyItemModel->index(3,propertyTreeView->propertyItemModel->columnCount()-1), QAbstractItemView::EnsureVisible);
-
-//        propertyTreeView->diffData(QModelIndex());
         emit propertyTreeView->propertiesLoaded();
     });
 }

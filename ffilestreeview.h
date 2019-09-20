@@ -2,6 +2,7 @@
 #define FFILESTREEVIEW_H
 
 #include <QFileSystemModel>
+#include <QStandardItemModel>
 #include <QTreeView>
 #include <QUrl>
 
@@ -17,15 +18,15 @@ private slots:
     void onFileDelete();
     void onIndexClicked(QModelIndex index);
 private:
-    QFileSystemModel *fileModel;
     void loadModel(QUrl folderUrl);
+    QFileSystemModel *fileModel;
     QMenu *fileContextMenu;
 public slots:
     void onEditIndexClicked(QModelIndex index);
 
     void onFolderIndexClicked(QModelIndex index);
 signals:
-    void indexClicked(QModelIndex index);
+    void indexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void fileDelete(QString fileName);
     void trim(QString fileName);
 

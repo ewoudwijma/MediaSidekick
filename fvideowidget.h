@@ -21,6 +21,7 @@ class FVideoWidget : public QVideoWidget
 public:
     FVideoWidget(QWidget *parent = nullptr);
     int fpsRounded;
+    int m_position;
 private:
     QMediaPlayer *m_player;
 
@@ -31,13 +32,14 @@ private:
     QAction *actionRewind;
     QAction *actionFastForward;
     QAction *actionVolume;
+    QAction *actionUpdateIn;
+    QAction *actionUpdateOut;
 
     QVBoxLayout *parentLayout;
     SScrubBar* m_scrubber;
     STimeSpinBox* m_positionSpinner;
     QLabel *m_durationLabel;
     QToolBar* toolbar;
-    int m_position;
     int m_previousIn;
     int m_previousOut;
     int m_duration;
@@ -49,6 +51,7 @@ private:
     QString selectedFileName;
 
     bool isTimelinePlaymode;
+    int lastHighlightedRow;
 
 public slots:
     void onFolderIndexClicked(QModelIndex index);
@@ -63,6 +66,8 @@ public slots:
     void skipNext();
     void skipPrevious();
     void onSpinnerPositionChanged(int progress);
+    void onUpdateIn();
+    void onUpdateOut();
 private slots:
     void onDurationChanged(int duration);
     void onPlayerPositionChanged(int progress);

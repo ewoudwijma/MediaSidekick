@@ -55,24 +55,30 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileDelete);
 
     fileContextMenu->addSeparator();
-
 }
 
 void FFilesTreeView::onIndexClicked(QModelIndex index)
 {
-    qDebug()<<"FFilesTreeView::onIndexClicked"<<index.data()<<fileModel->index(index.row(),0).data();
+    QFileInfo fileInfo = fileModel->fileInfo(index);
+    QString filePath = fileInfo.absolutePath() + "/";
+
+    QSettings().setValue("LastFileFolder", filePath);
+    QSettings().sync();
+
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+
+    qDebug()<<"FFilesTreeView::onIndexClicked"<<index.row()<<index.column()<<index.data()<<filePath<<indexList.count();
 //    if (editItemModel->index(index.row(),fileIndex).data().toString()!=fileUrl.fileName())
 //    {
 //        qDebug()<<"tableClicked different!!!"<<index.data()<<editItemModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
 //    }
-    emit indexClicked(index);
+    emit indexClicked(index, selectionModel()->selectedIndexes());
 }
 
 void FFilesTreeView::loadModel(QUrl folderUrl)
 {
     fileModel->setRootPath(folderUrl.toString());
     setRootIndex(fileModel->index(folderUrl.toString()));
-
 }
 
 void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
@@ -97,7 +103,6 @@ void FFilesTreeView::onTrim()
 
         }
     }
-
 }
 
 void FFilesTreeView::onFileDelete()
@@ -118,6 +123,8 @@ void FFilesTreeView::onFileDelete()
     QMessageBox::StandardButton reply;
      reply = QMessageBox::question(this, "Delete " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete " + fileNameList.join(", ") + " and its supporting files (srt and txt)?",
                                    QMessageBox::Yes|QMessageBox::No);
+     //mapFromGlobal(QCursor::pos());
+
      if (reply == QMessageBox::Yes)
      {
 

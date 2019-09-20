@@ -162,7 +162,7 @@ void QGraphWidget::connectNodes(QString node1Name, QString node2Name, QString ed
     {
         if (QNode *node = qgraphicsitem_cast<QNode *>(items[i]))
         {
-            qDebug()<<"QGraphWidget::connectNodes"<<node->nodeName<<node1Name<<node2Name;
+//            qDebug()<<"QGraphWidget::connectNodes"<<node->nodeName<<node1Name<<node2Name;
             if (node->nodeName == node1Name)
                 node1 = node;
             if (node->nodeName == node2Name)

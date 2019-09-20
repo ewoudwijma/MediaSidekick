@@ -98,24 +98,33 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView->connectNodes("edit", "tags", "folder");
     connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, ui->timelineWidget, &FTimeline::onFolderIndexClicked);
     ui->graphicsView->connectNodes("edit", "time", "folder");
+    connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set edit counter
+    ui->graphicsView->connectNodes("edit", "main", "editchange");
     connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->videoWidget, &FVideoWidget::onFileIndexClicked);
     ui->graphicsView->connectNodes("edit", "video", "file");
     connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->timelineWidget, &FTimeline::onFileIndexClicked);
     ui->graphicsView->connectNodes("edit", "time", "file");
+    connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->propertyTreeView, &FPropertyTreeView::onFileIndexClicked);
+    ui->graphicsView->connectNodes("edit", "prop", "file");
     connect(ui->editTableView, &FEditTableView::indexClicked, ui->filesTreeView, &FFilesTreeView::onEditIndexClicked);
     ui->graphicsView->connectNodes("edit", "files", "edit");
     connect(ui->editTableView, &FEditTableView::indexClicked, ui->videoWidget, &FVideoWidget::onEditIndexClicked);
     ui->graphicsView->connectNodes("edit", "video", "edit");
+    connect(ui->editTableView, &FEditTableView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onEditIndexClicked);
+    ui->graphicsView->connectNodes("edit", "video", "edit");
     connect(ui->editTableView, &FEditTableView::editsChanged, ui->videoWidget, &FVideoWidget::onEditsChanged);
     ui->graphicsView->connectNodes("edit", "video", "editchange");
-    connect(ui->editTableView, &FEditTableView::editsChanged, ui->timelineWidget,  &FTimeline::onEditsChanged);
-    ui->graphicsView->connectNodes("edit", "time", "editchange");
+//    connect(ui->editTableView, &FEditTableView::editsChanged, ui->timelineWidget,  &FTimeline::onEditsChanged);
+//    ui->graphicsView->connectNodes("edit", "time", "editchange");
     connect(ui->editTableView, &FEditTableView::editsChanged, this,  &MainWindow::onEditsChanged);
     ui->graphicsView->connectNodes("edit", "main", "editchange");
-    connect(ui->editTableView, &FEditTableView::editsChangedFromVideo, ui->timelineWidget,  &FTimeline::onEditsChanged);
+    connect(ui->editTableView, &FEditTableView::editsChangedFromVideo, ui->timelineWidget,  &FTimeline::onEditsChangedFromVideo);
     ui->graphicsView->connectNodes("edit", "time", "editchangevideo");
     connect(ui->editTableView, &FEditTableView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
     ui->graphicsView->connectNodes("edit", "prop", "get");
+    connect(ui->editTableView, &FEditTableView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    ui->graphicsView->connectNodes("video", "prop", "get");
+    connect(ui->editTableView, &FEditTableView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
 
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->editTableView, &FEditTableView::onVideoPositionChanged);
     ui->graphicsView->connectNodes("video", "edit", "pos");
@@ -142,9 +151,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(this, &MainWindow::timelineWidgetsChanged, ui->timelineWidget, &FTimeline::onTimelineWidgetsChanged);
 
+    connect(ui->generateWidget, &FGenerate::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    ui->graphicsView->connectNodes("video", "prop", "get");
+    connect(ui->generateWidget, &FGenerate::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
+    connect(ui->generateWidget, &FGenerate::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+
 
     connect(ui->starEditorFilterWidget, &FStarEditor::editingFinished, this, &MainWindow::onEditFilterChanged);
     ui->graphicsView->connectNodes("star", "main", "filter");
+
+    //load settings
 
     int starInt = QSettings().value("starsFilter").toInt();
     QVariant starVar = QVariant::fromValue(FStarRating(starInt));
@@ -152,21 +168,58 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->starEditorFilterWidget->setStarRating(starRating);
 
     ui->transitionTimeSpinBox->setValue(QSettings().value("transitionTime").toInt());
-    bool checked = QSettings().value("transitionTimeCheckBox").toBool();
     Qt::CheckState checkState;
-    if (checked)
+    if (QSettings().value("transitionTimeCheckBox").toBool())
         checkState = Qt::Checked;
     else
         checkState = Qt::Unchecked;
     ui->TransitionTimeCheckBox->setCheckState(checkState);
+
     ui->stretchedDurationSpinBox->setValue(QSettings().value("stretchedDuration").toInt());
-    checked = QSettings().value("stretchedDurationCheckBox").toBool();
-    if (checked)
+    if (QSettings().value("stretchedDurationCheckBox").toBool())
         checkState = Qt::Checked;
     else
-        checked = Qt::Unchecked;
+        checkState = Qt::Unchecked;
+    qDebug()<<"stretchedDurationCheckBox"<<checkState;
     ui->stretchedDurationCheckBox->setCheckState(checkState);
 
+    ui->defaultMinSpinBox->setValue(QSettings().value("defaultMinDuration").toInt());
+    ui->defaultPlusSpinBox->setValue(QSettings().value("defaultPlusDuration").toInt());
+
+    ui->generateTargetComboBox->setCurrentText(QSettings().value("generateTarget").toString());
+    ui->generateSizeComboBox->setCurrentText(QSettings().value("generateSize").toString());
+
+    QStringList tagList1 = QSettings().value("tagFilter1").toString().split(";");
+    if (tagList1.count()==1 && tagList1[0] == "")
+        tagList1.clear();
+
+    for (int j=0; j < tagList1.count(); j++)//tbd: add as method of tagslistview
+    {
+        QList<QStandardItem *> items;
+        QStandardItem *item = new QStandardItem(tagList1[j].toLower());
+        item->setBackground(QBrush(Qt::red));
+//                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
+        items.append(item);
+        items.append(new QStandardItem("I")); //nr of occurrences
+//        tagFilter1Model->appendRow(items);
+    }
+    QStringList tagList2 = QSettings().value("tagFilter2").toString().split(";");
+    if (tagList2.count()==1 && tagList2[0] == "")
+        tagList2.clear();
+
+    for (int j=0; j < tagList2.count(); j++)
+    {
+        QList<QStandardItem *> items;
+        QStandardItem *item = new QStandardItem(tagList2[j].toLower());
+        item->setBackground(QBrush(Qt::red));
+//                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
+        items.append(item);
+        items.append(new QStandardItem("I")); //nr of occurrences
+//        tagFilter2Model->appendRow(items);
+    }
+
+
+    //
     onEditFilterChanged(); //initial setup
     emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->TransitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
 
@@ -174,10 +227,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
-//    ui->tagsListView->loadModel(ui->editTableView->editItemModel);
-    ui->defaultMinSpinBox->setValue(frameRate * 1);
-    ui->defaultPlusSpinBox->setValue(frameRate * 2);
-
+//    ui->progressBar->setRange(0, 100);
+    ui->progressBar->setValue(0);
 }
 
 MainWindow::~MainWindow()
@@ -321,12 +372,39 @@ void MainWindow::onEditsChanged(FEditSortFilterProxyModel *editProxyModel)
     ui->editrowsCounterLabel->setText(QString::number(editProxyModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
 }
 
+void MainWindow::onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel)
+{
+    qDebug()<<"MainWindow::onFolderIndexClicked"<<editProxyModel->rowCount();
+
+    ui->editrowsCounterLabel->setText(QString::number(editProxyModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
+}
+
+
 void MainWindow::onEditFilterChanged()
 {
     qDebug()<<"MainWindow::onEditFilterChanged";
     ui->editrowsCounterLabel->setText(QString::number(ui->editTableView->editProxyModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
     emit editFilterChanged(ui->starEditorFilterWidget, ui->tagFilter1ListView, ui->tagFilter2ListView);
     QSettings().setValue("starsFilter", ui->starEditorFilterWidget->starRating().starCount());
+
+    QString string1 = "";
+    QString sep = "";
+    for (int i=0; i < tagFilter1Model->rowCount();i++)
+    {
+        string1 += sep + tagFilter1Model->index(i,0).data().toString();
+        sep = ";";
+    }
+
+    QString string2 = "";
+    sep = "";
+    for (int i=0; i < tagFilter2Model->rowCount();i++)
+    {
+        string2 += sep + tagFilter2Model->index(i,0).data().toString();
+        sep = ";";
+    }
+
+    QSettings().setValue("tagFilter1", string1);
+    QSettings().setValue("tagFilter2", string2);
     QSettings().sync();
 }
 
@@ -374,7 +452,11 @@ void MainWindow::on_actionRepeat_triggered()
 
 void MainWindow::on_actionSave_triggered()
 {
-    ui->editTableView->saveModel();
+    for (int row =0; row < ui->editTableView->srtFileItemModel->rowCount();row++)
+    {
+        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
+        ui->editTableView->saveModel(ui->editTableView->srtFileItemModel->index(row, 0).data().toString(), ui->editTableView->srtFileItemModel->index(row, 1).data().toString());
+    }
 }
 
 void MainWindow::on_actionPlay_Pause_triggered()
@@ -409,6 +491,14 @@ void MainWindow::on_TransitionTimeCheckBox_clicked(bool checked)
 
 }
 
+void MainWindow::on_stretchedDurationSpinBox_valueChanged(int arg1)
+{
+    qDebug()<<"MainWindow::on_stretchedDurationSpinBox_valueChanged"<<arg1;
+    QSettings().setValue("stretchedDuration", arg1);
+    QSettings().sync();
+    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->TransitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
+}
+
 void MainWindow::on_stretchedDurationCheckBox_clicked(bool checked)
 {
     qDebug()<<"MainWindow::on_stretchedDurationCheckBox_clicked"<<checked;
@@ -418,10 +508,113 @@ void MainWindow::on_stretchedDurationCheckBox_clicked(bool checked)
 
 }
 
-void MainWindow::on_stretchedDurationSpinBox_valueChanged(int arg1)
+void MainWindow::on_actionIn_triggered()
 {
-    qDebug()<<"MainWindow::on_stretchedDurationSpinBox_valueChanged"<<arg1;
-    QSettings().setValue("stretchedDuration", arg1);
+    qDebug()<<"MainWindow::on_updateInButton_clicked"<<ui->editTableView->highLightedRow<<ui->videoWidget->m_position;
+    ui->videoWidget->onUpdateIn();
+//    ui->editTableView->onInChanged(ui->editTableView->highLightedRow, ui->videoWidget->m_position);
+}
+
+void MainWindow::on_actionOut_triggered()
+{
+    qDebug()<<"MainWindow::on_updateOutButton_clicked"<<ui->editTableView->highLightedRow<<ui->videoWidget->m_position;
+    ui->videoWidget->onUpdateOut();
+//    ui->editTableView->onOutChanged(ui->editTableView->highLightedRow, ui->videoWidget->m_position);
+}
+
+void MainWindow::on_actionPrevious_frame_triggered()
+{
+    ui->videoWidget->rewind();
+}
+
+void MainWindow::on_actionNext_frame_triggered()
+{
+    ui->videoWidget->fastForward();
+}
+
+void MainWindow::on_actionPrevious_in_out_triggered()
+{
+     ui->videoWidget->skipPrevious();
+}
+
+void MainWindow::on_actionNext_in_out_triggered()
+{
+    ui->videoWidget->skipNext();
+}
+
+void MainWindow::on_defaultMinSpinBox_valueChanged(int arg1)
+{
+    QSettings().setValue("defaultMinDuration", arg1);
     QSettings().sync();
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->TransitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
+}
+
+void MainWindow::on_defaultPlusSpinBox_valueChanged(int arg1)
+{
+    QSettings().setValue("defaultPlusDuration", arg1);
+    QSettings().sync();
+}
+
+//void MainWindow::on_tagsListView_doubleClicked(const QModelIndex &index)
+//{
+//    qDebug()<<"MainWindow::on_tagsListView_doubleClicked"<<index.data().toString();
+//}
+
+//void MainWindow::on_tagsListView_pressed(const QModelIndex &index)
+//{
+//    qDebug()<<"MainWindow::on_tagsListView_pressed"<<index.data().toString();
+//}
+
+//void MainWindow::on_tagsListView_activated(const QModelIndex &index)
+//{
+//    qDebug()<<"MainWindow::on_tagsListView_activated"<<index.data().toString();
+//}
+
+//void MainWindow::on_tagsListView_clicked(const QModelIndex &index)
+//{
+//    qDebug()<<"MainWindow::on_tagsListView_clicked"<<index.data().toString();
+//}
+
+//void MainWindow::on_tagsListView_entered(const QModelIndex &index)
+//{
+//    qDebug()<<"MainWindow::on_tagsListView_entered"<<index.data().toString();
+//}
+
+void MainWindow::on_actionAdd_tag_triggered()
+{
+    QList<QStandardItem *> items;
+    QStandardItem *item = new QStandardItem("ewoud");
+    item->setBackground(QBrush(Qt::red));
+
+    items.append(item);
+    items.append(new QStandardItem("I"));
+    ui->tagsListView->tagsItemModel->appendRow(items);
+}
+
+void MainWindow::on_newTagLineEdit_returnPressed()
+{
+    QList<QStandardItem *> items;
+    QStandardItem *item = new QStandardItem(ui->newTagLineEdit->text());
+    item->setBackground(QBrush(Qt::red));
+
+    items.append(item);
+    items.append(new QStandardItem("I"));
+    ui->tagsListView->tagsItemModel->appendRow(items);
+    ui->newTagLineEdit->clear();
+}
+
+void MainWindow::on_generateButton_clicked()
+{
+    ui->generateWidget->generate(ui->editTableView->editProxyModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->progressBar);
+}
+
+void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg1)
+{
+    QSettings().setValue("generateTarget", arg1);
+    QSettings().sync();
+}
+
+void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
+{
+    QSettings().setValue("generateSize", arg1);
+    QSettings().sync();
 }

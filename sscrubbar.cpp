@@ -130,6 +130,23 @@ void SScrubBar::setInOutPoint(int row, int in, int out)
     emit outChanged(row, out);
 }
 
+EditInOutStruct SScrubBar::getInOutPoint(int row)
+{
+    int foundRow = -1;
+    for (int i=0; i< m_in_out_list.count();i++)
+    {
+        if (m_in_out_list[i].row == row)
+            foundRow = i;
+    }
+
+    if (foundRow != -1)
+    {
+        return m_in_out_list[foundRow];
+    }
+    else
+        return EditInOutStruct();
+}
+
 //void SScrubBar::removeInOutPoint(int in, int out)
 //{
 //    for (int i=0;i<m_in_list.count();i++)

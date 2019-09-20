@@ -21,21 +21,22 @@ public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void onFolderIndexClicked(QModelIndex index);
     void onGetPropertyValue(QString fileName, QString key, QString *value);
+    void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
+    void onEditIndexClicked(QModelIndex index);
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
 private:
     QStandardItemModel *propertyItemModel;
-    QStandardItemModel *pivotItemModel;
     FPropertySortFilterProxyModel *propertyProxyModel;
     void loadModel(QString folderName);
     FProcessManager *processManager;
     void addSublevelItem(QUrl fileUrl, QString itemName, QString type, QString value);
     QStandardItem *getToplevelItem(QString itemName);
-    void diffData(QModelIndex parent);
     QTreeView *frozenTableView;
     void init();
     void updateFrozenTableGeometry();
+    void setCellStyle(QStringList fileNames);
 protected:
       void resizeEvent(QResizeEvent *event) override;
       QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) override;

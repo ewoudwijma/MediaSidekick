@@ -11,7 +11,7 @@ class FProcessManager : public QWidget
 public:
     explicit FProcessManager(QWidget *parent = nullptr);
 
-    void startProcess(QString code, void (*)(QWidget *, QString), void (*)(QWidget *, QString, QStringList));
+    void startProcess(QString code, QMap<QString, QString> parameters, void (*)(QWidget *, QMap<QString, QString>, QString), void (*)(QWidget *, QString, QMap<QString, QString>, QStringList));
     void stopAll();
 
 private slots:
@@ -21,8 +21,9 @@ private slots:
 private:
     QProcess *process;
     QStringList *processQueue;
-    QList<void (*)(QWidget *, QString)> *processOutputQueue;
-    QList<void (*)(QWidget *, QString, QStringList)> *processResultsQueue;
+    QList<QMap<QString, QString>> *parameterQueue;
+    QList<void (*)(QWidget *, QMap<QString, QString>, QString)> *processOutputQueue;
+    QList<void (*)(QWidget *, QString, QMap<QString, QString>, QStringList)> *processResultsQueue;
     QString processOutputString;
     void ExecuteProcess();
 };

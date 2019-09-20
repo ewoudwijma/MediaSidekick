@@ -81,13 +81,14 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         listView->setModel(listModel);
 
         QVariant variant = index.data(Qt::EditRole);
-        QStringList stringList = variant.toString().split(";");
-        if (stringList.count() != 1 || stringList.first() != "")
-        for (int i=0; i < stringList.count();i++)
+        QStringList tagList = variant.toString().split(";");
+
+        if (tagList.count() != 1 || tagList.first() != "")
+        for (int i=0; i < tagList.count();i++)
         {
 //            qDebug()<<"paint"<<stringList[i];
             QList<QStandardItem *> items;
-            QStandardItem *item = new QStandardItem(stringList[i].toLower());
+            QStandardItem *item = new QStandardItem(tagList[i].toLower());
             item->setBackground(QBrush(Qt::red));
             items.append(item);
             listModel->appendRow(items);
@@ -182,12 +183,13 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
         QStandardItemModel *listModel = qobject_cast<QStandardItemModel*>(listView->model());
 
         QVariant variant = index.data(Qt::EditRole);
-        QStringList stringList = variant.toString().split(";");
-        for (int i=0; i < stringList.count();i++)
+        QStringList tagList = variant.toString().split(";");
+        if (tagList.count() != 1 || tagList.first() != "")
+        for (int i=0; i < tagList.count();i++)
         {
 //            qDebug()<<"setEditorData"<<stringList[i];
             QList<QStandardItem *> items;
-            QStandardItem *item = new QStandardItem(stringList[i].toLower());
+            QStandardItem *item = new QStandardItem(tagList[i].toLower());
             item->setBackground(QBrush(Qt::red));
             items.append(item);
             listModel->appendRow(items);

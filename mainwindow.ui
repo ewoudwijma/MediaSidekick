@@ -197,6 +197,13 @@
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_9">
                  <item>
+                  <widget class="QLineEdit" name="newTagLineEdit">
+                   <property name="placeholderText">
+                    <string>new tag</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="FTagsListView" name="tagsListView"/>
                  </item>
                 </layout>
@@ -256,7 +263,7 @@
         <enum>QTabWidget::South</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="tab_timeline">
         <attribute name="title">
@@ -360,7 +367,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="comboBox">
+              <widget class="QComboBox" name="generateTargetComboBox">
                <item>
                 <property name="text">
                  <string>Preview</string>
@@ -391,7 +398,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="comboBox_2">
+              <widget class="QComboBox" name="generateSizeComboBox">
                <item>
                 <property name="text">
                  <string>Original (lossless)</string>
@@ -415,6 +422,13 @@
               </widget>
              </item>
              <item>
+              <widget class="QPushButton" name="generateButton">
+               <property name="text">
+                <string>Generate</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <spacer name="horizontalSpacer_3">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -430,6 +444,9 @@
             </layout>
            </item>
           </layout>
+         </item>
+         <item>
+          <widget class="FGenerate" name="generateWidget" native="true"/>
          </item>
          <item>
           <widget class="QProgressBar" name="progressBar">
@@ -489,20 +506,31 @@
      <string>Edit</string>
     </property>
     <addaction name="actionNew"/>
-    <addaction name="actionRepeat"/>
+    <addaction name="separator"/>
     <addaction name="action0_stars"/>
     <addaction name="action1_star"/>
     <addaction name="action2_stars"/>
     <addaction name="action3_stars"/>
     <addaction name="action4_stars"/>
     <addaction name="action5_stars"/>
+    <addaction name="actionRepeat"/>
+    <addaction name="separator"/>
     <addaction name="actionSave"/>
+    <addaction name="separator"/>
+    <addaction name="actionAdd_tag"/>
    </widget>
    <widget class="QMenu" name="menuPlayer">
     <property name="title">
      <string>Player</string>
     </property>
+    <addaction name="actionPrevious_in_out"/>
+    <addaction name="actionPrevious_frame"/>
     <addaction name="actionPlay_Pause"/>
+    <addaction name="actionNext_frame"/>
+    <addaction name="actionNext_in_out"/>
+    <addaction name="separator"/>
+    <addaction name="actionIn"/>
+    <addaction name="actionOut"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -558,7 +586,7 @@
     <string>New</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+N</string>
+    <string>Ins</string>
    </property>
   </action>
   <action name="actionRepeat">
@@ -654,6 +682,62 @@
     <string>Space</string>
    </property>
   </action>
+  <action name="actionIn">
+   <property name="text">
+    <string>In</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="actionOut">
+   <property name="text">
+    <string>Out</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionPrevious_frame">
+   <property name="text">
+    <string>Previous frame</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Left</string>
+   </property>
+  </action>
+  <action name="actionNext_frame">
+   <property name="text">
+    <string>Next frame</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Right</string>
+   </property>
+  </action>
+  <action name="actionPrevious_in_out">
+   <property name="text">
+    <string>Previous in/out</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Down</string>
+   </property>
+  </action>
+  <action name="actionNext_in_out">
+   <property name="text">
+    <string>Next in/out</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Up</string>
+   </property>
+  </action>
+  <action name="actionAdd_tag">
+   <property name="text">
+    <string>Add tag</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -714,6 +798,12 @@
    <class>QGraphWidget</class>
    <extends>QGraphicsView</extends>
    <header>qgraphwidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>FGenerate</class>
+   <extends>QWidget</extends>
+   <header>fgenerate.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

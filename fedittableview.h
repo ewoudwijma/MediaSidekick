@@ -17,27 +17,13 @@ class FEditTableView: public QTableView
 public:
     FEditTableView(QWidget *parent = nullptr);
     void addEdit(int minus, int plus);
-    void saveModel();
+    void saveModel(QString folderName, QString fileName);
     void toggleRepeat();
     void giveStars(int starCount);
     FEditItemModel *editItemModel;
     FEditSortFilterProxyModel *editProxyModel;
-private slots:
-    void onIndexClicked(QModelIndex index);
-    void onEditRightClickMenu(const QPoint &point);
-    void onEditDelete();
-    void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
-public slots:
-    void onFolderIndexClicked(QModelIndex index);
-    void onFileIndexClicked(QModelIndex index);
-
-    void onInChanged(int row, int in);
-    void onOutChanged(int row, int out);
-    void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView);
-    void onFileDelete(QString fileName);
-    void onTrim(QString fileName);
-    void onPropertiesLoaded();
+    int highLightedRow;
+    QStandardItemModel *srtFileItemModel;
 private:
     QString selectedFolderName;
     QString selectedFileName;
@@ -48,9 +34,26 @@ private:
     int position;
     void selectEdits();
     void onTagsChanged(const QModelIndex &parent, int first, int last);
-    int highLightedRow;
     int editCounter;
     FProcessManager *processManager;
+
+public slots:
+    void onFolderIndexClicked(QModelIndex index);
+    void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
+
+    void onInChanged(int row, int in);
+    void onOutChanged(int row, int out);
+    void onVideoPositionChanged(int progress, int row, int relativeProgress);
+    void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView);
+    void onFileDelete(QString fileName);
+    void onTrim(QString fileName);
+    void onPropertiesLoaded();
+
+private slots:
+    void onIndexClicked(QModelIndex index);
+    void onEditRightClickMenu(const QPoint &point);
+    void onEditDelete();
+    void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
 
 signals:
     void indexClicked(QModelIndex index);
@@ -59,7 +62,7 @@ signals:
     void editsChangedFromVideo(FEditSortFilterProxyModel *editProxyModel);
     void folderIndexClickedItemModel(FEditItemModel *model);
     void folderIndexClickedProxyModel(FEditSortFilterProxyModel *editProxyModel);
-    void fileIndexClicked(QModelIndex index);
+    void fileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void addLogEntry(QString function);
     void addLogToEntry(QString function, QString log);
     void getPropertyValue(QString fileName, QString key, QString *value);

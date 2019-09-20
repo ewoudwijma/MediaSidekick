@@ -32,6 +32,7 @@ SOURCES += \
         fedittableview.cpp \
         ffilestreeview.cpp \
         ffoldertreeview.cpp \
+        fgenerate.cpp \
         fglobal.cpp \
         flogitemdelegate.cpp \
         flogtableview.cpp \
@@ -59,6 +60,7 @@ HEADERS += \
         fedittableview.h \
         ffilestreeview.h \
         ffoldertreeview.h \
+        fgenerate.h \
         fglobal.h \
         flogitemdelegate.h \
         flogtableview.h \
@@ -86,4 +88,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-win32:RC_ICONS += fipre.ico
+win32:RC_ICONS += fiprelogo.ico
+
+RESOURCES += \
+    images.qrc

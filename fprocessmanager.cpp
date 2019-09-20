@@ -10,15 +10,17 @@ FProcessManager::FProcessManager(QWidget *parent) : QWidget(parent)
     connect (process, SIGNAL(readyReadStandardError()), this, SLOT(processOutput()));  // same here
     connect (process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(processFinished(int, QProcess::ExitStatus)));  // same here
     processQueue = new QStringList();
-    processOutputQueue = new QList<void (*)(QWidget *, QString)>;
-    processResultsQueue = new QList<void (*)(QWidget *, QString, QStringList)>;
+    parameterQueue = new QList<QMap<QString, QString>>();
+    processOutputQueue = new QList<void (*)(QWidget *, QMap<QString, QString>, QString)>;
+    processResultsQueue = new QList<void (*)(QWidget *, QString, QMap<QString, QString>, QStringList)>;
 
 }
 
-void FProcessManager::startProcess(QString code, void (*processOutput)(QWidget *, QString), void (*processResult)(QWidget *, QString, QStringList))
+void FProcessManager::startProcess(QString code, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QString), void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
 {
 //    qDebug()<<"startProcess"<<code<<processOutput<<processResult;
     processQueue->append(code);
+    parameterQueue->append(parameters);
     processOutputQueue->append(processOutput);
     processResultsQueue->append(processResult);
 //    processResult("hoi");
@@ -36,7 +38,9 @@ void FProcessManager::ExecuteProcess()
    if (!processQueue->isEmpty() && process->state() == QProcess::NotRunning)
     {
         processOutputString = "";
-        process->start(processQueue->takeFirst());
+        QString tf = processQueue->takeFirst();
+        qDebug()<<"FProcessManager::ExecuteProcess()"<<tf;
+        process->start(tf);
     }
 }
 
@@ -44,9 +48,11 @@ void FProcessManager::processOutput()
 {
     QString text = process->readAllStandardOutput();
     processOutputString += text;
-    void (*processOutput)(QWidget *, QString) = processOutputQueue->first();
+    void (*processOutput)(QWidget *, QMap<QString, QString>, QString) = processOutputQueue->first();
+    QMap<QString, QString> parameters = parameterQueue->first();
+
     if (processOutput != nullptr)
-        processOutput(parentWidget(), text);
+        processOutput(parentWidget(), parameters, text);
 //    qDebug() << "processOutput" << text;  // read normal output
 //    qDebug() << process->readAllStandardError();  // read error channel
 }
@@ -56,7 +62,9 @@ void FProcessManager::processFinished(int exitCode , QProcess::ExitStatus exitSt
     QStringList processOutputStringList = processOutputString.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
 
     processOutputQueue->takeFirst(); //remove it
-    void (*processResult)(QWidget *, QString, QStringList) = processResultsQueue->takeFirst();
+    void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList) = processResultsQueue->takeFirst();
+    QMap<QString, QString> parameters = parameterQueue->takeFirst();
+
     if (processResult != nullptr)
     {
 //        qDebug()<<"processFinished"<<exitCode<<exitStatus<<process->program()<<process->arguments()<<processResult;
@@ -65,7 +73,7 @@ void FProcessManager::processFinished(int exitCode , QProcess::ExitStatus exitSt
         {
             command += " " + process->arguments()[i];
         }
-        processResult(parentWidget(), command, processOutputStringList);
+        processResult(parentWidget(), command, parameters, processOutputStringList);
     }
     ExecuteProcess();
 }

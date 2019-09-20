@@ -75,16 +75,9 @@ FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
     editContextMenu->addAction(new QAction("Delete",editContextMenu));
     connect(editContextMenu->actions().last(), SIGNAL(triggered()), this, SLOT(onEditDelete()));
 
-//    editItemModel->moveRows()
-
-//    QString lastFolder = QSettings().value("LastFolder").toString();
-//    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
-//    {
-//        onFolderIndexClicked(QModelIndex());
-//        loadModel(QSettings().value("LastFolder").toString());
-//    }
-
     processManager = new FProcessManager(this);
+
+    srtFileItemModel = new QStandardItemModel(this);
 
 }
 
@@ -125,10 +118,10 @@ void FEditTableView::onSectionMoved(int logicalIndex, int oldVisualIndex, int ne
 //    sortByColumn(orderAtLoadIndex, Qt::AscendingOrder);
 }
 
-void FEditTableView::onFolderIndexClicked(QModelIndex index)
+void FEditTableView::onFolderIndexClicked(QModelIndex )//index
 {
     selectedFolderName = QSettings().value("LastFolder").toString();
-    qDebug()<<"FEditTableView::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
+    qDebug()<<"FEditTableView::onFolderIndexClicked"<<selectedFolderName;
     loadModel(selectedFolderName);
 
 //        QStandardItemModel *modelx = qobject_cast<QStandardItemModel *>(model());
@@ -138,15 +131,16 @@ void FEditTableView::onFolderIndexClicked(QModelIndex index)
 
 }
 
-void FEditTableView::onFileIndexClicked(QModelIndex index)
+void FEditTableView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
 {
     qDebug()<<"FEditTableView::onFileIndexClicked"<<index.data().toString();
 
+    selectedFolderName = QSettings().value("LastFileFolder").toString();
     selectedFileName = index.data().toString();
 
     selectEdits();
 
-    emit fileIndexClicked(index);
+    emit fileIndexClicked(index, selectedIndices);
     emit editsChanged(editProxyModel);
 }
 
@@ -310,10 +304,10 @@ void FEditTableView::onFileDelete(QString fileName)
 void FEditTableView::onTrim(QString fileName)
 {
     QString code = nullptr;
-    for (int i = 0; i < editItemModel->rowCount(); i++) // for each edit of file
+    for (int row = 0; row < editItemModel->rowCount(); row++) // for each edit of file
     {
-        QTime inTime = QTime::fromString(editItemModel->index(i,inIndex).data().toString(),"HH:mm:ss.zzz");
-        QTime outTime = QTime::fromString(editItemModel->index(i,outIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime inTime = QTime::fromString(editItemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(editItemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
         int deltaIn = qMin(1000, inTime.msecsSinceStartOfDay());
         inTime = inTime.addMSecs(-deltaIn);
@@ -324,45 +318,55 @@ void FEditTableView::onTrim(QString fileName)
 //                qDebug()<<i<<srtItemModel->index(i,inIndex).data().toString()<<srtItemModel->index(i,outIndex).data().toString();
 //                qDebug()<<"times"<<inTime<< deltaIn<< outTime<< deltaOut<< duration<<ui->videoWidget->m_player->duration();
 
-        QString targetFileName = selectedFolderName + fileName;
+        QString targetFileName = fileName;
         int lastIndex = targetFileName.lastIndexOf(".");
         if (lastIndex > -1)
             targetFileName = targetFileName.left(lastIndex) + "+" + QString::number(inTime.msecsSinceStartOfDay()) + "ms" + targetFileName.mid(lastIndex);
         else
             targetFileName = targetFileName + "+" + QString::number(inTime.msecsSinceStartOfDay()) + "ms";
-        code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(targetFileName).replace("/", "//") + "\"";
+        code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
 
-        emit addLogEntry("trim");
-        emit addLogToEntry("trim", "Start trim of " + targetFileName + "...");
-        processManager->startProcess(code, [](QWidget *parent, QString result)
+        emit addLogEntry("trim " + targetFileName);
+        emit addLogToEntry("trim " + targetFileName, "Start trim of " + targetFileName + "...");
+        QMap<QString, QString> parameters;
+        parameters["targetFileName"] = targetFileName;
+        processManager->startProcess(code, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
         {
             FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-            emit editTableView->addLogToEntry("trim", result);
-        }, [] (QWidget *parent, QString, QStringList result)
+            emit editTableView->addLogToEntry("trim " + parameters["targetFileName"], result);
+        }, [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
         {
             FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-//                    qDebug()<<"trim"<<parent <<command<< result;
-            emit editTableView->addLogToEntry("trim", result.join("\n"));
+                    qDebug()<<"trim"<<parent <<command;
+//            emit editTableView->addLogToEntry("trim ", result.join("\n"));
         });
 
-        if (false)
+//        if (false)
         {
-            emit addLogToEntry("trim", "Start updating metadata of " + targetFileName + "...");
+            emit addLogEntry("property update " + targetFileName);
+
+            emit addLogToEntry("property update " + targetFileName, "Start updating metadata of " + targetFileName + "...");
             QString attributeString = "";
             QStringList texts;
             texts << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model";
             for (int iText = 0; iText < texts.count(); iText++)
             {
-                QVariant value;// = metadata->getItemVariantValue(srtItemModel->index(i,fileIndex).data().toString(),texts[iText]);
-                attributeString += " -" + texts[iText] + "=\"" + value.toString() + "\"";
+                QString *value = new QString();
+                emit getPropertyValue(fileName, texts[iText], value);
+
+//                QVariant value;// = metadata->getItemVariantValue(srtItemModel->index(i,fileIndex).data().toString(),texts[iText]);
+                attributeString += " -" + texts[iText] + "=\"" + *value + "\"";
 
             }
 
-            processManager->startProcess("exiftool" + attributeString + " -overwrite_original \"" + QString(targetFileName).replace("/", "//") + "\"", nullptr, [] (QWidget *parent, QString, QStringList result)
+            QString command = "exiftool" + attributeString + " -overwrite_original \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
+            processManager->startProcess(command, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
             {
                 FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-                emit editTableView->addLogToEntry("trim", result.join("\n"));
+                emit editTableView->addLogToEntry("property update " + parameters["targetFileName"], result.join("\n"));
     //                    qDebug()<<"exiftool update date"<<parent <<command<< result;
+                editTableView->onFolderIndexClicked(QModelIndex());
+
             });
 
         }
@@ -373,19 +377,27 @@ void FEditTableView::onTrim(QString fileName)
         if (lastIndex > -1)
             fileName = targetFileName.left(lastIndex) + ".srt";
 
-        QFile file(fileName);
+        QFile file(selectedFolderName + fileName);
         if ( file.open(QIODevice::WriteOnly) )
         {
             QTextStream stream( &file );
+            FStarRating starRating = qvariant_cast<FStarRating>(editItemModel->index(row, ratingIndex).data());
+
+            QString srtContentString = "";
+            srtContentString += "<o>" + editItemModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
+            srtContentString += "<s>" + QString::number(starRating.starCount()) + "</s>";
+            srtContentString += "<r>" + editItemModel->index(row,repeatIndex).data().toString() + "</r>";
+            srtContentString += "<h>" + editItemModel->index(row, FGlobal().hintIndex).data().toString() + "</h>";
+            srtContentString += "<t>" + editItemModel->index(row,tagIndex).data().toString() + "</t>";
 
             stream << 1 << endl;
             stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  1000 / frameRate).toString("HH:mm:ss.zzz") << endl;
-            stream << editItemModel->index(i,tagIndex).data().toString() << endl;
+            stream << srtContentString << endl;
             stream << endl;
 
             file.close();
         }
-    } //for
+    } //for each edit of file
 }
 
 void FEditTableView::onPropertiesLoaded()
@@ -401,22 +413,29 @@ void FEditTableView::onPropertiesLoaded()
 void FEditTableView::onEditDelete()
 {
     QModelIndexList indexList = selectionModel()->selectedIndexes();
-    qDebug()<<"onEditDelete"<<selectionModel()<<indexList.count();
-    for (int i=indexList.count() - 1; i>=0 ;i--)
+    qDebug()<<"FEditTableView::onEditDelete"<<selectionModel()<<indexList.count();
+
+    QMap<int, int> rowMap; //sorted by fileName and inTime
+    for (int i=0; i < indexList.count() ;i++)
     {
-//        if (indexList[i].column() == 0) //first column
+        QModelIndex currentModelIndex = indexList[i];
+        if (currentModelIndex.row() >= 0 && currentModelIndex.column() >= 0)
         {
-            QModelIndex currentModelIndex = indexList[i];
-            qDebug()<<"  currentModelIndex"<<currentModelIndex.row()<<currentModelIndex.column()<<currentModelIndex.data();
-            if (currentModelIndex.row() >= 0 && currentModelIndex.column() >= 0)
-            {
-
-                editItemModel->takeRow(currentModelIndex.row());
-
-                emit editsChanged(editProxyModel);
-            }
+            rowMap[currentModelIndex.row()] = i;
         }
     }
+
+    QMapIterator<int, int> rowIterator(rowMap);
+    rowIterator.toBack();
+    while (rowIterator.hasPrevious()) //all files in reverse order
+    {
+        rowIterator.previous();
+        qDebug()<<"  FEditTableView::onEditDelete"<<rowIterator.key();
+        editItemModel->takeRow(rowIterator.key());
+    }
+
+    emit editsChanged(editProxyModel);
+    emit editsChangedFromVideo(editProxyModel);
 }
 
 void FEditTableView::onVideoPositionChanged(int progress, int row, int relativeProgress)
@@ -467,7 +486,6 @@ void FEditTableView::onVideoPositionChanged(int progress, int row, int relativeP
     }
 }
 
-
 void FEditTableView::onInChanged(int row, int in)
 {
     QTime newInTime = QTime::fromMSecsSinceStartOfDay(in);
@@ -483,7 +501,6 @@ void FEditTableView::onInChanged(int row, int in)
             editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(outTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
         //            setCurrentIndex(editItemModel->index(i,inIndex));
             emit editsChangedFromVideo(editProxyModel);
-
         }
     }
 
@@ -506,12 +523,11 @@ void FEditTableView::onOutChanged(int row, int out)
             emit editsChangedFromVideo(editProxyModel);
         }
     }
-
 }
 
 QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
 {
-    qDebug()<<"FEditTableView::read"<<folderName << fileName;
+//    qDebug()<<"FEditTableView::read"<<folderName << fileName;
     QString srtFileName;
 //    fileName = QString(mediaFilePath.toString()).replace(".mp4",".srt").replace(".jpg",".srt").replace(".avi",".srt").replace(".wmv",".srt");
 //    fileName.replace(".MP4",".srt").replace(".JPG",".srt").replace(".AVI",".srt").replace(".WMV",".srt");
@@ -660,7 +676,18 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
 
 void FEditTableView::scanDir(QDir dir)
 {
-    dir.setNameFilters(QStringList("*.mp4"));
+    dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
+    QStringList dirList = dir.entryList();
+    for (int i=0; i<dirList.size(); ++i)
+    {
+        QString newPath = QString("%1/%2").arg(dir.absolutePath()).arg(dirList.at(i));
+        scanDir(QDir(newPath));
+    }
+
+    QStringList filters;
+    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv";
+    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV";
+    dir.setNameFilters(filters);
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks);
 
     qDebug() << "FEditTableView::scanDir" << dir.path();
@@ -669,80 +696,64 @@ void FEditTableView::scanDir(QDir dir)
     for (int i=0; i<fileList.count(); i++)
     {
         QStandardItemModel *srtItemModel = read(dir.path() + "/", fileList[i]);
+
+        QList<QStandardItem *> items;
+        items.append(new QStandardItem(dir.path() + "/"));
+        items.append(new QStandardItem(fileList[i]));
+        srtFileItemModel->appendRow(items);
+
         while (srtItemModel->rowCount()>0)
             editItemModel->appendRow(srtItemModel->takeRow(0));
     }
 
-    dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
-    QStringList dirList = dir.entryList();
-    for (int i=0; i<dirList.size(); ++i)
-    {
-        QString newPath = QString("%1/%2").arg(dir.absolutePath()).arg(dirList.at(i));
-        scanDir(QDir(newPath));
-    }
 }
 
 void FEditTableView::loadModel(QString folderName)
 {
     editCounter = 1;
     editItemModel->removeRows(0, editItemModel->rowCount());
+    srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
     scanDir(QDir(folderName));
 }
 
-void FEditTableView::saveModel()
+void FEditTableView::saveModel(QString folderName, QString fileName)
 {
-    qDebug()<<"FEditTableView::saveModel"<<editItemModel->rowCount();
-
-    QMap<QString, QMap<QString, int>> editMap;
+    QMap<QString, int> inMap; //sorted by fileName and inTime
     for (int row = 0; row<editItemModel->rowCount();row++)
     {
-        QString folderName = editItemModel->index(row, folderIndex).data().toString();
-        QString fileName = editItemModel->index(row, fileIndex).data().toString();
-        QString inTime = editItemModel->index(row, inIndex).data().toString();
-        editMap[fileName][inTime] = row;
+        if (editItemModel->index(row, folderIndex).data().toString() == folderName && editItemModel->index(row, fileIndex).data().toString() == fileName)
+        {
+            QString inTime = editItemModel->index(row, inIndex).data().toString();
+            inMap[inTime] = row;
+        }
     }
 
-    QString previousFileName = "";
-    QFile file;
+    qDebug()<<"FEditTableView::saveModel"<<editItemModel->rowCount()<<folderName<<fileName<<inMap.count();
 
-    QMapIterator<QString, QMap<QString, int>> fileIterator(editMap);
-    while (fileIterator.hasNext()) //all files
+    int lastIndex = fileName.lastIndexOf(".");
+    QString srtFileName = fileName.left(lastIndex) + ".srt";
+
+    if (inMap.count() > 0)
     {
-        fileIterator.next();
-        qDebug()<<"File"<<fileIterator.key();
+        QFile file;
         int editPerFileCounter = 0;
+        editPerFileCounter = 1;
 
-        QMapIterator<QString, int> inIterator(fileIterator.value());
+        qDebug()<<"FEditTableView::saveModel"<<srtFileName;
+
+        file.setFileName(folderName + srtFileName);
+        file.open(QIODevice::WriteOnly);
+
+        QMapIterator<QString, int> inIterator(inMap);
         while (inIterator.hasNext()) //all files
         {
             inIterator.next();
 
             int row = inIterator.value();
 
-            QString folderName = editItemModel->index(row, folderIndex).data().toString();
-            QString fileName = editItemModel->index(row, fileIndex).data().toString();
-
-            if (fileName != previousFileName)
-            {
-                editPerFileCounter = 1;
-                qDebug()<<"FEditTableView::saveModel"<<fileName;
-                int lastIndex = fileName.lastIndexOf(".");
-
-                if (file.isOpen())
-                    file.close();
-
-                file.setFileName(folderName + fileName.left(lastIndex) + ".srt");
-    //            file = file (folderName + fileName.left(lastIndex) + ".srt");
-                file.open(QIODevice::WriteOnly);
-    //            stream.setDevice(QIODevice(file));
-            }
-
             QTextStream stream(&file);
 
             FStarRating starRating = qvariant_cast<FStarRating>(editItemModel->index(row, ratingIndex).data());
-
-            qDebug()<<"  FEditTableView::saveModel"<<editItemModel->index(row, inIndex).data().toString()<<starRating.starCount()<<editItemModel->index(row, orderAtLoadIndex).data().toString()<<editItemModel->index(row, orderAfterMovingIndex).data().toString();
-    //        qDebug()<<"editItemModel->index(i,inIndex).data().toString()"<<editItemModel->index(i,inIndex).data().toString();
 
             QString srtContentString = "";
             srtContentString += "<o>" + editItemModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
@@ -755,12 +766,16 @@ void FEditTableView::saveModel()
             stream << editItemModel->index(row,inIndex).data().toString() << " --> " << editItemModel->index(row,outIndex).data().toString() << endl;
             stream << srtContentString << endl;
             stream << endl;
-            previousFileName = fileName;
             editPerFileCounter++;
         }
+        file.close();
     }
-    file.close();
-
+    else
+    {
+        QFile file(folderName + srtFileName);
+        if (file.exists())
+           file.remove();
+    }
 }
 
 void FEditTableView::onEditFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView )
@@ -781,7 +796,7 @@ void FEditTableView::onEditFilterChanged(FStarEditor *starEditorFilterWidget, QL
         sep = ";";
     }
 
-    QString regExp = QString::number(starEditorFilterWidget->starRating().starCount()) + ";" + string1 + ";" + string2;
+    QString regExp = QString::number(starEditorFilterWidget->starRating().starCount()) + "|" + string1 + "|" + string2;
     qDebug()<<"FEditTableView::onEditFilterChanged"<<starEditorFilterWidget->starRating().starCount()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount()<<regExp;
 
     editProxyModel->setFilterRegExp(QRegExp(regExp, Qt::CaseInsensitive,
