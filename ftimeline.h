@@ -20,6 +20,7 @@ class FTimeline : public QWidget
     Q_OBJECT
 public:
     explicit FTimeline(QWidget *parent = nullptr);
+    QStandardItemModel *timelineModel;
 private:
     QAction *actionPlay;
     QAction *actionPause;
@@ -46,6 +47,7 @@ private:
     int stretchTime;
 //    Qt::CheckState transitionChecked;
 
+    void stretchDuration(int duration);
 public slots:
     void onDurationChanged(int duration);
     void onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel);
@@ -59,6 +61,7 @@ private slots:
     void onScrubberSeeked(int mseconds);
 signals:
     void timelinePositionChanged(int position, int editRow, int relativeProgress);
+    void getPropertyValue(QString fileName, QString key, QString *value);
 
 };
 

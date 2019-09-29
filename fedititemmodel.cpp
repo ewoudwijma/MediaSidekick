@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <QMimeData>
 
+#include "fglobal.h"
+
 FEditItemModel::FEditItemModel(QObject *parent)
     : QStandardItemModel(parent)
 {
@@ -21,11 +23,12 @@ bool FEditItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
         QMap<int,  QVariant> roleDataMap;
         stream >> row >> col >> roleDataMap;
 
-        qDebug()<<"  roleDataMap"<<row<<col<<parent.data().toString()<<roleDataMap[0];
+//        qDebug()<<"  roleDataMap"<<row<<col<<parent.data().toString()<<roleDataMap[0];
         if (parent.data().toString() == "")
             setData(parent, roleDataMap[0].toString());
         else
             setData(parent, parent.data().toString() + ";" + roleDataMap[0].toString());
+        setData(parent.model()->index(parent.row(), changedIndex), "yes");
    }
 
     return QStandardItemModel::dropMimeData(data, action, row, column, parent);

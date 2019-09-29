@@ -14,8 +14,8 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileModel = new QFileSystemModel();
 
     QStringList filters;
-    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv";
-    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV";
+    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts";
+    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
     fileModel->setNameFilters(filters);
     fileModel->setNameFilterDisables(false);
 
@@ -49,7 +49,7 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onTrim);
 
     fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
-//    connect(fileContextMenu->actions().last(), SIGNAL(triggered()), this, SLOT(onFileDelete()));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileRename);
 
     fileContextMenu->addAction(new QAction("Delete",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileDelete);
@@ -78,7 +78,13 @@ void FFilesTreeView::onIndexClicked(QModelIndex index)
 void FFilesTreeView::loadModel(QUrl folderUrl)
 {
     fileModel->setRootPath(folderUrl.toString());
-    setRootIndex(fileModel->index(folderUrl.toString()));
+    int indexOf = folderUrl.toString().lastIndexOf("/");
+    QString folderName = folderUrl.toString().left(indexOf);
+//    indexOf = folderName.lastIndexOf("/");
+//    folderName = folderName.left(indexOf);
+
+    qDebug()<<"FFilesTreeView::loadModel"<<folderUrl<<indexOf<<folderName;
+    setRootIndex(fileModel->index(folderName));
 }
 
 void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
@@ -105,6 +111,60 @@ void FFilesTreeView::onTrim()
     }
 }
 
+void FFilesTreeView::onFileRename()
+{
+    QStringList fileNameList;
+    QStringList newFileNameList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            fileNameList << indexList[i].data().toString();
+
+            QString *generatedName = new QString();
+            emit getPropertyValue(indexList[i].data().toString(), "GeneratedName", generatedName);
+
+            newFileNameList << *generatedName;
+        }
+    }
+
+    QString folderName = QSettings().value("LastFolder").toString();
+
+    QMessageBox::StandardButton reply;
+     reply = QMessageBox::question(this, "Rename " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to rename " + fileNameList.join(", ") + " and its supporting files (srt and txt) to " + newFileNameList.join(", ") + ".* ?",
+                                   QMessageBox::Yes|QMessageBox::No);
+
+     if (reply == QMessageBox::Yes)
+     {
+
+         for (int i=0; i< fileNameList.count();i++)
+         {
+//             QString fileName = fileNameList[i];
+             emit fileDelete(fileNameList[i]); //to stop the video
+             QFile file(folderName + fileNameList[i]);
+             QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
+             qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
+             if (file.exists())
+                file.rename(folderName + newFileNameList[i] + extensionString);
+
+             int lastIndex = fileNameList[i].lastIndexOf(".");
+             if (lastIndex > -1)
+             {
+                 QFile *file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
+                 if (file->exists())
+                    file->rename(folderName + newFileNameList[i] + ".srt");
+
+                 file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
+                 if (file->exists())
+                    file->rename(folderName + newFileNameList[i] + ".txt");
+             }
+         }
+     }
+
+     fileContextMenu->close();
+}
+
 void FFilesTreeView::onFileDelete()
 {
     QStringList fileNameList;
@@ -113,7 +173,6 @@ void FFilesTreeView::onFileDelete()
     {
         if (indexList[i].column() == 0) //first column
         {
-//            qDebug()<<"indexList[i].data()"<<indexList[i].row()<<indexList[i].column()<<indexList[i].data();
             fileNameList << indexList[i].data().toString();
         }
     }
@@ -123,7 +182,6 @@ void FFilesTreeView::onFileDelete()
     QMessageBox::StandardButton reply;
      reply = QMessageBox::question(this, "Delete " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete " + fileNameList.join(", ") + " and its supporting files (srt and txt)?",
                                    QMessageBox::Yes|QMessageBox::No);
-     //mapFromGlobal(QCursor::pos());
 
      if (reply == QMessageBox::Yes)
      {
@@ -151,12 +209,7 @@ void FFilesTreeView::onFileDelete()
          }
      }
 
-//    for (int i = 0; i< selectedIndexes().count();i++)
-//    {
-//        qDebug()<<""<<
-//    }
      fileContextMenu->close();
-
 }
 
 void FFilesTreeView::onFolderIndexClicked(QModelIndex index)

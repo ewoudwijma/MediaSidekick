@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
 
-    QPixmap pixmap(":/fiprelogo.png");
+    QPixmap pixmap(":/fiprelogo.ico");
     QSplashScreen *splash = new QSplashScreen(pixmap);
 
     //    splash.set

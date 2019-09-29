@@ -37,7 +37,7 @@ QWidget *FPropertyItemDelegate::createEditor(QWidget *parent,
 void FPropertyItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
-//    qDebug()<<"setEditorData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
+    qDebug()<<"setEditorData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
     if (index.model()->index(index.row(), 1,index.parent()).data().toString() == "QDateTime")
     {
         QDateTimeEdit* dtEditor = qobject_cast<QDateTimeEdit*>(editor);
@@ -56,7 +56,7 @@ void FPropertyItemDelegate::setEditorData(QWidget *editor,
 void FPropertyItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
-//    qDebug()<<"setModelData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
+    qDebug()<<"setModelData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
     if (index.model()->index(index.row(), 1,index.parent()).data().toString() == "QDateTime")
     {
         QDateTimeEdit* dtEditor = qobject_cast<QDateTimeEdit*>(editor);

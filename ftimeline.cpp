@@ -14,6 +14,11 @@ FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
 
     setupActions(this);
 
+    timelineModel = new QStandardItemModel(this);
+    QStringList labels;
+    labels << "OrderBL" << "OrderAL"<<"OrderAM"<<"Changed"<< "Path" << "File"<<"Fps"<<"In"<<"Out"<<"Duration"<<"Rating"<<"Repeat"<<"Hint"<<"Tags";
+    timelineModel->setHorizontalHeaderLabels(labels);
+
     m_scrubber = new SScrubBar(this);
 //    m_scrubber->setFocusPolicy(Qt::NoFocus);
     m_scrubber->setObjectName("m_scrubber");
@@ -135,38 +140,94 @@ void FTimeline::onDurationChanged(int duration)
     actionSkipNext->setEnabled(m_isSeekable);
     actionRewind->setEnabled(m_isSeekable);
     actionFastForward->setEnabled(m_isSeekable);
+}
 
+void FTimeline::stretchDuration(int oldDuration)
+{
+    double transitionTimeMSecs = transitionTime * 1000.0 / frameRate;
 
+//    double multiplier = 1000 * (stretchTime *1000.0/frameRate ) / (oldDuration);
+
+    double axiDelta = 0;
+    double duration = 0;
+    for (int row = 0; row < timelineModel->rowCount();row++)
+    {
+        QString fileName = timelineModel->index(row,fileIndex).data().toString();
+        QTime inTime = QTime::fromString(timelineModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(timelineModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+
+        double originalEditDuration = inTime.msecsTo(outTime) + 1000.0 / frameRate;
+        double addedEditDuration;// = originalEditDuration * (multiplier - 1.0); //can also be negative!
+
+        if (timelineModel->rowCount() == 1)
+            addedEditDuration = (originalEditDuration) * (stretchTime *1000.0/frameRate ) / (oldDuration) - originalEditDuration;
+        else if (row == 0) //first
+        {
+            addedEditDuration = (originalEditDuration - transitionTimeMSecs / 2) * (stretchTime *1000.0/frameRate ) / (oldDuration) + transitionTimeMSecs / 2 - originalEditDuration;
+        }
+        else if (row == timelineModel->rowCount() - 1) //last
+        {
+            addedEditDuration = (originalEditDuration - transitionTimeMSecs / 2) * (stretchTime *1000.0/frameRate ) / (oldDuration) + transitionTimeMSecs / 2 - originalEditDuration;
+        }
+        else
+        {
+            addedEditDuration = (originalEditDuration - transitionTimeMSecs) * (stretchTime *1000.0/frameRate ) / (oldDuration) + transitionTimeMSecs - originalEditDuration;
+        }
+
+        addedEditDuration += axiDelta;
+
+        double addedEditDurationRoundedToFPS = FGlobal().msec_rounded_to_fps(addedEditDuration);
+
+        qDebug()<<""<<oldDuration<<stretchTime *1000.0/frameRate<<(stretchTime *1000.0/frameRate ) / (oldDuration)<<axiDelta<<addedEditDurationRoundedToFPS;
+
+        axiDelta = addedEditDuration - addedEditDurationRoundedToFPS;
+
+        if (row == timelineModel->rowCount() - 1) //last
+        {
+            addedEditDuration += axiDelta;
+
+            addedEditDurationRoundedToFPS = FGlobal().msec_rounded_to_fps(addedEditDuration);
+            axiDelta = addedEditDuration - addedEditDurationRoundedToFPS;
+        }
+
+        QString *durationString = new QString();
+        emit getPropertyValue(fileName, "Duration", durationString); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+
+        QTime durationTime = QTime::fromString(*durationString,"h:mm:ss");
+        if (durationTime.msecsSinceStartOfDay() == 0)
+            durationTime = QTime::fromMSecsSinceStartOfDay(999000);
+
+        inTime = inTime.addMSecs(-qMin(int(addedEditDurationRoundedToFPS/2), inTime.msecsSinceStartOfDay()));
+        outTime = outTime.addMSecs(qMin(int(addedEditDurationRoundedToFPS/2),durationTime.msecsSinceStartOfDay() - outTime.msecsSinceStartOfDay()));
+
+        timelineModel->setData(timelineModel->index(row, inIndex), inTime.toString("HH:mm:ss.zzz"));
+        timelineModel->setData(timelineModel->index(row, outIndex), outTime.toString("HH:mm:ss.zzz"));
+        timelineModel->setData(timelineModel->index(row, durationIndex), QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(outTime) + 1000.0/frameRate).toString("HH:mm:ss.zzz"));
+
+        duration+=inTime.msecsTo(outTime) + 1000.0 / frameRate;// + addedEditDurationRoundedToFPS;
+
+        qDebug()<<"FTimeline::stretchDuration"<<row<<inTime<<outTime<<originalEditDuration<<addedEditDuration<<addedEditDurationRoundedToFPS<<duration <<axiDelta<<fileName<<durationTime<<*durationString;
+    }
 }
 
 void FTimeline::onEditsChangedFromVideo(FEditSortFilterProxyModel *editProxyModel)
 {
-    double originalDuration = 0;
-    double transitionTimeMSecs = transitionTime * 1000 / frameRate;
+    double originalDuration = 0; //double because of duration of 1 frame
+    double transitionTimeMSecs = transitionTime * 1000.0 / frameRate;
 
-    QMap<int,int> reorderMap;
     for (int row = 0; row < editProxyModel->rowCount();row++)
     {
-        reorderMap[editProxyModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
-    }
-
-    int row = 0;
-    QMapIterator<int, int> orderIterator(reorderMap);
-    while (orderIterator.hasNext()) //all files
-    {
-        orderIterator.next();
-        int row = orderIterator.value();
         QTime inTime = QTime::fromString(editProxyModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
         QTime outTime = QTime::fromString(editProxyModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
-        if (row == 0) //first
-            originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2 ;
+        if (editProxyModel->rowCount() == 1)
+            originalDuration+= inTime.msecsTo(outTime) + 1000.0 / frameRate;
+        else if (row == 0) //first
+            originalDuration+= inTime.msecsTo(outTime) + 1000.0 / frameRate - transitionTimeMSecs/2 ;
         else if (row == editProxyModel->rowCount() - 1) //last
-            originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs/2 ;
+            originalDuration+= inTime.msecsTo(outTime) + 1000.0 / frameRate - transitionTimeMSecs/2 ;
         else
-            originalDuration+= inTime.msecsTo(outTime) + 1000 / frameRate -transitionTimeMSecs ;
-
-        row++;
+            originalDuration+= inTime.msecsTo(outTime) + 1000.0 / frameRate - transitionTimeMSecs ;
     }
 
     double multiplier = 1;
@@ -176,64 +237,193 @@ void FTimeline::onEditsChangedFromVideo(FEditSortFilterProxyModel *editProxyMode
         multiplier = (stretchTime *1000/frameRate ) / (originalDuration);
     }
 
+//    qDebug()<<"FTimeline::onEditsChangedFromVideo"<<stretchTime *1000/frameRate<<originalDuration<<multiplier;
+
     m_scrubber->clearInOuts();
+    timelineModel->removeRows(0, timelineModel->rowCount());
+
+    double axiDelta = 0;
     double duration = 0;
-    double previousDuration = 0;
-    row = 0;
-    orderIterator.toFront();
+    for (int row = 0; row < editProxyModel->rowCount();row++)
+    {
+        QString fileName = editProxyModel->index(row,fileIndex).data().toString();
+        QTime inTime = QTime::fromString(editProxyModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(editProxyModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+
+        double originalEditDuration = inTime.msecsTo(outTime) + 1000.0 / frameRate;
+        double addedEditDuration;// = originalEditDuration * (multiplier - 1.0); //can also be negative!
+
+        if (editProxyModel->rowCount() == 1)
+            addedEditDuration = (originalEditDuration) * multiplier - originalEditDuration;
+        else if (row == 0) //first
+        {
+            addedEditDuration = (originalEditDuration - transitionTimeMSecs / 2) * multiplier + transitionTimeMSecs / 2 - originalEditDuration;
+        }
+        else if (row == editProxyModel->rowCount() - 1) //last
+        {
+            addedEditDuration = (originalEditDuration - transitionTimeMSecs / 2) * multiplier + transitionTimeMSecs / 2 - originalEditDuration;
+        }
+        else
+        {
+            addedEditDuration = (originalEditDuration - transitionTimeMSecs) * multiplier + transitionTimeMSecs - originalEditDuration;
+        }
+
+        addedEditDuration += axiDelta;
+
+        double addedEditDurationRoundedToFPS = FGlobal().msec_rounded_to_fps(addedEditDuration);
+        axiDelta = addedEditDuration - addedEditDurationRoundedToFPS;
+
+        if (row == editProxyModel->rowCount() - 1) //last
+        {
+            addedEditDuration += axiDelta;
+
+            addedEditDurationRoundedToFPS = FGlobal().msec_rounded_to_fps(addedEditDuration);
+            axiDelta = addedEditDuration - addedEditDurationRoundedToFPS;
+        }
+
+        QString *durationString = new QString();
+        emit getPropertyValue(fileName, "Duration", durationString); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+
+        QTime durationTime = QTime::fromString(*durationString,"h:mm:ss");
+        if (durationTime.msecsSinceStartOfDay() == 0)
+            durationTime = QTime::fromMSecsSinceStartOfDay(999000);
+
+        inTime = inTime.addMSecs(-qMin(int(addedEditDurationRoundedToFPS/2), inTime.msecsSinceStartOfDay()));
+        outTime = outTime.addMSecs(qMin(int(addedEditDurationRoundedToFPS/2),durationTime.msecsSinceStartOfDay() - outTime.msecsSinceStartOfDay()));
+
+        QList<QStandardItem *> items;
+        for (int column=0;column<editProxyModel->columnCount();column++)
+        {
+            if (column == inIndex)
+                items.append(new QStandardItem(inTime.toString("HH:mm:ss.zzz")));
+            else if (column == outIndex)
+                items.append(new QStandardItem(outTime.toString("HH:mm:ss.zzz")));
+            else if (column == durationIndex)
+                items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(outTime) + 1000.0/frameRate).toString("HH:mm:ss.zzz")));
+//            items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(originalEditDuration + addedEditDurationRoundedToFPS).toString("HH:mm:ss.zzz")));
+            else
+                items.append(new QStandardItem(editProxyModel->index(row,column).data().toString()));
+        }
+
+        timelineModel->appendRow(items);
+
+        duration+=inTime.msecsTo(outTime) + 1000.0 / frameRate;// + addedEditDurationRoundedToFPS;
+
+//        qDebug()<<"FTimeline::onEditsChangedFromVideo"<<row<<inTime<<outTime<<originalEditDuration<<addedEditDuration<<addedEditDurationRoundedToFPS<<duration <<axiDelta<<fileName<<durationTime<<*durationString;
+    }
+
+    //set order of edits to file order
+    QMap<int,int> reorderMap;
+    for (int row = 0; row < timelineModel->rowCount();row++)
+    {
+        reorderMap[timelineModel->index(row, orderBeforeLoadIndex).data().toInt()] = row;
+    }
+
+    //combine overlapping
+    QTime previousInTime = QTime();
+    QTime previousOutTime = QTime();
+    QString previousFileName = ""; //tbd: edits are not ordered per filename...
+
+    QMapIterator<int, int> orderIterator(reorderMap);
     while (orderIterator.hasNext()) //all files
     {
         orderIterator.next();
         int row = orderIterator.value();
-        QTime inTime = QTime::fromString(editProxyModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
-        QTime outTime = QTime::fromString(editProxyModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
-//        int orderAfterMovingIndexx = editProxyModel->index(row, orderAfterMovingIndex).data().toInt();
-//        int orderAtLoadIndexx = editProxyModel->index(row, orderAtLoadIndex).data().toInt();
-        int editCounter = editProxyModel->index(row, orderBeforeLoadIndex).data().toInt();
+        QString fileName = timelineModel->index(row,fileIndex).data().toString();
+        QTime inTime = QTime::fromString(timelineModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(timelineModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
-        if (row == 0)
+        if (previousOutTime != QTime())
         {
-            double originalEditDuration = inTime.msecsTo(outTime) + 1000 / frameRate;
-            double addedEditDuration = originalDuration * (multiplier - 1); //can also be negative!
-
-            if (addedEditDuration > 0 && false)
+//            qDebug()<<"overlapping"<<row<<inTime.msecsTo(previousOutTime)<<inTime.toString("HH:mm:ss.zzz")<<outTime.toString("HH:mm:ss.zzz")<<previousInTime.toString("HH:mm:ss.zzz")<<previousOutTime.toString("HH:mm:ss.zzz");
+            if (previousFileName == fileName && FGlobal().msec_rounded_to_fps(inTime.msecsSinceStartOfDay()) <= FGlobal().msec_rounded_to_fps(previousOutTime.msecsSinceStartOfDay()) )
             {
-                duration+= addedEditDuration / 2;
-                m_scrubber->setInOutPoint(editCounter-1, previousDuration, duration);
-                previousDuration = duration;
-                duration += originalDuration;
-                m_scrubber->setInOutPoint(editCounter, previousDuration, duration);
-                previousDuration = duration;
-                duration+= addedEditDuration / 2;
-                m_scrubber->setInOutPoint(editCounter+1, previousDuration, duration);
+                qDebug()<<"overlapping"<<row<<inTime.msecsTo(previousOutTime)<<inTime.toString("HH:mm:ss.zzz")<<outTime.toString("HH:mm:ss.zzz")<<previousInTime.toString("HH:mm:ss.zzz")<<previousOutTime.toString("HH:mm:ss.zzz");
+                inTime = previousInTime;
+                timelineModel->setData(timelineModel->index(row,inIndex), inTime.toString("HH:mm:ss.zzz"));
+                timelineModel->setData(timelineModel->index(row,durationIndex), QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(outTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"));
+                timelineModel->setData(timelineModel->index(row-1,hintIndex), "overlapping");
             }
-            else
-            {
-                duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier - transitionTimeMSecs/2 ;
-                m_scrubber->setInOutPoint(editCounter, previousDuration, duration + transitionTimeMSecs / 2);
 
-            }
         }
-        else if (row == editProxyModel->rowCount() - 1)
+
+        previousFileName = fileName;
+        previousInTime = inTime;
+        previousOutTime = outTime;
+    }
+
+    //remove edits
+    duration = 0;
+//    if (false)
+    for (int row = timelineModel->rowCount() -1; row >=0;row--)
+    {
+        QString hint = timelineModel->index(row,hintIndex).data().toString();
+        if (hint == "overlapping")
+            timelineModel->takeRow(row);
+        else
         {
-            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate ) * multiplier - transitionTimeMSecs/2  ;
+            QTime inTime = QTime::fromString(timelineModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(timelineModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+            duration+=inTime.msecsTo(outTime) + 1000 / frameRate;
+        }
+    }
+//    qDebug()<<"duration after remove"<<duration;
+
+    if (duration > 0 && duration != stretchTime *1000/frameRate)
+    {
+//        stretchDuration(duration);
+    }
+
+    duration = 0;
+    double previousDuration = 0;
+
+    reorderMap.clear();
+    for (int row = 0; row < timelineModel->rowCount();row++)
+    {
+        QString hint = timelineModel->index(row,hintIndex).data().toString();
+        if (hint != "overlapping")
+            reorderMap[timelineModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
+    }
+
+    int counter = 0;
+    QMapIterator<int, int> orderIterator2(reorderMap);
+    while (orderIterator2.hasNext()) //all files
+    {
+        orderIterator2.next();
+        int row = orderIterator2.value();
+        QTime inTime = QTime::fromString(timelineModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(timelineModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+        int editCounter = timelineModel->index(row, orderBeforeLoadIndex).data().toInt();
+
+        if (reorderMap.count() == 1)
+        {
+            duration+= ((inTime.msecsTo(outTime) + 1000 / frameRate)) ;
+            m_scrubber->setInOutPoint(editCounter, previousDuration, duration);
+        }
+        else if (counter == 0) //first
+        {
+            duration+= ((inTime.msecsTo(outTime) + 1000 / frameRate) - transitionTimeMSecs/2) ;
+            m_scrubber->setInOutPoint(editCounter, previousDuration, duration + transitionTimeMSecs / 2);
+        }
+        else if (counter == reorderMap.count() - 1) //last
+        {
+            duration+= ((inTime.msecsTo(outTime) + 1000 / frameRate ) - transitionTimeMSecs/2)  ;
             m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration);
 
         }
         else
         {
-            duration+= (inTime.msecsTo(outTime) + 1000 / frameRate) * multiplier - transitionTimeMSecs;
-            m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration + transitionTimeMSecs / 2);
+            duration+= ((inTime.msecsTo(outTime) + 1000 / frameRate) - transitionTimeMSecs);
+            m_scrubber->setInOutPoint(editCounter, previousDuration - transitionTimeMSecs /2, duration + transitionTimeMSecs /2);
         }
-
-//        qDebug()<<"FTimeline::onEditsChangedFromVideo"<<row<<inTime.msecsTo(outTime)<<previousDuration<<duration;
+//        qDebug()<<"FTimeline::onEditsChangedFromVideo"<<previousDuration<<duration;
 
         previousDuration = duration;
-        row++;
+        counter++;
     }
 
-//    qDebug()<<"FTimeline::onEditsChangedFromVideo"<<editProxyModel->rowCount()<<stretchTime*1000/frameRate<<originalDuration<<multiplier<<duration;
+//    qDebug()<<"FTimeline::onEditsChangedFromVideo"<<editProxyModel->rowCount()<<stretchTime*1000/frameRate<<originalDuration<<multiplier<<duration<<transitionTimeMSecs;
 
     if (stretchTime == 0)
     {
@@ -242,8 +432,8 @@ void FTimeline::onEditsChangedFromVideo(FEditSortFilterProxyModel *editProxyMode
     }
     else
     {
-        m_scrubber->setScale(FGlobal().msec_rounded_to_fps(stretchTime * 1000 / frameRate));
-        m_durationLabel->setText(FGlobal().msec_to_time(originalDuration).prepend(" / ") + FGlobal().msec_to_time(stretchTime* 1000 / frameRate).prepend(" -> "));
+        m_scrubber->setScale(FGlobal().msec_rounded_to_fps(duration));
+        m_durationLabel->setText(FGlobal().msec_to_time(originalDuration).prepend(" / ") + FGlobal().msec_to_time(duration).prepend(" -> "));
     }
 }
 
@@ -268,7 +458,7 @@ void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgre
 
 void FTimeline::onTimelineWidgetsChanged(int p_transitionTime, Qt::CheckState p_transitionChecked, int p_stretchTime, Qt::CheckState p_stretchChecked, FEditTableView *editTableView)
 {
-    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitionTime;
+    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitionTime<<p_transitionChecked<<p_stretchTime<<p_stretchChecked;
     if (p_transitionChecked == Qt::Checked)
         transitionTime = p_transitionTime;
     else

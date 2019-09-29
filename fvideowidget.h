@@ -7,6 +7,7 @@
 
 #include <QtMultimediaWidgets/QVideoWidget>
 
+#include <QComboBox>
 #include <QLabel>
 #include <QMediaPlayer>
 #include <QModelIndex>
@@ -34,6 +35,9 @@ private:
     QAction *actionVolume;
     QAction *actionUpdateIn;
     QAction *actionUpdateOut;
+    QAction *actionStop;
+    QAction *actionMute;
+    QComboBox *speedComboBox;
 
     QVBoxLayout *parentLayout;
     SScrubBar* m_scrubber;
@@ -52,6 +56,8 @@ private:
 
     bool isTimelinePlaymode;
     int lastHighlightedRow;
+
+    bool isLoading;
 
 public slots:
     void onFolderIndexClicked(QModelIndex index);
@@ -76,6 +82,11 @@ private slots:
     void onPlayerStateChanged(QMediaPlayer::State state);
     void onScrubberInChanged(int row, int in);
     void onScrubberOutChanged(int row, int out);
+    void onMutedChanged(bool muted);
+    void onMute();
+    void onStop();
+    void onSpeedChanged(QString speed);
+    void onPlaybackRateChanged(qreal rate);
 signals:
     void videoPositionChanged(int position, int editRow, int relativeProgress);
     void inChanged(int row, int in);

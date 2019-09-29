@@ -27,14 +27,16 @@ void FGenerate::s(QString inputString, QString arg1, QString arg2, QString arg3)
         stream<<inputString<<endl;
 }
 
-void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString target, QString size, QProgressBar *p_progressBar)
+void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QString size, double pframeRate, int transitionTimeFrames, QProgressBar *p_progressBar)
 {
     int fileCounter = 0;
     int resultDurationMSec = 0;
     QString currentDirectory = QSettings().value("LastFolder").toString();
 
     progressBar = p_progressBar;
-    progressBar->setRange(0, editProxyModel->rowCount());
+    progressBar->setRange(0, timelineModel->rowCount());
+
+    bool includingSRT = false;
 
     if (target == "Preview") //Lossless FFMpeg
     {
@@ -49,32 +51,32 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
 
             int totalDuration = 0;
 
-            qDebug()<<"editProxyModel->rowCount()"<<editProxyModel->rowCount();
-            for (int row=0; row<editProxyModel->rowCount();row++)
+            qDebug()<<"timelineModel->rowCount()"<<timelineModel->rowCount();
+            for (int row=0; row<timelineModel->rowCount();row++)
             {
-                vidlistStream << "file '" << editProxyModel->index(row, folderIndex).data().toString() + editProxyModel->index(row, fileIndex).data().toString() << "'" << endl;
-                QTime inTime = QTime::fromString(editProxyModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
-                QTime outTime = QTime::fromString(editProxyModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
+                vidlistStream << "file '" << timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString() << "'" << endl;
+                QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
+                QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
                 qDebug()<<"gen"<<row<<inTime<<outTime;
 
                 int duration = inTime.msecsTo(outTime)+1000/frameRate;
 
                 vidlistStream << "inpoint " <<  QString::number(inTime.msecsSinceStartOfDay() / 1000.0, 'g', 6) << endl;
-                vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()+1000.0/frameRate) / 1000.0, 'g', 6) << endl;
+                vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << endl;
                 //      qDebug()<< videoUrl << srtItemModel->index(i,inIndex).data().toString() << " --> " << srtItemModel->index(i,outIndex).data().toString() << srtItemModel->index(i,tagIndex).data().toString();
 
-                FStarRating starRating = qvariant_cast<FStarRating>(editProxyModel->index(row, ratingIndex).data());
+                FStarRating starRating = qvariant_cast<FStarRating>(timelineModel->index(row, ratingIndex).data());
 
                 QString srtContentString = "";
-                srtContentString += "<o>" + editProxyModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
+                srtContentString += "<o>" + timelineModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
                 srtContentString += "<s>" + QString::number(starRating.starCount()) + "</s>";
-                srtContentString += "<r>" + editProxyModel->index(row,repeatIndex).data().toString() + "</r>";
-                srtContentString += "<h>" + editProxyModel->index(row, FGlobal().hintIndex).data().toString() + "</h>";
-                srtContentString += "<t>" + editProxyModel->index(row,tagIndex).data().toString() + "</t>";
+                srtContentString += "<r>" + timelineModel->index(row,repeatIndex).data().toString() + "</r>";
+                srtContentString += "<h>" + timelineModel->index(row, FGlobal().hintIndex).data().toString() + "</h>";
+                srtContentString += "<t>" + timelineModel->index(row,tagIndex).data().toString() + "</t>";
 
                 srtStream << row+1 << endl;
                 srtStream << QTime::fromMSecsSinceStartOfDay(totalDuration).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(totalDuration + duration - 1000 / frameRate).toString("HH:mm:ss.zzz") << endl;
-                srtStream << srtContentString << endl;//editProxyModel->index(i, tagIndex).data().toString()
+                srtStream << srtContentString << endl;//timelineModel->index(i, tagIndex).data().toString()
                 srtStream << endl;
 
                 totalDuration += duration;
@@ -129,16 +131,16 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
 
         QString code = nullptr;
 
-        for (int i=0; i<editProxyModel->rowCount();i++)
+        for (int i=0; i<timelineModel->rowCount();i++)
         {
-            QString tags = editProxyModel->index(i, tagIndex).data().toString();
+            QString tags = timelineModel->index(i, tagIndex).data().toString();
             {
-                QTime inTime = QTime::fromString(editProxyModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
-                QTime outTime = QTime::fromString(editProxyModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
+                QTime inTime = QTime::fromString(timelineModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
+                QTime outTime = QTime::fromString(timelineModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
                 int duration = inTime.msecsTo(outTime)+1000/frameRate;
                 resultDurationMSec += duration;
 
-                qDebug()<<i<<editProxyModel->index(i, inIndex).data().toString()<<editProxyModel->index(i, outIndex).data().toString();
+                qDebug()<<i<<timelineModel->index(i, inIndex).data().toString()<<timelineModel->index(i, outIndex).data().toString();
     //            qDebug()<<"times"<<inTime<< deltaIn<< outTime<< deltaOut<< duration<<clipDurationMsec;
 
                 QString targetFileName = currentDirectory + "Generated" + QString::number(i) + ".mp4";
@@ -147,11 +149,11 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
 //                filterComplexString += "[" + QString::number(i) + ":v:0][" + QString::number(i) + ":a:0]";
                 filterComplexString += "[" + QString::number(i) + ":v:0]";
 
-                code = "ffmpeg -y -i \"" + QString(editProxyModel->index(i, folderIndex).data().toString() + "//" + editProxyModel->index(i, fileIndex).data().toString()).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(targetFileName).replace("/", "//") + "\"";
+                code = "ffmpeg -y -i \"" + QString(timelineModel->index(i, folderIndex).data().toString() + "//" + timelineModel->index(i, fileIndex).data().toString()).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(targetFileName).replace("/", "//") + "\"";
 
                 emit addLogEntry("FFMpeg encoding " + currentDirectory);
                 emit addLogToEntry("FFMpeg encoding " + currentDirectory, code + "\n");
-//                    emit addLogEntry("FFMpeg encoding " + editProxyModel->index(i, folderIndex).data().toString() + "//" + editProxyModel->index(i, fileIndex).data().toString());
+//                    emit addLogEntry("FFMpeg encoding " + timelineModel->index(i, folderIndex).data().toString() + "//" + timelineModel->index(i, fileIndex).data().toString());
 
                 QMap<QString, QString> parameters;
                 parameters["currentDirectory"] = currentDirectory;
@@ -177,7 +179,7 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
                     srtStream << 1 << endl;
 //                    srtStream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut).toString("HH:mm:ss.zzz") << endl;
                     srtStream << QTime::fromMSecsSinceStartOfDay(resultDurationMSec).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(resultDurationMSec + duration).toString("HH:mm:ss.zzz") << endl;
-                    srtStream << editProxyModel->index(i, tagIndex).data().toString() << endl;
+                    srtStream << timelineModel->index(i, tagIndex).data().toString() << endl;
                     srtStream << endl;
 
                     srtOutputFile.close();
@@ -191,8 +193,8 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
         //ffmpeg -i "20190723 bentwoud2.mp4" -i ..\fiprelogo.ico -filter_complex "overlay = main_w-overlay_w-10:main_h-overlay_h-10" output.mp4
 
 //        code = "ffmpeg " + filesString + " -filter_complex \"" + filterComplexString + " concat=n=" + QString::number(fileCounter) + ":v=1:a=1[outv][outa]\" -map \"[outv]\" -map \"[outa]\" -y \"" + QString(currentDirectory).replace("/", "\\") + "\\outputonesec.mp4\"";
-        code = "ffmpeg " + filesString + " -i \"D:/photo/fiprelogo.ico\" -filter_complex \"" + filterComplexString + " concat=n=" + QString::number(editProxyModel->rowCount()) + ":v=1[outv]\" -map \"[outv]\" -y \"" + QString(currentDirectory).replace("/", "\\") + "\\outputonesec.mp4\"";
-//        code = "ffmpeg " + filesString + " -filter_complex \"[0]scale=2704x1520,setdar=16/9[a];[1]scale=2704x1520,setdar=16/9[b]; [a][b] concat=n=" + QString::number(editProxyModel->rowCount()) + ":v=1\" -y \"" + QString(currentDirectory).replace("/", "\\") + "\\outputonesec.mp4\"";
+        code = "ffmpeg " + filesString + " -i \"D:/photo/fiprelogo.ico\" -filter_complex \"" + filterComplexString + " concat=n=" + QString::number(timelineModel->rowCount()) + ":v=1[outv]\" -map \"[outv]\" -y \"" + QString(currentDirectory).replace("/", "\\") + "\\outputonesec.mp4\"";
+//        code = "ffmpeg " + filesString + " -filter_complex \"[0]scale=2704x1520,setdar=16/9[a];[1]scale=2704x1520,setdar=16/9[b]; [a][b] concat=n=" + QString::number(timelineModel->rowCount()) + ":v=1\" -y \"" + QString(currentDirectory).replace("/", "\\") + "\\outputonesec.mp4\"";
         emit addLogEntry("FFMpeg encoding outputonesec " + currentDirectory);
         emit addLogToEntry("FFMpeg encoding outputonesec " + currentDirectory, code);
         QMap<QString, QString> parameters;
@@ -222,13 +224,13 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
 //            qDebug()<<"ffmpeg filter result"<<command<<result;
             generateWidget->progressBar->setValue(generateWidget->progressBar->maximum());
 
-            QDir dir(parameters["currentDirectory"]);
-            dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
-            foreach( QString dirItem, dir.entryList() )
-            {
-                if (dirItem.contains("Generated"))
-                    dir.remove( dirItem );
-            }
+//            QDir dir(parameters["currentDirectory"]);
+//            dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
+//            foreach( QString dirItem, dir.entryList() )
+//            {
+//                if (dirItem.contains("Generated"))
+//                    dir.remove( dirItem );
+//            }
 
             emit generateWidget->addLogToEntry("FFMpeg encoding outputonesec " + parameters["currentDirectory"], "completed");
 
@@ -262,12 +264,12 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
 
         s("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         s("<mlt LC_NUMERIC=\"C\" version=\"6.17.0\" title=\"Shotcut by Fipre\" producer=\"main_bin\">");
-        s("  <profile description=\"automatic\" width=\"%1\" height=\"%2\" progressive=\"1\" sample_aspect_num=\"1\" sample_aspect_den=\"1\" display_aspect_num=\"%1\" display_aspect_den=\"%2\" frame_rate_num=\"%3\" frame_rate_den=\"1\"/>", width, height, QString::number(frameRate));
+        s("  <profile description=\"automatic\" width=\"%1\" height=\"%2\" progressive=\"1\" sample_aspect_num=\"1\" sample_aspect_den=\"1\" display_aspect_num=\"%1\" display_aspect_den=\"%2\" frame_rate_num=\"%3\" frame_rate_den=\"1\"/>", width, height, QString::number(pframeRate));
 
         QMap<QString, int> filesMap;
-        for (int i=0; i<editProxyModel->rowCount();i++)
+        for (int i=0; i<timelineModel->rowCount();i++)
         {
-            filesMap[editProxyModel->index(i,folderIndex).data().toString() + editProxyModel->index(i,fileIndex).data().toString()] = i;
+            filesMap[timelineModel->index(i,folderIndex).data().toString() + timelineModel->index(i,fileIndex).data().toString()] = i;
         }
 
 
@@ -277,10 +279,10 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
         {
             filesIterator.next();
 
-            QString *duration = new QString();
-            emit getPropertyValue(editProxyModel->index(filesIterator.value(),fileIndex).data().toString(), "Duration", duration); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+            QString *durationString = new QString();
+            emit getPropertyValue(timelineModel->index(filesIterator.value(),fileIndex).data().toString(), "Duration", durationString); //format <30s: [ss.mm s] >30s: [h.mm:ss]
 
-            QTime durationTime = QTime::fromString(*duration,"h:mm:ss");
+            QTime durationTime = QTime::fromString(*durationString,"h:mm:ss");
 
             s("  <producer id=\"producer%1\" title=\"Anonymous Submission\" in=\"00:00:00.000\" out=\"%2\">", QString::number(fileCounter), durationTime.toString("hh:mm:ss.zzz"));
             s("    <property name=\"length\">%1</property>", durationTime.toString("hh:mm:ss.zzz"));
@@ -292,264 +294,104 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
         }
 
 
-        s("  <playlist id=\"main_bin\" title=\"Shotcut by Fipre\">");
+        s("  <playlist id=\"main_bin\" title=\"Main playlist\">");
         s("    <property name=\"xml_retain\">1</property>");
-        for (int i=0; i<editProxyModel->rowCount();i++)
+        for (int i=0; i<timelineModel->rowCount();i++)
         {
-            QTime inTime = QTime::fromString(editProxyModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
-            QTime outTime = QTime::fromString(editProxyModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime inTime = QTime::fromString(timelineModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(timelineModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
 
             s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
-              , QString::number(filesMap[editProxyModel->index(i, folderIndex).data().toString() + editProxyModel->index(i, fileIndex).data().toString()]
+              , QString::number(filesMap[timelineModel->index(i, folderIndex).data().toString() + timelineModel->index(i, fileIndex).data().toString()]
               ), inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz"));
         }
 
-        s("  </playlist>");
+        s("  </playlist>"); //playlist main bin
+
+        int transitionTimeMSecs = transitionTimeFrames * 1000 / frameRate;
+        QTime transitionTime = QTime::fromMSecsSinceStartOfDay(transitionTimeMSecs);
+        int tractorCounter = 0;
+        int producerCounter = 0;
+        //transitions
+        if (transitionTimeMSecs > 0)
+        {
+            QTime previousInTime = QTime();
+            QTime previousOutTime = QTime();
+            int previousProducerNr = -1;
+            for (int row=0; row<timelineModel->rowCount();row++)
+            {
+                QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
+                QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
+                int producerNr = filesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()];
+
+                if (previousInTime != QTime())
+                {
+                    s("<tractor id=\"tractor%1\" title=\"%2\" global_feed=\"1\" in=\"00:00:00.000\" out=\"%3\">", QString::number(tractorCounter++), "Transition " + QString::number(row-1) + "-" + QString::number(row), transitionTime.toString("HH:mm:ss.zzz"));
+                    s("   <property name=\"shotcut:transition\">lumaMix</property>");
+                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(previousProducerNr), previousOutTime.addMSecs(-transitionTimeMSecs + 1000 / frameRate).toString("HH:mm:ss.zzz"), previousOutTime.toString("HH:mm:ss.zzz"));
+                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(producerNr), inTime.toString("HH:mm:ss.zzz"), inTime.addMSecs(transitionTimeMSecs - 1000/frameRate).toString("HH:mm:ss.zzz"));
+                    s("   <transition id=\"transition0\" out=\"%1\">", transitionTime.toString("HH:mm:ss.zzz"));
+                    s("     <property name=\"a_track\">0</property>");
+                    s("     <property name=\"b_track\">1</property>");
+                    s("     <property name=\"factory\">loader</property>");
+                    s("     <property name=\"mlt_service\">luma</property>");
+                    s("   </transition>");
+                    s("   <transition id=\"transition1\" out=\"%1\">", transitionTime.toString("HH:mm:ss.zzz"));
+                    s("     <property name=\"a_track\">0</property>");
+                    s("     <property name=\"b_track\">1</property>");
+                    s("     <property name=\"start\">-1</property>");
+                    s("     <property name=\"accepts_blanks\">1</property>");
+                    s("     <property name=\"mlt_service\">mix</property>");
+                    s("   </transition>");
+                    s(" </tractor>");
+                }
+
+                previousInTime = inTime;
+                previousOutTime = outTime;
+                previousProducerNr = producerNr;
+            }
+
+        }
+
+
         s("  <playlist id=\"playlist0\">");
         s("    <property name=\"shotcut:video\">1</property>");
         s("    <property name=\"shotcut:name\">V1</property>");
-        for (int i=0; i<editProxyModel->rowCount();i++)
+        for (int row=0; row<timelineModel->rowCount();row++)
         {
-            QTime inTime = QTime::fromString(editProxyModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
-            QTime outTime = QTime::fromString(editProxyModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
 
-            if (true)
+            int producerNr = filesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()];
+
+            QString inString = inTime.toString("HH:mm:ss.zzz");
+            QString outString = outTime.toString("HH:mm:ss.zzz");
+            if (transitionTimeMSecs > 0)
             {
-                s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
-                  , QString::number(filesMap[editProxyModel->index(i, folderIndex).data().toString() + editProxyModel->index(i, fileIndex).data().toString()])
-                       , inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz") );
+                if (row != 0) //first
+                {
+                    s("    <entry producer=\"tractor%1\" in=\"00:00:00.000\" out=\"%2\"/>", QString::number(row-1), transitionTime.toString("HH:mm:ss.zzz"));
+                    inString = inTime.addMSecs(transitionTimeMSecs).toString("HH:mm:ss.zzz");
+                }
+
+                if (row != timelineModel->rowCount() - 1) //last
+                    outString = outTime.addMSecs(-transitionTimeMSecs).toString("HH:mm:ss.zzz");
             }
-//            else
-//                shotcutTransitionTractor(stream, 500);
+
+            s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
+              , QString::number(producerNr)
+                   , inString, outString );
         }
 
-        s("  </playlist>");
-        s("  <tractor id=\"tractor0\" title=\"Shotcut by Fipre\">");
+        s("  </playlist>"); //playlist0
+
+        s("  <tractor id=\"tractor%1\" title=\"Tractor V1\">", QString::number(tractorCounter++));
         s("    <property name=\"shotcut\">1</property>");
         s("    <track producer=\"\"/>");
         s("    <track producer=\"playlist0\"/>");
         s("  </tractor>");
         s("</mlt>");
 
-        if (false)
-        {
-            QXmlStreamWriter *stream2 = new QXmlStreamWriter(&fileWrite);
-            stream2->setAutoFormatting(true);
-            stream2->writeStartDocument();
-            stream2->writeStartElement("mlt");
-            stream2->writeAttribute("LC_NUMERIC", "en_US");
-            stream2->writeAttribute("version", "6.15.0");
-            stream2->writeAttribute("title", "Shotcut generated by Fipre");
-            stream2->writeAttribute("producer", "main_bin");
-            {
-                stream2->writeStartElement("profile");
-                stream2->writeAttribute("description", "HD 1080p 25 fps");
-                if (size == "1K")
-                {
-                    stream2->writeAttribute("width", "1920");
-                    stream2->writeAttribute("height", "1080");
-                }
-                else if (size == "2.7K")
-                {
-                    stream2->writeAttribute("width", "2880");
-                    stream2->writeAttribute("height", "1620");
-                }
-                else if (size == "4K")
-                {
-                    stream2->writeAttribute("width", "3840");
-                    stream2->writeAttribute("height", "2160");
-                }
-                else
-                {
-                    stream2->writeAttribute("width", "1920");
-                    stream2->writeAttribute("height", "1080");
-                }
-                stream2->writeAttribute("progressive", "1");
-                stream2->writeAttribute("sample_aspect_num", "1");
-                stream2->writeAttribute("sample_aspect_den", "1");
-                stream2->writeAttribute("display_aspect_num", "16");
-                stream2->writeAttribute("display_aspect_den", "9");
-                stream2->writeAttribute("frame_rate_num", "25");
-                stream2->writeAttribute("frame_rate_den", "1");
-                stream2->writeAttribute("colorspace", "709");
-                stream2->writeEndElement();
-            }
-
-            QMap<QString, int> filesMap;
-            for (int i=0; i<editProxyModel->rowCount();i++)
-            {
-                filesMap[editProxyModel->index(i,folderIndex).data().toString() + editProxyModel->index(i,fileIndex).data().toString()] = i;
-            }
-
-
-            int fileCounter = 0;
-            QMapIterator<QString, int> filesIterator(filesMap);
-            while (filesIterator.hasNext()) //all files
-            {
-                filesIterator.next();
-
-                QString *duration = new QString();
-                emit getPropertyValue(editProxyModel->index(filesIterator.value(),fileIndex).data().toString(), "Duration", duration); //format <30s: [ss.mm s] >30s: [h.mm:ss]
-
-                QTime durationTime = QTime::fromString(*duration,"h:mm:ss");
-
-                stream2->writeStartElement("producer");
-                stream2->writeAttribute("id", "producer" + QString::number(fileCounter));
-                stream2->writeAttribute("title", "Anonymous Submission");
-                stream2->writeAttribute("in", "00:00:00.000");
-                stream2->writeAttribute("out", durationTime.toString("hh:mm:ss.zzz"));
-                {
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "length");
-                    stream2->writeCharacters( durationTime.toString("hh:mm:ss.zzz"));
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "resource");
-                    stream2->writeCharacters(filesIterator.key());
-                    stream2->writeEndElement();
-                }
-                stream2->writeEndElement();
-
-                filesMap[filesIterator.key()] = fileCounter;
-                fileCounter++;
-            }
-
-            {
-                stream2->writeStartElement("playlist");
-                stream2->writeAttribute("id", "main_bin");
-                stream2->writeAttribute("title", "Shotcut generated by Fipre");
-                {
-    //                stream2->writeStartElement("property");
-    //                stream2->writeAttribute("name", "shotcut:projectAudioChannels");
-    //                stream2->writeCharacters("2");
-    //                stream2->writeEndElement();
-
-    //                stream2->writeStartElement("property");
-    //                stream2->writeAttribute("name", "shotcut:projectFolder");
-    //                stream2->writeCharacters("1");
-    //                stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "xml_retain"); //causes this playlist to show in the playlist
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-                    for (int i=0; i<editProxyModel->rowCount();i++)
-                    {
-                        QTime inTime = QTime::fromString(editProxyModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
-                        QTime outTime = QTime::fromString(editProxyModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
-
-                        stream2->writeStartElement("entry");
-                        stream2->writeAttribute("producer", "producer" + QString::number(filesMap[editProxyModel->index(i, folderIndex).data().toString() + editProxyModel->index(i, fileIndex).data().toString()]));
-                        stream2->writeAttribute("in", inTime.toString("HH:mm:ss.zzz"));
-                        stream2->writeAttribute("out", outTime.toString("HH:mm:ss.zzz"));
-                        stream2->writeEndElement();
-                    }
-
-                }
-    //            stream2->writeAttribute("", "");
-                stream2->writeEndElement();
-            }
-            {
-                stream2->writeStartElement("playlist");
-                stream2->writeAttribute("id", "playlist0");
-                stream2->writeAttribute("title", "Shotcut generated by Fipre");
-                {
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "shotcut:video"); //mandatory
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "shotcut:name"); //mandatory
-                    stream2->writeCharacters("V1");
-                    stream2->writeEndElement();
-
-                    for (int i=0; i<editProxyModel->rowCount();i++)
-                    {
-                        QTime inTime = QTime::fromString(editProxyModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
-                        QTime outTime = QTime::fromString(editProxyModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
-
-                        if (true)
-                        {
-                            stream2->writeStartElement("entry");
-                            stream2->writeAttribute("producer", "producer" + QString::number(filesMap[editProxyModel->index(i, folderIndex).data().toString() + editProxyModel->index(i, fileIndex).data().toString()]));
-                            stream2->writeAttribute("in", inTime.toString("HH:mm:ss.zzz"));
-                            stream2->writeAttribute("out", outTime.toString("HH:mm:ss.zzz"));
-                            stream2->writeEndElement();
-                        }
-                        else
-                            shotcutTransitionTractor(stream2, 500);
-
-                    }
-
-                }
-    //            stream2->writeAttribute("", "");
-                stream2->writeEndElement(); //playlist0
-            }
-            //main tractor
-            {
-                stream2->writeStartElement("tractor");
-                stream2->writeAttribute("id", "tractor0");
-                stream2->writeAttribute("title", "Shotcut generated by Fipre");
-    //            stream2->writeAttribute("global_feed", "1");
-                stream2->writeAttribute("in", "00:00:00.000");
-                stream2->writeAttribute("out", "00:00:13.960");
-                {
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "shotcut"); //mandatory
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-    //                stream2->writeStartElement("property");
-    //                stream2->writeAttribute("name", "shotcut:projectAudioChannels");
-    //                stream2->writeCharacters("2");
-    //                stream2->writeEndElement();
-
-    //                stream2->writeStartElement("property");
-    //                stream2->writeAttribute("name", "shotcut:projectFolder");
-    //                stream2->writeCharacters("1");
-    //                stream2->writeEndElement();
-
-                    stream2->writeStartElement("track");
-                    stream2->writeAttribute("producer", ""); //apparently no need to define the background producer
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("track");
-                    stream2->writeAttribute("producer", "playlist0");
-                    stream2->writeEndElement();
-
-                }
-                stream2->writeEndElement(); //tractor
-
-    //            <tractor id="tractor0" title="Shotcut version 19.09.14" global_feed="1" in="00:00:00.000" out="00:00:13.960">
-    //                <property name="shotcut">1</property>
-    //                <property name="shotcut:projectAudioChannels">2</property>
-    //                <property name="shotcut:projectFolder">1</property>
-    //                <track producer="background"/>
-    //                <track producer="playlist0"/>
-    //                <transition id="transition0">
-    //                  <property name="a_track">0</property>
-    //                  <property name="b_track">1</property>
-    //                  <property name="mlt_service">mix</property>
-    //                  <property name="always_active">1</property>
-    //                  <property name="sum">1</property>
-    //                </transition>
-    //                <transition id="transition1">
-    //                  <property name="a_track">0</property>
-    //                  <property name="b_track">1</property>
-    //                  <property name="version">0.9</property>
-    //                  <property name="mlt_service">frei0r.cairoblend</property>
-    //                  <property name="disable">1</property>
-    //                </transition>
-    //              </tractor>
-            }
-
-            stream2->writeEndElement(); //mlt
-            stream2->writeEndDocument();
-        }
         fileWrite.close();
 \
         progressBar->setValue(progressBar->maximum());
@@ -561,12 +403,12 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
     {
         QString filesString = "";
         QString filterComplexString = "";
-        for (int i = 0; i < editProxyModel->rowCount(); i++)
+        for (int i = 0; i < timelineModel->rowCount(); i++)
         {
-            QString tags = editProxyModel->index(i,tagIndex).data().toString();
+            QString tags = timelineModel->index(i,tagIndex).data().toString();
             if ( tags.contains("r8") || tags.contains("r9"))
             {
-                filesString = filesString + " -i \"" + editProxyModel->index(i,fileIndex).data().toString() + "\"";
+                filesString = filesString + " -i \"" + timelineModel->index(i,fileIndex).data().toString() + "\"";
                 filterComplexString += "[" + QString::number(i) + ":v:0][" + QString::number(i) + ":a:0]";
             }
         }
@@ -587,121 +429,5 @@ void FGenerate::generate(FEditSortFilterProxyModel *editProxyModel, QString targ
 
         }, nullptr);
     }
-
-
 }
 
-void FGenerate::shotcutTransitionTractor(QXmlStreamWriter *stream2, int transitionTime)
-{
-    //transition tractor
-    {
-        stream2->writeStartElement("tractor");
-        stream2->writeAttribute("id", "tractor1");
-        stream2->writeAttribute("title", "Anonymous Submission");
-//            stream2->writeAttribute("global_feed", "1");
-        stream2->writeAttribute("in", "00:00:00.000");
-        stream2->writeAttribute("out", "00:00:00.240"); //transition time
-        {
-            stream2->writeStartElement("property");
-            stream2->writeAttribute("name", "shotcut:transition"); //mandatory
-            stream2->writeCharacters("lumaMix");
-            stream2->writeEndElement();
-
-            stream2->writeStartElement("track");
-            stream2->writeAttribute("producer", "producer0");
-            stream2->writeAttribute("in", "00:00:00.000");
-            stream2->writeAttribute("out", "00:00:00.240"); //transition time
-            stream2->writeEndElement();
-
-            stream2->writeStartElement("track");
-            stream2->writeAttribute("producer", "producer0");
-            stream2->writeAttribute("in", "00:00:00.000");
-            stream2->writeAttribute("out", "00:00:00.240"); //transition time
-            stream2->writeEndElement();
-            {
-                stream2->writeStartElement("transition");
-                stream2->writeAttribute("id", "transition0");
-                stream2->writeAttribute("out", "00:00:00.240"); //transition time
-                {
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "a_track"); //mandatory
-                    stream2->writeCharacters("0");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "b_track"); //mandatory
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "factory"); //mandatory
-                    stream2->writeCharacters("loader");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "mlt_service"); //mandatory
-                    stream2->writeCharacters("luma");
-                    stream2->writeEndElement();
-
-                }
-                stream2->writeEndElement(); //transition
-
-                stream2->writeStartElement("transition");
-                stream2->writeAttribute("id", "transition1");
-                stream2->writeAttribute("out", "00:00:00.240"); //transition time
-                {
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "a_track"); //mandatory
-                    stream2->writeCharacters("0");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "b_track"); //mandatory
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "start"); //mandatory
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "accept_blanks"); //mandatory
-                    stream2->writeCharacters("1");
-                    stream2->writeEndElement();
-
-                    stream2->writeStartElement("property");
-                    stream2->writeAttribute("name", "mlt_service"); //mandatory
-                    stream2->writeCharacters("mix");
-                    stream2->writeEndElement();
-
-                }
-                stream2->writeEndElement(); //transition
-
-            }
-
-        }
-        stream2->writeEndElement(); //tractor
-
-
-//            <tractor id="tractor0" title="Anonymous Submission" global_feed="1" in="00:00:00.000" out="00:00:00.240">
-//              <property name="shotcut:transition">lumaMix</property>
-//              <track producer="producer0" in="00:00:21.920" out="00:00:22.160"/>
-//              <track producer="producer0" in="00:00:24.360" out="00:00:24.600"/>
-//              <transition id="transition0" out="00:00:00.240">
-//                <property name="a_track">0</property>
-//                <property name="b_track">1</property>
-//                <property name="factory">loader</property>
-//                <property name="mlt_service">luma</property>
-//              </transition>
-//              <transition id="transition1" out="00:00:00.240">
-//                <property name="a_track">0</property>
-//                <property name="b_track">1</property>
-//                <property name="start">-1</property>
-//                <property name="accepts_blanks">1</property>
-//                <property name="mlt_service">mix</property>
-//              </transition>
-//            </tractor>
-    }
-
-}

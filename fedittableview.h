@@ -24,6 +24,7 @@ public:
     FEditSortFilterProxyModel *editProxyModel;
     int highLightedRow;
     QStandardItemModel *srtFileItemModel;
+    bool checkSaveIfEditsChanged();
 private:
     QString selectedFolderName;
     QString selectedFileName;

@@ -17,14 +17,17 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
                          const QModelIndex &index) const
 {
     QColor backgroundColor = index.data(Qt::BackgroundRole).value<QColor>();
+//    if (index.column() == ratingIndex)
+//        qDebug()<<"backgroundColor"<<index.data().toString()<<backgroundColor<<QColor();
     QPalette optionPalette = option.palette;
     if(option.state & QStyle::State_Selected)
         optionPalette.setColor(QPalette::Base, optionPalette.color(QPalette::Highlight));
-    else
+    else if (backgroundColor != QColor())
         optionPalette.setColor(QPalette::Base, backgroundColor);
 
     if (!index.isValid())
         return;
+
     if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *spinBox = new STimeSpinBox();
@@ -59,9 +62,11 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             painter->fillRect(option.rect, option.palette.highlight());
             checkBoxPalette.setColor( QPalette::Active, QPalette::Background, option.palette.highlight().color() );
         }
-        else {
+        else if (backgroundColor != QColor())
+        {
             checkBoxPalette.setColor( QPalette::Active, QPalette::Background, backgroundColor );
         }
+        checkBox->setAutoFillBackground(true);
         checkBox->setPalette(checkBoxPalette);
 
         QPixmap map = checkBox->grab();
@@ -110,7 +115,7 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
             if (option.state & QStyle::State_Selected)
                 painter->fillRect(option.rect, option.palette.highlight());
-            else
+            else if (backgroundColor != QColor())
                 painter->fillRect(option.rect, QBrush(backgroundColor));
 
             starRating.paint(painter, option.rect, optionPalette,
@@ -211,6 +216,8 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
 void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
+    qDebug()<<"FEditItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString();
+    model->setData(model->index(index.row(), changedIndex), "yes");
     if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
@@ -240,12 +247,12 @@ void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     else if (index.data().canConvert<FStarRating>())
     {
         FStarEditor *starEditor = qobject_cast<FStarEditor *>(editor);
-        qDebug()<<"setModelData"<<index.row()<<index.column()<<index.data()<<starEditor->starRating().starCount();
+//        qDebug()<<"setModelData"<<index.row()<<index.column()<<index.data()<<starEditor->starRating().starCount();
         model->setData(index, QVariant::fromValue(starEditor->starRating()));
     }
     else
     {
-        qDebug()<<"setModelData"<<editor<<model<<index.data();
+//        qDebug()<<"setModelData"<<editor<<model<<index.data();
         QStyledItemDelegate::setModelData(editor, model, index);
     }
 }

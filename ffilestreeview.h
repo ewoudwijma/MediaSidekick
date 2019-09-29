@@ -17,6 +17,7 @@ private slots:
     void onTrim();
     void onFileDelete();
     void onIndexClicked(QModelIndex index);
+    void onFileRename();
 private:
     void loadModel(QUrl folderUrl);
     QFileSystemModel *fileModel;
@@ -29,6 +30,7 @@ signals:
     void indexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void fileDelete(QString fileName);
     void trim(QString fileName);
+    void getPropertyValue(QString fileName, QString key, QString *value);
 
 };
 

@@ -61,8 +61,59 @@
           <item>
            <widget class="FVideoWidget" name="videoWidget" native="true">
             <property name="styleSheet">
-             <string notr="true">background-color: rgb(0, 0, 0);</string>
+             <string notr="true">background-color: rgba(0,0,0,0)</string>
             </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>150</width>
+                 <height>150</height>
+                </size>
+               </property>
+               <property name="cursor">
+                <cursorShape>ArrowCursor</cursorShape>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: rgba(255, 255, 255, 50);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="images.qrc">:/fiprelogo.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
+            <zorder>horizontalSpacer_4</zorder>
+            <zorder>label_8</zorder>
            </widget>
           </item>
          </layout>
@@ -263,7 +314,7 @@
         <enum>QTabWidget::South</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_timeline">
         <attribute name="title">
@@ -422,6 +473,16 @@
               </widget>
              </item>
              <item>
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Framerate</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="frameRateSpinBox"/>
+             </item>
+             <item>
               <widget class="QPushButton" name="generateButton">
                <property name="text">
                 <string>Generate</string>
@@ -532,10 +593,17 @@
     <addaction name="actionIn"/>
     <addaction name="actionOut"/>
    </widget>
+   <widget class="QMenu" name="menuGenerate">
+    <property name="title">
+     <string>Generate</string>
+    </property>
+    <addaction name="actionGenerate"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
    <addaction name="menuPlayer"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuGenerate"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -738,6 +806,14 @@
     <string>Ctrl+N</string>
    </property>
   </action>
+  <action name="actionGenerate">
+   <property name="text">
+    <string>Generate</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -806,6 +882,8 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="images.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -37,6 +37,9 @@ private:
     void init();
     void updateFrozenTableGeometry();
     void setCellStyle(QStringList fileNames);
+    void onPropertyChanged(QStandardItem *item);
+    bool propertiesLoading;
+    void updateGeneratedName(QModelIndex index);
 protected:
       void resizeEvent(QResizeEvent *event) override;
       QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) override;
@@ -46,6 +49,7 @@ signals:
       void addLogEntry(QString function);
       void addLogToEntry(QString function, QString log);
       void propertiesLoaded();
+      void fileDelete(QString fileName);
 };
 
 #endif // FPROPERTYTREEVIEW_H

@@ -106,6 +106,10 @@ private slots:
 
     void on_generateSizeComboBox_currentTextChanged(const QString &arg1);
 
+    void on_frameRateSpinBox_valueChanged(double arg1);
+
+    void on_actionGenerate_triggered();
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;

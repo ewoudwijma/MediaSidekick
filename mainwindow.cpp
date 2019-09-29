@@ -93,6 +93,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView->connectNodes("files", "edit", "delete");
     connect(ui->filesTreeView, &FFilesTreeView::trim, ui->editTableView, &FEditTableView::onTrim);
     ui->graphicsView->connectNodes("files", "edit", "trim");
+    connect(ui->filesTreeView, &FFilesTreeView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 
     connect(ui->editTableView, &FEditTableView::folderIndexClickedItemModel, ui->tagsListView, &FTagsListView::onFolderIndexClicked);
     ui->graphicsView->connectNodes("edit", "tags", "folder");
@@ -121,7 +122,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->editTableView, &FEditTableView::editsChangedFromVideo, ui->timelineWidget,  &FTimeline::onEditsChangedFromVideo);
     ui->graphicsView->connectNodes("edit", "time", "editchangevideo");
     connect(ui->editTableView, &FEditTableView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
-    ui->graphicsView->connectNodes("edit", "prop", "get");
+//    ui->graphicsView->connectNodes("edit", "prop", "get");
     connect(ui->editTableView, &FEditTableView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
     ui->graphicsView->connectNodes("video", "prop", "get");
     connect(ui->editTableView, &FEditTableView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
@@ -135,14 +136,17 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->videoWidget, &FVideoWidget::outChanged, ui->editTableView, &FEditTableView::onOutChanged);
     ui->graphicsView->connectNodes("video", "edit", "out");
     connect(ui->videoWidget, &FVideoWidget::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
-    ui->graphicsView->connectNodes("video", "prop", "get");
+//    ui->graphicsView->connectNodes("video", "prop", "get");
 
     connect(ui->timelineWidget, &FTimeline::timelinePositionChanged, ui->videoWidget, &FVideoWidget::onTimelinePositionChanged);
     ui->graphicsView->connectNodes("time", "video", "pos");
+    connect(ui->timelineWidget, &FTimeline::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+//    ui->graphicsView->connectNodes("time", "prop", "get");
 
     connect(ui->propertyTreeView, &FPropertyTreeView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
     ui->graphicsView->connectNodes("video", "prop", "get");
     connect(ui->propertyTreeView, &FPropertyTreeView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
+    connect(ui->propertyTreeView, &FPropertyTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onFileDelete);
 
     connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &FPropertyTreeView::onPropertyFilterChanged);
     ui->graphicsView->connectNodes("main", "prop", "filter");
@@ -218,23 +222,45 @@ MainWindow::MainWindow(QWidget *parent) :
 //        tagFilter2Model->appendRow(items);
     }
 
+    double lframeRate = QSettings().value("frameRate").toDouble();
+    if (lframeRate < 1)
+            lframeRate = 25;
+    ui->frameRateSpinBox->setValue(lframeRate);
 
     //
     onEditFilterChanged(); //initial setup
     emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->TransitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
 
-    on_actionBlack_theme_triggered();
+    QString theme = QSettings().value("theme").toString();
+    if (theme == "White")
+        on_actionWhite_theme_triggered();
+    else
+        on_actionBlack_theme_triggered();
 
     ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
 //    ui->progressBar->setRange(0, 100);
     ui->progressBar->setValue(0);
+
+    //    QPixmap pixmap(":/fiprelogo.ico");
+//        QLabel *mylabel = new QLabel (this);
+//        ui->logoLabel->setPixmap( QPixmap (":/fiprelogo.ico"));
+//        mylabel->show();
+//        mylabel->update();
+    //    m_durationLabel->setPixmap(pixmap);
+    //    mylabel->show();
+    //    toolbar->addWidget(mylabel);
+
+
 }
 
 MainWindow::~MainWindow()
 {
-    qDebug()<<"Destructor"<<geometry();
-//    QMessageLogger(QT_MESSAGELOG_FILE, QT_MESSAGELOG_LINE, QT_MESSAGELOG_FUNC).debug()<<"";
+    if (ui->editTableView->checkSaveIfEditsChanged())
+        on_actionSave_triggered();
+
+//    qDebug()<<"Destructor"<<geometry();
+
     QSettings().setValue("Geometry", geometry());
     QSettings().sync();
 
@@ -277,6 +303,8 @@ void MainWindow::on_actionBlack_theme_triggered()
 
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
 
+    QSettings().setValue("theme", "Black");
+    QSettings().sync();
 }
 
 void MainWindow::on_actionWhite_theme_triggered()
@@ -324,7 +352,8 @@ void MainWindow::on_actionWhite_theme_triggered()
 
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
 
-
+    QSettings().setValue("theme", "White");
+    QSettings().sync();
 }
 
 void MainWindow::on_actionQuit_triggered()
@@ -454,7 +483,7 @@ void MainWindow::on_actionSave_triggered()
 {
     for (int row =0; row < ui->editTableView->srtFileItemModel->rowCount();row++)
     {
-        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
+//        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
         ui->editTableView->saveModel(ui->editTableView->srtFileItemModel->index(row, 0).data().toString(), ui->editTableView->srtFileItemModel->index(row, 1).data().toString());
     }
 }
@@ -604,7 +633,8 @@ void MainWindow::on_newTagLineEdit_returnPressed()
 
 void MainWindow::on_generateButton_clicked()
 {
-    ui->generateWidget->generate(ui->editTableView->editProxyModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->progressBar);
+    ui->editTableView->setModel(ui->timelineWidget->timelineModel);
+    ui->generateWidget->generate(ui->timelineWidget->timelineModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->frameRateSpinBox->value(), ui->transitionTimeSpinBox->value(), ui->progressBar);
 }
 
 void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg1)
@@ -617,4 +647,15 @@ void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
 {
     QSettings().setValue("generateSize", arg1);
     QSettings().sync();
+}
+
+void MainWindow::on_frameRateSpinBox_valueChanged(double arg1)
+{
+    QSettings().setValue("frameRate", arg1);
+    QSettings().sync();
+}
+
+void MainWindow::on_actionGenerate_triggered()
+{
+    ui->generateButton->click();
 }
