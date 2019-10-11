@@ -66,14 +66,15 @@ public slots:
     void togglePlayPaused();
     void fastForward();
     void rewind();
-    void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
+    void onEditsChangedToVideo(QAbstractItemModel *editProxyModel);
     void onTimelinePositionChanged(int progress, int row, int relativeProgress);
     void onFileDelete(QString fileName);
     void skipNext();
     void skipPrevious();
-    void onSpinnerPositionChanged(int progress);
-    void onUpdateIn();
-    void onUpdateOut();
+    void onSpinnerPositionChanged(int frames);
+    void onUpdateIn(int frames = -1);
+    void onUpdateOut(int frames = -1);
+    void onFileRename();
 private slots:
     void onDurationChanged(int duration);
     void onPlayerPositionChanged(int progress);
@@ -87,6 +88,7 @@ private slots:
     void onStop();
     void onSpeedChanged(QString speed);
     void onPlaybackRateChanged(qreal rate);
+    void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
 signals:
     void videoPositionChanged(int position, int editRow, int relativeProgress);
     void inChanged(int row, int in);

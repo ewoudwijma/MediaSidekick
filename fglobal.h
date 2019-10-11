@@ -14,7 +14,7 @@ static const int inIndex = 7;
 static const int outIndex = 8;
 static const int durationIndex = 9;
 static const int ratingIndex = 10;
-static const int repeatIndex = 11;
+static const int alikeIndex = 11;
 static const int hintIndex = 12;
 static const int tagIndex = 13;
 

@@ -69,10 +69,10 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
 
                 QString srtContentString = "";
                 srtContentString += "<o>" + timelineModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
-                srtContentString += "<s>" + QString::number(starRating.starCount()) + "</s>";
-                srtContentString += "<r>" + timelineModel->index(row,repeatIndex).data().toString() + "</r>";
+                srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
+                srtContentString += "<a>" + timelineModel->index(row, alikeIndex).data().toString() + "</a>";
                 srtContentString += "<h>" + timelineModel->index(row, FGlobal().hintIndex).data().toString() + "</h>";
-                srtContentString += "<t>" + timelineModel->index(row,tagIndex).data().toString() + "</t>";
+                srtContentString += "<t>" + timelineModel->index(row, tagIndex).data().toString() + "</t>";
 
                 srtStream << row+1 << endl;
                 srtStream << QTime::fromMSecsSinceStartOfDay(totalDuration).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(totalDuration + duration - 1000 / frameRate).toString("HH:mm:ss.zzz") << endl;
@@ -242,7 +242,8 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
 
         emit addLogEntry("shotcut file generate " + currentDirectory);
 
-        QFile fileWrite(currentDirectory + "//" + target + size + ".mlt");
+        QString fileName = target + size + "@" + QString::number(pframeRate) + ".mlt";
+        QFile fileWrite(currentDirectory + "//" + fileName);
         fileWrite.open(QIODevice::WriteOnly);
 
         QString width = "1920";
@@ -262,6 +263,8 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
 
         stream.setDevice(&fileWrite);
 
+        emit addLogToEntry("shotcut file generate " + currentDirectory, QString("Generating %1\n\n").arg(fileName));
+
         s("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         s("<mlt LC_NUMERIC=\"C\" version=\"6.17.0\" title=\"Shotcut by Fipre\" producer=\"main_bin\">");
         s("  <profile description=\"automatic\" width=\"%1\" height=\"%2\" progressive=\"1\" sample_aspect_num=\"1\" sample_aspect_den=\"1\" display_aspect_num=\"%1\" display_aspect_den=\"%2\" frame_rate_num=\"%3\" frame_rate_den=\"1\"/>", width, height, QString::number(pframeRate));
@@ -273,6 +276,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
         }
 
 
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "Producers\n");
         int fileCounter = 0;
         QMapIterator<QString, int> filesIterator(filesMap);
         while (filesIterator.hasNext()) //all files
@@ -283,17 +287,27 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
             emit getPropertyValue(timelineModel->index(filesIterator.value(),fileIndex).data().toString(), "Duration", durationString); //format <30s: [ss.mm s] >30s: [h.mm:ss]
 
             QTime durationTime = QTime::fromString(*durationString,"h:mm:ss");
+            if (durationTime == QTime())
+            {
+                QString xx = *durationString;
+                xx = xx.left(xx.length()-2);
+                durationTime = QTime::fromMSecsSinceStartOfDay(xx.toDouble()*1000);
 
+                qDebug()<<"durationTime"<<xx<<durationTime<<xx.left(xx.length()-2)<<xx.toDouble();
+            }
             s("  <producer id=\"producer%1\" title=\"Anonymous Submission\" in=\"00:00:00.000\" out=\"%2\">", QString::number(fileCounter), durationTime.toString("hh:mm:ss.zzz"));
             s("    <property name=\"length\">%1</property>", durationTime.toString("hh:mm:ss.zzz"));
             s("    <property name=\"resource\">%1</property>", filesIterator.key());
             s("  </producer>");
 
+            emit addLogToEntry("shotcut file generate " + currentDirectory, QString("  Producer%1 %2 %3\n").arg( QString::number(fileCounter), durationTime.toString("hh:mm:ss.zzz"), filesIterator.key()));
+
             filesMap[filesIterator.key()] = fileCounter;
             fileCounter++;
         }
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "\n");
 
-
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "Playlist\n");
         s("  <playlist id=\"main_bin\" title=\"Main playlist\">");
         s("    <property name=\"xml_retain\">1</property>");
         for (int i=0; i<timelineModel->rowCount();i++)
@@ -304,10 +318,13 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
             s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
               , QString::number(filesMap[timelineModel->index(i, folderIndex).data().toString() + timelineModel->index(i, fileIndex).data().toString()]
               ), inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz"));
+            emit addLogToEntry("shotcut file generate " + currentDirectory, QString("  Producer%1 %2 %3\n").arg( QString::number(filesMap[timelineModel->index(i, folderIndex).data().toString() + timelineModel->index(i, fileIndex).data().toString()]
+                                                                                                               ), inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz")));
         }
-
         s("  </playlist>"); //playlist main bin
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "\n");
 
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "Transitions\n");
         int transitionTimeMSecs = transitionTimeFrames * 1000 / frameRate;
         QTime transitionTime = QTime::fromMSecsSinceStartOfDay(transitionTimeMSecs);
         int tractorCounter = 0;
@@ -326,7 +343,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
 
                 if (previousInTime != QTime())
                 {
-                    s("<tractor id=\"tractor%1\" title=\"%2\" global_feed=\"1\" in=\"00:00:00.000\" out=\"%3\">", QString::number(tractorCounter++), "Transition " + QString::number(row-1) + "-" + QString::number(row), transitionTime.toString("HH:mm:ss.zzz"));
+                    s("<tractor id=\"tractor%1\" title=\"%2\" global_feed=\"1\" in=\"00:00:00.000\" out=\"%3\">", QString::number(tractorCounter), "Transition " + QString::number(row-1) + "-" + QString::number(row), transitionTime.toString("HH:mm:ss.zzz"));
                     s("   <property name=\"shotcut:transition\">lumaMix</property>");
                     s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(previousProducerNr), previousOutTime.addMSecs(-transitionTimeMSecs + 1000 / frameRate).toString("HH:mm:ss.zzz"), previousOutTime.toString("HH:mm:ss.zzz"));
                     s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(producerNr), inTime.toString("HH:mm:ss.zzz"), inTime.addMSecs(transitionTimeMSecs - 1000/frameRate).toString("HH:mm:ss.zzz"));
@@ -344,6 +361,10 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
                     s("     <property name=\"mlt_service\">mix</property>");
                     s("   </transition>");
                     s(" </tractor>");
+
+                    emit addLogToEntry("shotcut file generate " + currentDirectory, QString("  Transition%1 %2 %3\n").arg( QString::number(tractorCounter), "Transition " + QString::number(row-1) + "-" + QString::number(row), transitionTime.toString("HH:mm:ss.zzz")));
+
+                    tractorCounter++;
                 }
 
                 previousInTime = inTime;
@@ -352,8 +373,9 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
             }
 
         }
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "\n");
 
-
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "Timeline\n");
         s("  <playlist id=\"playlist0\">");
         s("    <property name=\"shotcut:video\">1</property>");
         s("    <property name=\"shotcut:name\">V1</property>");
@@ -372,6 +394,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
                 {
                     s("    <entry producer=\"tractor%1\" in=\"00:00:00.000\" out=\"%2\"/>", QString::number(row-1), transitionTime.toString("HH:mm:ss.zzz"));
                     inString = inTime.addMSecs(transitionTimeMSecs).toString("HH:mm:ss.zzz");
+                    emit addLogToEntry("shotcut file generate " + currentDirectory, QString("  Transition%1 %2\n").arg( QString::number(row-1), transitionTime.toString("HH:mm:ss.zzz")));
                 }
 
                 if (row != timelineModel->rowCount() - 1) //last
@@ -381,6 +404,8 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
             s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
               , QString::number(producerNr)
                    , inString, outString );
+            emit addLogToEntry("shotcut file generate " + currentDirectory, QString("  Producer%1 %2 %3\n").arg( QString::number(producerNr)
+                                                                                                            , inString, outString ));
         }
 
         s("  </playlist>"); //playlist0
@@ -396,7 +421,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
 \
         progressBar->setValue(progressBar->maximum());
 
-        emit addLogToEntry("shotcut file generate " + currentDirectory, "Completed");
+        emit addLogToEntry("shotcut file generate " + currentDirectory, "\nSuccesfully completed");
 
     }
     else

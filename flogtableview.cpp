@@ -69,14 +69,8 @@ void FLogTableView::mouseMoveEvent(QMouseEvent *event)
 void FLogTableView::mousePressEvent(QMouseEvent *event)
 {
     QModelIndex index = indexAt(event->pos());
-    qDebug()<<"FLogTableView::mousePressEvent"<<index.data().toString();
+//    qDebug()<<"FLogTableView::mousePressEvent"<<index.data().toString();
 
-//    QStandardItem *item = logItemModel->itemFromIndex(index);
-//    item->setToolTip(index.data().toString());
-
-//    QMessageBox::StandardButton reply;
-//     reply = QMessageBox::information(this, "Title",index.data().toString(),
-//                                   QMessageBox::Yes|QMessageBox::No);
 
     QDialog *dialog = new QDialog(this);
 //    dialog->mapFromGlobal(QCursor::pos());

@@ -17,12 +17,13 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
     QStringList expList = expString.split("|");
     QString starString = expList[0].toLower();
 //    if (expList.count()>0)
+    QString alikeString = expList[1];
     QString tag1String;
     QString tag2String;
     if (expList.count()>1)
-        tag1String = expList[1].toLower();
+        tag1String = expList[2].toLower();
     if (expList.count()>2)
-        tag2String = expList[2].toLower();
+        tag2String = expList[3].toLower();
 
     QStringList tag1List = tag1String.split(";");
     if (tag1List.count()==1 && tag1List[0] == "")
@@ -31,12 +32,15 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
     if (tag2List.count()==1 && tag2List[0] == "")
         tag2List.clear();
 
-    QModelIndex index0 = sourceModel()->index(sourceRow, ratingIndex, sourceParent);
-    QString tags = sourceModel()->index(sourceRow, tagIndex, sourceParent).data().toString().toLower();
+    QString fileNameString = expList[4];
 
-    FStarRating starRating = qvariant_cast<FStarRating>(index0.data());
+    FStarRating starRating = qvariant_cast<FStarRating>(sourceModel()->index(sourceRow, ratingIndex, sourceParent).data());
+    QString alikeValue = sourceModel()->index(sourceRow, alikeIndex, sourceParent).data().toString();
+    QString tags = sourceModel()->index(sourceRow, tagIndex, sourceParent).data().toString().toLower();
+    QString fileNameValue = sourceModel()->index(sourceRow, fileIndex, sourceParent).data().toString();
 
 //    qDebug()<<"FEditSortFilterProxyModel::filterAcceptsRow"<<starString<<starRating.starCount()<<expList.count()<<tag1List.count()<<tag2List.count()<<tag1String<<tag2String<<tags;
+//    qDebug()<<"FEditSortFilterProxyModel::filterAcceptsRow"<<alikeString<<alikeValue<<fileNameString<<fileNameValue;
 
     bool allFound = true;
     bool found;
@@ -67,6 +71,11 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
         allFound = allFound && found;
     }
 
+    if (alikeString == "true")
+        allFound = allFound && alikeValue == "true";
+
+    if (fileNameString != "")
+        allFound = allFound && fileNameString == fileNameValue;
 
     return starRating.starCount() >= starString.toInt() && allFound;
 }

@@ -42,15 +42,13 @@ private slots:
     void onEditFilterChanged();
     void on_actionWhite_theme_triggered();
 
-    void on_allCheckBox_clicked(bool checked);
-
     void on_action5_stars_triggered();
     void on_action4_stars_triggered();
     void on_action3_stars_triggered();
     void on_action2_stars_triggered();
     void on_action1_star_triggered();
     void on_action0_stars_triggered();
-    void on_actionRepeat_triggered();
+    void on_actionAlike_triggered();
 
     void on_actionSave_triggered();
 
@@ -58,12 +56,11 @@ private slots:
 
     void on_actionNew_triggered();
 
-    void onEditsChanged(FEditSortFilterProxyModel *editProxyModel);
-    void on_tagFilter1ListView_indexesMoved(const QModelIndexList &indexes);
+    void onEditsChangedToVideo(QAbstractItemModel *itemModel);
 
     void on_transitionTimeSpinBox_valueChanged(int arg1);
 
-    void on_TransitionTimeCheckBox_clicked(bool checked);
+    void on_transitionTimeCheckBox_clicked(bool checked);
 
     void on_stretchedDurationCheckBox_clicked(bool checked);
 
@@ -97,7 +94,7 @@ private slots:
 
     void on_actionAdd_tag_triggered();
 
-    void onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel);
+    void onFolderIndexClicked(QAbstractItemModel *itemModel);
     void on_newTagLineEdit_returnPressed();
 
     void on_generateButton_clicked();
@@ -110,15 +107,28 @@ private slots:
 
     void on_actionGenerate_triggered();
 
+    void onFileIndexClicked(QModelIndex index);
+    void on_alikeCheckBox_clicked(bool checked);
+
+    void on_fileOnlyCheckBox_clicked(bool checked);
+
+    void on_actionDebug_mode_triggered(bool checked);
+
+    void on_resetSortButton_clicked();
+
+    void on_stretchedCheckBox_clicked(bool checked);
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;
     QStandardItemModel *tagFilter2Model;
 
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
+    void onTagFiltersChanged();
+    QWidget *graphWidget;
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
-    void editFilterChanged(FStarEditor *starEditorFilterWidget, QListView *tagFilter1ListView, QListView *tagFilter2ListView);
+    void editFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
     void timelineWidgetsChanged(int transitionTime, Qt::CheckState transitionChecked, int stretchTime, Qt::CheckState stretchChecked, FEditTableView *editTableView);
 };

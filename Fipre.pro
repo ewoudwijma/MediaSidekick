@@ -26,6 +26,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        fdragdroplineedit.cpp \
         fedititemdelegate.cpp \
         fedititemmodel.cpp \
         feditsortfilterproxymodel.cpp \
@@ -54,6 +55,7 @@ SOURCES += \
         stimespinbox.cpp
 
 HEADERS += \
+        fdragdroplineedit.h \
         fedititemdelegate.h \
         fedititemmodel.h \
         feditsortfilterproxymodel.h \

@@ -3,7 +3,6 @@
 #include "fglobal.h"
 #include "fstareditor.h"
 #include "fstarrating.h"
-#include "stimespinbox.h"
 
 #include <QCheckBox>
 #include <QDebug>
@@ -49,7 +48,7 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->drawPixmap(option.rect.x(), option.rect.y(), map);
 //        QStyledItemDelegate::paint(painter, option, index);
     }
-    else if (index.column() == repeatIndex)
+    else if (index.column() == alikeIndex)
     {
         QCheckBox *checkBox = new QCheckBox();
         checkBox->setChecked(index.data().toBool());
@@ -134,9 +133,12 @@ QWidget *FEditItemDelegate::createEditor(QWidget *parent,
     if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *editor = new STimeSpinBox(parent);
+
+        connect(editor, SIGNAL(valueChanged(int)), this, SLOT(onSpinnerPositionChanged(int))); //using other syntax not working...
+
         return editor;
     }
-    else if (index.column() == repeatIndex)
+    else if (index.column() == alikeIndex)
     {
         QCheckBox *checkBox = new QCheckBox(parent);
         return checkBox;
@@ -176,7 +178,7 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
         QTime inTime = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
         spinBox->setValue(FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()));
     }
-    else if (index.column() == repeatIndex)
+    else if (index.column() == alikeIndex)
     {
         QCheckBox *checkBox = qobject_cast<QCheckBox*>(editor);
         checkBox->setChecked(index.data().toBool());
@@ -216,7 +218,7 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
 void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
-    qDebug()<<"FEditItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString();
+//    qDebug()<<"FEditItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString();
     model->setData(model->index(index.row(), changedIndex), "yes");
     if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
@@ -224,7 +226,7 @@ void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         QTime time = QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }
-    else if (index.column() == repeatIndex)
+    else if (index.column() == alikeIndex)
     {
         QCheckBox *checkBox = qobject_cast<QCheckBox*>(editor);
         model->setData(index, checkBox->isChecked());
@@ -280,7 +282,7 @@ QSize FEditItemDelegate::sizeHint(const QStyleOptionViewItem &option,
 
 bool FEditItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
 {
-    if (index.column() == repeatIndex && event->type() == QEvent::MouseButtonRelease && false)
+    if (index.column() == alikeIndex && event->type() == QEvent::MouseButtonRelease && false)
     {
         bool value = index.data( ).toBool();
         qDebug()<<"editorEvent"<<index.row()<<index.column()<<index.data()<<event->type()<<value;
@@ -314,3 +316,11 @@ void FEditItemDelegate::commitAndCloseEditor()
     emit closeEditor(editor);
 }
 //! [5]
+
+void FEditItemDelegate::onSpinnerPositionChanged(int frames)
+{
+    STimeSpinBox *editor = qobject_cast<STimeSpinBox *>(sender());
+//    qDebug()<<"FEditItemDelegate::onSpinnerPositionChanged"<<frames<<editor->value();
+    emit commitData(editor);
+//    emit spinnerChanged(editor);
+}

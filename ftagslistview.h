@@ -13,11 +13,12 @@ class FTagsListView: public QListView
 public:
     FTagsListView(QWidget *parent = nullptr);
     QStandardItemModel *tagsItemModel;
+    bool addTag(QString tagString);
 private:
-    void loadModel(QStandardItemModel *editItemModel);
+    void loadModel(QAbstractItemModel *editItemModel);
 
 public slots:
-    void onFolderIndexClicked(FEditItemModel *model);
+    void onFolderIndexClicked(QAbstractItemModel *model);
 private slots:
     void onDoubleClicked(const QModelIndex &index);
 };

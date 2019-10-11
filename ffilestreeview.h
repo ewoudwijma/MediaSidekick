@@ -29,6 +29,7 @@ public slots:
 signals:
     void indexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void fileDelete(QString fileName);
+    void fileRename();
     void trim(QString fileName);
     void getPropertyValue(QString fileName, QString key, QString *value);
 

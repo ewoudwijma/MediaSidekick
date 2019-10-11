@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Fipre - Fix it in pre</string>
+   <string>Fipre - Video Sidekick</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -135,7 +135,17 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
-                <widget class="STimeSpinBox" name="defaultMinSpinBox"/>
+                <widget class="STimeSpinBox" name="defaultMinSpinBox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>80</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="QLabel" name="label_2">
@@ -159,7 +169,24 @@
                 </widget>
                </item>
                <item>
-                <widget class="STimeSpinBox" name="defaultPlusSpinBox"/>
+                <widget class="STimeSpinBox" name="defaultPlusSpinBox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>80</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="resetSortButton">
+                 <property name="text">
+                  <string>Reset sort</string>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="FStarEditor" name="starEditorFilterWidget" native="true">
@@ -171,6 +198,13 @@
                  </property>
                  <property name="styleSheet">
                   <string notr="true">background-color: rgb(0, 0, 0);</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="alikeCheckBox">
+                 <property name="text">
+                  <string>Alike</string>
                  </property>
                 </widget>
                </item>
@@ -202,9 +236,16 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="allCheckBox">
+                <widget class="QCheckBox" name="fileOnlyCheckBox">
                  <property name="text">
-                  <string>All</string>
+                  <string>File only</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="stretchedCheckBox">
+                 <property name="text">
+                  <string>Stretched</string>
                  </property>
                 </widget>
                </item>
@@ -248,7 +289,7 @@
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_9">
                  <item>
-                  <widget class="QLineEdit" name="newTagLineEdit">
+                  <widget class="FDragDropLineEdit" name="newTagLineEdit">
                    <property name="placeholderText">
                     <string>new tag</string>
                    </property>
@@ -331,10 +372,17 @@
             </widget>
            </item>
            <item>
-            <widget class="STimeSpinBox" name="transitionTimeSpinBox"/>
+            <widget class="STimeSpinBox" name="transitionTimeSpinBox">
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="TransitionTimeCheckBox">
+            <widget class="QCheckBox" name="transitionTimeCheckBox">
              <property name="text">
               <string/>
              </property>
@@ -364,7 +412,14 @@
             </widget>
            </item>
            <item>
-            <widget class="STimeSpinBox" name="stretchedDurationSpinBox"/>
+            <widget class="STimeSpinBox" name="stretchedDurationSpinBox">
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QCheckBox" name="stretchedDurationCheckBox">
@@ -392,9 +447,6 @@
           <widget class="FTimeline" name="timelineWidget" native="true">
            <property name="autoFillBackground">
             <bool>false</bool>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 0, 0);</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10"/>
           </widget>
@@ -544,27 +596,28 @@
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>&amp;File</string>
     </property>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Help</string>
+     <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
     <addaction name="actionAbout_Qt"/>
+    <addaction name="actionDebug_mode"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
-     <string>View</string>
+     <string>&amp;View</string>
     </property>
     <addaction name="actionWhite_theme"/>
     <addaction name="actionBlack_theme"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>Edit</string>
+     <string>&amp;Edit</string>
     </property>
     <addaction name="actionNew"/>
     <addaction name="separator"/>
@@ -574,7 +627,7 @@
     <addaction name="action3_stars"/>
     <addaction name="action4_stars"/>
     <addaction name="action5_stars"/>
-    <addaction name="actionRepeat"/>
+    <addaction name="actionAlike"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="separator"/>
@@ -582,7 +635,7 @@
    </widget>
    <widget class="QMenu" name="menuPlayer">
     <property name="title">
-     <string>Player</string>
+     <string>&amp;Player</string>
     </property>
     <addaction name="actionPrevious_in_out"/>
     <addaction name="actionPrevious_frame"/>
@@ -595,7 +648,7 @@
    </widget>
    <widget class="QMenu" name="menuGenerate">
     <property name="title">
-     <string>Generate</string>
+     <string>&amp;Generate</string>
     </property>
     <addaction name="actionGenerate"/>
    </widget>
@@ -617,7 +670,7 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionQuit">
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
    <property name="toolTip">
     <string>Quit</string>
@@ -628,27 +681,39 @@
   </action>
   <action name="actionAbout">
    <property name="text">
-    <string>About</string>
+    <string>&amp;About</string>
    </property>
   </action>
   <action name="actionWhite_theme">
    <property name="text">
-    <string>White theme (Ctrl+W)</string>
+    <string>&amp;White theme</string>
+   </property>
+   <property name="toolTip">
+    <string>White theme</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
    </property>
   </action>
   <action name="actionBlack_theme">
    <property name="text">
-    <string>Black theme (Ctrl+B)</string>
+    <string>&amp;Black theme</string>
+   </property>
+   <property name="toolTip">
+    <string>Black theme</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
    </property>
   </action>
   <action name="actionAbout_Qt">
    <property name="text">
-    <string>About Qt</string>
+    <string>About &amp;Qt</string>
    </property>
   </action>
   <action name="actionNew">
    <property name="text">
-    <string>New</string>
+    <string>&amp;New</string>
    </property>
    <property name="toolTip">
     <string>New</string>
@@ -657,20 +722,20 @@
     <string>Ins</string>
    </property>
   </action>
-  <action name="actionRepeat">
+  <action name="actionAlike">
    <property name="text">
-    <string>Repeat</string>
+    <string>&amp;Alike</string>
    </property>
    <property name="toolTip">
-    <string>Repeat</string>
+    <string>Alike</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+R</string>
+    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="action1_star">
    <property name="text">
-    <string>1 star</string>
+    <string>&amp;1 star</string>
    </property>
    <property name="toolTip">
     <string>1 star</string>
@@ -681,7 +746,7 @@
   </action>
   <action name="action2_stars">
    <property name="text">
-    <string>2 stars</string>
+    <string>&amp;2 stars</string>
    </property>
    <property name="toolTip">
     <string>2 stars</string>
@@ -692,7 +757,7 @@
   </action>
   <action name="action3_stars">
    <property name="text">
-    <string>3 stars</string>
+    <string>&amp;3 stars</string>
    </property>
    <property name="toolTip">
     <string>3 stars</string>
@@ -703,7 +768,7 @@
   </action>
   <action name="action4_stars">
    <property name="text">
-    <string>4 stars</string>
+    <string>&amp;4 stars</string>
    </property>
    <property name="toolTip">
     <string>4 stars</string>
@@ -714,7 +779,7 @@
   </action>
   <action name="action5_stars">
    <property name="text">
-    <string>5 stars</string>
+    <string>&amp;5 stars</string>
    </property>
    <property name="toolTip">
     <string>5 stars</string>
@@ -725,7 +790,7 @@
   </action>
   <action name="action0_stars">
    <property name="text">
-    <string>0 stars</string>
+    <string>&amp;0 stars</string>
    </property>
    <property name="toolTip">
     <string>0 stars</string>
@@ -736,7 +801,7 @@
   </action>
   <action name="actionSave">
    <property name="text">
-    <string>Save</string>
+    <string>&amp;Save</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -744,7 +809,7 @@
   </action>
   <action name="actionPlay_Pause">
    <property name="text">
-    <string>Play/Pause</string>
+    <string>&amp;Play/Pause</string>
    </property>
    <property name="shortcut">
     <string>Space</string>
@@ -752,7 +817,7 @@
   </action>
   <action name="actionIn">
    <property name="text">
-    <string>In</string>
+    <string>&amp;In</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+I</string>
@@ -760,7 +825,7 @@
   </action>
   <action name="actionOut">
    <property name="text">
-    <string>Out</string>
+    <string>&amp;Out</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -808,10 +873,21 @@
   </action>
   <action name="actionGenerate">
    <property name="text">
-    <string>Generate</string>
+    <string>&amp;Generate</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="actionDebug_mode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Debug mode</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
    </property>
   </action>
  </widget>
@@ -880,6 +956,11 @@
    <extends>QWidget</extends>
    <header>fgenerate.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FDragDropLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>fdragdroplineedit.h</header>
   </customwidget>
  </customwidgets>
  <resources>

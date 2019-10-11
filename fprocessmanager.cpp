@@ -40,7 +40,8 @@ void FProcessManager::ExecuteProcess()
         processOutputString = "";
         QString tf = processQueue->takeFirst();
         qDebug()<<"FProcessManager::ExecuteProcess()"<<tf;
-        process->start(tf);
+//        if (tf != "") //in case no command (execute processfinished after other commands)
+            process->start(tf);
     }
 }
 

@@ -50,8 +50,8 @@ private:
     void stretchDuration(int duration);
 public slots:
     void onDurationChanged(int duration);
-    void onFolderIndexClicked(FEditSortFilterProxyModel *editProxyModel);
-    void onEditsChangedFromVideo(FEditSortFilterProxyModel *editProxyModel);
+    void onFolderIndexClicked(QAbstractItemModel *itemModel);
+    void oneditsChangedToTimeline(QAbstractItemModel *itemModel);
     void onFileIndexClicked(QModelIndex index);
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
@@ -62,6 +62,7 @@ private slots:
 signals:
     void timelinePositionChanged(int position, int editRow, int relativeProgress);
     void getPropertyValue(QString fileName, QString key, QString *value);
+    void editsChangedToVideo(QAbstractItemModel *itemModel);
 
 };
 

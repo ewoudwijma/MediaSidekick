@@ -1,6 +1,8 @@
 #ifndef FEDITITEMDELEGATE_H
 #define FEDITITEMDELEGATE_H
 
+#include "stimespinbox.h"
+
 #include <QStyledItemDelegate>
 
 class FEditItemDelegate : public QStyledItemDelegate
@@ -21,9 +23,11 @@ public:
     bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) override;
 signals:
     void onStartEditing(QModelIndex);
+//    void spinnerChanged(STimeSpinBox *timeSpinBox);
 private slots:
     void commitAndCloseEditor();
 
+    void onSpinnerPositionChanged(int frames);
 };
 
 #endif // FEDITITEMDELEGATE_H

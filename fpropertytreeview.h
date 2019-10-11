@@ -23,6 +23,9 @@ public slots:
     void onGetPropertyValue(QString fileName, QString key, QString *value);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void onEditIndexClicked(QModelIndex index);
+    void onFileDelete(QString fileName);
+    void onFileRename();
+    void onTrim();
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
@@ -38,7 +41,7 @@ private:
     void updateFrozenTableGeometry();
     void setCellStyle(QStringList fileNames);
     void onPropertyChanged(QStandardItem *item);
-    bool propertiesLoading;
+    bool isLoading;
     void updateGeneratedName(QModelIndex index);
 protected:
       void resizeEvent(QResizeEvent *event) override;

@@ -141,7 +141,7 @@ void FFilesTreeView::onFileRename()
          for (int i=0; i< fileNameList.count();i++)
          {
 //             QString fileName = fileNameList[i];
-             emit fileDelete(fileNameList[i]); //to stop the video
+             emit fileDelete(fileNameList[i]); //to stop the video (tbd:but not to remove the edits!!!)
              QFile file(folderName + fileNameList[i]);
              QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
              qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
@@ -160,6 +160,7 @@ void FFilesTreeView::onFileRename()
                     file->rename(folderName + newFileNameList[i] + ".txt");
              }
          }
+         emit fileRename();
      }
 
      fileContextMenu->close();

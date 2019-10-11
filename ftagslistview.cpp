@@ -11,7 +11,9 @@ FTagsListView::FTagsListView(QWidget *parent) : QListView(parent)
     setModel(tagsItemModel);
 
     //from designer defaults
-    setDragDropMode(DragDropMode::DragDrop);
+    setDragDropMode(DragDropMode::DragOnly);
+//    setDefaultDropAction(Qt::MoveAction);
+
     setFlow(Flow::LeftToRight);
     setWrapping(true);
     setSpacing(5);
@@ -21,14 +23,36 @@ FTagsListView::FTagsListView(QWidget *parent) : QListView(parent)
     connect(this, &FTagsListView::doubleClicked, this, &FTagsListView::onDoubleClicked);
 }
 
-void FTagsListView::onFolderIndexClicked(FEditItemModel *model)
+void FTagsListView::onFolderIndexClicked(QAbstractItemModel *model)
 {
 //    QString lastFolder = QSettings().value("LastFolder").toString();
     qDebug()<<"FTagsListView::onFolderIndexClicked"<<model->rowCount();
     loadModel(model);
 }
 
-void FTagsListView::loadModel(QStandardItemModel *editItemModel)
+bool FTagsListView::addTag(QString tagString)
+{
+    QList<QStandardItem *> foundItems = tagsItemModel->findItems(tagString);
+    if (foundItems.count() > 0)
+    {
+//                    qDebug()<<"Taggg"<<foundItems.count() << foundItems.first()->row() <<foundItems.first()->column() << tagsItemModel->index(foundItems.first()->row(),1).data().toString();
+        tagsItemModel->item(foundItems.first()->row(), 1)->setData(tagsItemModel->index(foundItems.first()->row(),1).data().toString() + "I" , Qt::DisplayRole);
+        return false;
+    }
+    else
+    {
+        QList<QStandardItem *> items;
+        QStandardItem *item = new QStandardItem(tagString);
+        item->setBackground(QBrush(Qt::red));
+//                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
+        items.append(item);
+        items.append(new QStandardItem("I")); //nr of occurrences
+        tagsItemModel->appendRow(items);
+        return true;
+    }
+}
+
+void FTagsListView::loadModel(QAbstractItemModel *editItemModel)
 {
     tagsItemModel->removeRows(0, tagsItemModel->rowCount());
     for (int i = 0; i < editItemModel->rowCount(); i++)
@@ -39,25 +63,9 @@ void FTagsListView::loadModel(QStandardItemModel *editItemModel)
 
         for (int j=0; j < tagList.count(); j++)
         {
-            QList<QStandardItem *> foundItems = tagsItemModel->findItems(tagList[j].toLower());
-            if (foundItems.count() > 0)
-            {
-//                    qDebug()<<"Taggg"<<foundItems.count() << foundItems.first()->row() <<foundItems.first()->column() << tagsItemModel->index(foundItems.first()->row(),1).data().toString();
-                tagsItemModel->item(foundItems.first()->row(), 1)->setData(tagsItemModel->index(foundItems.first()->row(),1).data().toString() + "I" , Qt::DisplayRole);
-            }
-            else
-            {
-                QList<QStandardItem *> items;
-                QStandardItem *item = new QStandardItem(tagList[j].toLower());
-                item->setBackground(QBrush(Qt::red));
-//                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
-                items.append(item);
-                items.append(new QStandardItem("I")); //nr of occurrences
-                tagsItemModel->appendRow(items);
-            }
+            addTag(tagList[j].toLower());
         }
     }
-
 }
 
 void FTagsListView::onDoubleClicked(const QModelIndex &index)
