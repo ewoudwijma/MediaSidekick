@@ -91,8 +91,8 @@ private slots:
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
 signals:
     void videoPositionChanged(int position, int editRow, int relativeProgress);
-    void inChanged(int row, int in);
-    void outChanged(int row, int out);
+    void scrubberInChanged(int row, int in);
+    void scrubberOutChanged(int row, int out);
     void getPropertyValue(QString fileName, QString key, QString *value);
     void fpsChanged(int fps);
 

@@ -106,11 +106,17 @@ void FEditTableView::onSectionMoved(int logicalIndex, int oldVisualIndex, int ne
 {
 
 //    qDebug()<<"FEditTableView::onSectionMoved"<<logicalIndex<< oldVisualIndex<< newVisualIndex;
+//    doNotUpdate = true;
     for (int row=0; row<editProxyModel->rowCount();row++)
     {
-        editProxyModel->setData(editProxyModel->index(row, orderAfterMovingIndex), (verticalHeader()->visualIndex(row) + 1) * 10);
-        editProxyModel->setData(editProxyModel->index(row, changedIndex), "yes");
+        int newOrder = (verticalHeader()->visualIndex(row) + 1) * 10;
+        if (editProxyModel->index(row, orderAfterMovingIndex).data().toInt() != newOrder)
+        {
+            editProxyModel->setData(editProxyModel->index(row, orderAfterMovingIndex), newOrder);
+            editProxyModel->setData(editProxyModel->index(row, changedIndex), "yes");
+        }
     }
+//    doNotUpdate = false;
 
     emit editsChangedToTimeline(editProxyModel); //not to video because this will not change the video
 }
@@ -118,7 +124,7 @@ void FEditTableView::onSectionMoved(int logicalIndex, int oldVisualIndex, int ne
 void FEditTableView::onFolderIndexClicked(QModelIndex )//index
 {
     selectedFolderName = QSettings().value("LastFolder").toString();
-    qDebug()<<"FEditTableView::onFolderIndexClicked"<<selectedFolderName;
+//    qDebug()<<"FEditTableView::onFolderIndexClicked"<<selectedFolderName;
     loadModel(selectedFolderName);
 
     emit folderIndexClickedItemModel(editItemModel);
@@ -163,7 +169,7 @@ void FEditTableView::selectEdits()
             backgroundColor = qApp->palette().color(QPalette::Base);
         }
 
-        for (int col=2;col<model()->columnCount();col++)
+        for (int col=0;col<model()->columnCount();col++)
         {
             QModelIndex index = model()->index(row, col);
             model()->setData(index, backgroundColor, Qt::BackgroundRole);
@@ -182,7 +188,7 @@ void FEditTableView::addEdit(int minus, int plus)
     }
 
     QTime newInTime = QTime::fromMSecsSinceStartOfDay(position - minus);
-    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + plus - 1000 / frameRate);
+    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + plus - 1000 / QSettings().value("frameRate").toInt());
 
     int rowToAppendBefore = -1;
     int fileRow = -1;
@@ -250,7 +256,7 @@ void FEditTableView::addEdit(int minus, int plus)
     items.append(new QStandardItem(*fpsValue));
     items.append(new QStandardItem(newInTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newOutTime.toString("HH:mm:ss.zzz")));
-    items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(newOutTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"))); //durationIndex
+    items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(newOutTime) + 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"))); //durationIndex
     items.append(starItem);
     items.append(new QStandardItem(""));
     items.append(new QStandardItem(""));
@@ -269,7 +275,7 @@ void FEditTableView::addEdit(int minus, int plus)
 
     emit editsChangedToVideo(model());
     emit editsChangedToTimeline(editProxyModel);
-}
+} //addEdit
 
 void FEditTableView::onEditRightClickMenu(const QPoint &point)
 {
@@ -324,6 +330,8 @@ void FEditTableView::onTrim(QString pfileName)
     qDebug()<<"FEditTableView::onTrim"<< pfileName;
     if (checkSaveIfEditsChanged())
     {
+        onSectionMoved(-1,-1,-1); //to reorder the items
+
         for (int row =0; row < srtFileItemModel->rowCount();row++)
         {
             saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
@@ -344,7 +352,7 @@ void FEditTableView::onTrim(QString pfileName)
             inTime = inTime.addMSecs(-deltaIn);
             int deltaOut = 1000;//fmin(1000, ui->videoWidget->m_player->duration() - outTime.msecsSinceStartOfDay());
             outTime = outTime.addMSecs(deltaOut);
-            int duration = inTime.msecsTo(outTime) + 1000 / frameRate;
+            int duration = inTime.msecsTo(outTime) + 1000 / QSettings().value("frameRate").toInt();
 
     //                qDebug()<<i<<srtItemModel->index(i,inIndex).data().toString()<<srtItemModel->index(i,outIndex).data().toString();
     //                qDebug()<<"times"<<inTime<< deltaIn<< outTime<< deltaOut<< duration<<ui->videoWidget->m_player->duration();
@@ -419,7 +427,7 @@ void FEditTableView::onTrim(QString pfileName)
                 srtContentString += "<t>" + editItemModel->index(row, tagIndex).data().toString() + "</t>";
 
                 stream << 1 << endl;
-                stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  1000 / frameRate).toString("HH:mm:ss.zzz") << endl;
+                stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz") << endl;
                 stream << srtContentString << endl;
                 stream << endl;
 
@@ -431,6 +439,7 @@ void FEditTableView::onTrim(QString pfileName)
     } //for each edit of file
 
     //save copied, auto save because trim is done anyway
+//    onSectionMoved(-1,-1,-1); //to reorder the items
 //    for (int row =0; row < srtFileItemModel->rowCount();row++)
 //    {
 //        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
@@ -441,25 +450,43 @@ void FEditTableView::onTrim(QString pfileName)
     {
         FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
         editTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
-        emit editTableView->trim(""); //triggers properly load
+        emit editTableView->trim(""); //triggers property load
     });
 
 } //onTrim
 
 void FEditTableView::onPropertiesLoaded()
 {
+    int fpsSuggested = -1;
+    bool fpsFound = false;
     for (int row=0; row<editItemModel->rowCount();row++)
     {
         QString *fpsValue = new QString();
         emit getPropertyValue(editItemModel->index(row, fileIndex).data().toString(), "VideoFrameRate", fpsValue);
         editItemModel->setData(editItemModel->index(row, fpsIndex), *fpsValue);
+
+        if ((*fpsValue).toInt() == QSettings().value("frameRate").toInt())
+            fpsFound = true;
+        else
+            fpsSuggested = (*fpsValue).toInt();
+    }
+
+    if (!fpsFound && fpsSuggested > 0)
+    {
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Loading edits", "There are no edits with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
+                                       QMessageBox::Yes|QMessageBox::No);
+
+        if (reply == QMessageBox::Yes)
+            emit frameRateChanged(fpsSuggested);
+//            QSettings().setValue("frameRate",fpsSuggested);
     }
 }
 
 void FEditTableView::onEditDelete()
 {
     QModelIndexList indexList = selectionModel()->selectedIndexes();
-    qDebug()<<"FEditTableView::onEditDelete"<<selectionModel()<<indexList.count();
+//    qDebug()<<"FEditTableView::onEditDelete"<<selectionModel()<<indexList.count()<<indexList.first().data().toString();
 
     QMap<int, int> rowMap; //sorted by fileName and inTime
     for (int i=0; i < indexList.count() ;i++)
@@ -467,19 +494,29 @@ void FEditTableView::onEditDelete()
         QModelIndex currentModelIndex = indexList[i];
         if (currentModelIndex.row() >= 0 && currentModelIndex.column() >= 0)
         {
-            rowMap[currentModelIndex.row()] = i;
+            rowMap[currentModelIndex.row()] = editProxyModel->index(currentModelIndex.row(), orderAtLoadIndex).data().toInt();
+//            qDebug()<<"  FEditTableView::onEditDelete"<<currentModelIndex.row()<<currentModelIndex.data().toString();
         }
     }
 
-    QMapIterator<int, int> rowIterator(rowMap);
-    rowIterator.toBack();
-    while (rowIterator.hasPrevious()) //all files in reverse order
+    for (int row = 0; row < editItemModel->rowCount(); row++)
     {
-        rowIterator.previous();
-        qDebug()<<"  FEditTableView::onEditDelete"<<rowIterator.key();
-        editItemModel->takeRow(rowIterator.key());
+        QMapIterator<int, int> rowIterator(rowMap);
+    //    rowIterator.toBack();
+        while (rowIterator.hasNext()) //all files in reverse order
+        {
+            rowIterator.next();
+
+//            qDebug()<<"  FEditTableView::onEditDelete"<<row<<rowIterator.key()<<rowIterator.value()<<editItemModel->index(row, orderAtLoadIndex).data().toInt();
+            if (editItemModel->index(row, orderAtLoadIndex).data().toInt() == rowIterator.value())
+            {
+//                qDebug()<<"  FEditTableView::onEditDelete TAKEROW"<<row<<verticalHeader()->logicalIndex(row);
+                editItemModel->takeRow(row);
+            }
+        }
     }
 
+    //set orderBeforeLoadIndex correct
     for (int row = 0; row<editItemModel->rowCount();row++)
     {
         int order = editItemModel->index(row, orderBeforeLoadIndex).data().toInt();
@@ -490,11 +527,12 @@ void FEditTableView::onEditDelete()
         }
     }
 
-    //auto save because edit is gone
-    for (int row =0; row < srtFileItemModel->rowCount();row++)
-    {
-        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
-    }
+//    //auto save because edit is gone
+//    onSectionMoved(-1,-1,-1); //to reorder the items
+//    for (int row =0; row < srtFileItemModel->rowCount();row++)
+//    {
+//        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
+//    }
 
     emit editsChangedToVideo(model());
     emit editsChangedToTimeline(editProxyModel);
@@ -509,21 +547,14 @@ void FEditTableView::onVideoPositionChanged(int progress, int row, int relativeP
 
     if (progress != 0)
     {
-//        QTime time = QTime::fromMSecsSinceStartOfDay(progress);
-//        QString text = time.toString("hh:mm:ss.zzz");
 
 //        qDebug()<<"FEditTableView::onVideoPositionChanged: " << progress<<time<<text<<currentIndex().data();
         int foundRow = -1;
         for (int i = 0; i < model()->rowCount(); i++)
         {
-//            QTime inTime = QTime::fromString(model()->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
-//            QTime outTime = QTime::fromString(model()->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
-
             if (model()->index(i,orderBeforeLoadIndex).data().toInt() == row)
             {
                 foundRow = i;
-    //            QModelIndex currentModelIndex = ui->editTableView->currentIndex();
-    //            if (currentModelIndex.row() != i)
             }
         }
         if (foundRow != -1)
@@ -532,7 +563,7 @@ void FEditTableView::onVideoPositionChanged(int progress, int row, int relativeP
             {
                 clearSelection();
                 setSelectionMode(QAbstractItemView::MultiSelection);
-                for (int col = 2; col < model()->columnCount();col++)
+                for (int col = 0; col < model()->columnCount();col++)
                 {
                     setCurrentIndex(model()->index(foundRow,col));
                 }
@@ -548,7 +579,7 @@ void FEditTableView::onVideoPositionChanged(int progress, int row, int relativeP
     }
 }
 
-void FEditTableView::onInChanged(int row, int in)
+void FEditTableView::onScrubberInChanged(int row, int in)
 {
     QTime newInTime = QTime::fromMSecsSinceStartOfDay(FGlobal().msec_rounded_to_fps(in));
 
@@ -559,17 +590,21 @@ void FEditTableView::onInChanged(int row, int in)
         if (editCounter == row)
         {
             QTime outTime = QTime::fromString(editItemModel->index(i,outIndex).data().toString(),"HH:mm:ss.zzz");
-            qDebug()<<"FEditTableView::onInChanged"<<i<< in<<newInTime.msecsSinceStartOfDay();
-            editItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(outTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-            editItemModel->item(i, changedIndex)->setData("yes",Qt::DisplayRole);
+            qDebug()<<"FEditTableView::onScrubberInChanged"<<i<< in<<newInTime.msecsSinceStartOfDay();
+//            editItemModel->blockSignals(false);
+            doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
+            editItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
+            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(newInTime.msecsTo(outTime) + 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"),Qt::EditRole);
+            editItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
+            doNotUpdate = false;
+//            editItemModel->blockSignals(false);
         //            setCurrentIndex(editItemModel->index(i,inIndex));
             emit editsChangedToTimeline(editProxyModel); //not to video because video initiated it
         }
     }
 }
 
-void FEditTableView::onOutChanged(int row, int out)
+void FEditTableView::onScrubberOutChanged(int row, int out)
 {
     QTime newOutTime = QTime::fromMSecsSinceStartOfDay(FGlobal().msec_rounded_to_fps(out));
 
@@ -580,10 +615,14 @@ void FEditTableView::onOutChanged(int row, int out)
         if (editCounter == row)
         {
             QTime inTime = QTime::fromString(editItemModel->index(i,inIndex).data().toString(),"HH:mm:ss.zzz");
-            qDebug()<<"FEditTableView::onOutChanged"<<i<< out<<newOutTime.msecsSinceStartOfDay();
-            editItemModel->item(i, changedIndex)->setData("yes",Qt::DisplayRole);
-            editItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(newOutTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+            qDebug()<<"FEditTableView::onScrubberOutChanged"<<i<< out<<newOutTime.msecsSinceStartOfDay();
+//            editItemModel->blockSignals(true);
+            doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
+            editItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
+            editItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
+            editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(newOutTime) + 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"),Qt::EditRole);
+            doNotUpdate = false;
+//            editItemModel->blockSignals(false);
         //            setCurrentIndex(editItemModel->index(i,inIndex));
             emit editsChangedToTimeline(editProxyModel); //not to video because video initiated it
         }
@@ -610,23 +649,23 @@ void FEditTableView::onDataChanged(const QModelIndex &topLeft, const QModelIndex
         if (topLeft.column() == inIndex)
         {
             doNotUpdate = true;
-            editItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(time.msecsTo(outTime) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+            editItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(time.msecsTo(outTime) + 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
             emit updateIn(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
         }
         else if (topLeft.column() == outIndex)
         {
             doNotUpdate = true;
-            editItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(time) + 1000 / frameRate).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+            editItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(time) + 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
             emit updateOut(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
         }
         else if (topLeft.column() == durationIndex)
         {
-            int duration = inTime.msecsTo(outTime) + 1000 / frameRate;
+            int duration = inTime.msecsTo(outTime) + 1000 / QSettings().value("frameRate").toInt();
             int delta = time.msecsSinceStartOfDay() - duration;
             int newIn = inTime.addMSecs(-delta/2).msecsSinceStartOfDay();
             int newOut = outTime.addMSecs(delta/2).msecsSinceStartOfDay();
 
-            qDebug()<<"FEditTableView::onDataChanged"<<topLeft.column()<<time.msecsSinceStartOfDay()<<inTime.msecsSinceStartOfDay()<<newIn<<outTime.msecsSinceStartOfDay()<<newOut;
+//            qDebug()<<"FEditTableView::onDataChanged"<<topLeft.column()<<time.msecsSinceStartOfDay()<<inTime.msecsSinceStartOfDay()<<newIn<<outTime.msecsSinceStartOfDay()<<newOut;
 
             doNotUpdate = true;
             if (newIn != inTime.msecsSinceStartOfDay())
@@ -650,7 +689,7 @@ void FEditTableView::onDataChanged(const QModelIndex &topLeft, const QModelIndex
 
 QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
 {
-    qDebug()<<"FEditTableView::read"<<folderName << fileName;
+//    qDebug()<<"FEditTableView::read"<<folderName << fileName;
     QString srtFileName;
 //    fileName = QString(mediaFilePath.toString()).replace(".mp4",".srt").replace(".jpg",".srt").replace(".avi",".srt").replace(".wmv",".srt");
 //    fileName.replace(".MP4",".srt").replace(".JPG",".srt").replace(".AVI",".srt").replace(".WMV",".srt");
@@ -772,6 +811,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
                 tags.replace(" ", ";");
             }
 
+            int duration = inTime.msecsTo(outTime)+1000 / QSettings().value("frameRate").toInt();
             QList<QStandardItem *> items;
             items.append(new QStandardItem(QString::number(editCounter)));
             items.append(new QStandardItem(order));
@@ -782,7 +822,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
             items.append(new QStandardItem(""));
             items.append(new QStandardItem(inTime.toString("HH:mm:ss.zzz")));
             items.append(new QStandardItem(outTime.toString("HH:mm:ss.zzz")));
-            items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(inTime.msecsTo(outTime)+1000 / frameRate).toString("HH:mm:ss.zzz"))); //durationIndex
+            items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(duration).toString("HH:mm:ss.zzz"))); //durationIndex
             items.append(starItem);
             items.append(new QStandardItem(alike));
             items.append(new QStandardItem(hint));
@@ -790,6 +830,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
             srtItemModel->appendRow(items);
 //                QLineEdit *edit = new QLineEdit(this);
             editCounter++;
+            originalDuration += FGlobal().msec_to_frames(duration);
         }
     }
 
@@ -845,6 +886,8 @@ void FEditTableView::loadModel(QString folderName)
 {
     if (checkSaveIfEditsChanged())
     {
+        onSectionMoved(-1,-1,-1); //to reorder the items
+
         for (int row =0; row < srtFileItemModel->rowCount();row++)
         {
             saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
@@ -852,6 +895,7 @@ void FEditTableView::loadModel(QString folderName)
     }
 
     editCounter = 1;
+    originalDuration = 0;
     editItemModel->removeRows(0, editItemModel->rowCount());
     srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
     scanDir(QDir(folderName));
@@ -892,22 +936,22 @@ void FEditTableView::saveModel(QString folderName, QString fileName)
         }
     }
 
-    qDebug()<<"FEditTableView::saveModel"<<editItemModel->rowCount()<<folderName<<fileName<<inMap.count();
+    int lastIndex = fileName.lastIndexOf(".");
+    QString srtFileName = fileName.left(lastIndex) + ".srt";
+    QFile file;
+    file.setFileName(folderName + srtFileName);
 
-    if (changeCount > 0)
+    if (inMap.count() > 0)
     {
-        int lastIndex = fileName.lastIndexOf(".");
-        QString srtFileName = fileName.left(lastIndex) + ".srt";
+        qDebug()<<"FEditTableView::saveModel"<<editItemModel->rowCount()<<fileName<<changeCount<<inMap.count();
 
-        if (inMap.count() > 0)
+        if (changeCount > 0) //changes in this file
         {
-            QFile file;
             int editPerFileCounter = 0;
             editPerFileCounter = 1;
 
 //            qDebug()<<"FEditTableView::saveModel"<<srtFileName;
 
-            file.setFileName(folderName + srtFileName);
             file.open(QIODevice::WriteOnly);
 
             QMapIterator<QString, int> inIterator(inMap);
@@ -938,12 +982,12 @@ void FEditTableView::saveModel(QString folderName, QString fileName)
             }
             file.close();
         }
-        else
-        {
-            QFile file(folderName + srtFileName);
-            if (file.exists())
-               file.remove();
-        }
+
+    }
+    else
+    {
+        if (file.exists())
+           file.remove();
     }
 }
 

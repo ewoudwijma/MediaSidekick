@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>832</width>
+    <width>963</width>
     <height>602</height>
    </rect>
   </property>
@@ -63,57 +63,7 @@
             <property name="styleSheet">
              <string notr="true">background-color: rgba(0,0,0,0)</string>
             </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>150</width>
-                 <height>150</height>
-                </size>
-               </property>
-               <property name="cursor">
-                <cursorShape>ArrowCursor</cursorShape>
-               </property>
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">background-color: rgba(255, 255, 255, 50);</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="images.qrc">:/fiprelogo.png</pixmap>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
-               </property>
-              </widget>
-             </item>
-            </layout>
-            <zorder>horizontalSpacer_4</zorder>
-            <zorder>label_8</zorder>
+            <layout class="QHBoxLayout" name="horizontalLayout_4"/>
            </widget>
           </item>
          </layout>
@@ -330,6 +280,20 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QCheckBox" name="locationCheckBox">
+               <property name="text">
+                <string>Location</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="cameraCheckBox">
+               <property name="text">
+                <string>Camera</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -382,13 +346,6 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="transitionTimeCheckBox">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QLabel" name="label_6">
              <property name="text">
               <string>Transition</string>
@@ -396,7 +353,12 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="transitionCcomboBox">
+            <widget class="QComboBox" name="transitionComboBox">
+             <item>
+              <property name="text">
+               <string>No transition</string>
+              </property>
+             </item>
              <item>
               <property name="text">
                <string>Cross dissolve</string>
@@ -422,11 +384,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="stretchedDurationCheckBox">
+            <widget class="QPushButton" name="stretch100Button">
              <property name="text">
-              <string/>
+              <string>100%</string>
              </property>
             </widget>
+           </item>
+           <item>
+            <widget class="QDial" name="stretchDial"/>
            </item>
            <item>
             <spacer name="horizontalSpacer_2">
@@ -474,6 +439,11 @@
                <item>
                 <property name="text">
                  <string>Preview</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Final Cut</string>
                 </property>
                </item>
                <item>
@@ -532,7 +502,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QDoubleSpinBox" name="frameRateSpinBox"/>
+              <widget class="QSpinBox" name="frameRateSpinBox"/>
              </item>
              <item>
               <widget class="QPushButton" name="generateButton">
@@ -590,7 +560,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>832</width>
+     <width>963</width>
      <height>17</height>
     </rect>
    </property>
@@ -724,13 +694,13 @@
   </action>
   <action name="actionAlike">
    <property name="text">
-    <string>&amp;Alike</string>
+    <string>A&amp;like</string>
    </property>
    <property name="toolTip">
     <string>Alike</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+A</string>
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="action1_star">
@@ -963,8 +933,6 @@
    <header>fdragdroplineedit.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="images.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

@@ -26,7 +26,7 @@ FTagsListView::FTagsListView(QWidget *parent) : QListView(parent)
 void FTagsListView::onFolderIndexClicked(QAbstractItemModel *model)
 {
 //    QString lastFolder = QSettings().value("LastFolder").toString();
-    qDebug()<<"FTagsListView::onFolderIndexClicked"<<model->rowCount();
+//    qDebug()<<"FTagsListView::onFolderIndexClicked"<<model->rowCount();
     loadModel(model);
 }
 

@@ -18,7 +18,8 @@ class SScrubBar : public QWidget
         CONTROL_NONE,
         CONTROL_HEAD,
         CONTROL_IN,
-        CONTROL_OUT
+        CONTROL_OUT,
+        CONTROL_BOTH
     };
 
 public:
@@ -50,8 +51,8 @@ public:
     EditInOutStruct getInOutPoint(int row);
 signals:
     void seeked(int);
-    void inChanged(int row, int in);
-    void outChanged(int row, int out);
+    void scrubberInChanged(int row, int in);
+    void scrubberOutChanged(int row, int out);
 
 public slots:
     bool onSeek(int value);
@@ -81,6 +82,8 @@ private:
     QList<int> m_markers;
 
     void updatePixmap();
+
+    int currentEdit;
 };
 
 #endif // SSCRUBBAR_H

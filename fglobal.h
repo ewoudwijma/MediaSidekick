@@ -18,7 +18,7 @@ static const int alikeIndex = 11;
 static const int hintIndex = 12;
 static const int tagIndex = 13;
 
-static const int frameRate = 25;
+//static const int frameRate = 25;
 
 class FGlobal
 {

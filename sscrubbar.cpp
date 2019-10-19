@@ -23,6 +23,8 @@ SScrubBar::SScrubBar(QWidget *parent)
     readOnly = true;
     setMouseTracking(true);
     setMinimumHeight(fontMetrics().height() + 2 * selectionSize);
+
+    currentEdit = -1;
 }
 
 void SScrubBar::setScale(int maximum)
@@ -85,12 +87,12 @@ void SScrubBar::setInOutPoint(int row, int in, int out)
         if (m_in_out_list[foundRow].in != in)
         {
             m_in_out_list[foundRow].in = in;
-            emit inChanged(row, in);
+            emit scrubberInChanged(row, in);
         }
         if (m_in_out_list[foundRow].out != out)
         {
             m_in_out_list[foundRow].out = out;
-            emit outChanged(row, out);
+            emit scrubberOutChanged(row, out);
         }
     }
     else
@@ -131,14 +133,16 @@ void SScrubBar::setMarkers(const QList<int> &list)
 
 void SScrubBar::mousePressEvent(QMouseEvent * event)
 {
-//    qDebug()<<"mousePressEvent"<<event->x();
     int x = event->x() - margin;
     int head = m_head * m_scale;
     int pos = CLAMP(x / m_scale, 0, m_max);
 
+    currentEdit = -1;
     if (!readOnly)
-    foreach (EditInOutStruct inOut, m_in_out_list)
+//    foreach (EditInOutStruct inOut, m_in_out_list)
+    for (int i=0; i< m_in_out_list.count();i++)
     {
+        EditInOutStruct inOut = m_in_out_list[i];
 
         int in = inOut.in * m_scale;
         int out = inOut.out * m_scale;
@@ -146,14 +150,22 @@ void SScrubBar::mousePressEvent(QMouseEvent * event)
         if (x >= in - 12 && x <= in + 6)
         {
             m_activeControl = CONTROL_IN;
-            setInOutPoint(inOut.row, pos, inOut.out); //out the same
+//            setInOutPoint(inOut.row, pos, inOut.out); //out the same
+            currentEdit = i;
         }
         else if (x >= out - 6 && x <= out + 12)
         {
             m_activeControl = CONTROL_OUT;
-            setInOutPoint(inOut.row, inOut.in, pos); //in the same
+//            setInOutPoint(inOut.row, inOut.in, pos); //in the same
+            currentEdit = i;
+        }
+        else if (x > in + 6 && x < out -12)
+        {
+            m_activeControl = CONTROL_BOTH;
+            currentEdit = i;
         }
     }
+    qDebug()<<"mousePressEvent"<<event->x()<<currentEdit;
 
     if (m_head > -1) {
         if (m_activeControl == CONTROL_NONE) {
@@ -173,6 +185,7 @@ void SScrubBar::mouseReleaseEvent(QMouseEvent * event)
 //    qDebug()<<"mouseReleaseEvent";
     Q_UNUSED(event)
     m_activeControl = CONTROL_NONE;
+    currentEdit = -1;
 }
 
 void SScrubBar::mouseMoveEvent(QMouseEvent * event)
@@ -182,35 +195,47 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
 
     if (event->buttons() & Qt::LeftButton)
     {
-        if (!readOnly)
-        foreach (EditInOutStruct inOut, m_in_out_list)
+
+        if (!readOnly && currentEdit != -1)
+            //        foreach (EditInOutStruct inOut, m_in_out_list)
+//        for (int i=0; i< m_in_out_list.count();i++)
         {
+            qDebug()<<"mouseMoveEvent"<<m_activeControl<<currentEdit<<x;
+            int i = currentEdit;
+            EditInOutStruct inOut = m_in_out_list[i];
 
             int in = inOut.in * m_scale;
             int out = inOut.out * m_scale;
 
+
             if (m_activeControl == CONTROL_IN)
             {
-                if (x >= in - 12 && x <= in + 6)
+                if ( i== 0 || (i>0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
+//                if (x >= in - 24 && x <= in + 12)
                 {
-//                    qDebug()<<"mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
+                    qDebug()<<"mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
                     setInOutPoint(inOut.row, pos, inOut.out); //out the same
                 }
             }
             else if (m_activeControl == CONTROL_OUT)
             {
-                if (x >= out - 12 && x <= out + 6)
+                if ( i == m_in_out_list.count()-1 || (i<m_in_out_list.count()-1 && pos < m_in_out_list[i+1].in - 12)) //not overlapping previous
+//                if (x >= out - 24 && x <= out + 100)
                 {
-//                    qDebug()<<"mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
+                    qDebug()<<"mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
                     setInOutPoint(inOut.row, inOut.in, pos); //in the same
                 }
             }
-            else //move whole edit
+            else if (m_activeControl == CONTROL_BOTH)//move whole edit
             {
-                if (x > in + 6 && x < out -12)
+                int newIn = pos - (inOut.out - inOut.in)/2;
+                int newOut = pos + (inOut.out - inOut.in)/2;
+                if ( ((i == m_in_out_list.count()-1 && newOut <= m_max ) || (i<m_in_out_list.count()-1 && newOut < m_in_out_list[i+1].in - 12)) &&
+                     ((i== 0 && newIn >= 0)|| (i>0 && newIn > m_in_out_list[i-1].out + 12))                     ) //not overlapping previous
+//                if (x > in + 12 && x < out -24)
                 {
-//                    qDebug()<<"mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
-                    setInOutPoint(inOut.row, pos - (inOut.out - inOut.in)/2, pos + (inOut.out - inOut.in)/2);
+                    qDebug()<<"mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
+                    setInOutPoint(inOut.row, newIn, newOut);
                 }
             }
         }
@@ -301,21 +326,23 @@ void SScrubBar::paintEvent(QPaintEvent *e)
 
             // draw in point
 //            const int in = margin + m_in_list[i] * m_scale;
-            pa.setPoints(3, in - selectionSize / 2, altY, in - selectionSize / 2, selectionSize - 1 + altY, in - 1, selectionSize / 2 + altY);
+            int selsiz = selectionSize*0.8;
+            int plusY = selectionSize * 0.1;
+            pa.setPoints(3, in - selsiz / 2, altY + plusY, in - selsiz / 2, selsiz - 1 + altY + plusY, in - 1, selsiz / 2 + altY + plusY);
             p.setBrush(palette().text().color());
             p.setPen(Qt::NoPen);
             p.drawPolygon(pa);
-            p.setPen(pen);
-            p.drawLine(in, altY, in, selectionSize - 1 + altY);
+//            p.setPen(pen);
+//            p.drawLine(in, altY, in, selsiz - 1 + altY);
 
             // draw out point
 //            const int out = margin + m_out_list[i] * m_scale;
-            pa.setPoints(3, out + selectionSize / 2, altY, out + selectionSize / 2, selectionSize - 1 + altY, out, selectionSize / 2 + altY);
+            pa.setPoints(3, out + selsiz / 2, altY + plusY, out + selsiz / 2, selsiz - 1 + altY + plusY, out, selsiz / 2 + altY + plusY);
             p.setBrush(palette().text().color());
             p.setPen(Qt::NoPen);
             p.drawPolygon(pa);
-            p.setPen(pen);
-            p.drawLine(out, altY, out, selectionSize - 1 + altY);
+//            p.setPen(pen);
+//            p.drawLine(out, altY, out, selsiz - 1 + altY);
 
             if (altY == 0)
                 altY = selectionSize;

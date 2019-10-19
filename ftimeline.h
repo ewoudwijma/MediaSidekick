@@ -1,7 +1,6 @@
 #ifndef FTIMELINE_H
 #define FTIMELINE_H
 
-#include "fedititemmodel.h"
 #include "feditsortfilterproxymodel.h"
 #include "fedittableview.h"
 #include "sscrubbar.h"
@@ -21,6 +20,8 @@ class FTimeline : public QWidget
 public:
     explicit FTimeline(QWidget *parent = nullptr);
     QStandardItemModel *timelineModel;
+    int m_duration;
+
 private:
     QAction *actionPlay;
     QAction *actionPause;
@@ -38,7 +39,6 @@ private:
     int m_position;
     int m_previousIn;
     int m_previousOut;
-    int m_duration;
     bool m_isSeekable;
 
     void setupActions(QWidget *widget);
@@ -51,11 +51,11 @@ private:
 public slots:
     void onDurationChanged(int duration);
     void onFolderIndexClicked(QAbstractItemModel *itemModel);
-    void oneditsChangedToTimeline(QAbstractItemModel *itemModel);
+    void onEditsChangedToTimeline(QAbstractItemModel *itemModel);
     void onFileIndexClicked(QModelIndex index);
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onTimelineWidgetsChanged(int transitionTime, Qt::CheckState transitionChecked, int stretchTime, Qt::CheckState stretchChecked, FEditTableView *editTableView);
+    void onTimelineWidgetsChanged(int transitionTime, QString transitionType, int stretchTime, bool stretchChecked, FEditTableView *editTableView);
 
 private slots:
     void onScrubberSeeked(int mseconds);
@@ -63,6 +63,7 @@ signals:
     void timelinePositionChanged(int position, int editRow, int relativeProgress);
     void getPropertyValue(QString fileName, QString key, QString *value);
     void editsChangedToVideo(QAbstractItemModel *itemModel);
+    void editsChangedToTimeline(QAbstractItemModel *itemModel);
 
 };
 

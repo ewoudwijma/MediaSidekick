@@ -4,11 +4,15 @@
 
 #include <QStyleFactory>
 
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QShortcut>
+#include <QTimer>
 #include <QtDebug>
 
 #include "fglobal.h"
+
+#include <QtMath>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -107,7 +111,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, ui->timelineWidget, &FTimeline::onFolderIndexClicked);
     ui->graphicsView->connectNodes("edit", "time", "folder");
     connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set edit counter
-    ui->graphicsView->connectNodes("edit", "main", "editchange");
+    ui->graphicsView->connectNodes("edit", "main", "folder");
     connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->videoWidget, &FVideoWidget::onFileIndexClicked); //setmedia
     ui->graphicsView->connectNodes("edit", "video", "file");
     connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->timelineWidget, &FTimeline::onFileIndexClicked); //currently nothing happens
@@ -123,11 +127,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->editTableView, &FEditTableView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onEditIndexClicked);
     ui->graphicsView->connectNodes("edit", "video", "edit");
     connect(ui->editTableView, &FEditTableView::editsChangedToVideo, ui->videoWidget, &FVideoWidget::onEditsChangedToVideo);
-    ui->graphicsView->connectNodes("edit", "video", "editchange");
+    ui->graphicsView->connectNodes("edit", "video", "editchangevideo");
     connect(ui->editTableView, &FEditTableView::editsChangedToVideo, this,  &MainWindow::onEditsChangedToVideo);
-    ui->graphicsView->connectNodes("edit", "main", "editchange");
-    connect(ui->editTableView, &FEditTableView::editsChangedToTimeline, ui->timelineWidget,  &FTimeline::oneditsChangedToTimeline);
-    ui->graphicsView->connectNodes("edit", "time", "editchangevideo");
+    ui->graphicsView->connectNodes("edit", "main", "editchangevideo");
+    connect(ui->editTableView, &FEditTableView::editsChangedToTimeline, ui->timelineWidget,  &FTimeline::onEditsChangedToTimeline);
+    ui->graphicsView->connectNodes("edit", "time", "editchangetimeline");
     connect(ui->editTableView, &FEditTableView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView->connectNodes("edit", "prop", "get");
     connect(ui->editTableView, &FEditTableView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
@@ -139,13 +143,15 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->editTableView, &FEditTableView::updateIn, ui->videoWidget, &FVideoWidget::onUpdateIn);
     connect(ui->editTableView, &FEditTableView::updateOut, ui->videoWidget, &FVideoWidget::onUpdateOut);
 
+    connect(ui->editTableView, &FEditTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
+
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->editTableView, &FEditTableView::onVideoPositionChanged);
     ui->graphicsView->connectNodes("video", "edit", "pos");
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->timelineWidget, &FTimeline::onVideoPositionChanged);
     ui->graphicsView->connectNodes("video", "time", "pos");
-    connect(ui->videoWidget, &FVideoWidget::inChanged, ui->editTableView, &FEditTableView::onInChanged);
+    connect(ui->videoWidget, &FVideoWidget::scrubberInChanged, ui->editTableView, &FEditTableView::onScrubberInChanged);
     ui->graphicsView->connectNodes("video", "edit", "in");
-    connect(ui->videoWidget, &FVideoWidget::outChanged, ui->editTableView, &FEditTableView::onOutChanged);
+    connect(ui->videoWidget, &FVideoWidget::scrubberOutChanged, ui->editTableView, &FEditTableView::onScrubberOutChanged);
     ui->graphicsView->connectNodes("video", "edit", "out");
     connect(ui->videoWidget, &FVideoWidget::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView->connectNodes("video", "prop", "get");
@@ -155,7 +161,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->timelineWidget, &FTimeline::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView->connectNodes("time", "prop", "get");
     connect(ui->timelineWidget, &FTimeline::editsChangedToVideo, ui->videoWidget, &FVideoWidget::onEditsChangedToVideo);
-    ui->graphicsView->connectNodes("time", "video", "editchange");
+    ui->graphicsView->connectNodes("time", "video", "editchangevideo");
+    connect(ui->timelineWidget, &FTimeline::editsChangedToTimeline, this, &MainWindow::onEditsChangedToTimeline);
+    ui->graphicsView->connectNodes("time", "main", "editchangetimeline");
 
     connect(ui->propertyTreeView, &FPropertyTreeView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
     ui->graphicsView->connectNodes("video", "prop", "get");
@@ -181,8 +189,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->fileOnlyCheckBox, &QCheckBox::clicked, this, &MainWindow::onEditFilterChanged);
     connect(ui->alikeCheckBox, &QCheckBox::clicked, this, &MainWindow::onEditFilterChanged);
 
-//    connect(ui->editTableView->itemDelegate(), &FEditItemModel::spinn
-
     //load settings
 
     int starInt = QSettings().value("starsFilter").toInt();
@@ -191,20 +197,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->starEditorFilterWidget->setStarRating(starRating);
 
     ui->transitionTimeSpinBox->setValue(QSettings().value("transitionTime").toInt());
-    Qt::CheckState checkState;
-    if (QSettings().value("transitionTimeCheckBox").toBool())
-        checkState = Qt::Checked;
-    else
-        checkState = Qt::Unchecked;
-    ui->transitionTimeCheckBox->setCheckState(checkState);
+    ui->transitionComboBox->setCurrentText(QSettings().value("transitionType").toString());
 
+//    ui->stretchedDurationSpinBox->blockSignals(true); // do not save immediately in on_stretchedDurationSpinBox_valueChanged
     ui->stretchedDurationSpinBox->setValue(QSettings().value("stretchedDuration").toInt());
-    if (QSettings().value("stretchedDurationCheckBox").toBool())
-        checkState = Qt::Checked;
-    else
-        checkState = Qt::Unchecked;
-    qDebug()<<"stretchedDurationCheckBox"<<checkState;
-    ui->stretchedDurationCheckBox->setCheckState(checkState);
+//    ui->stretchedDurationSpinBox->blockSignals(false);
 
     ui->defaultMinSpinBox->setValue(QSettings().value("defaultMinDuration").toInt());
     ui->defaultPlusSpinBox->setValue(QSettings().value("defaultPlusDuration").toInt());
@@ -212,8 +209,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->generateTargetComboBox->setCurrentText(QSettings().value("generateTarget").toString());
     ui->generateSizeComboBox->setCurrentText(QSettings().value("generateSize").toString());
 
-    qDebug()<<"tagFilter1"<<QSettings().value("tagFilter1").toString();
-    qDebug()<<"tagFilter2"<<QSettings().value("tagFilter2").toString();
+//    qDebug()<<"tagFilter1"<<QSettings().value("tagFilter1").toString();
+//    qDebug()<<"tagFilter2"<<QSettings().value("tagFilter2").toString();
     QStringList tagList1 = QSettings().value("tagFilter1").toString().split(";");
     if (tagList1.count()==1 && tagList1[0] == "")
         tagList1.clear();
@@ -244,11 +241,12 @@ MainWindow::MainWindow(QWidget *parent) :
         tagFilter2Model->appendRow(items);
     }
 
-    double lframeRate = QSettings().value("frameRate").toDouble();
+    int lframeRate = QSettings().value("frameRate").toInt();
     if (lframeRate < 1)
             lframeRate = 25;
     ui->frameRateSpinBox->setValue(lframeRate);
 
+    Qt::CheckState checkState;
     if (QSettings().value("alikeCheckBox").toBool())
         checkState = Qt::Checked;
     else
@@ -263,7 +261,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //
     onEditFilterChanged(); //initial setup
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
+//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), false, ui->editTableView);
 
     ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
@@ -320,11 +318,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     on_actionDebug_mode_triggered(false); //no debug mode
 
-    QString theme = QSettings().value("theme").toString();
-    if (theme == "White")
-        on_actionWhite_theme_triggered();
-    else
-        on_actionBlack_theme_triggered();
+    ui->stretchDial->setNotchesVisible(true);
+
+    QTimer::singleShot(0, this, [this]()->void
+    {
+                           QString theme = QSettings().value("theme").toString();
+                           if (theme == "White")
+                               on_actionWhite_theme_triggered();
+                           else
+                               on_actionBlack_theme_triggered();
+                       });
 }
 
 MainWindow::~MainWindow()
@@ -397,13 +400,13 @@ void MainWindow::on_actionWhite_theme_triggered()
     QColor linkVisitedColor = QColor(255, 0, 255);
     QColor highlightColor = QColor(0,120,215);
 
-    qDebug()<<""<<qApp->palette().color(QPalette::Window);
-    qDebug()<<""<<qApp->palette().color(QPalette::Base);
-    qDebug()<<""<<qApp->palette().color(QPalette::Disabled, QPalette::Text);
-    qDebug()<<""<<qApp->palette().color(QPalette::Link);
-    qDebug()<<""<<qApp->palette().color(QPalette::LinkVisited);
-    qDebug()<<""<<qApp->palette().color(QPalette::Highlight);
-    qDebug()<<""<<qApp->palette().color(QPalette::PlaceholderText);
+//    qDebug()<<""<<qApp->palette().color(QPalette::Window);
+//    qDebug()<<""<<qApp->palette().color(QPalette::Base);
+//    qDebug()<<""<<qApp->palette().color(QPalette::Disabled, QPalette::Text);
+//    qDebug()<<""<<qApp->palette().color(QPalette::Link);
+//    qDebug()<<""<<qApp->palette().color(QPalette::LinkVisited);
+//    qDebug()<<""<<qApp->palette().color(QPalette::Highlight);
+//    qDebug()<<""<<qApp->palette().color(QPalette::PlaceholderText);
 
     QPalette palette;
     palette.setColor(QPalette::Window, mainColor);
@@ -462,17 +465,17 @@ void MainWindow::on_actionAbout_Qt_triggered()
 
 void MainWindow::on_newEditButton_clicked()
 {
-    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*1000 / frameRate,ui->defaultPlusSpinBox->value()*1000 / frameRate);
+    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*1000 / QSettings().value("frameRate").toInt(),ui->defaultPlusSpinBox->value()*1000 / QSettings().value("frameRate").toInt());
 }
 
 void MainWindow::on_propertyFilterLineEdit_textChanged(const QString &)//arg1
 {
-    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox);
+    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
 }
 
 void MainWindow::on_propertyDiffCheckBox_stateChanged(int )//arg1
 {
-    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox);
+    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
 }
 
 void MainWindow::onEditsChangedToVideo(QAbstractItemModel *itemModel)
@@ -482,7 +485,7 @@ void MainWindow::onEditsChangedToVideo(QAbstractItemModel *itemModel)
 
 void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 {
-    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount();
+//    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount();
 
     ui->editrowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
 
@@ -576,10 +579,21 @@ void MainWindow::on_actionAlike_triggered()
 
 void MainWindow::on_actionSave_triggered()
 {
-    for (int row =0; row < ui->editTableView->srtFileItemModel->rowCount();row++)
+    int changeCount = 0;
+    for (int row=0; row<ui->editTableView->editItemModel->rowCount();row++)
     {
-//        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
-        ui->editTableView->saveModel(ui->editTableView->srtFileItemModel->index(row, 0).data().toString(), ui->editTableView->srtFileItemModel->index(row, 1).data().toString());
+        if (ui->editTableView->editItemModel->index(row, changedIndex).data().toString() == "yes")
+            changeCount++;
+    }
+    if (changeCount>0)
+    {
+        ui->editTableView->onSectionMoved(-1,-1,-1); //to reorder the items
+
+        for (int row =0; row < ui->editTableView->srtFileItemModel->rowCount();row++)
+        {
+    //        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
+            ui->editTableView->saveModel(ui->editTableView->srtFileItemModel->index(row, 0).data().toString(), ui->editTableView->srtFileItemModel->index(row, 1).data().toString());
+        }
     }
 }
 
@@ -590,55 +604,41 @@ void MainWindow::on_actionPlay_Pause_triggered()
 
 void MainWindow::on_actionNew_triggered()
 {
-    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*1000 / frameRate, ui->defaultPlusSpinBox->value()*1000 / frameRate);
+    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*1000 / QSettings().value("frameRate").toInt(), ui->defaultPlusSpinBox->value()*1000 / QSettings().value("frameRate").toInt());
 }
 
 void MainWindow::on_transitionTimeSpinBox_valueChanged(int arg1)
 {
-    qDebug()<<"MainWindow::on_transitionTimeSpinBox_valueChanged"<<arg1;
-    QSettings().setValue("transitionTime", arg1);
-    QSettings().sync();
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
-}
-
-void MainWindow::on_transitionTimeCheckBox_clicked(bool checked)
-{
-    qDebug()<<"MainWindow::on_transitionTimeCheckBox_clicked"<<checked;
-    QSettings().setValue("transitionTimeCheckBox", checked);
-    QSettings().sync();
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
-
+    if (QSettings().value("transitionTime") != arg1)
+    {
+        qDebug()<<"MainWindow::on_transitionTimeSpinBox_valueChanged"<<arg1;
+        QSettings().setValue("transitionTime", arg1);
+        QSettings().sync();
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationSpinBox->value() != ui->editTableView->originalDuration, ui->editTableView);
+    }
 }
 
 void MainWindow::on_stretchedDurationSpinBox_valueChanged(int arg1)
 {
-    qDebug()<<"MainWindow::on_stretchedDurationSpinBox_valueChanged"<<arg1;
-    QSettings().setValue("stretchedDuration", arg1);
-    QSettings().sync();
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
-}
-
-void MainWindow::on_stretchedDurationCheckBox_clicked(bool checked)
-{
-    qDebug()<<"MainWindow::on_stretchedDurationCheckBox_clicked"<<checked;
-    QSettings().setValue("stretchedDurationCheckBox", checked);
-    QSettings().sync();
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionTimeCheckBox->checkState(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationCheckBox->checkState(), ui->editTableView);
-
+    if (QSettings().value("stretchedDuration") != arg1)
+    {
+        qDebug()<<"MainWindow::on_stretchedDurationSpinBox_valueChanged"<<arg1<<ui->editTableView->originalDuration;
+        QSettings().setValue("stretchedDuration", arg1);
+        QSettings().sync();
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationSpinBox->value() != ui->editTableView->originalDuration, ui->editTableView);
+    }
 }
 
 void MainWindow::on_actionIn_triggered()
 {
     qDebug()<<"MainWindow::on_updateInButton_clicked"<<ui->editTableView->highLightedRow<<ui->videoWidget->m_position;
     ui->videoWidget->onUpdateIn();
-//    ui->editTableView->onInChanged(ui->editTableView->highLightedRow, ui->videoWidget->m_position);
 }
 
 void MainWindow::on_actionOut_triggered()
 {
     qDebug()<<"MainWindow::on_updateOutButton_clicked"<<ui->editTableView->highLightedRow<<ui->videoWidget->m_position;
     ui->videoWidget->onUpdateOut();
-//    ui->editTableView->onOutChanged(ui->editTableView->highLightedRow, ui->videoWidget->m_position);
 }
 
 void MainWindow::on_actionPrevious_frame_triggered()
@@ -663,40 +663,23 @@ void MainWindow::on_actionNext_in_out_triggered()
 
 void MainWindow::on_defaultMinSpinBox_valueChanged(int arg1)
 {
-    QSettings().setValue("defaultMinDuration", arg1);
-    QSettings().sync();
+    if (QSettings().value("defaultMinDuration") != arg1)
+    {
+        qDebug()<<"MainWindow::on_defaultMinSpinBox_valueChanged"<<arg1;
+        QSettings().setValue("defaultMinDuration", arg1);
+        QSettings().sync();
+    }
 }
 
 void MainWindow::on_defaultPlusSpinBox_valueChanged(int arg1)
 {
-    QSettings().setValue("defaultPlusDuration", arg1);
-    QSettings().sync();
+    if (QSettings().value("defaultPlusDuration") != arg1)
+    {
+        qDebug()<<"MainWindow::on_defaultPlusSpinBox_valueChanged"<<arg1;
+        QSettings().setValue("defaultPlusDuration", arg1);
+        QSettings().sync();
+    }
 }
-
-//void MainWindow::on_tagsListView_doubleClicked(const QModelIndex &index)
-//{
-//    qDebug()<<"MainWindow::on_tagsListView_doubleClicked"<<index.data().toString();
-//}
-
-//void MainWindow::on_tagsListView_pressed(const QModelIndex &index)
-//{
-//    qDebug()<<"MainWindow::on_tagsListView_pressed"<<index.data().toString();
-//}
-
-//void MainWindow::on_tagsListView_activated(const QModelIndex &index)
-//{
-//    qDebug()<<"MainWindow::on_tagsListView_activated"<<index.data().toString();
-//}
-
-//void MainWindow::on_tagsListView_clicked(const QModelIndex &index)
-//{
-//    qDebug()<<"MainWindow::on_tagsListView_clicked"<<index.data().toString();
-//}
-
-//void MainWindow::on_tagsListView_entered(const QModelIndex &index)
-//{
-//    qDebug()<<"MainWindow::on_tagsListView_entered"<<index.data().toString();
-//}
 
 void MainWindow::on_actionAdd_tag_triggered()
 {
@@ -720,27 +703,41 @@ void MainWindow::on_newTagLineEdit_returnPressed()
 void MainWindow::on_generateButton_clicked()
 {
     int transitionTime = 0;
-    if (ui->transitionTimeCheckBox->checkState() == Qt::Checked)
+    if (ui->transitionComboBox->currentText() != "No transition")
         transitionTime = ui->transitionTimeSpinBox->value();
     ui->generateWidget->generate(ui->timelineWidget->timelineModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->frameRateSpinBox->value(), transitionTime, ui->progressBar);
 }
 
 void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg1)
 {
-    QSettings().setValue("generateTarget", arg1);
-    QSettings().sync();
+    if (QSettings().value("generateTarget") != arg1)
+    {
+        QSettings().setValue("generateTarget", arg1);
+        QSettings().sync();
+    }
 }
 
 void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
 {
-    QSettings().setValue("generateSize", arg1);
-    QSettings().sync();
+    if (QSettings().value("generateSize") != arg1)
+    {
+        QSettings().setValue("generateSize", arg1);
+        QSettings().sync();
+    }
 }
 
-void MainWindow::on_frameRateSpinBox_valueChanged(double arg1)
+void MainWindow::on_frameRateSpinBox_valueChanged(int arg1)
 {
-    QSettings().setValue("frameRate", arg1);
-    QSettings().sync();
+    if (QSettings().value("frameRate") != arg1)
+    {
+        QSettings().setValue("frameRate", arg1);
+        QSettings().sync();
+    }
+}
+
+void MainWindow::onFrameRateChanged(int frameRate)
+{
+    ui->frameRateSpinBox->setValue(frameRate);
 }
 
 void MainWindow::on_actionGenerate_triggered()
@@ -750,14 +747,20 @@ void MainWindow::on_actionGenerate_triggered()
 
 void MainWindow::on_alikeCheckBox_clicked(bool checked)
 {
-    QSettings().setValue("alikeCheckBox", checked);
-    QSettings().sync();
+    if (QSettings().value("alikeCheckBox").toBool() != checked)
+    {
+        QSettings().setValue("alikeCheckBox", checked);
+        QSettings().sync();
+    }
 }
 
 void MainWindow::on_fileOnlyCheckBox_clicked(bool checked)
 {
-    QSettings().setValue("fileOnlyCheckBox", checked);
-    QSettings().sync();
+    if (QSettings().value("fileOnlyCheckBox").toBool() != checked)
+    {
+        QSettings().setValue("fileOnlyCheckBox", checked);
+        QSettings().sync();
+    }
 }
 
 void MainWindow::on_actionDebug_mode_triggered(bool checked)
@@ -793,9 +796,117 @@ void MainWindow::on_resetSortButton_clicked()
 
 void MainWindow::on_stretchedCheckBox_clicked(bool checked)
 {
-    if (checked)
+    qDebug()<<"MainWindow::on_stretchedCheckBox_clicked"<<ui->editTableView->editTriggers();
+    if (checked) //no edit
+    {
         ui->editTableView->setModel(ui->timelineWidget->timelineModel);
-    else
+        ui->editTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+//        ui->editTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    }
+    else //edit allowed
+    {
         ui->editTableView->setModel(ui->editTableView->editProxyModel);
+        ui->editTableView->setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::AnyKeyPressed);
+//        ui->editTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    }
+    qDebug()<<"MainWindow::on_stretchedCheckBox_clicked"<<ui->editTableView->editTriggers();
     onEditFilterChanged();
+}
+
+void MainWindow::on_locationCheckBox_clicked(bool checked)
+{
+    if (QSettings().value("locationCheckBox").toBool() != checked)
+    {
+        QSettings().setValue("locationCheckBox", checked);
+        QSettings().sync();
+        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
+    }
+}
+
+void MainWindow::on_cameraCheckBox_clicked(bool checked)
+{
+    if (QSettings().value("cameraCheckBox").toBool() != checked)
+    {
+        QSettings().setValue("cameraCheckBox", checked);
+        QSettings().sync();
+        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
+
+    //    QString fileName = QFileDialog::getOpenFileName(this,
+    //          tr("Open Image"), "/home/", tr("MediaFiles (*.mp4)"));
+
+        QFileDialog dialog(this);
+        dialog.setFileMode(QFileDialog::AnyFile);
+        dialog.setNameFilter(tr("MediaFiles (*.mp4)"));
+        dialog.setViewMode(QFileDialog::List);
+        QStringList fileNames;
+         if (dialog.exec())
+             fileNames = dialog.selectedFiles();
+    }
+}
+
+void MainWindow::on_transitionComboBox_currentTextChanged(const QString &arg1)
+{
+    if (QSettings().value("transitionType") != arg1)
+    {
+        qDebug()<<"MainWindow::on_transitionComboBox_currentTextChanged"<<arg1;
+        QSettings().setValue("transitionType", arg1);
+        QSettings().sync();
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationSpinBox->value() != ui->editTableView->originalDuration, ui->editTableView);
+    }
+}
+
+void MainWindow::on_stretch100Button_clicked()
+{
+//    ui->stretchedDurationSpinBox->setValue(ui->editTableView->originalDuration);
+    ui->stretchDial->setValue(50);
+    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationSpinBox->value() != ui->editTableView->originalDuration, ui->editTableView);
+}
+
+void MainWindow::on_stretchDial_valueChanged(int value)
+{
+    double result;
+    if (value < 50)
+        result = qSin(M_PI * value / 100);
+    else
+        result = 1 / qSin(M_PI * value / 100);
+
+//    result = value / 50.0;
+    qDebug()<<"MainWindow::on_stretchDial_valueChanged"<<value<<ui->editTableView->originalDuration<<result<<stretchValueChangedBy;
+
+    if (stretchValueChangedBy != "SpinBox")
+    {
+        stretchValueChangedBy = "Dial";
+        ui->stretchedDurationSpinBox->setValue(ui->editTableView->originalDuration * result);
+        stretchValueChangedBy = "";
+    }
+    else
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationSpinBox->value() != ui->editTableView->originalDuration, ui->editTableView);
+    ui->stretch100Button->setText(QString::number(ui->stretchedDurationSpinBox->value() * 100 / ui->editTableView->originalDuration, 'g', 3) + "%");
+}
+
+void MainWindow::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
+{
+    if (ui->editTableView->originalDuration != 0 && stretchValueChangedBy != "Dial")
+    {
+        stretchValueChangedBy = "SpinBox";
+        qDebug()<<"MainWindow::onEditsChangedToTimeline"<<ui->stretchedDurationSpinBox->value() << ui->editTableView->originalDuration<<ui->stretchedDurationSpinBox->value() * 100 / ui->editTableView->originalDuration;
+
+        double result = ui->stretchedDurationSpinBox->value() * 50.0/ ui->editTableView->originalDuration;
+
+        if (ui->stretchedDurationSpinBox->value() / double(ui->editTableView->originalDuration) < 1)
+            result = qAsin(ui->stretchedDurationSpinBox->value() / double(ui->editTableView->originalDuration)) * 100 / M_PI;
+        else
+            result = 100 - qAsin(double(ui->editTableView->originalDuration) / double( ui->stretchedDurationSpinBox->value())) * 100 / M_PI;
+//        qDebug()<<"MainWindow::onEditsChangedToTimeline"<<ui->stretchedDurationSpinBox->value() << ui->stretchedDurationSpinBox->value() * 50.0 << result<<ui->stretchedDurationSpinBox->value() /  double(ui->editTableView->originalDuration)<<double(ui->editTableView->originalDuration) / double( ui->stretchedDurationSpinBox->value());
+
+        ui->stretchDial->setValue(result );
+        ui->stretch100Button->setText(QString::number(ui->stretchedDurationSpinBox->value() * 100 / ui->editTableView->originalDuration, 'g', 3) + "%");
+        stretchValueChangedBy = "";
+    }
+}
+
+void MainWindow::on_stretchDial_sliderMoved(int position)
+{
+    int value = position;
+
 }

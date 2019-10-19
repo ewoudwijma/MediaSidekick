@@ -18,7 +18,7 @@ public:
     ~FPropertyTreeView();
 
 public slots:
-    void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
+    void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox);
     void onFolderIndexClicked(QModelIndex index);
     void onGetPropertyValue(QString fileName, QString key, QString *value);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
@@ -42,7 +42,7 @@ private:
     void setCellStyle(QStringList fileNames);
     void onPropertyChanged(QStandardItem *item);
     bool isLoading;
-    void updateGeneratedName(QModelIndex index);
+    void updateSuggestedName(QModelIndex index);
 protected:
       void resizeEvent(QResizeEvent *event) override;
       QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) override;

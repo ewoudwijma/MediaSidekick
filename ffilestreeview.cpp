@@ -24,7 +24,7 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     expandAll();
     show();
     header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    setSelectionMode(QAbstractItemView::ContiguousSelection);
+    setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     connect( this, &QTreeView::clicked, this, &FFilesTreeView::onIndexClicked);
 
@@ -83,7 +83,7 @@ void FFilesTreeView::loadModel(QUrl folderUrl)
 //    indexOf = folderName.lastIndexOf("/");
 //    folderName = folderName.left(indexOf);
 
-    qDebug()<<"FFilesTreeView::loadModel"<<folderUrl<<indexOf<<folderName;
+//    qDebug()<<"FFilesTreeView::loadModel"<<folderUrl<<indexOf<<folderName;
     setRootIndex(fileModel->index(folderName));
 }
 
@@ -115,55 +115,66 @@ void FFilesTreeView::onFileRename()
 {
     QStringList fileNameList;
     QStringList newFileNameList;
+    QStringList noSuggestedList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
-            fileNameList << indexList[i].data().toString();
 
-            QString *generatedName = new QString();
-            emit getPropertyValue(indexList[i].data().toString(), "GeneratedName", generatedName);
+            QString *suggestedName = new QString();
+            emit getPropertyValue(indexList[i].data().toString(), "SuggestedName", suggestedName);
 
-            newFileNameList << *generatedName;
+            if (*suggestedName != "")
+            {
+                fileNameList << indexList[i].data().toString();
+                newFileNameList << *suggestedName;
+            }
+            else
+                noSuggestedList << indexList[i].data().toString();
         }
     }
 
-    QString folderName = QSettings().value("LastFolder").toString();
+    if (noSuggestedList.count() == 0)
+    {
+        QString folderName = QSettings().value("LastFolder").toString();
 
-    QMessageBox::StandardButton reply;
-     reply = QMessageBox::question(this, "Rename " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to rename " + fileNameList.join(", ") + " and its supporting files (srt and txt) to " + newFileNameList.join(", ") + ".* ?",
-                                   QMessageBox::Yes|QMessageBox::No);
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Rename " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to rename " + fileNameList.join(", ") + " and its supporting files (srt and txt) to " + newFileNameList.join(", ") + ".* ?",
+                                       QMessageBox::Yes|QMessageBox::No);
 
-     if (reply == QMessageBox::Yes)
-     {
-
-         for (int i=0; i< fileNameList.count();i++)
+         if (reply == QMessageBox::Yes)
          {
-//             QString fileName = fileNameList[i];
-             emit fileDelete(fileNameList[i]); //to stop the video (tbd:but not to remove the edits!!!)
-             QFile file(folderName + fileNameList[i]);
-             QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
-             qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
-             if (file.exists())
-                file.rename(folderName + newFileNameList[i] + extensionString);
 
-             int lastIndex = fileNameList[i].lastIndexOf(".");
-             if (lastIndex > -1)
+             for (int i=0; i< fileNameList.count();i++)
              {
-                 QFile *file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
-                 if (file->exists())
-                    file->rename(folderName + newFileNameList[i] + ".srt");
+    //             QString fileName = fileNameList[i];
+                 emit fileDelete(fileNameList[i]); //to stop the video (tbd:but not to remove the edits!!!)
+                 QFile file(folderName + fileNameList[i]);
+                 QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
+                 qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
+                 if (file.exists())
+                    file.rename(folderName + newFileNameList[i] + extensionString);
 
-                 file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
-                 if (file->exists())
-                    file->rename(folderName + newFileNameList[i] + ".txt");
+                 int lastIndex = fileNameList[i].lastIndexOf(".");
+                 if (lastIndex > -1)
+                 {
+                     QFile *file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
+                     if (file->exists())
+                        file->rename(folderName + newFileNameList[i] + ".srt");
+
+                     file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
+                     if (file->exists())
+                        file->rename(folderName + newFileNameList[i] + ".txt");
+                 }
              }
+             emit fileRename();
          }
-         emit fileRename();
-     }
+    }
+    else
+        QMessageBox::information(this, "Rename", "No valid suggested name for the following files (see properties tab): " + noSuggestedList.join(", "));
 
-     fileContextMenu->close();
+    fileContextMenu->close();
 }
 
 void FFilesTreeView::onFileDelete()
@@ -216,7 +227,7 @@ void FFilesTreeView::onFileDelete()
 void FFilesTreeView::onFolderIndexClicked(QModelIndex index)
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-    qDebug()<<"FFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
+//    qDebug()<<"FFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
     loadModel(lastFolder);
 }
 

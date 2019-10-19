@@ -27,6 +27,7 @@ public:
     int highLightedRow;
     QStandardItemModel *srtFileItemModel;
     bool checkSaveIfEditsChanged();
+    int originalDuration;
 private:
     QString selectedFolderName;
     QString selectedFileName;
@@ -45,20 +46,19 @@ public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
 
-    void onInChanged(int row, int in);
-    void onOutChanged(int row, int out);
+    void onScrubberInChanged(int row, int in);
+    void onScrubberOutChanged(int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
     void onFileDelete(QString fileName);
     void onTrim(QString fileName);
     void onPropertiesLoaded();
-
+    void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
     void onFileRename();
 private slots:
     void onIndexClicked(QModelIndex index);
     void onEditRightClickMenu(const QPoint &point);
     void onEditDelete();
-    void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
 
 //    void onSpinnerChanged(STimeSpinBox *timeSpinBox);
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
@@ -76,6 +76,7 @@ signals:
     void trim(QString fileName);
     void updateIn(int frames);
     void updateOut(int frames);
+    void frameRateChanged(int frameRate);
 };
 
 #endif // FEDITTABLEVIEW_H

@@ -17,7 +17,7 @@ class FGenerate: public QWidget
 public:
     explicit FGenerate(QWidget *parent = nullptr);
 
-    void generate(QStandardItemModel *timelineModel, QString target, QString size, double frameRate, int transitionTimeMSecs, QProgressBar *progressBar);
+    void generate(QStandardItemModel *timelineModel, QString target, QString size, int pframeRate, int transitionTimeMSecs, QProgressBar *progressBar);
 private:
 //    MainWindow *mainWindow;
     FProcessManager *processManager;

@@ -59,12 +59,16 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         if(option.state & QStyle::State_Selected)
         {
             painter->fillRect(option.rect, option.palette.highlight());
-            checkBoxPalette.setColor( QPalette::Active, QPalette::Background, option.palette.highlight().color() );
+//            checkBoxPalette.setColor( QPalette::Active, QPalette::Background, option.palette.highlight().color() );
+            checkBox->setStyleSheet("background-color: " + option.palette.highlight().color().name());
         }
         else if (backgroundColor != QColor())
         {
-            checkBoxPalette.setColor( QPalette::Active, QPalette::Background, backgroundColor );
+//            checkBoxPalette.setColor( QPalette::Active, QPalette::Background, backgroundColor );
+            checkBox->setStyleSheet("background-color: " + backgroundColor.name());
         }
+        else
+            checkBox->setStyleSheet("background-color: " + option.palette.base().color().name());
         checkBox->setAutoFillBackground(true);
         checkBox->setPalette(checkBoxPalette);
 

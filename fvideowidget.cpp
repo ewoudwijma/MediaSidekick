@@ -24,7 +24,7 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
     m_isSeekable(false)
 {
 //    qDebug()<<"FVideoWidget::FVideoWidget"<<parent;
-    setMinimumSize(minimumSize().width(), 550);
+    setMinimumSize(minimumSize().width(), 250);
 //    setMinimumHeight(250);
 
     parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
@@ -71,8 +71,8 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
     connect(actionStop, &QAction::triggered, this, &FVideoWidget::onStop);
     connect(actionMute, &QAction::triggered, this, &FVideoWidget::onMute);
     connect(m_scrubber, &SScrubBar::seeked, this, &FVideoWidget::onScrubberSeeked);
-    connect(m_scrubber, &SScrubBar::inChanged, this, &FVideoWidget::onScrubberInChanged);
-    connect(m_scrubber, &SScrubBar::outChanged, this, &FVideoWidget::onScrubberOutChanged);
+    connect(m_scrubber, &SScrubBar::scrubberInChanged, this, &FVideoWidget::onScrubberInChanged);
+    connect(m_scrubber, &SScrubBar::scrubberOutChanged, this, &FVideoWidget::onScrubberOutChanged);
 
 
     toolbar = new QToolBar(tr("Transport Controls"), this);
@@ -216,10 +216,10 @@ void FVideoWidget::setupActions(QWidget* widget)
 void FVideoWidget::onFolderIndexClicked(QModelIndex index)
 {
     selectedFolderName = QSettings().value("LastFolder").toString();
-    qDebug()<<"FVideoWidget::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
+//    qDebug()<<"FVideoWidget::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
     m_player->stop();
+    m_player->setMuted(true);
     m_scrubber->clearInOuts();
-//    onFileIndexClicked(QModelIndex());
 }
 
 void FVideoWidget::onFileIndexClicked(QModelIndex index)
@@ -232,12 +232,12 @@ void FVideoWidget::onFileIndexClicked(QModelIndex index)
     fpsRounded = int( qRound(QString(*fpsValue).toDouble() / 5) * 5);
 //    FGlobal().setFramesPerSecond(fpsRounded);
 
-    qDebug()<<"FVideoWidget::onFileIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName<<frameRate;
+    qDebug()<<"FVideoWidget::onFileIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName<<QSettings().value("frameRate").toInt();
     m_player->setMedia(QUrl(selectedFolderName + selectedFileName));
     m_player->play();
-    m_player->setMuted(true);
-    m_player->setNotifyInterval(1000 / frameRate);
-    m_scrubber->setFramerate(frameRate);
+    m_player->pause();
+    m_player->setNotifyInterval(1000 / QSettings().value("frameRate").toInt());
+    m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
 
     emit fpsChanged(fpsRounded);
 }
@@ -253,7 +253,7 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
     if (selectedFileName != fileName)
         selectedFileName = fileName;
 
-//    qDebug()<<"FVideoWidget::onEditIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
+    qDebug()<<"FVideoWidget::onEditIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
 
     if (QUrl(folderFileName) != m_player->media().canonicalUrl())
     {
@@ -263,12 +263,17 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
 //        FGlobal().setFramesPerSecond(fpsRounded);
 
 //        qDebug()<<"FVideoWidget::onEditIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
+        QMediaPlayer::State oldState = m_player->state();
+//        bool oldMuted = m_player->isMuted();
         m_player->setMedia(QUrl(folderFileName));
+
         m_player->play();
-        m_player->pause();
-        m_player->setMuted(true);
-        m_player->setNotifyInterval(1000 / frameRate);
-        m_scrubber->setFramerate(frameRate);
+        if (oldState == QMediaPlayer::PausedState)
+            m_player->pause();
+
+//        m_player->setMuted(oldMuted);
+        m_player->setNotifyInterval(1000 / QSettings().value("frameRate").toInt());
+        m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
     }
 
 //    qDebug()<<"FVideoWidget::onEditIndexClicked"<<index.column()<<m_player->position();
@@ -288,7 +293,15 @@ void FVideoWidget::onEditsChangedToVideo(QAbstractItemModel *itemModel)
     isLoading = true;
     m_scrubber->clearInOuts();
 
-    qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<itemModel->rowCount();
+    FEditSortFilterProxyModel *edititemModel = qobject_cast<FEditSortFilterProxyModel *>(itemModel);
+//    qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<itemModel<<edititemModel;
+
+    if (edititemModel == nullptr) //not edit
+        m_scrubber->readOnly = true;
+    else
+        m_scrubber->readOnly = false;
+
+//    qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<itemModel->rowCount();
     for (int row = 0; row < itemModel->rowCount();row++)
     {
         QString fileName = itemModel->index(row,fileIndex).data().toString();
@@ -370,10 +383,10 @@ void FVideoWidget::onTimelinePositionChanged(int progress, int row, int relative
 
 void FVideoWidget::onSpinnerPositionChanged(int frames)
 {
-//    qDebug()<<"FVideoWidget::onSpinnerPositionChanged"<<frames;
+    qDebug()<<"FVideoWidget::onSpinnerPositionChanged"<<frames;
     isTimelinePlaymode = false;
 
-    m_player->pause();
+//    m_player->pause();
     m_player->setPosition(FGlobal().frames_to_msec(frames));
 //    int *relativeProgressl = new int();
 //    m_scrubber->rowToPosition(row, relativeProgressl);
@@ -389,6 +402,7 @@ void FVideoWidget::onFileDelete(QString fileName)
 {
     if (fileName == selectedFileName)
     {
+        qDebug()<<"FVideoWidget::onFileDelete"<<fileName;
         m_player->stop();
         m_player->setMedia(QMediaContent());
     }
@@ -427,6 +441,8 @@ void FVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 
 void FVideoWidget::togglePlayPaused()
 {
+    qDebug()<<"FVideoWidget::togglePlayPaused"<<m_player->state();
+
     if (m_player->state() != QMediaPlayer::PlayingState)
         m_player->play();
     else if (m_isSeekable)
@@ -439,8 +455,8 @@ void FVideoWidget::fastForward()
 {
     if (m_player->state() != QMediaPlayer::PausedState)
         m_player->pause();
-    if (m_player->position() < m_player->duration() - 1000 / frameRate)
-        m_player->setPosition(m_player->position() + 1000 / frameRate);
+    if (m_player->position() < m_player->duration() - 1000 / QSettings().value("frameRate").toInt())
+        m_player->setPosition(m_player->position() + 1000 / QSettings().value("frameRate").toInt());
     qDebug()<<"onNextKeyframeButtonClicked"<<m_player->position();
 
 }
@@ -449,8 +465,8 @@ void FVideoWidget::rewind()
 {
     if (m_player->state() != QMediaPlayer::PausedState)
         m_player->pause();
-    if (m_player->position() > 1000 / frameRate)
-        m_player->setPosition(m_player->position() - 1000 / frameRate);
+    if (m_player->position() > 1000 / QSettings().value("frameRate").toInt())
+        m_player->setPosition(m_player->position() - 1000 / QSettings().value("frameRate").toInt());
     qDebug()<<"onPreviousKeyframeButtonClicked"<<m_player->position();
 }
 
@@ -496,6 +512,8 @@ void FVideoWidget::skipPrevious()
 
 void FVideoWidget::onStop()
 {
+    qDebug()<<"FVideoWidget::onStop"<<m_player->state();
+
     m_player->stop();
 }
 
@@ -508,7 +526,7 @@ void FVideoWidget::onSpeedChanged(QString speed)
 {
     double playbackRate = speed.left(speed.lastIndexOf("x")).toDouble();
     if (speed.indexOf(" fps")  > 0)
-        playbackRate = speed.left(speed.lastIndexOf(" fps")).toDouble() / frameRate;
+        playbackRate = speed.left(speed.lastIndexOf(" fps")).toDouble() / QSettings().value("frameRate").toInt();
 //    qDebug()<<"FVideoWidget::onSpeedChanged"<<speed<<playbackRate<<speed.lastIndexOf("x")<<speed.left(speed.lastIndexOf("x"));
     m_player->setPlaybackRate(playbackRate);
 }
@@ -520,7 +538,7 @@ void FVideoWidget::onPlaybackRateChanged(qreal rate)
 
 void FVideoWidget::onMutedChanged(bool muted)
 {
-    qDebug()<<"mutedChanged"<<muted;
+//    qDebug()<<"FVideoWidget::onMutedChanged"<<muted;
     actionMute->setIcon(style()->standardIcon(muted
             ? QStyle::SP_MediaVolumeMuted
             : QStyle::SP_MediaVolume));
@@ -531,8 +549,8 @@ void FVideoWidget::onScrubberSeeked(int mseconds)
     isTimelinePlaymode = false;
 
 //    qDebug()<<"FVideoWidget::onScrubberSeeked"<<mseconds;
-    if (m_player->state() != QMediaPlayer::PausedState)
-        m_player->pause();
+//    if (m_player->state() != QMediaPlayer::PausedState)
+//        m_player->pause();
     m_player->setPosition(mseconds);
 }
 
@@ -542,7 +560,7 @@ void FVideoWidget::onScrubberInChanged(int row, int in)
     {
         isTimelinePlaymode = false;
 //        qDebug()<<"FVideoWidget::onScrubberInChanged"<<row<<in;
-        emit inChanged(row, in);
+        emit scrubberInChanged(row, in);
     }
 }
 
@@ -552,7 +570,7 @@ void FVideoWidget::onScrubberOutChanged(int row, int out)
     {
         isTimelinePlaymode = false;
 //        qDebug()<<"FVideoWidget::onScrubberOutChanged"<<row<<out;
-        emit outChanged(row, out);
+        emit scrubberOutChanged(row, out);
     }
 }
 

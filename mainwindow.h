@@ -60,10 +60,6 @@ private slots:
 
     void on_transitionTimeSpinBox_valueChanged(int arg1);
 
-    void on_transitionTimeCheckBox_clicked(bool checked);
-
-    void on_stretchedDurationCheckBox_clicked(bool checked);
-
     void on_stretchedDurationSpinBox_valueChanged(int arg1);
 
     void on_actionIn_triggered();
@@ -82,16 +78,6 @@ private slots:
 
     void on_defaultPlusSpinBox_valueChanged(int arg1);
 
-//    void on_tagsListView_doubleClicked(const QModelIndex &index);
-
-//    void on_tagsListView_pressed(const QModelIndex &index);
-
-//    void on_tagsListView_activated(const QModelIndex &index);
-
-//    void on_tagsListView_clicked(const QModelIndex &index);
-
-//    void on_tagsListView_entered(const QModelIndex &index);
-
     void on_actionAdd_tag_triggered();
 
     void onFolderIndexClicked(QAbstractItemModel *itemModel);
@@ -103,7 +89,7 @@ private slots:
 
     void on_generateSizeComboBox_currentTextChanged(const QString &arg1);
 
-    void on_frameRateSpinBox_valueChanged(double arg1);
+    void on_frameRateSpinBox_valueChanged(int arg1);
 
     void on_actionGenerate_triggered();
 
@@ -118,6 +104,21 @@ private slots:
 
     void on_stretchedCheckBox_clicked(bool checked);
 
+    void onFrameRateChanged(int frameRate);
+
+    void on_locationCheckBox_clicked(bool checked);
+
+    void on_cameraCheckBox_clicked(bool checked);
+
+    void on_transitionComboBox_currentTextChanged(const QString &arg1);
+
+    void on_stretch100Button_clicked();
+
+    void on_stretchDial_valueChanged(int value);
+
+    void onEditsChangedToTimeline(QAbstractItemModel *itemModel);
+    void on_stretchDial_sliderMoved(int position);
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;
@@ -126,11 +127,12 @@ private:
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
     void onTagFiltersChanged();
     QWidget *graphWidget;
+    QString stretchValueChangedBy;
 signals:
-    void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
+    void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox);
     void editFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
-    void timelineWidgetsChanged(int transitionTime, Qt::CheckState transitionChecked, int stretchTime, Qt::CheckState stretchChecked, FEditTableView *editTableView);
+    void timelineWidgetsChanged(int transitionTime, QString transitionType, int stretchTime, bool stretchChecked, FEditTableView *editTableView);
 };
 
 #endif // MAINWINDOW_H

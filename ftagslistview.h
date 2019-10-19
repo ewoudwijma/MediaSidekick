@@ -1,11 +1,8 @@
 #ifndef FTAGSLISTVIEW_H
 #define FTAGSLISTVIEW_H
 
-#include "fedititemmodel.h"
-
 #include <QListView>
 #include <QStandardItemModel>
-
 
 class FTagsListView: public QListView
 {
