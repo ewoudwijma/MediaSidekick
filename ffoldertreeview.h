@@ -2,6 +2,7 @@
 #define FFOLDERTREEVIEW_H
 
 #include <QFileSystemModel>
+#include <QSettings>
 #include <QTreeView>
 
 class FFolderTreeView : public QTreeView
@@ -12,6 +13,8 @@ public:
 
     QFileSystemModel *directoryModel;
     void onIndexClicked(const QModelIndex &index);
+    QSettings *folderSettings;
+
 signals:
     void indexClicked(QModelIndex index);
 };

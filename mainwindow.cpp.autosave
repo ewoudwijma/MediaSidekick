@@ -1057,7 +1057,6 @@ void MainWindow::onAdjustTransitionAndStretchTime(int transitionTime, int stretc
     stretchValueChangedBy = "";
 }
 
-
 void MainWindow::on_positionDial_valueChanged(int value)
 {
     if (positionValueChangedBy != "SpinBox") //do not change the spinbox if the spinbox triggers the change
@@ -1154,4 +1153,3 @@ void MainWindow::onUpgradeTriggered()
 {
     QDesktopServices::openUrl(QUrl(m_upgradeUrl));
 }
-

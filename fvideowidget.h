@@ -21,8 +21,9 @@ class FVideoWidget : public QVideoWidget
 
 public:
     FVideoWidget(QWidget *parent = nullptr);
-    int fpsRounded;
+//    int fpsRounded;
     int m_position;
+    STimeSpinBox* m_positionSpinner;
 private:
     QMediaPlayer *m_player;
 
@@ -41,7 +42,6 @@ private:
 
     QVBoxLayout *parentLayout;
     SScrubBar* m_scrubber;
-    STimeSpinBox* m_positionSpinner;
     QLabel *m_durationLabel;
     QToolBar* toolbar;
     int m_previousIn;
@@ -94,7 +94,7 @@ signals:
     void scrubberInChanged(int row, int in);
     void scrubberOutChanged(int row, int out);
     void getPropertyValue(QString fileName, QString key, QString *value);
-    void fpsChanged(int fps);
+//    void fpsChanged(int fps);
 
 };
 

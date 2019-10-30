@@ -121,7 +121,7 @@ EditInOutStruct SScrubBar::getInOutPoint(int row)
 void SScrubBar::clearInOuts()
 {
     m_in_out_list.clear();
-//    qDebug()<<"clearInOuts"<<m_in_list.count()<<m_out_list.count();
+//    qDebug()<<"SScrubBar::clearInOuts"<<m_in_out_list.count();
     updatePixmap();
 }
 
@@ -163,9 +163,9 @@ void SScrubBar::mousePressEvent(QMouseEvent * event)
         {
             m_activeControl = CONTROL_BOTH;
             currentEdit = i;
+            qDebug()<<"mousePressEvent"<<event->x()<<currentEdit<<in<<x<<out;
         }
     }
-    qDebug()<<"mousePressEvent"<<event->x()<<currentEdit;
 
     if (m_head > -1) {
         if (m_activeControl == CONTROL_NONE) {
@@ -200,20 +200,19 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
             //        foreach (EditInOutStruct inOut, m_in_out_list)
 //        for (int i=0; i< m_in_out_list.count();i++)
         {
-            qDebug()<<"mouseMoveEvent"<<m_activeControl<<currentEdit<<x;
+            qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<currentEdit<<x;
             int i = currentEdit;
             EditInOutStruct inOut = m_in_out_list[i];
 
             int in = inOut.in * m_scale;
             int out = inOut.out * m_scale;
 
-
             if (m_activeControl == CONTROL_IN)
             {
                 if ( i== 0 || (i>0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
 //                if (x >= in - 24 && x <= in + 12)
                 {
-                    qDebug()<<"mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
+                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
                     setInOutPoint(inOut.row, pos, inOut.out); //out the same
                 }
             }
@@ -222,7 +221,7 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
                 if ( i == m_in_out_list.count()-1 || (i<m_in_out_list.count()-1 && pos < m_in_out_list[i+1].in - 12)) //not overlapping previous
 //                if (x >= out - 24 && x <= out + 100)
                 {
-                    qDebug()<<"mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
+                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
                     setInOutPoint(inOut.row, inOut.in, pos); //in the same
                 }
             }
@@ -234,7 +233,7 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
                      ((i== 0 && newIn >= 0)|| (i>0 && newIn > m_in_out_list[i-1].out + 12))                     ) //not overlapping previous
 //                if (x > in + 12 && x < out -24)
                 {
-                    qDebug()<<"mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
+                    qDebug()<<"SScrubBar::mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
                     setInOutPoint(inOut.row, newIn, newOut);
                 }
             }
@@ -265,15 +264,21 @@ bool SScrubBar::onSeek(int value)
     return true;
 }
 
-void SScrubBar::progressToRow(int position, int* row, int* relativePosition)
+void SScrubBar::progressToRow(int position, int *prevRow, int *nextRow, int* relativePosition)
 {
-    *row = -1;
+//    qDebug()<<"SScrubBar::progressToRow"<<position<<*row<<*relativePosition;
+    *prevRow = -1;
+    *nextRow = 99999;
     *relativePosition = -1;
     foreach (EditInOutStruct inOut, m_in_out_list)
     {
+        if (inOut.in <= position)
+            *prevRow = qMax(inOut.row, *prevRow);
+        if (inOut.out >= position)
+            *nextRow = qMin(inOut.row, *nextRow);
+
         if (inOut.in <= position && inOut.out >= position)
         {
-            *row = inOut.row;
             *relativePosition = position - inOut.in;
         }
     }
@@ -450,7 +455,7 @@ void SScrubBar::updatePixmap()
             QTime time = QTime::fromMSecsSinceStartOfDay(frames);
             QString text = time.toString("hh:mm:ss");
             p.drawText(x + 2 * ratio, y, text);
-//            qDebug()<<"Drawtext"<<i<<x;
+//            qDebug()<<"Drawtext"<<i<<x<<time<<frames;
         }
     }
 

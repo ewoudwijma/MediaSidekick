@@ -20,8 +20,10 @@ class FTimeline : public QWidget
 public:
     explicit FTimeline(QWidget *parent = nullptr);
     QStandardItemModel *timelineModel;
-    int m_duration;
 
+    int originalDuration;
+    int transitiontimeDuration;
+//    void calculateTransitiontimeDuration(QAbstractItemModel *itemModel);
 private:
     QAction *actionPlay;
     QAction *actionPause;
@@ -43,11 +45,13 @@ private:
 
     void setupActions(QWidget *widget);
 
-    int transitionTime;
+    int transitiontime;
     int stretchTime;
+
+    int transitiontimeLastGood;
+    int stretchTimeLastGood;
 //    Qt::CheckState transitionChecked;
 
-    void stretchDuration(int duration);
 public slots:
     void onDurationChanged(int duration);
     void onFolderIndexClicked(QAbstractItemModel *itemModel);
@@ -55,15 +59,16 @@ public slots:
     void onFileIndexClicked(QModelIndex index);
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onTimelineWidgetsChanged(int transitionTime, QString transitionType, int stretchTime, bool stretchChecked, FEditTableView *editTableView);
+    void onTimelineWidgetsChanged(int transitiontime, QString transitionType, int stretchTime, FEditTableView *editTableView);
 
 private slots:
     void onScrubberSeeked(int mseconds);
 signals:
     void timelinePositionChanged(int position, int editRow, int relativeProgress);
-    void getPropertyValue(QString fileName, QString key, QString *value);
+//    void getPropertyValue(QString fileName, QString key, QString *value);
     void editsChangedToVideo(QAbstractItemModel *itemModel);
     void editsChangedToTimeline(QAbstractItemModel *itemModel);
+    void adjustTransitionAndStretchTime(int transitionTime, int stretchTime);
 
 };
 

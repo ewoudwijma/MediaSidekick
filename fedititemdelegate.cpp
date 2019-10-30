@@ -27,11 +27,11 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     if (!index.isValid())
         return;
 
-    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *spinBox = new STimeSpinBox();
-        QTime inTime = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
-        spinBox->setValue(FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()));
+        QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
+        spinBox->setValue(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
 
         spinBox->setGeometry(option.rect);
 
@@ -134,7 +134,7 @@ QWidget *FEditItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 {
-    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *editor = new STimeSpinBox(parent);
 
@@ -176,11 +176,11 @@ QWidget *FEditItemDelegate::createEditor(QWidget *parent,
 void FEditItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
-    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
-        QTime inTime = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
-        spinBox->setValue(FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()));
+        QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
+        spinBox->setValue(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
     }
     else if (index.column() == alikeIndex)
     {
@@ -222,11 +222,11 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
 void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
-//    qDebug()<<"FEditItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString();
     model->setData(model->index(index.row(), changedIndex), "yes");
-    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
+        qDebug()<<"FEditItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
         QTime time = QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }

@@ -20,6 +20,10 @@ int main(int argc, char *argv[])
 
     a.processEvents();
 
+//    a.setOrganizationDomain("actioncamvideocompanion.com");
+//    a.setApplicationName("ACVC");
+    a.setApplicationVersion("00.00.01");
+
     MainWindow w;
 
 //    w.setGeometry(1536,512,2048,960);

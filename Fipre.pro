@@ -94,3 +94,4 @@ win32:RC_ICONS += fiprelogo.ico
 
 RESOURCES += \
     images.qrc
+

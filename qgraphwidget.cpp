@@ -139,7 +139,7 @@ QNode* QGraphWidget::addNode(QString nodeName, int x, int y)
     if (x==-1 || y==-1)
         node->setPos(scene()->items().count() * 50, 0);
     else
-        node->setPos(x * 50 - parentWidget()->width() / 4, (y-1)*50 - parentWidget()->height()/2);
+        node->setPos(x * 50 - parentWidget()->width() / 4, (y-2)*50 - parentWidget()->height()/2);
     node->nodeName = nodeName;
     scene()->addItem(node);
     return node;

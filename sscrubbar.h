@@ -46,7 +46,7 @@ public:
 //    void removeInOutPoint(int in, int out);
     bool readOnly;
     void setInOutPoint(int row, int in, int out);
-    void progressToRow(int position, int *row, int *relativePosition);
+    void progressToRow(int position, int *prevRow, int *nextRow, int *relativePosition);
     void rowToPosition(int row, int* relativePosition);
     EditInOutStruct getInOutPoint(int row);
 signals:

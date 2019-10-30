@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QMainWindow>
+#include <QNetworkAccessManager>
 #include <QSettings>
 #include <QStandardItemModel>
 
@@ -117,8 +118,15 @@ private slots:
     void on_stretchDial_valueChanged(int value);
 
     void onEditsChangedToTimeline(QAbstractItemModel *itemModel);
-    void on_stretchDial_sliderMoved(int position);
 
+    void on_transitionDial_valueChanged(int value);
+
+    void on_positionDial_valueChanged(int value);
+    void showUpgradePrompt();
+
+    void onUpgradeCheckFinished(QNetworkReply *reply);
+    void onUpgradeTriggered();
+    void onAdjustTransitionAndStretchTime(int transitionTime, int stretchTime);
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;
@@ -126,13 +134,19 @@ private:
 
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
     void onTagFiltersChanged();
-    QWidget *graphWidget;
+    QWidget *graphWidget1, *graphWidget2;
     QString stretchValueChangedBy;
+    QString transitionValueChangedBy;
+    QString positionValueChangedBy;
+    QNetworkAccessManager m_network;
+    QString m_upgradeUrl;
+    void on_actionUpgrade_triggered();
+
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox);
     void editFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
-    void timelineWidgetsChanged(int transitionTime, QString transitionType, int stretchTime, bool stretchChecked, FEditTableView *editTableView);
+    void timelineWidgetsChanged(int transitionTime, QString transitionType, int stretchTime, FEditTableView *editTableView);
 };
 
 #endif // MAINWINDOW_H

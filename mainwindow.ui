@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Fipre - Video Sidekick</string>
+   <string>ACVC - Action Cam Video Companion</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -61,7 +61,7 @@
           <item>
            <widget class="FVideoWidget" name="videoWidget" native="true">
             <property name="styleSheet">
-             <string notr="true">background-color: rgba(0,0,0,0)</string>
+             <string notr="true">background-color: rgba(0,0,0)</string>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_4"/>
            </widget>
@@ -301,13 +301,23 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="tabGraph">
+         <widget class="QWidget" name="tabGraph1">
           <attribute name="title">
-           <string>Graph</string>
+           <string>Graph1</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_13">
            <item>
-            <widget class="QGraphWidget" name="graphicsView"/>
+            <widget class="QGraphWidget" name="graphicsView1"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tabGraph2">
+          <attribute name="title">
+           <string>Graph2</string>
+          </attribute>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QGraphWidget" name="graphicsView2"/>
            </item>
           </layout>
          </widget>
@@ -327,93 +337,97 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <layout class="QHBoxLayout" name="timelineHorizontalLayout">
-           <item>
-            <widget class="QLabel" name="transisitionTimeLabel">
-             <property name="text">
-              <string>Transition time</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="STimeSpinBox" name="transitionTimeSpinBox">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>0</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Transition</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="transitionComboBox">
-             <item>
-              <property name="text">
-               <string>No transition</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Cross dissolve</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="stretchedDurationLabel">
-             <property name="text">
-              <string>Stretched duration</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="STimeSpinBox" name="stretchedDurationSpinBox">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>0</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="stretch100Button">
-             <property name="text">
-              <string>100%</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDial" name="stretchDial"/>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item>
           <widget class="FTimeline" name="timelineWidget" native="true">
-           <property name="autoFillBackground">
-            <bool>false</bool>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_10"/>
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <item>
+             <layout class="QHBoxLayout" name="timelineHorizontalLayout">
+              <item>
+               <widget class="QLabel" name="transisitionTimeLabel">
+                <property name="text">
+                 <string>Transition time</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="STimeSpinBox" name="transitionTimeSpinBox">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDial" name="transitionDial"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Transition</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="transitionComboBox">
+                <item>
+                 <property name="text">
+                  <string>No transition</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Cross dissolve</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="stretchedDurationLabel">
+                <property name="text">
+                 <string>Stretched duration</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="STimeSpinBox" name="stretchedDurationSpinBox">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="stretch100Button">
+                <property name="text">
+                 <string>100%</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDial" name="stretchDial"/>
+              </item>
+              <item>
+               <widget class="QDial" name="positionDial"/>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_2">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>
@@ -424,112 +438,111 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_12">
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_11">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <item>
-              <widget class="QLabel" name="label_4">
-               <property name="text">
-                <string>Target</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="generateTargetComboBox">
-               <item>
+          <widget class="FGenerate" name="generateWidget" native="true">
+           <layout class="QVBoxLayout" name="verticalLayout_14">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <widget class="QLabel" name="label_4">
                 <property name="text">
-                 <string>Preview</string>
+                 <string>Target</string>
                 </property>
-               </item>
-               <item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="generateTargetComboBox">
+                <item>
+                 <property name="text">
+                  <string>Preview</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Final Cut</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Shotcut</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Da Vinci</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Premiere</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_5">
                 <property name="text">
-                 <string>Final Cut</string>
+                 <string>Size</string>
                 </property>
-               </item>
-               <item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="generateSizeComboBox">
+                <item>
+                 <property name="text">
+                  <string>Original (lossless)</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>1K</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>2.7K</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>4K</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_7">
                 <property name="text">
-                 <string>Shotcut</string>
+                 <string>Framerate</string>
                 </property>
-               </item>
-               <item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="frameRateSpinBox"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="generateButton">
                 <property name="text">
-                 <string>Da Vinci</string>
+                 <string>Generate</string>
                 </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Premiere</string>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
                 </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Size</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="generateSizeComboBox">
-               <item>
-                <property name="text">
-                 <string>Original (lossless)</string>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
                 </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1K</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>2.7K</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>4K</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>Framerate</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="frameRateSpinBox"/>
-             </item>
-             <item>
-              <widget class="QPushButton" name="generateButton">
-               <property name="text">
-                <string>Generate</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="FGenerate" name="generateWidget" native="true"/>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
          </item>
          <item>
           <widget class="QProgressBar" name="progressBar">

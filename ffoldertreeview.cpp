@@ -42,9 +42,11 @@ void FFolderTreeView::onIndexClicked(const QModelIndex &index)
         expand(selectedIndex);
 
     QString lastFolder = directoryModel->fileInfo(selectedIndex).absoluteFilePath() + "/";
-//    qDebug()<<"FFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
+    qDebug()<<"FFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
     QSettings().setValue("LastFolder", lastFolder);
     QSettings().sync();
+
+    folderSettings = new QSettings(lastFolder + "acvc.ini", QSettings::IniFormat);
 
     if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
     {

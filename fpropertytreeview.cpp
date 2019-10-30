@@ -324,7 +324,7 @@ void FPropertyTreeView::loadModel(QString folderName)
         propertyTreeView->isLoading = false;
         emit propertyTreeView->propertiesLoaded();
     });
-}
+} //loadmodel
 
 //! [init part1]
 void FPropertyTreeView::init()

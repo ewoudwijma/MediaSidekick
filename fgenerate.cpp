@@ -33,7 +33,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
     int resultDurationMSec = 0;
     QString currentDirectory = QSettings().value("LastFolder").toString();
 
-    int transitionTimeMSecs = transitionTimeFrames * 1000 / QSettings().value("frameRate").toInt();
+    int transitionTimeMSecs = transitionTimeFrames * FGlobal().frames_to_msec(1);
     QTime transitionTime = QTime::fromMSecsSinceStartOfDay(transitionTimeMSecs);
 
     progressBar = p_progressBar;
@@ -62,7 +62,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
                 qDebug()<<"gen"<<row<<inTime<<outTime;
 
-                int duration = inTime.msecsTo(outTime)+1000/QSettings().value("frameRate").toInt();
+                int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
                 vidlistStream << "inpoint " <<  QString::number(inTime.msecsSinceStartOfDay() / 1000.0, 'g', 6) << endl;
                 vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << endl;
@@ -74,11 +74,11 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
                 srtContentString += "<o>" + timelineModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
                 srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
                 srtContentString += "<a>" + timelineModel->index(row, alikeIndex).data().toString() + "</a>";
-                srtContentString += "<h>" + timelineModel->index(row, FGlobal().hintIndex).data().toString() + "</h>";
+                srtContentString += "<h>" + timelineModel->index(row, hintIndex).data().toString() + "</h>";
                 srtContentString += "<t>" + timelineModel->index(row, tagIndex).data().toString() + "</t>";
 
                 srtStream << row+1 << endl;
-                srtStream << QTime::fromMSecsSinceStartOfDay(totalDuration).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(totalDuration + duration - 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz") << endl;
+                srtStream << QTime::fromMSecsSinceStartOfDay(totalDuration).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(totalDuration + duration - FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
                 srtStream << srtContentString << endl;//timelineModel->index(i, tagIndex).data().toString()
                 srtStream << endl;
 
@@ -140,7 +140,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
             {
                 QTime inTime = QTime::fromString(timelineModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
-                int duration = inTime.msecsTo(outTime)+1000/QSettings().value("frameRate").toInt();
+                int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
                 resultDurationMSec += duration;
 
                 qDebug()<<i<<timelineModel->index(i, inIndex).data().toString()<<timelineModel->index(i, outIndex).data().toString();
@@ -293,7 +293,7 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
             {
                 QString durationString = *durationPointer;
                 durationString = durationString.left(durationString.length()-2); //remove " -s"
-                durationTime = QTime::fromMSecsSinceStartOfDay(durationString.toDouble()*1000);
+                durationTime = QTime::fromMSecsSinceStartOfDay(durationString.toDouble()*1000.0);
             }
 
             s("  <producer id=\"producer%1\" title=\"Anonymous Submission\" in=\"00:00:00.000\" out=\"%2\">", QString::number(fileCounter), durationTime.toString("hh:mm:ss.zzz"));
@@ -344,8 +344,8 @@ void FGenerate::generate(QStandardItemModel *timelineModel, QString target, QStr
                 {
                     s("<tractor id=\"tractor%1\" title=\"%2\" global_feed=\"1\" in=\"00:00:00.000\" out=\"%3\">", QString::number(tractorCounter), "Transition " + QString::number(row-1) + "-" + QString::number(row), transitionTime.toString("HH:mm:ss.zzz"));
                     s("   <property name=\"shotcut:transition\">lumaMix</property>");
-                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(previousProducerNr), previousOutTime.addMSecs(-transitionTimeMSecs + 1000 / QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"), previousOutTime.toString("HH:mm:ss.zzz"));
-                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(producerNr), inTime.toString("HH:mm:ss.zzz"), inTime.addMSecs(transitionTimeMSecs - 1000/QSettings().value("frameRate").toInt()).toString("HH:mm:ss.zzz"));
+                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(previousProducerNr), previousOutTime.addMSecs(-transitionTimeMSecs + FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"), previousOutTime.toString("HH:mm:ss.zzz"));
+                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", QString::number(producerNr), inTime.toString("HH:mm:ss.zzz"), inTime.addMSecs(transitionTimeMSecs - FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"));
                     s("   <transition id=\"transition0\" out=\"%1\">", transitionTime.toString("HH:mm:ss.zzz"));
                     s("     <property name=\"a_track\">0</property>");
                     s("     <property name=\"b_track\">1</property>");
