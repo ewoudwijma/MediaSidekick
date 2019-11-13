@@ -209,11 +209,12 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
 
             if (m_activeControl == CONTROL_IN)
             {
-                if ( i== 0 || (i>0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
+                if ( i == 0 || (i > 0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
 //                if (x >= in - 24 && x <= in + 12)
                 {
                     qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
-                    setInOutPoint(inOut.row, pos, inOut.out); //out the same
+                    if (pos < inOut.out)
+                        setInOutPoint(inOut.row, pos, inOut.out); //out the same
                 }
             }
             else if (m_activeControl == CONTROL_OUT)
@@ -222,7 +223,8 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
 //                if (x >= out - 24 && x <= out + 100)
                 {
                     qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
-                    setInOutPoint(inOut.row, inOut.in, pos); //in the same
+                    if (inOut.in < pos)
+                        setInOutPoint(inOut.row, inOut.in, pos); //in the same
                 }
             }
             else if (m_activeControl == CONTROL_BOTH)//move whole edit

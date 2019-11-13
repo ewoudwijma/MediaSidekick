@@ -24,7 +24,7 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
     m_isSeekable(false)
 {
 //    qDebug()<<"FVideoWidget::FVideoWidget"<<parent;
-    setMinimumSize(minimumSize().width(), 250);
+    setMinimumSize(minimumSize().width(), 450);
 //    setMinimumHeight(250);
 
     parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
@@ -56,7 +56,7 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
 //    m_scrubber->setMinimumSize(200,200);
 //        parentLayout->insertWidget(-1, m_scrubber);
     m_scrubber->setEnabled(true);
-    m_scrubber->setScale(20000);
+    m_scrubber->setScale(0);
     m_scrubber->readOnly = false;
     m_scrubber->onSeek(0);
 
@@ -312,7 +312,6 @@ void FVideoWidget::onEditsChangedToVideo(QAbstractItemModel *itemModel)
 
 //            qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<inTime<<outTime<<folderFileName<<m_player->media().canonicalUrl();
 
-            if (!m_scrubber->readOnly || itemModel->index(row,hintIndex).data().toString() != "overlapping")
             m_scrubber->setInOutPoint(editCounter, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
         }
     }

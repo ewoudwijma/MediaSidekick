@@ -19,7 +19,6 @@ class FTimeline : public QWidget
     Q_OBJECT
 public:
     explicit FTimeline(QWidget *parent = nullptr);
-    QStandardItemModel *timelineModel;
 
     int originalDuration;
     int transitiontimeDuration;
@@ -46,10 +45,8 @@ private:
     void setupActions(QWidget *widget);
 
     int transitiontime;
-    int stretchTime;
 
     int transitiontimeLastGood;
-    int stretchTimeLastGood;
 //    Qt::CheckState transitionChecked;
 
 public slots:
@@ -59,7 +56,7 @@ public slots:
     void onFileIndexClicked(QModelIndex index);
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onTimelineWidgetsChanged(int transitiontime, QString transitionType, int stretchTime, FEditTableView *editTableView);
+    void onTimelineWidgetsChanged(int transitiontime, QString transitionType, FEditTableView *editTableView);
 
 private slots:
     void onScrubberSeeked(int mseconds);
@@ -68,7 +65,7 @@ signals:
 //    void getPropertyValue(QString fileName, QString key, QString *value);
     void editsChangedToVideo(QAbstractItemModel *itemModel);
     void editsChangedToTimeline(QAbstractItemModel *itemModel);
-    void adjustTransitionAndStretchTime(int transitionTime, int stretchTime);
+    void adjustTransitionTime(int transitionTime);
 
 };
 

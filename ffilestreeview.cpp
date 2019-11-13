@@ -14,7 +14,7 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileModel = new QFileSystemModel();
 
     QStringList filters;
-    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts";
+    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts"<<"shotcut*.mlt"<<"Premiere*.xml";
     filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
     fileModel->setNameFilters(filters);
     fileModel->setNameFilterDisables(false);
@@ -51,8 +51,11 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileRename);
 
-    fileContextMenu->addAction(new QAction("Delete",fileContextMenu));
+    fileContextMenu->addAction(new QAction("Delete file(s)",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileDelete);
+
+    fileContextMenu->addAction(new QAction("Delete edits",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onEditsDelete);
 
     fileContextMenu->addSeparator();
 }
@@ -67,12 +70,13 @@ void FFilesTreeView::onIndexClicked(QModelIndex index)
 
     QModelIndexList indexList = selectionModel()->selectedIndexes();
 
-    qDebug()<<"FFilesTreeView::onIndexClicked"<<index.row()<<index.column()<<index.data()<<filePath<<indexList.count();
+    qDebug()<<"FFilesTreeView::onIndexClicked"<<index.row()<<index.column()<<index.data().toString()<<filePath<<indexList.count();
 //    if (editItemModel->index(index.row(),fileIndex).data().toString()!=fileUrl.fileName())
 //    {
 //        qDebug()<<"tableClicked different!!!"<<index.data()<<editItemModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
 //    }
-    emit indexClicked(index, selectionModel()->selectedIndexes());
+    if (!index.data().toString().contains(".mlt") && !index.data().toString().contains(".xml"))
+        emit indexClicked(index, selectionModel()->selectedIndexes());
 }
 
 void FFilesTreeView::loadModel(QUrl folderUrl)
@@ -89,7 +93,6 @@ void FFilesTreeView::loadModel(QUrl folderUrl)
 
 void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
 {
-
     QModelIndex index = indexAt(point);
 //    qDebug()<<"onFileRightClickMenu"<<point;
         if (index.isValid() ) {
@@ -100,15 +103,24 @@ void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
 void FFilesTreeView::onTrim()
 {
     QModelIndexList indexList = selectionModel()->selectedIndexes();
+    bool somethingTrimmed = false;
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
-            emit trim(indexList[i].data().toString());
+            QString fileName = indexList[i].data().toString();
+            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+            {
+                emit trim(fileName);
+                somethingTrimmed = true;
+            }
 //            qDebug()<<"indexList[i].data()"<<indexList[i].row()<<indexList[i].column()<<indexList[i].data();
-
         }
     }
+
+    if (!somethingTrimmed)
+            QMessageBox::information(this, "Trim", "Nothing to do");
+
 }
 
 void FFilesTreeView::onFileRename()
@@ -117,25 +129,29 @@ void FFilesTreeView::onFileRename()
     QStringList newFileNameList;
     QStringList noSuggestedList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
+
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
-
-            QString *suggestedName = new QString();
-            emit getPropertyValue(indexList[i].data().toString(), "SuggestedName", suggestedName);
-
-            if (*suggestedName != "")
+            QString fileName = indexList[i].data().toString();
+            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
             {
-                fileNameList << indexList[i].data().toString();
-                newFileNameList << *suggestedName;
+                QString *suggestedName = new QString();
+                emit getPropertyValue(fileName, "SuggestedName", suggestedName);
+
+                if (*suggestedName != "")
+                {
+                    fileNameList << fileName;
+                    newFileNameList << *suggestedName;
+                }
+                else
+                    noSuggestedList << fileName;
             }
-            else
-                noSuggestedList << indexList[i].data().toString();
         }
     }
 
-    if (noSuggestedList.count() == 0)
+    if (noSuggestedList.count() == 0 && fileNameList.count() > 0)
     {
         QString folderName = QSettings().value("LastFolder").toString();
 
@@ -172,7 +188,12 @@ void FFilesTreeView::onFileRename()
          }
     }
     else
-        QMessageBox::information(this, "Rename", "No valid suggested name for the following files (see properties tab): " + noSuggestedList.join(", "));
+    {
+        if (noSuggestedList.count() > 0)
+            QMessageBox::information(this, "Rename", "No valid suggested name for the following files (see properties tab): " + noSuggestedList.join(", "));
+        else
+            QMessageBox::information(this, "Rename", "Nothing to do");
+    }
 
     fileContextMenu->close();
 }
@@ -189,37 +210,91 @@ void FFilesTreeView::onFileDelete()
         }
     }
 
-    QString folderName = QSettings().value("LastFolder").toString();
+    if (fileNameList.count()>0)
+    {
+        QString folderName = QSettings().value("LastFolder").toString();
 
-    QMessageBox::StandardButton reply;
-     reply = QMessageBox::question(this, "Delete " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete " + fileNameList.join(", ") + " and its supporting files (srt and txt)?",
-                                   QMessageBox::Yes|QMessageBox::No);
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Delete file(s)" + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete " + fileNameList.join(", ") + " and its supporting files (srt and txt)?",
+                                       QMessageBox::Yes|QMessageBox::No);
 
-     if (reply == QMessageBox::Yes)
-     {
-
-         for (int i=0; i< fileNameList.count();i++)
+         if (reply == QMessageBox::Yes)
          {
-             QString fileName = fileNameList[i];
-             emit fileDelete(fileName);
-             QFile file(folderName + fileName);
-             if (file.exists())
-                file.remove();
 
-             int lastIndex = fileName.lastIndexOf(".");
-             if (lastIndex > -1)
+             for (int i=0; i< fileNameList.count();i++)
              {
-                 QString srtFileName = fileName.left(lastIndex) + ".srt";
-                 QFile *file = new QFile(folderName + srtFileName);
-                 if (file->exists())
-                    file->remove();
-                 srtFileName = fileName.left(lastIndex) + ".txt";
-                 file = new QFile(folderName + srtFileName);
-                 if (file->exists())
-                    file->remove();
+                 QString fileName = fileNameList[i];
+                 emit fileDelete(fileName);
+                 QFile file(folderName + fileName);
+                 if (file.exists())
+                    file.remove();
+
+                 int lastIndex = fileName.lastIndexOf(".");
+                 if (lastIndex > -1)
+                 {
+                     QString srtFileName = fileName.left(lastIndex) + ".srt";
+                     QFile *file = new QFile(folderName + srtFileName);
+                     if (file->exists())
+                        file->remove();
+                     srtFileName = fileName.left(lastIndex) + ".txt";
+                     file = new QFile(folderName + srtFileName);
+                     if (file->exists())
+                        file->remove();
+                 }
              }
          }
-     }
+    }
+
+    fileContextMenu->close();
+}
+
+void FFilesTreeView::onEditsDelete()
+{
+    QStringList fileNameList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            QString fileName = indexList[i].data().toString();
+            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+                fileNameList << fileName;
+        }
+    }
+
+    if (fileNameList.count()>0)
+    {
+        QString folderName = QSettings().value("LastFolder").toString();
+
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Delete edits" + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete  supporting files (srt and txt) of " + fileNameList.join(", ") + "?",
+                                       QMessageBox::Yes|QMessageBox::No);
+
+         if (reply == QMessageBox::Yes)
+         {
+
+             for (int i=0; i< fileNameList.count();i++)
+             {
+                 QString fileName = fileNameList[i];
+                 emit editsDelete(fileName);
+
+                 int lastIndex = fileName.lastIndexOf(".");
+                 if (lastIndex > -1)
+                 {
+                     QString srtFileName = fileName.left(lastIndex) + ".srt";
+                     QFile *file = new QFile(folderName + srtFileName);
+                     if (file->exists())
+                        file->remove();
+                     srtFileName = fileName.left(lastIndex) + ".txt";
+                     file = new QFile(folderName + srtFileName);
+                     if (file->exists())
+                        file->remove();
+                 }
+             }
+         }
+    }
+    else
+        QMessageBox::information(this, "Delete edits", "Nothing to do");
 
      fileContextMenu->close();
 }

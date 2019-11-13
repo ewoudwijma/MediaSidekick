@@ -89,9 +89,9 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         listView->setModel(listModel);
 
         QVariant variant = index.data(Qt::EditRole);
-        QStringList tagList = variant.toString().split(";");
+        QStringList tagList = variant.toString().split(";", QString::SkipEmptyParts);
 
-        if (tagList.count() != 1 || tagList.first() != "")
+//        if (tagList.count() != 1 || tagList.first() != "")
         for (int i=0; i < tagList.count();i++)
         {
 //            qDebug()<<"paint"<<stringList[i];
@@ -134,6 +134,10 @@ QWidget *FEditItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 {
+    if (index.column() < inIndex) //readonly
+    {
+        return nullptr;
+    }
     if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *editor = new STimeSpinBox(parent);
@@ -194,8 +198,8 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
         QStandardItemModel *listModel = qobject_cast<QStandardItemModel*>(listView->model());
 
         QVariant variant = index.data(Qt::EditRole);
-        QStringList tagList = variant.toString().split(";");
-        if (tagList.count() != 1 || tagList.first() != "")
+        QStringList tagList = variant.toString().split(";", QString::SkipEmptyParts);
+//        if (tagList.count() != 1 || tagList.first() != "")
         for (int i=0; i < tagList.count();i++)
         {
 //            qDebug()<<"setEditorData"<<stringList[i];

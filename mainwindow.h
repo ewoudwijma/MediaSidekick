@@ -61,8 +61,6 @@ private slots:
 
     void on_transitionTimeSpinBox_valueChanged(int arg1);
 
-    void on_stretchedDurationSpinBox_valueChanged(int arg1);
-
     void on_actionIn_triggered();
 
     void on_actionOut_triggered();
@@ -74,10 +72,6 @@ private slots:
     void on_actionPrevious_in_out_triggered();
 
     void on_actionNext_in_out_triggered();
-
-    void on_defaultMinSpinBox_valueChanged(int arg1);
-
-    void on_defaultPlusSpinBox_valueChanged(int arg1);
 
     void on_actionAdd_tag_triggered();
 
@@ -103,8 +97,6 @@ private slots:
 
     void on_resetSortButton_clicked();
 
-    void on_stretchedCheckBox_clicked(bool checked);
-
     void onFrameRateChanged(int frameRate);
 
     void on_locationCheckBox_clicked(bool checked);
@@ -112,10 +104,6 @@ private slots:
     void on_cameraCheckBox_clicked(bool checked);
 
     void on_transitionComboBox_currentTextChanged(const QString &arg1);
-
-    void on_stretch100Button_clicked();
-
-    void on_stretchDial_valueChanged(int value);
 
     void onEditsChangedToTimeline(QAbstractItemModel *itemModel);
 
@@ -126,7 +114,21 @@ private slots:
 
     void onUpgradeCheckFinished(QNetworkReply *reply);
     void onUpgradeTriggered();
-    void onAdjustTransitionAndStretchTime(int transitionTime, int stretchTime);
+    void onAdjustTransitionTime(int transitionTime);
+
+    void onPropertiesLoaded();
+
+    void onVideoPositionChanged(int progress, int row, int relativeProgress);
+    void on_framerateComboBox_currentTextChanged(const QString &arg1);
+
+    void on_authorCheckBox_clicked(bool checked);
+
+    void on_audioCheckBox_clicked(bool checked);
+
+    void on_editTabWidget_currentChanged(int index);
+
+    void on_filesTtabWidget_currentChanged(int index);
+
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *tagFilter1Model;
@@ -135,18 +137,18 @@ private:
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
     void onTagFiltersChanged();
     QWidget *graphWidget1, *graphWidget2;
-    QString stretchValueChangedBy;
     QString transitionValueChangedBy;
     QString positionValueChangedBy;
     QNetworkAccessManager m_network;
     QString m_upgradeUrl;
     void on_actionUpgrade_triggered();
+    int positiondialOldValue;
 
 signals:
-    void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox);
+    void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
     void editFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
-    void timelineWidgetsChanged(int transitionTime, QString transitionType, int stretchTime, FEditTableView *editTableView);
+    void timelineWidgetsChanged(int transitionTime, QString transitionType, FEditTableView *editTableView);
 };
 
 #endif // MAINWINDOW_H

@@ -54,18 +54,21 @@ bool FTagsListView::addTag(QString tagString)
 
 void FTagsListView::loadModel(QAbstractItemModel *editItemModel)
 {
+//    qDebug() << "FTagsListView::loadModel" << editItemModel->rowCount();
+
     tagsItemModel->removeRows(0, tagsItemModel->rowCount());
     for (int i = 0; i < editItemModel->rowCount(); i++)
     {
-        QStringList tagList = editItemModel->index(i,tagIndex).data().toString().split(";");
-        if (tagList.count()==1 && tagList[0] == "")
-            tagList.clear();
+        QStringList tagList = editItemModel->index(i,tagIndex).data().toString().split(";", QString::SkipEmptyParts);
+//        if (tagList.count()==1 && tagList[0] == "")
+//            tagList.clear();
 
         for (int j=0; j < tagList.count(); j++)
         {
             addTag(tagList[j].toLower());
         }
     }
+//    qDebug() << "FTagsListView::loadModel done" << editItemModel->rowCount();
 }
 
 void FTagsListView::onDoubleClicked(const QModelIndex &index)

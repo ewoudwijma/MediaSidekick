@@ -143,22 +143,26 @@ void FPropertyTreeView::onEditIndexClicked(QModelIndex index)
 
 void FPropertyTreeView::loadModel(QString folderName)
 {
+    qDebug() << "FPropertyTreeView::loadModel" << folderName;
     propertyItemModel->removeRows(0, propertyItemModel->rowCount());
     while (propertyItemModel->columnCount()>firstFileColumnIndex) //remove old columns
         propertyItemModel->removeColumn(propertyItemModel->columnCount()-1);
 
-    QString command = "exiftool -s -c \"%02.6f\" \"" + folderName.replace("/", "//") + "*\""; ////
+    QString command = "exiftool -s -c \"%02.6f\" \"" + folderName + "*\""; ////
 //    qDebug()<<"FPropertyTreeView::loadModel"<<folderName<<command<<processManager;
 
     QMap<QString, QString> parameters;
-    parameters["folderName"] = folderName;
-    emit addLogEntry("PropertyLoad " + folderName);
+
+    QString *processId = new QString();
+    emit addLogEntry(folderName, "All", "Property load", processId);
+    parameters["processId"] = *processId;
+
     isLoading = true;
     processManager->startProcess(command, parameters
                                    , [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
         FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
-        emit propertyTreeView->addLogToEntry("PropertyLoad " + parameters["folderName"], result);
+        emit propertyTreeView->addLogToEntry(parameters["processId"], result);
     }
                                    , [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList result)
      {
@@ -166,7 +170,7 @@ void FPropertyTreeView::loadModel(QString folderName)
 
         //create topLevelItems
         QStringList topLevelItemNames;
-        topLevelItemNames << "General" << "Stream" << "Video" << "Media" << "File" << "Date" << "Audio" << "Other";
+        topLevelItemNames << "General" << "Location" << "Camera" << "Author" << "Video" << "Audio" << "Media" << "File" << "Date" << "Other";
         QMap<QString, QStandardItem *> topLevelItems;
         for (int i=0; i<topLevelItemNames.count();i++)
         {
@@ -186,13 +190,15 @@ void FPropertyTreeView::loadModel(QString folderName)
 
         for (int resultIndex=0;resultIndex<result.count();resultIndex++)
         {
-//            emit propertyTreeView->addLogToEntry("PropertyLoad " + parameters["folderName"], result[resultIndex]);
+//            emit propertyTreeView->addLogToEntry(parameters["processId"], result[resultIndex]);
             int indexOf = result[resultIndex].indexOf("======== "); //next file
             if (indexOf > -1)//next file found
             {
                 folderFileName = result[resultIndex].mid(indexOf+9);
                 folderFile = QUrl(folderFileName);
 //                qDebug()<<"newfile"<<folderFile.fileName()<<fileMediaMap[folderFile.fileName()];
+                emit propertyTreeView->addLogToEntry(parameters["processId"], "Processing " + folderFileName + "\n");
+
             }
             else
             {
@@ -212,36 +218,45 @@ void FPropertyTreeView::loadModel(QString folderName)
                 {
                     valueMap[labelString][folderFile.fileName()] = valueString; //sets the value
 
-                    if (labelString == "FileName" || labelString == "SuggestedName" || labelString == "CreateDate" || labelString == "GPSLatitude" || labelString == "GPSLongitude" || labelString == "GPSAltitude" || labelString == "Make" || labelString == "Model" || labelString == "Location")
-                        labelMap[labelString] = topLevelItems["General"];
-                    else if (labelString == "ImageWidth" || labelString == "ImageHeight" || labelString == "Duration" || labelString == "TrackDuration")
-                        labelMap[labelString] = topLevelItems["Stream"];
-                    else if (labelString == "CompressorID" || labelString == "ImageWidth" || labelString == "ImageHeight" || labelString == "VideoFrameRate" || labelString == "AvgBitrate" || labelString == "BitDepth" )
+//                    if (labelString == "FileName" || labelString == "SuggestedName" || labelString == "CreateDate" ||  labelString == "Make" || labelString == "Model" || labelString == "Director")
+//                        labelMap[labelString] = topLevelItems["General"];
+//                    else if ( labelString == "GPSLatitude" || labelString == "GPSLongitude" || labelString == "GPSAltitude")
+//                        labelMap[labelString] = topLevelItems["Location"];
+                    if (labelString == "ImageWidth" || labelString == "ImageHeight" || labelString == "CompressorID" || labelString == "ImageWidth" || labelString == "ImageHeight" || labelString == "VideoFrameRate" || labelString == "AvgBitrate" || labelString == "BitDepth" )
                         labelMap[labelString] = topLevelItems["Video"];
-                    else if (labelString.contains("Duration") || labelString.contains("Image") || labelString.contains("Video") || labelString.contains("Compressor") || labelString.contains("AvgBitrate") )
+                    else if (labelString.contains("Audio"))
+                        labelMap[labelString] = topLevelItems["Audio"];
+                    else if (labelString.contains("Duration") || labelString.contains("Image") || labelString.contains("Video") || labelString.contains("Compressor") || labelString == "TrackDuration" )
                         labelMap[labelString] = topLevelItems["Media"];
                     else if (labelString.contains("File") || labelString.contains("Directory"))
                         labelMap[labelString] = topLevelItems["File"];
                     else if (labelString.contains("Date"))
                         labelMap[labelString] = topLevelItems["Date"];
-                    else if (labelString.contains("Audio"))
-                        labelMap[labelString] = topLevelItems["Audio"];
                     else
                         labelMap[labelString] = topLevelItems["Other"];
                 }
             }
         }
+        labelMap["CreateDate"] = topLevelItems["General"];
         labelMap["FileName"] = topLevelItems["General"];
         labelMap["SuggestedName"] = topLevelItems["General"];
-        labelMap["GPSLatitude"] = topLevelItems["General"];
-        labelMap["GPSLongitude"] = topLevelItems["General"];
-        labelMap["GPSAltitude"] = topLevelItems["General"];
-        labelMap["Make"] = topLevelItems["General"];
-        labelMap["Model"] = topLevelItems["General"];
+
+        labelMap["GPSLatitude"] = topLevelItems["Location"];
+        labelMap["GPSLongitude"] = topLevelItems["Location"];
+        labelMap["GPSAltitude"] = topLevelItems["Location"];
+
+        labelMap["Make"] = topLevelItems["Camera"];
+        labelMap["Model"] = topLevelItems["Camera"];
+
+        labelMap["Director"] = topLevelItems["Author"];
+        labelMap["Producer"] = topLevelItems["Author"];
+        labelMap["Publisher"] = topLevelItems["Author"];
 
         QMapIterator<QString, QString> iFile(fileMediaMap);
         QStringList labels;
         labels << "Property" << "Type" << "Diff";
+
+        emit propertyTreeView->addLogToEntry(parameters["processId"], "add all files as labels\n");
 
         while (iFile.hasNext()) //add all files as labels
         {
@@ -253,6 +268,8 @@ void FPropertyTreeView::loadModel(QString folderName)
             }
         }
         propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(labels);
+
+        emit propertyTreeView->addLogToEntry(parameters["processId"], "add all properties\n");
 
         QMapIterator<QString, QStandardItem *> iLabel(labelMap);
         while (iLabel.hasNext()) //all labels
@@ -287,7 +304,7 @@ void FPropertyTreeView::loadModel(QString folderName)
 
                     QStandardItem *item;
                     item = new QStandardItem( value );
-                    item->setEditable(iLabel.value() == topLevelItems["General"]); //only general labels are editable.
+                    item->setEditable(iLabel.value() == topLevelItems["General"] || iLabel.value() == topLevelItems["Location"] || iLabel.value() == topLevelItems["Camera"] || iLabel.value() == topLevelItems["Author"]); //only these labels are editable.
                     sublevelItems.append(item);
 
                     valueFound = valueFound || value != "";
@@ -301,6 +318,8 @@ void FPropertyTreeView::loadModel(QString folderName)
                 iLabel.value()->appendRow(sublevelItems);
         } // all labels
 
+        emit propertyTreeView->addLogToEntry(parameters["processId"], "Update suggested names\n");
+
         for (int col = 1; col < propertyTreeView->model()->columnCount(); ++col)
         {
               propertyTreeView->frozenTableView->setColumnHidden(col, true);
@@ -309,9 +328,11 @@ void FPropertyTreeView::loadModel(QString folderName)
                   QStandardItem *item = topLevelItems["General"];
                   QModelIndex parentIndex = propertyTreeView->propertyItemModel->indexFromItem(item);
                   QModelIndex childIndex = parentIndex.model()->index(0,col,parentIndex); //0 is first child
-                  propertyTreeView->updateSuggestedName(childIndex);
+                  propertyTreeView->updateSuggestedName(childIndex); //ok to take it from general as only the model and the column of childindex will be used.
               }
         }
+
+        emit propertyTreeView->addLogToEntry(parameters["processId"], "Setfilter, expand and set diff values\n");
 
         propertyTreeView->propertyProxyModel->setFilterRegExp(QRegExp(";1", Qt::CaseInsensitive,
                                                     QRegExp::FixedString));
@@ -323,7 +344,11 @@ void FPropertyTreeView::loadModel(QString folderName)
         propertyTreeView->setCellStyle(QStringList()); //to set diff values
         propertyTreeView->isLoading = false;
         emit propertyTreeView->propertiesLoaded();
+        emit propertyTreeView->addLogToEntry(parameters["processId"], "Completed");
+
     });
+//    qDebug() << "FPropertyTreeView::loadModel done" << folderName;
+
 } //loadmodel
 
 //! [init part1]
@@ -418,9 +443,9 @@ void FPropertyTreeView::updateFrozenTableGeometry()
 }
 //! [geometry]
 
-void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox)
+void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox)
 {
-//    qDebug()<<"FPropertyTreeView::onPropertyFilterChanged"<<propertyFilterLineEdit->text()<<propertyDiffCheckBox->checkState();
+    qDebug()<<"FPropertyTreeView::onPropertyFilterChanged"<<propertyFilterLineEdit->text()<<propertyDiffCheckBox->checkState()<<locationCheckBox->checkState()<<cameraCheckBox->checkState();
     QString diffString;
     if (propertyDiffCheckBox->checkState() == Qt::Unchecked)
         diffString = "0";
@@ -429,21 +454,21 @@ void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdi
     else
         diffString = "1";
 
-    QString locationString;
-    if (locationCheckBox->checkState() == Qt::Unchecked)
-        locationString = "0";
-    else if (locationCheckBox->checkState() == Qt::Checked)
-        locationString = "2";
-    else
-        locationString = "1";
+    locationInName = locationCheckBox->checkState() == Qt::Checked;
+    cameraInName = cameraCheckBox->checkState() == Qt::Checked;
+    authorInName = authorCheckBox->checkState() == Qt::Checked;
 
-    QString cameraString;
-    if (cameraCheckBox->checkState() == Qt::Unchecked)
-        cameraString = "0";
-    else if (cameraCheckBox->checkState() == Qt::Checked)
-        cameraString = "2";
-    else
-        cameraString = "1";
+    for (int col = 1; col < model()->columnCount(); ++col)
+    {
+          if (col > 2)
+          {
+//              QStandardItem *item = topLevelItems["General"];
+//              QModelIndex parentIndex = propertyItemModel->indexFromItem(item);
+              QModelIndex parentIndex = propertyItemModel->index(0,0);
+              QModelIndex childIndex = parentIndex.model()->index(0,col,parentIndex); //0 is first child
+              updateSuggestedName(childIndex);
+          }
+    }
 
 //    qDebug()<<"on_propertySearchLineEdit_textChanged"<<arg1<<ui->diffOnlyCheckBox->checkState();
     propertyProxyModel->setFilterRegExp(QRegExp(propertyFilterLineEdit->text() + ";" + diffString, Qt::CaseInsensitive,
@@ -497,22 +522,55 @@ void FPropertyTreeView::onGetPropertyValue(QString fileName, QString key, QStrin
 void FPropertyTreeView::updateSuggestedName(QModelIndex index)
 {
     QString fileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
-    {
-        QString suggestedName = "";
 
-        QString createDate = index.model()->index(0,index.column(),index.parent()).data().toString();
-        QString fileName = index.model()->index(1,index.column(),index.parent()).data().toString();
-        QString gpsAltitude = index.model()->index(2,index.column(),index.parent()).data().toString();
-        QString gpsLatitude = index.model()->index(3,index.column(),index.parent()).data().toString();
-        QString gpsLongitude = index.model()->index(4,index.column(),index.parent()).data().toString();
-        QString make = index.model()->index(5,index.column(),index.parent()).data().toString();
-        QString model = index.model()->index(6,index.column(),index.parent()).data().toString();
+    QString suggestedName = "";
 
-        if (createDate != "0000:00:00 00:00:00" && createDate.right(8) != "00:00:00")
+        QString createDate;// = index.model()->index(0,index.column(),index.parent()).data().toString();
+        QString gpsAltitude;// = index.model()->index(2,index.column(),index.parent()).data().toString();
+        QString gpsLatitude;// = index.model()->index(3,index.column(),index.parent()).data().toString();
+        QString gpsLongitude;// = index.model()->index(4,index.column(),index.parent()).data().toString();
+        QString make;// = index.model()->index(5,index.column(),index.parent()).data().toString();
+        QString model;// = index.model()->index(6,index.column(),index.parent()).data().toString();
+        QString director, producer, publisher;
+        QModelIndex suggestedNameIndex;// = index.model()->index(7,index.column(),index.parent());
+
+        for (int parentRow=0;parentRow<index.model()->rowCount();parentRow++)
+        {
+            QModelIndex parentIndex = index.model()->index(parentRow, 0);
+
+
+        for (int childRow=0;childRow<index.model()->rowCount(parentIndex);childRow++)
+        {
+//            qDebug()<<"FPropertyTreeView::updateSuggestedName"<<childRow<<index.model()->index(childRow,0, parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "CreateDate")
+                createDate = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "GPSAltitude")
+                gpsAltitude = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "GPSLatitude")
+                gpsLatitude = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "GPSLongitude")
+                gpsLongitude = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "Make")
+                make = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "Model")
+                model = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "Director")
+                director = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "Producer")
+                producer = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "Publisher")
+                publisher = index.model()->index(childRow,index.column(),parentIndex).data().toString();
+            if (index.model()->index(childRow,0, parentIndex).data().toString() == "SuggestedName")
+                suggestedNameIndex = index.model()->index(childRow,index.column(),parentIndex);
+        }
+        }
+
+//        qDebug()<<"FPropertyTreeView::updateSuggestedName"<<createDate<<locationInName<<cameraInName;
+        if (createDate != "0000:00:00 00:00:00") // && createDate.right(8) != "00:00:00"
         {
             suggestedName = createDate.replace(":", "-");
 
-            if (gpsLatitude != "")
+            if (gpsLatitude != "" && locationInName)
             {
                 if (gpsLatitude.right(1) == "N")
                     suggestedName += " [" + gpsLatitude.left(gpsLatitude.length()-5);
@@ -536,10 +594,23 @@ void FPropertyTreeView::updateSuggestedName(QModelIndex index)
                 }
             }
 
-            if (model != "")
-                suggestedName += " " + model;
-            else if (make != "")
-                suggestedName += " " + make;
+            if (cameraInName)
+            {
+                if (model != "")
+                    suggestedName += " " + model;
+                else if (make != "")
+                    suggestedName += " " + make;
+            }
+
+            if (authorInName)
+            {
+                if (director != "")
+                    suggestedName += " " + director;
+                else if (producer != "")
+                    suggestedName += " " + producer;
+                else if (publisher != "")
+                    suggestedName += " " + publisher;
+            }
 
             int pos = fileName.indexOf("+"); //first +
             int extPos = fileName.lastIndexOf(".");
@@ -551,11 +622,13 @@ void FPropertyTreeView::updateSuggestedName(QModelIndex index)
                 suggestedName += " " + msString;
             }
 
-            QModelIndex suggestedNameIndex = index.model()->index(7,index.column(),index.parent());
             propertyItemModel->setData(suggestedNameIndex, suggestedName, Qt::EditRole);
-        }
 
-    }
+//            if (!fileName.contains(suggestedName + "."))
+//                propertyItemModel->setData(suggestedNameIndex, QBrush("#FF4500"), Qt::ForegroundRole); //orange
+//            else
+//                propertyItemModel->setData(suggestedNameIndex, QVariant(palette().windowText()), Qt::ForegroundRole); //orange
+        }
 }
 
 void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
@@ -563,13 +636,12 @@ void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
     QModelIndex index = item->index();
     QString key = item->model()->index(item->row(),0,index.parent()).data().toString();
 
-    if (key == "CreateDate" || key == "GPSLongitude" || key == "GPSLatitude" || key == "GPSAltitude" || key == "Make" || key == "Model")
+    if (key == "CreateDate" || key == "GPSLongitude" || key == "GPSLatitude" || key == "GPSAltitude" || key == "Make" || key == "Model" || key == "Director" || key == "Producer" || key == "Publisher")
     {
         if (index.column() > 2) //not for label, type and diff column
             updateSuggestedName(index);
 
         QString fileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
-
 
         if (!isLoading && fileName != "")
         {
@@ -602,16 +674,19 @@ void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
                 QString *directoryString  = new QString();
                 onGetPropertyValue(index.model()->headerData(index.column(), Qt::Horizontal).toString(), "Directory", directoryString);
 //                ui->statusBar->showMessage("Update metadata for " + directory.toString() + "//" + fileName + "...");
-                emit addLogEntry("Update metadata " + fileName);
+
+                QString *processId = new QString();
+                emit addLogEntry(*directoryString, fileName, "Update properties", processId);
 
                 QMap<QString, QString> parameters;
-                parameters["fileName"] = fileName;
+                parameters["processId"] = *processId;
+
                 QString code = "exiftool -" + key + "=" + valueString + "  -overwrite_original \"" + *directoryString + "//" + fileName + "\"";
 
                 processManager->startProcess(code, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
                 {
                     FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
-                    emit propertyTreeView->addLogToEntry("Update metadata " + parameters["fileName"], result.join("\n"));
+                    emit propertyTreeView->addLogToEntry(parameters["processId"], result.join("\n"));
                 });
             }
         }
@@ -627,19 +702,11 @@ void FPropertyTreeView::onFileDelete(QString fileName)
         if (propertyItemModel->headerData(column,Qt::Horizontal).toString() == fileName)
             propertyItemModel->takeColumn(column);
     }
-
 }
 
-void FPropertyTreeView::onFileRename()
+void FPropertyTreeView::onReloadProperties()
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-    qDebug()<<"FPropertyTreeView::onFileRename"<<lastFolder;
-    loadModel(lastFolder);
-}
-
-void FPropertyTreeView::onTrim()
-{
-    QString lastFolder = QSettings().value("LastFolder").toString();
-    qDebug()<<"FPropertyTreeView::onFileRename"<<lastFolder;
+    qDebug()<<"FPropertyTreeView::onReloadProperties"<<lastFolder;
     loadModel(lastFolder);
 }

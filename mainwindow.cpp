@@ -110,13 +110,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView1->connectNodes("files", "video", "delete");
 //    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->videoWidget, &FVideoWidget::onFileRename); //stop and release
 //    ui->graphicsView1->connectNodes("files", "video", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->editTableView, &FEditTableView::onFileDelete); //remove from edits
+    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->editTableView, &FEditTableView::onEditsDelete); //remove from edits
     ui->graphicsView1->connectNodes("files", "edit", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->editTableView, &FEditTableView::onFileRename); //reload
+    connect(ui->filesTreeView, &FFilesTreeView::editsDelete, ui->editTableView, &FEditTableView::onEditsDelete); //remove from edits
+    ui->graphicsView1->connectNodes("files", "edit", "delete");
+    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->editTableView, &FEditTableView::onReloadEdits); //reload
     ui->graphicsView1->connectNodes("files", "edit", "rename");
     connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->propertyTreeView, &FPropertyTreeView::onFileDelete); //remove from column
     ui->graphicsView1->connectNodes("files", "prop", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->propertyTreeView, &FPropertyTreeView::onFileRename); //reload
+    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
     ui->graphicsView1->connectNodes("files", "prop", "rename");
     connect(ui->filesTreeView, &FFilesTreeView::trim, ui->editTableView, &FEditTableView::onTrim);
     ui->graphicsView1->connectNodes("files", "edit", "trim");
@@ -154,17 +156,25 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView1->connectNodes("video", "prop", "get");
     connect(ui->editTableView, &FEditTableView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
 
-    connect(ui->editTableView, &FEditTableView::trim, ui->propertyTreeView, &FPropertyTreeView::onTrim);
+    connect(ui->editTableView, &FEditTableView::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties);
 
     connect(ui->editTableView, &FEditTableView::updateIn, ui->videoWidget, &FVideoWidget::onUpdateIn);
     connect(ui->editTableView, &FEditTableView::updateOut, ui->videoWidget, &FVideoWidget::onUpdateOut);
 
     connect(ui->editTableView, &FEditTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
 
+    connect(ui->editTableView, &FEditTableView::propertiesLoaded, this, &MainWindow::onPropertiesLoaded);
+
+    connect(ui->editTableView, &FEditTableView::propertyUpdate, ui->generateWidget, &FGenerate::onPropertyUpdate);
+    connect(ui->editTableView, &FEditTableView::trim, ui->generateWidget, &FGenerate::onTrim);
+    connect(ui->editTableView, &FEditTableView::reloadAll, ui->generateWidget, &FGenerate::onReloadAll);
+
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->editTableView, &FEditTableView::onVideoPositionChanged);
     ui->graphicsView1->connectNodes("video", "edit", "pos");
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->timelineWidget, &FTimeline::onVideoPositionChanged);
     ui->graphicsView2->connectNodes("video", "time", "pos");
+    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, this, &MainWindow::onVideoPositionChanged);
+    ui->graphicsView2->connectNodes("video", "main", "pos");
     connect(ui->videoWidget, &FVideoWidget::scrubberInChanged, ui->editTableView, &FEditTableView::onScrubberInChanged);
     ui->graphicsView1->connectNodes("video", "edit", "in");
     connect(ui->videoWidget, &FVideoWidget::scrubberOutChanged, ui->editTableView, &FEditTableView::onScrubberOutChanged);
@@ -181,7 +191,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->timelineWidget, &FTimeline::editsChangedToTimeline, this, &MainWindow::onEditsChangedToTimeline);
     ui->graphicsView2->connectNodes("time", "main", "editchangetimeline");
 
-    connect(ui->timelineWidget, &FTimeline::adjustTransitionAndStretchTime, this, &MainWindow::onAdjustTransitionAndStretchTime);
+    connect(ui->timelineWidget, &FTimeline::adjustTransitionTime, this, &MainWindow::onAdjustTransitionTime);
 
     connect(ui->propertyTreeView, &FPropertyTreeView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
     ui->graphicsView1->connectNodes("video", "prop", "get");
@@ -197,9 +207,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView2->connectNodes("main", "video", "widgetchanged");
 
     connect(ui->generateWidget, &FGenerate::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
-    ui->graphicsView1->connectNodes("video", "prop", "get");
     connect(ui->generateWidget, &FGenerate::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
     connect(ui->generateWidget, &FGenerate::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+    connect(ui->generateWidget, &FGenerate::reloadEdits, ui->editTableView, &FEditTableView::onReloadEdits); //reload
+    connect(ui->generateWidget, &FGenerate::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
 
     connect(ui->starEditorFilterWidget, &FStarEditor::editingFinished, this, &MainWindow::onEditFilterChanged);
     ui->graphicsView1->connectNodes("star", "main", "filter");
@@ -209,14 +220,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //load settings
 
-    ui->defaultMinSpinBox->setValue(QSettings().value("defaultMinDuration").toInt());
-    ui->defaultPlusSpinBox->setValue(QSettings().value("defaultPlusDuration").toInt());
-
 //    qDebug()<<"tagFilter1"<<QSettings().value("tagFilter1").toString();
 //    qDebug()<<"tagFilter2"<<QSettings().value("tagFilter2").toString();
-    QStringList tagList1 = QSettings().value("tagFilter1").toString().split(";");
-    if (tagList1.count()==1 && tagList1[0] == "")
-        tagList1.clear();
+    QStringList tagList1 = QSettings().value("tagFilter1").toString().split(";", QString::SkipEmptyParts);
+//    if (tagList1.count()==1 && tagList1[0] == "")
+//        tagList1.clear();
 
     for (int j=0; j < tagList1.count(); j++)//tbd: add as method of tagslistview
     {
@@ -228,9 +236,9 @@ MainWindow::MainWindow(QWidget *parent) :
         items.append(new QStandardItem("I")); //nr of occurrences
         tagFilter1Model->appendRow(items);
     }
-    QStringList tagList2 = QSettings().value("tagFilter2").toString().split(";");
-    if (tagList2.count()==1 && tagList2[0] == "")
-        tagList2.clear();
+    QStringList tagList2 = QSettings().value("tagFilter2").toString().split(";", QString::SkipEmptyParts);
+//    if (tagList2.count()==1 && tagList2[0] == "")
+//        tagList2.clear();
 
     for (int j=0; j < tagList2.count(); j++)
     {
@@ -261,7 +269,7 @@ MainWindow::MainWindow(QWidget *parent) :
 //    onEditFilterChanged(); //initial setup, before MainWindow::onFolderIndexClicked because this is done after edits are loaded
     emit editFilterChanged(ui->starEditorFilterWidget, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
 
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), false, ui->editTableView);
+//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), false, ui->editTableView);
 
     ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
@@ -278,6 +286,26 @@ MainWindow::MainWindow(QWidget *parent) :
     //    mylabel->show();
     //    toolbar->addWidget(mylabel);
 
+    if (QSettings().value("locationCheckBox").toBool())
+        checkState = Qt::Checked;
+    else
+        checkState = Qt::Unchecked;
+    ui->locationCheckBox->setCheckState(checkState);
+
+    if (QSettings().value("cameraCheckBox").toBool())
+        checkState = Qt::Checked;
+    else
+        checkState = Qt::Unchecked;
+    ui->cameraCheckBox->setCheckState(checkState);
+
+    if (QSettings().value("authorCheckBox").toBool())
+        checkState = Qt::Checked;
+    else
+        checkState = Qt::Unchecked;
+    ui->authorCheckBox->setCheckState(checkState);
+
+    ui->filesTtabWidget->setCurrentIndex(QSettings().value("filesTabIndex").toInt());
+    ui->editTabWidget->setCurrentIndex(QSettings().value("editTabIndex").toInt());
 
     //tooltips
 
@@ -312,11 +340,6 @@ MainWindow::MainWindow(QWidget *parent) :
                                         "<ul>"
                                         "<li>Feature 1</li>"
                                         "</ul>"));
-    ui->stretchedCheckBox->setToolTip(tr("<p><b>Stretched edits</b></p>"
-                                         "<p><i>Description</i></p>"
-                                         "<ul>"
-                                         "<li>Feature 1</li>"
-                                         "</ul>"));
 
     //tt edit table
     ui->editTableView->setToolTip(tr("<p><b>Edit list</b></p>"
@@ -364,24 +387,71 @@ MainWindow::MainWindow(QWidget *parent) :
                                     "</ul>"
                                     ));
 
-    ui->stretchDial->setToolTip(tr("<p><b>Dial your stress away</b></p>"
-                                   "<p><i>Description</i></p>"
-                                   "<ul>"
-                                   "<li>Feature 1</li>"
-                                   "</ul>"));
+    //properties
+    ui->propertyTreeView->setToolTip(tr("<p><b>Property list</b></p>"
+                                     "<p><i>Show the properties for all the files of the selected folder</i></p>"
+                                     "<ul>"
+                                        "<li>Only properties applying to the filters above this table are shown</li>"
+                                        "<li>Properties belonging to the selected file are highlighted in blue</li>"
+                                        "<li>The properties in the generated tab can be updated (except for filename and generated name).</li>"
+                                        "<li>If a suggested name differs from the filename it will be bold (indicating you can rename it in the files tab)</li>"
+                                     "</ul>"
+                                     ));
+
+    ui->propertyFilterLineEdit->setToolTip(tr("<p><b>Property filter</b></p>"
+                                              "<p><i>Filters on properties shown</i></p>"
+                                              "<ul>"
+                                              "<li>Enter text to filter on properties. E.g. date shows all the date properties</li>"
+                                              "</ul>"));
+    ui->propertyDiffCheckBox->setToolTip(tr("<p><b>Diff</b></p>"
+                                            "<p><i>Determines which properties are shown based on if they are different or the same accross the movie files</i></p>"
+                                            "<ul>"
+                                            "<li>Unchecked: Only properties which are the same for all files</li>"
+                                            "<li>Checked: Only properties which are different between files</li>"
+                                            "<li>Partially checked (default): All properties</li>"
+                                            "</ul>"));
+    ui->locationCheckBox->setToolTip(tr("<p><b>Location, camera, author</b></p>"
+                                        "<p><i>Check what is part of the suggestedname</i></p>"
+                                        "<ul>"
+                                        "<li>Createdate: Not optional</li>"
+                                        "<li>Location: GPS coordinates and altitude</li>"
+                                        "<li>Camera: Model, if no model then Make</li>"
+                                        "<li>Author: Director, if not, Producer, if not, Publisher, if not, Writer</li>"
+                                        "</ul>"));
+    ui->cameraCheckBox->setToolTip(ui->locationCheckBox->toolTip());
+    ui->authorCheckBox->setToolTip(ui->locationCheckBox->toolTip());
+
+    //generate
+    ui->generateTargetComboBox->setToolTip(tr("<p><b>Generate target</b></p>"
+                                 "<p><i>Determines what will be generated</i></p>"
+                                 "<ul>"
+                                 "<li>Preview: FFMpeg generated video files</li>"
+                                              "<li>Premiere XML: Final cut XML project file for Adobe Premiere</li>"
+                                              "<li>Shotcut: Mlt project file</li>"
+                                 "</ul>"));
+
+    //log
+    ui->logTableView->setToolTip(tr("<p><b>Log items</b></p>"
+                                    "<p><i>Show details of background processes for Exiftool and FFMpeg</i></p>"
+                                    "<ul>"
+                                    "<li>Click on a row to see details</li>"
+                                    "</ul>"));
+
     //end tooltips
 
     //do not show the graph tab (only in debug mode)
-    graphWidget1 = ui->editTabWidget->widget(2);
-    graphWidget2 = ui->editTabWidget->widget(3);
+    graphWidget1 = ui->editTabWidget->widget(3);
+    graphWidget2 = ui->editTabWidget->widget(4);
 
     on_actionDebug_mode_triggered(false); //no debug mode
 
-    ui->stretchDial->setNotchesVisible(true);
     ui->transitionDial->setNotchesVisible(true);
-//    ui->transitionDial->setWrapping(true);
+    ui->positionDial->setNotchesVisible(true);
 
-    m_upgradeUrl = "https://www.acioncamvideocompanion.com/download/";
+//    ui->positionDial->setGeometry(ui->positionDial->geometry().x(), ui->positionDial->geometry().y(), ui->positionGroupBox->width()*2/3, ui->positionGroupBox->width()*2/3);
+//    ui->transitionDial->setMinimumHeight(ui->positionGroupBox->width()*2/3);
+
+    m_upgradeUrl = "https://www.actioncamvideocompanion.com/download/";
     connect(&m_network, SIGNAL(finished(QNetworkReply*)), SLOT(onUpgradeCheckFinished(QNetworkReply*)));
 
     QTimer::singleShot(0, this, [this]()->void
@@ -391,6 +461,7 @@ MainWindow::MainWindow(QWidget *parent) :
                                on_actionWhite_theme_triggered();
                            else
                                on_actionBlack_theme_triggered();
+
                            showUpgradePrompt();
                        });
 }
@@ -531,17 +602,17 @@ void MainWindow::on_actionAbout_Qt_triggered()
 
 void MainWindow::on_newEditButton_clicked()
 {
-    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*FGlobal().frames_to_msec(1),ui->defaultPlusSpinBox->value()*FGlobal().frames_to_msec(1));
+    ui->editTableView->addEdit();
 }
 
 void MainWindow::on_propertyFilterLineEdit_textChanged(const QString &)//arg1
 {
-    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
+    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
 }
 
 void MainWindow::on_propertyDiffCheckBox_stateChanged(int )//arg1
 {
-    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
+    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
 }
 
 void MainWindow::onEditsChangedToVideo(QAbstractItemModel *itemModel)
@@ -551,9 +622,15 @@ void MainWindow::onEditsChangedToVideo(QAbstractItemModel *itemModel)
 
 void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 {
-    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount()<<ui->stretchedDurationSpinBox->value()<<ui->timelineWidget->transitiontimeDuration;
+    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount()<<ui->timelineWidget->transitiontimeDuration;
 
     ui->editrowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
+
+    ui->filesTtabWidget->setCurrentIndex(1); //go to files tab
+
+    //load folder settings
+
+    Qt::CheckState checkState;
 
     int starInt = ui->folderTreeView->folderSettings->value("starsFilter").toInt();
     QVariant starVar = QVariant::fromValue(FStarRating(starInt));
@@ -563,16 +640,21 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
     ui->transitionTimeSpinBox->setValue(ui->folderTreeView->folderSettings->value("transitionTime").toInt());
     ui->transitionComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("transitionType").toString());
 
-    //    ui->stretchedDurationSpinBox->blockSignals(true); // do not save immediately in on_stretchedDurationSpinBox_valueChanged
-    ui->stretchedDurationSpinBox->setValue(ui->folderTreeView->folderSettings->value("stretchedDuration").toInt());
-    //    ui->stretchedDurationSpinBox->blockSignals(false);
-
     ui->generateTargetComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("generateTarget").toString());
     ui->generateSizeComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("generateSize").toString());
+    ui->framerateComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("frameRate").toString());
     int lframeRate = ui->folderTreeView->folderSettings->value("frameRate").toInt();
     if (lframeRate < 1)
             lframeRate = 25;
     ui->frameRateSpinBox->setValue(lframeRate);
+
+    if (ui->folderTreeView->folderSettings->value("audioCheckBox").toBool())
+        checkState = Qt::Checked;
+    else
+        checkState = Qt::Unchecked;
+    ui->audioCheckBox->setCheckState(checkState);
+
+
 
 //    ui->alikeCheckBox->setCheckState(Qt::Unchecked);
 //    on_alikeCheckBox_clicked(false); //save in QSettings
@@ -587,7 +669,7 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 //    onEditFilterChanged(); //already done in constructor
 
     emit editFilterChanged(ui->starEditorFilterWidget, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->editTableView);
+    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
 }
 
 void MainWindow::onFileIndexClicked(QModelIndex index)
@@ -707,18 +789,7 @@ void MainWindow::on_actionPlay_Pause_triggered()
 
 void MainWindow::on_actionNew_triggered()
 {
-    ui->editTableView->addEdit(ui->defaultMinSpinBox->value()*FGlobal().frames_to_msec(1), ui->defaultPlusSpinBox->value()*FGlobal().frames_to_msec(1));
-}
-
-void MainWindow::on_stretchedDurationSpinBox_valueChanged(int arg1)
-{
-    if (ui->folderTreeView->folderSettings->value("stretchedDuration") != arg1)
-    {
-//        qDebug()<<"MainWindow::on_stretchedDurationSpinBox_valueChanged"<<arg1<<ui->timelineWidget->transitiontimeDuration;
-        ui->folderTreeView->folderSettings->setValue("stretchedDuration", arg1);
-        ui->folderTreeView->folderSettings->sync();
-        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->editTableView);
-    }
+    ui->editTableView->addEdit();
 }
 
 void MainWindow::on_actionIn_triggered()
@@ -753,26 +824,6 @@ void MainWindow::on_actionNext_in_out_triggered()
     ui->videoWidget->skipNext();
 }
 
-void MainWindow::on_defaultMinSpinBox_valueChanged(int arg1)
-{
-    if (QSettings().value("defaultMinDuration") != arg1)
-    {
-        qDebug()<<"MainWindow::on_defaultMinSpinBox_valueChanged"<<arg1;
-        QSettings().setValue("defaultMinDuration", arg1);
-        QSettings().sync();
-    }
-}
-
-void MainWindow::on_defaultPlusSpinBox_valueChanged(int arg1)
-{
-    if (QSettings().value("defaultPlusDuration") != arg1)
-    {
-        qDebug()<<"MainWindow::on_defaultPlusSpinBox_valueChanged"<<arg1;
-        QSettings().setValue("defaultPlusDuration", arg1);
-        QSettings().sync();
-    }
-}
-
 void MainWindow::on_actionAdd_tag_triggered()
 {
     QList<QStandardItem *> items;
@@ -797,7 +848,25 @@ void MainWindow::on_generateButton_clicked()
     int transitionTime = 0;
     if (ui->transitionComboBox->currentText() != "No transition")
         transitionTime = ui->transitionTimeSpinBox->value();
-    ui->generateWidget->generate(ui->timelineWidget->timelineModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->frameRateSpinBox->value(), transitionTime, ui->progressBar);
+    ui->generateWidget->generate(ui->editTableView->editProxyModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->framerateComboBox->currentText(), transitionTime, ui->progressBar, false, ui->audioCheckBox->checkState() == Qt::Checked);
+
+//    if (QSettings().value("firstUsedDate") == QVariant())
+//    {
+//        QSettings().setValue("firstUsedDate", QDateTime::currentDateTime().addDays(-1));
+//        QSettings().sync();
+//    }
+//    qint64 days = QSettings().value("firstUsedDate").toDateTime().daysTo(QDateTime::currentDateTime());
+
+    QSettings().setValue("generateCounter", QSettings().value("generateCounter").toInt()+1);
+    QSettings().sync();
+    qDebug()<<"generateCounter"<<QSettings().value("generateCounter").toInt();
+    if (QSettings().value("generateCounter").toInt() == 5 || QSettings().value("generateCounter").toInt() == 25 || QSettings().value("generateCounter").toInt() == 100)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Support", tr("If you like this software consider supporting it. Click Yes to go to the support page on the ACVC website") + " " + QSettings().value("generateCounter").toString(), QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes)
+            QDesktopServices::openUrl(QUrl("https://www.actioncamvideocompanion.com/support/"));
+    }
 }
 
 void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg1)
@@ -807,6 +876,9 @@ void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg
         ui->folderTreeView->folderSettings->setValue("generateTarget", arg1);
         ui->folderTreeView->folderSettings->sync();
     }
+
+    ui->generateSizeComboBox->setEnabled(arg1 != "Lossless");
+    ui->framerateComboBox->setEnabled(arg1 != "Lossless");
 }
 
 void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
@@ -814,6 +886,17 @@ void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
     if (ui->folderTreeView->folderSettings->value("generateSize") != arg1)
     {
         ui->folderTreeView->folderSettings->setValue("generateSize", arg1);
+        ui->folderTreeView->folderSettings->sync();
+    }
+}
+
+void MainWindow::on_framerateComboBox_currentTextChanged(const QString &arg1)
+{
+//    ui->transitionDial->setRange(0, ui->framerateComboBox->currentText().toInt() * 4);
+//    QSettings().setValue("frameRate", arg1); //as used globally
+    if (ui->folderTreeView->folderSettings->value("frameRate") != arg1)
+    {
+        ui->folderTreeView->folderSettings->setValue("frameRate", arg1);
         ui->folderTreeView->folderSettings->sync();
     }
 }
@@ -863,13 +946,13 @@ void MainWindow::on_actionDebug_mode_triggered(bool checked)
 
     if (checked)
     {
-        ui->editTabWidget->insertTab(2, graphWidget1, "Graph1");
-        ui->editTabWidget->insertTab(3, graphWidget2, "Graph2");
+        ui->editTabWidget->insertTab(3, graphWidget1, "Graph1");
+        ui->editTabWidget->insertTab(4, graphWidget2, "Graph2");
     }
     else
     {
+        ui->editTabWidget->removeTab(4);
         ui->editTabWidget->removeTab(3);
-        ui->editTabWidget->removeTab(2);
     }
 
     ui->editTableView->setColumnHidden(orderBeforeLoadIndex, !checked);
@@ -882,32 +965,23 @@ void MainWindow::on_actionDebug_mode_triggered(bool checked)
 
 void MainWindow::on_resetSortButton_clicked()
 {
-    for (int row=0;row<ui->editTableView->model()->rowCount();row++)
+    for (int row=0;row<ui->editTableView->editItemModel->rowCount();row++)
     {
-        ui->editTableView->verticalHeader()->moveSection(ui->editTableView->model()->index(row, orderBeforeLoadIndex).data().toInt() - 1, row);
-//        ui->editTableView->model()->setData(ui->editTableView->model()->index(row, orderAtLoadIndex), (row + 1) * 10);
-//        ui->editTableView->model()->setData(ui->editTableView->model()->index(row, orderAfterMovingIndex), (row + 1) * 10);
-//        ui->editTableView->model()->setData(ui->editTableView->model()->index(row, changedIndex), "yes");
+        //https://uvesway.wordpress.com/2013/01/08/qheaderview-sections-visualindex-vs-logicalindex/
+        ui->editTableView->verticalHeader()->moveSection(ui->editTableView->verticalHeader()->visualIndex(row), row);
+        if (ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->editTableView->editItemModel->index(row, orderAtLoadIndex).data().toInt())
+        {
+            qDebug()<<"MainWindow::on_resetSortButton_clicked1"<<row<<ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->editTableView->editItemModel->index(row, orderAtLoadIndex).data().toInt()<<ui->editTableView->editItemModel;
+            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, orderAtLoadIndex), ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
+            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, changedIndex), "yes");
+        }
+        if (ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->editTableView->editItemModel->index(row, orderAfterMovingIndex).data().toInt())
+        {
+            qDebug()<<"MainWindow::on_resetSortButton_clicked2"<<row<<ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->editTableView->editItemModel->index(row, orderAfterMovingIndex).data().toInt();
+            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, orderAfterMovingIndex), ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
+            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, changedIndex), "yes");
+        }
     }
-}
-
-void MainWindow::on_stretchedCheckBox_clicked(bool checked)
-{
-//    qDebug()<<"MainWindow::on_stretchedCheckBox_clicked"<<ui->editTableView->editTriggers();
-    if (checked) //no edit
-    {
-        ui->editTableView->setModel(ui->timelineWidget->timelineModel);
-        ui->editTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-//        ui->editTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    }
-    else //edit allowed
-    {
-        ui->editTableView->setModel(ui->editTableView->editProxyModel);
-        ui->editTableView->setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::AnyKeyPressed);
-//        ui->editTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    }
-//    qDebug()<<"MainWindow::on_stretchedCheckBox_clicked"<<ui->editTableView->editTriggers();
-    onEditFilterChanged();
 }
 
 void MainWindow::on_locationCheckBox_clicked(bool checked)
@@ -916,9 +990,20 @@ void MainWindow::on_locationCheckBox_clicked(bool checked)
     {
         QSettings().setValue("locationCheckBox", checked);
         QSettings().sync();
-        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
+        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
     }
 }
+
+void MainWindow::on_authorCheckBox_clicked(bool checked)
+{
+    if (QSettings().value("authorCheckBox").toBool() != checked)
+    {
+        QSettings().setValue("authorCheckBox", checked);
+        QSettings().sync();
+        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
+    }
+}
+
 
 void MainWindow::on_cameraCheckBox_clicked(bool checked)
 {
@@ -926,18 +1011,18 @@ void MainWindow::on_cameraCheckBox_clicked(bool checked)
     {
         QSettings().setValue("cameraCheckBox", checked);
         QSettings().sync();
-        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox);
+        emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
 
     //    QString fileName = QFileDialog::getOpenFileName(this,
     //          tr("Open Image"), "/home/", tr("MediaFiles (*.mp4)"));
 
-        QFileDialog dialog(this);
-        dialog.setFileMode(QFileDialog::AnyFile);
-        dialog.setNameFilter(tr("MediaFiles (*.mp4)"));
-        dialog.setViewMode(QFileDialog::List);
-        QStringList fileNames;
-         if (dialog.exec())
-             fileNames = dialog.selectedFiles();
+//        QFileDialog dialog(this);
+//        dialog.setFileMode(QFileDialog::AnyFile);
+//        dialog.setNameFilter(tr("MediaFiles (*.mp4)"));
+//        dialog.setViewMode(QFileDialog::List);
+//        QStringList fileNames;
+//         if (dialog.exec())
+//             fileNames = dialog.selectedFiles();
     }
 }
 
@@ -948,70 +1033,24 @@ void MainWindow::on_transitionComboBox_currentTextChanged(const QString &arg1)
         qDebug()<<"MainWindow::on_transitionComboBox_currentTextChanged"<<arg1;
         ui->folderTreeView->folderSettings->setValue("transitionType", arg1);
         ui->folderTreeView->folderSettings->sync();
-        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->editTableView);
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
     }
 }
 
-void MainWindow::on_stretch100Button_clicked()
+void MainWindow::onEditsChangedToTimeline(QAbstractItemModel *) //itemModel
 {
-//    ui->stretchedDurationSpinBox->setValue(ui->timelineWidget->transitiontimeDuration);
-    ui->stretchDial->setValue(50);
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->stretchedDurationSpinBox->value() != ui->timelineWidget->transitiontimeDuration, ui->editTableView);
-}
-
-void MainWindow::on_stretchDial_valueChanged(int value)
-{
-    if (stretchValueChangedBy != "SpinBox") //do not change the spinbox if the spinbox triggers the change
-    {
-        double result;
-        if (value < 50)
-            result = qSin(M_PI * value / 100);
-        else
-            result = 1 / qSin(M_PI * value / 100);
-        //    result = value / 50.0;
-
-//        qDebug()<<"MainWindow::on_stretchDial_valueChanged"<<value<<ui->timelineWidget->transitiontimeDuration<<result<<stretchValueChangedBy;
-
-        stretchValueChangedBy = "Dial";
-        ui->stretchedDurationSpinBox->setValue(ui->timelineWidget->transitiontimeDuration * result);
-        stretchValueChangedBy = "";
-        ui->stretch100Button->setText(QString::number(ui->stretchedDurationSpinBox->value() * 100 / ui->timelineWidget->transitiontimeDuration, 'g', 3) + "%");
-    }
-}
-
-void MainWindow::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
-{
-    if (ui->timelineWidget->transitiontimeDuration != 0 && stretchValueChangedBy != "Dial")//do not change the dial if the dial triggers the change
-    {
-        double result;
-        if (ui->stretchedDurationSpinBox->value() / double(ui->timelineWidget->transitiontimeDuration) < 1)
-            result = qAsin(ui->stretchedDurationSpinBox->value() / double(ui->timelineWidget->transitiontimeDuration)) * 100 / M_PI;
-        else
-            result = 100 - qAsin(double(ui->timelineWidget->transitiontimeDuration) / double( ui->stretchedDurationSpinBox->value())) * 100 / M_PI;
-//        result = ui->stretchedDurationSpinBox->value() * 50.0/ ui->timelineWidget->transitiontimeDuration;
-
-//        qDebug()<<"MainWindow::onEditsChangedToTimeline"<<ui->stretchedDurationSpinBox->value() << ui->timelineWidget->transitiontimeDuration<<ui->stretchedDurationSpinBox->value() * 100 / ui->timelineWidget->transitiontimeDuration;
-
-        stretchValueChangedBy = "SpinBox";
-        ui->stretchDial->setValue( int(result ));
-        stretchValueChangedBy = "";
-        ui->stretch100Button->setText(QString::number(ui->stretchedDurationSpinBox->value() * 100 / ui->timelineWidget->transitiontimeDuration, 'g', 3) + "%");
-    }
-
     if (transitionValueChangedBy != "Dial")//do not change the dial if the dial triggers the change
     {
         double result;
-        if (ui->stretchedDurationSpinBox->value() / double(ui->timelineWidget->transitiontimeDuration) < 1)
-            result = qAsin(ui->stretchedDurationSpinBox->value() / double(ui->timelineWidget->transitiontimeDuration)) * 100 / M_PI;
-        else
-            result = 100 - qAsin(double(ui->timelineWidget->transitiontimeDuration) / double( ui->stretchedDurationSpinBox->value())) * 100 / M_PI;
-        result = (ui->transitionTimeSpinBox->value());
+        result = ui->transitionTimeSpinBox->value();
 
-//        qDebug()<<"MainWindow::onEditsChangedToTimeline"<<ui->stretchedDurationSpinBox->value() << ui->timelineWidget->transitiontimeDuration<<ui->stretchedDurationSpinBox->value() * 100 / ui->timelineWidget->transitiontimeDuration;
+        qDebug()<<"MainWindow::onEditsChangedToTimeline transition"<< ui->timelineWidget->transitiontimeDuration<<int(result);
 
         transitionValueChangedBy = "SpinBox";
         ui->transitionDial->setValue( int(result ));
         transitionValueChangedBy = "";
+
+        qDebug()<<"MainWindow::onEditsChangedToTimeline transition after"<< ui->timelineWidget->transitiontimeDuration<<int(result);
     }
 }
 
@@ -1026,10 +1065,10 @@ void MainWindow::on_transitionDial_valueChanged(int value)
             result = 1 / qSin(M_PI * value / 100);
         result = ( value);
 
-        qDebug()<<"MainWindow::on_transitionDial_valueChanged"<<value<<ui->timelineWidget->transitiontimeDuration<<result<<stretchValueChangedBy;
+        qDebug()<<"MainWindow::on_transitionDial_valueChanged"<<value<<ui->timelineWidget->transitiontimeDuration<<result;
 
         transitionValueChangedBy = "Dial";
-        ui->transitionTimeSpinBox->setValue(result);
+        ui->transitionTimeSpinBox->setValue(value);
         transitionValueChangedBy = "";
     }
 }
@@ -1038,47 +1077,56 @@ void MainWindow::on_transitionTimeSpinBox_valueChanged(int arg1)
 {
     if (ui->folderTreeView->folderSettings->value("transitionTime") != arg1)
     {
-        qDebug()<<"MainWindow::on_transitionTimeSpinBox_valueChanged"<<arg1;
+        qDebug()<<"MainWindow::on_transitionTimeSpinBox_valueChanged"<<arg1<<transitionValueChangedBy;
         ui->folderTreeView->folderSettings->setValue("transitionTime", arg1);
         ui->folderTreeView->folderSettings->sync();
 
-        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->stretchedDurationSpinBox->value(), ui->editTableView);
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
     }
 }
 
-void MainWindow::onAdjustTransitionAndStretchTime(int transitionTime, int stretchTime)
+void MainWindow::onAdjustTransitionTime(int transitionTime)
 {
+    qDebug()<<"MainWindow::onAdjustTransitionTime"<<transitionTime;
+
     transitionValueChangedBy = "SpinBox";
     ui->transitionTimeSpinBox->setValue(transitionTime);
     transitionValueChangedBy = "";
-
-    stretchValueChangedBy = "SpinBox";
-    ui->stretchedDurationSpinBox->setValue(stretchTime);
-    stretchValueChangedBy = "";
 }
-
 
 void MainWindow::on_positionDial_valueChanged(int value)
 {
     if (positionValueChangedBy != "SpinBox") //do not change the spinbox if the spinbox triggers the change
     {
-        double result;
-        result = ( value) * QSettings().value("frameRate").toInt() / 19;
 
-        qDebug()<<"MainWindow::on_positionDial_valueChanged"<<value<<result<<positionValueChangedBy;
+//        if (positiondialOldValue == 99 && value == 0)
+//            positiondialOldValue = -1;
+//        if (positiondialOldValue == 0 && value == 99)
+//            positiondialOldValue = 100;
+
+        int delta = (value - positiondialOldValue + 100)%100;
+
+        if (delta > 50)
+            delta -=100;
+
+        delta *= ui->incrementSlider->value()+1;
+
+        qDebug()<<"MainWindow::on_positionDial_valueChanged"<<positiondialOldValue<<value<<delta;
 
         positionValueChangedBy = "Dial";
-        ui->videoWidget->m_positionSpinner->setValue(result);
+        ui->videoWidget->m_positionSpinner->setValue(ui->videoWidget->m_positionSpinner->value() + delta);
         positionValueChangedBy = "";
     }
+    positiondialOldValue = value;
 }
 
 void MainWindow::showUpgradePrompt()
 {
+    qDebug()<<"MainWindow::showUpgradePrompt";
 //    QSettings().setValue("checkUpgradeAutomatic", false);
     if (QSettings().value("checkUpgradeAutomatic").toBool())
     {
-        ui->statusBar->showMessage("Checking for upgrade...", 15000);
+        ui->statusBar->showMessage("Checking for upgrade1...", 15000);
         QNetworkRequest request(QUrl("http://www.actioncamvideocompanion.com/version.json"));
         QSslConfiguration sslConfig = request.sslConfiguration();
         sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
@@ -1095,6 +1143,7 @@ void MainWindow::showUpgradePrompt()
 
 void MainWindow::on_actionUpgrade_triggered()
 {
+    qDebug()<<"MainWindow::on_actionUpgrade_triggered";
     if (QSettings().value("askUpgradeAutomatic", true).toBool())
     {
         QMessageBox dialog(QMessageBox::Question, qApp->applicationName(), tr("Do you want to automatically check for updates in the future?"), QMessageBox::No | QMessageBox::Yes, this);
@@ -1106,13 +1155,15 @@ void MainWindow::on_actionUpgrade_triggered()
         if (dialog.checkBox()->isChecked())
             QSettings().setValue("askUpgradeAutomatic", false);
     }
-    ui->statusBar->showMessage("Checking for upgrade...", 15000);
+    ui->statusBar->showMessage("Checking for upgrade2...", 15000);
     m_network.get(QNetworkRequest(QUrl("http://actioncamvideocompanion.com/version.json")));
 }
 
 void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 {
-    if (!reply->error()) {
+    qDebug()<<"MainWindow::onUpgradeCheckFinished";
+    if (!reply->error())
+    {
         QByteArray response = reply->readAll();
 //        qDebug() << "response: " << response;
         QJsonParseError *error = new QJsonParseError();
@@ -1152,6 +1203,48 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 
 void MainWindow::onUpgradeTriggered()
 {
+    qDebug()<<"MainWindow::onUpgradeTriggered";
     QDesktopServices::openUrl(QUrl(m_upgradeUrl));
 }
 
+void MainWindow::onPropertiesLoaded()
+{
+    qDebug()<<"MainWindow::onPropertiesLoaded";
+    emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
+
+//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+}
+
+void MainWindow::onVideoPositionChanged(int progress, int row, int relativeProgress)
+{
+    positionValueChangedBy = "SpinBox";
+    ui->positionDial->setValue(FGlobal().msec_to_frames(progress)%100);
+    positionValueChangedBy = "";
+}
+
+void MainWindow::on_audioCheckBox_clicked(bool checked)
+{
+    if (QSettings().value("audioCheckBox").toBool() != checked)
+    {
+        QSettings().setValue("audioCheckBox", checked);
+        QSettings().sync();
+    }
+}
+
+void MainWindow::on_editTabWidget_currentChanged(int index)
+{
+    if (QSettings().value("editTabIndex").toInt() != index)
+    {
+        QSettings().setValue("editTabIndex", index);
+        QSettings().sync();
+    }
+}
+
+void MainWindow::on_filesTtabWidget_currentChanged(int index)
+{
+    if (QSettings().value("filesTabIndex").toInt() != index)
+    {
+        QSettings().setValue("filesTabIndex", index);
+        QSettings().sync();
+    }
+}

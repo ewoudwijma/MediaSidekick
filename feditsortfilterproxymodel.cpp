@@ -25,12 +25,8 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
     if (expList.count()>2)
         tag2String = expList[3].toLower();
 
-    QStringList tag1List = tag1String.split(";");
-    if (tag1List.count()==1 && tag1List[0] == "")
-        tag1List.clear();
-    QStringList tag2List = tag2String.split(";");
-    if (tag2List.count()==1 && tag2List[0] == "")
-        tag2List.clear();
+    QStringList tag1List = tag1String.split(";", QString::SkipEmptyParts);
+    QStringList tag2List = tag2String.split(";", QString::SkipEmptyParts);
 
     QString fileNameString = expList[4];
 

@@ -7,8 +7,18 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    a.setOrganizationDomain("actioncamvideocompanion.com");
+    a.setApplicationName("ACVC");
+    a.setApplicationVersion("00.00.01");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
+    //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
+
+    if (QSettings().value("framerate").toInt() == 0)
+    {
+        QSettings().setValue("frameRate", 25);
+        QSettings().sync();
+    }
 
     QPixmap pixmap(":/fiprelogo.ico");
     QSplashScreen *splash = new QSplashScreen(pixmap);
@@ -20,10 +30,6 @@ int main(int argc, char *argv[])
 
     a.processEvents();
 
-//    a.setOrganizationDomain("actioncamvideocompanion.com");
-//    a.setApplicationName("ACVC");
-    a.setApplicationVersion("00.00.01");
-
     MainWindow w;
 
 //    w.setGeometry(1536,512,2048,960);
@@ -34,7 +40,14 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 
-//deploy
+//deploy in shell (not powershell...)
 //cd D:\Projects\build-Fipre-Desktop_Qt_5_12_3_MSVC2017_32bit-Release\release>
 //d:\Qt\5.12.3\msvc2017\bin\windeployqt.exe --quick --no-translations .
+//D:\Qt\5.12.5\mingw73_64\bin\qtenv2.bat
+//D:\Qt\5.12.5\mingw73_64\bin\windeployqt.exe --quick --no-translations .
+
+//http://www.gnu.org/licenses/lgpl-3.0.html
+//https://doc.qt.io/qtinstallerframework/index.html
+
+//    ..\..\bin\binarycreator.exe -c config\config.xml -p packages ACVCInstaller.exe
 

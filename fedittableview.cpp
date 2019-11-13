@@ -9,7 +9,6 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QTextStream>
-#include <QTime>
 
 #include <QDebug>
 
@@ -48,6 +47,7 @@ FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
 
     setColumnHidden(folderIndex, true);
     setColumnHidden(fileIndex, true);
+    setColumnHidden(hintIndex, true);
 
     //from designer defaults
     setDragDropMode(DragDropMode::DropOnly);
@@ -77,7 +77,7 @@ FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
     editContextMenu->addAction(new QAction("Delete",editContextMenu));
     connect(editContextMenu->actions().last(), SIGNAL(triggered()), this, SLOT(onEditDelete()));
 
-    processManager = new FProcessManager(this);
+//    processManager = new FProcessManager(this);
 
     srtFileItemModel = new QStandardItemModel(this);
 
@@ -180,7 +180,7 @@ void FEditTableView::selectEdits()
     doNotUpdate = false;
 }
 
-void FEditTableView::addEdit(int minus, int plus)
+void FEditTableView::addEdit()
 {
     if (selectedFileName == "")
     {
@@ -188,8 +188,8 @@ void FEditTableView::addEdit(int minus, int plus)
         return;
     }
 
-    QTime newInTime = QTime::fromMSecsSinceStartOfDay(position - minus);
-    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + plus - FGlobal().frames_to_msec(1));
+    QTime newInTime = QTime::fromMSecsSinceStartOfDay(position);
+    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + 3000 - FGlobal().frames_to_msec(1));
 
     int rowToAppendBefore = -1;
     int fileRow = -1;
@@ -199,13 +199,36 @@ void FEditTableView::addEdit(int minus, int plus)
     {
         QString fileName = editItemModel->index(row, fileIndex).data().toString();
         QTime inTime = QTime::fromString(editItemModel->index(row,inIndex).data().toString(), "HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(editItemModel->index(row,outIndex).data().toString(), "HH:mm:ss.zzz");
+
+        //check overlapping, remove overlap from this edit if this is the case
+        if (fileName == selectedFileName && inTime.msecsTo(newOutTime) >= 0 && outTime.msecsTo(newInTime) <= 0) //intime before newouttime and outtime after newintime
+        {
+            qDebug()<<"addedit"<<row<<"overlapping"<<inTime<<outTime<<newInTime<<newOutTime;
+            if (outTime.msecsTo(newOutTime) <= 0) //outtime after newouttime
+            {
+                qDebug()<<"addedit"<<row<<"adjust outtime";
+                newOutTime = inTime.addMSecs( - FGlobal().frames_to_msec(1) );
+            }
+            if (inTime.msecsTo(newInTime) >= 0) //intime after newintime
+            {
+                qDebug()<<"addedit"<<row<<"adjust intime";
+                newInTime = outTime.addMSecs( FGlobal().frames_to_msec(1) );
+            }
+        }
+
         if (fileName > selectedFileName && fileRow == -1)
             fileRow = row;
+
         if (selectedFileName == fileName && newInTime.msecsTo(inTime) > 0 && rowToAppendBefore == -1)
             rowToAppendBefore = row;
+
         maxOrderAtLoad = qMax(maxOrderAtLoad, editItemModel->index(row, orderAtLoadIndex).data().toInt());
         maxOrderAfterMoving = qMax(maxOrderAtLoad, editItemModel->index(row, orderAfterMovingIndex).data().toInt());
     }
+
+    if (newInTime.msecsTo(newOutTime) <= 0) //if no place for new edit then cancel operation
+        return;
 
     if (rowToAppendBefore == -1)
         rowToAppendBefore = fileRow;
@@ -301,7 +324,7 @@ void FEditTableView::onEditRightClickMenu(const QPoint &point)
         editContextMenu->exec(viewport()->mapToGlobal(point));
 }
 
-void FEditTableView::onFileDelete(QString fileName)
+void FEditTableView::onEditsDelete(QString fileName)
 {
     bool isEditChanged = false;
     for (int row=editItemModel->rowCount()-1; row>=0; row--) //reverse as takeRow is changing rows
@@ -309,7 +332,7 @@ void FEditTableView::onFileDelete(QString fileName)
         QString folderNameX = editItemModel->index(row, folderIndex).data().toString();
         QString fileNameX = editItemModel->index(row, fileIndex).data().toString();
 
-        qDebug()<<"FEditTableView::onFileDelete"<<folderNameX<<selectedFolderName<<fileNameX<<fileName;
+        qDebug()<<"FEditTableView::onEditsDelete"<<folderNameX<<selectedFolderName<<fileNameX<<fileName;
         if (folderNameX == selectedFolderName && fileNameX == fileName)
         {
             editItemModel->takeRow(row);
@@ -317,7 +340,7 @@ void FEditTableView::onFileDelete(QString fileName)
         }
     }
 
-    if (isEditChanged)
+    if (isEditChanged) //reset orderBeforeLoadIndex
     {
         for (int row = 0; row<editItemModel->rowCount();row++)
         {
@@ -334,9 +357,9 @@ void FEditTableView::onFileDelete(QString fileName)
     }
 }
 
-void FEditTableView::onFileRename()
+void FEditTableView::onReloadEdits()
 {
-    qDebug()<<"FEditTableView::onFileRename";
+    qDebug()<<"FEditTableView::onReloadEdits";
     loadModel(selectedFolderName);
 }
 
@@ -353,13 +376,15 @@ void FEditTableView::onTrim(QString pfileName)
         }
     }
 
-    QString code = nullptr;
+    qDebug()<<"FEditTableView::onTrim saved"<< pfileName;
+
     for (int row = 0; row < editItemModel->rowCount(); row++) // for each edit of file
     {
         QString fileName = editItemModel->index(row,fileIndex).data().toString();
 
         if (fileName == pfileName)
         {
+            qDebug()<<"FEditTableView::onTrim saved"<< fileName;
             QTime inTime = QTime::fromString(editItemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(editItemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
@@ -374,50 +399,62 @@ void FEditTableView::onTrim(QString pfileName)
 
             QString targetFileName = fileName;
             int lastIndex = targetFileName.lastIndexOf(".");
-            if (lastIndex > -1)
+            if (lastIndex > -1) //if extension exists
                 targetFileName = targetFileName.left(lastIndex) + "+" + QString::number(inTime.msecsSinceStartOfDay()) + "ms" + targetFileName.mid(lastIndex);
             else
                 targetFileName = targetFileName + "+" + QString::number(inTime.msecsSinceStartOfDay()) + "ms";
-            code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
 
-            emit addLogEntry("trim " + targetFileName);
-            emit addLogToEntry("trim " + targetFileName, "Start trim of " + targetFileName + "...");
-            QMap<QString, QString> parameters;
-            parameters["targetFileName"] = targetFileName;
-            processManager->startProcess(code, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
-            {
-                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-                emit editTableView->addLogToEntry("trim " + parameters["targetFileName"], result);
-            }, [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
-            {
-                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-                qDebug()<<"trim"<<parent <<command;
-    //            emit editTableView->addLogToEntry("trim ", result.join("\n"));
-            });
+            qDebug()<<"FEditTableView::onTrim before emit"<< selectedFolderName<<fileName<<targetFileName<<inTime<<outTime;
+            emit trim(selectedFolderName, fileName, targetFileName, inTime, outTime, 10);
 
-            emit addLogEntry("property update " + targetFileName);
+//            QString code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
 
-            emit addLogToEntry("property update " + targetFileName, "Start updating metadata of " + targetFileName + "...");
-            QString attributeString = "";
-            QStringList texts;
-            texts << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model";
-            for (int iText = 0; iText < texts.count(); iText++)
-            {
-                QString *value = new QString();
-                emit getPropertyValue(fileName, texts[iText], value);
+//            QMap<QString, QString> parameters;
 
-                attributeString += " -" + texts[iText] + "=\"" + *value + "\"";
-            }
+//            QString *processId = new QString();
+//            emit addLogEntry(selectedFolderName, targetFileName, "Trim", processId);
+//            emit addLogToEntry(*processId, code);
+//            parameters["processId"] = *processId;
 
-            QString command = "exiftool" + attributeString + " -overwrite_original \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
-            processManager->startProcess(command, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
-            {
-                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-                emit editTableView->addLogToEntry("property update " + parameters["targetFileName"], result.join("\n"));
-    //                    qDebug()<<"exiftool update date"<<parent <<command<< result;
-//                editTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
-//                emit editTableView->trim(parameters["targetFileName"]);
-            });
+//            processManager->startProcess(code, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
+//            {
+//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
+//                emit editTableView->addLogToEntry(parameters["processId"], result);
+//            }, [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
+//            {
+//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
+//                qDebug()<<"trim"<<parent <<command;
+//    //            emit editTableView->addLogToEntry("trim ", result.join("\n"));
+//                emit editTableView->addLogToEntry(parameters["processId"], "Completed");
+//            });
+
+            emit propertyUpdate(selectedFolderName, fileName, targetFileName);
+
+//            emit addLogEntry(selectedFolderName, targetFileName, "Property update", processId);
+
+//            QString attributeString = "";
+//            QStringList texts;
+//            texts << "CreateDate" << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model" << "Director" << "Producer"  << "Publisher";
+//            for (int iText = 0; iText < texts.count(); iText++)
+//            {
+//                QString *value = new QString();
+//                emit getPropertyValue(fileName, texts[iText], value);
+
+//                attributeString += " -" + texts[iText] + "=\"" + *value + "\"";
+//            }
+
+//            QString command = "exiftool" + attributeString + " -overwrite_original \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
+//            emit addLogToEntry(*processId, command + "\n");
+//            parameters["processId"] = *processId;
+//            processManager->startProcess(command, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
+//            {
+//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
+//                emit editTableView->addLogToEntry(parameters["processId"], result);
+//            }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
+//            {
+//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
+//                emit editTableView->addLogToEntry(parameters["processId"], "Completed");
+//            });
 
             //create srt file
             QString fileName;
@@ -432,10 +469,9 @@ void FEditTableView::onTrim(QString pfileName)
                 FStarRating starRating = qvariant_cast<FStarRating>(editItemModel->index(row, ratingIndex).data());
 
                 int order = editItemModel->index(row, orderAfterMovingIndex).data().toInt();
-                order++;
 
                 QString srtContentString = "";
-                srtContentString += "<o>" + QString::number(order) + "</o>";
+                srtContentString += "<o>" + QString::number(order + 1) + "</o>"; //+1 for file trim, +2 for generate
                 srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
                 srtContentString += "<a>" + editItemModel->index(row, alikeIndex).data().toString() + "</a>";
                 srtContentString += "<h>" + editItemModel->index(row, hintIndex).data().toString() + "</h>";
@@ -460,13 +496,15 @@ void FEditTableView::onTrim(QString pfileName)
 //        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
 //    }
 
-    QMap<QString, QString> parameters;
-    processManager->startProcess("exiftool", parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result) //dummy process to have this executed last
-    {
-        FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-        editTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
-        emit editTableView->trim(""); //triggers property load
-    });
+    emit reloadAll(true);
+
+//    QMap<QString, QString> parameters;
+//    processManager->startProcess(parameters, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
+//    {
+//        FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
+//        editTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
+//        emit editTableView->reloadProperties(""); //triggers property load
+//    });
 
 } //onTrim
 
@@ -542,6 +580,7 @@ void FEditTableView::onPropertiesLoaded()
 //            QSettings().setValue("frameRate",fpsSuggested);
         }
     }
+    emit propertiesLoaded();
 }
 
 void FEditTableView::onEditDelete()
@@ -586,6 +625,8 @@ void FEditTableView::onEditDelete()
             editItemModel->setData(editItemModel->index(row, orderBeforeLoadIndex), row+1);
             editItemModel->setData(editItemModel->index(row, changedIndex), "yes");
         }
+        else
+            editItemModel->setData(editItemModel->index(row, changedIndex), "yes"); //set to yes to make sure delete is saved!
     }
 
 //    //auto save because edit is gone
@@ -946,6 +987,7 @@ void FEditTableView::scanDir(QDir dir)
 
 void FEditTableView::loadModel(QString folderName)
 {
+//    qDebug() << "FEditTableView::loadModel" << folderName;
     if (checkSaveIfEditsChanged())
     {
         onSectionMoved(-1,-1,-1); //to reorder the items
@@ -961,6 +1003,7 @@ void FEditTableView::loadModel(QString folderName)
     editItemModel->removeRows(0, editItemModel->rowCount());
     srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
     scanDir(QDir(folderName));
+//    qDebug() << "FEditTableView::loadModel done" << folderName;
 }
 
 bool FEditTableView::checkSaveIfEditsChanged()

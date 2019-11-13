@@ -18,14 +18,13 @@ public:
     ~FPropertyTreeView();
 
 public slots:
-    void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox);
+    void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
     void onFolderIndexClicked(QModelIndex index);
     void onGetPropertyValue(QString fileName, QString key, QString *value);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void onEditIndexClicked(QModelIndex index);
     void onFileDelete(QString fileName);
-    void onFileRename();
-    void onTrim();
+    void onReloadProperties();
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
@@ -43,14 +42,18 @@ private:
     void onPropertyChanged(QStandardItem *item);
     bool isLoading;
     void updateSuggestedName(QModelIndex index);
+
+    bool locationInName;
+    bool cameraInName;
+    bool authorInName;
 protected:
       void resizeEvent(QResizeEvent *event) override;
       QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) override;
       void scrollTo (const QModelIndex & index, ScrollHint hint = EnsureVisible) override;
 
 signals:
-      void addLogEntry(QString function);
-      void addLogToEntry(QString function, QString log);
+      void addLogEntry(QString folder, QString file, QString action, QString* id);
+      void addLogToEntry(QString id, QString log);
       void propertiesLoaded();
       void fileDelete(QString fileName);
 };

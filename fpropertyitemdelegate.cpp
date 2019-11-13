@@ -14,6 +14,35 @@ FPropertyItemDelegate::FPropertyItemDelegate(QObject *parent)
 {
 }
 
+void FPropertyItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                         const QModelIndex &index) const
+{
+    if (index.model()->index(index.row(),0, index.parent()).data().toString() == "SuggestedName" and index.column()> 2) //suggestedName
+    {
+        QString fileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
+//        qDebug()<<"FPropertyItemDelegate::paint" <<index.data()<<index.row()<<index.column()<<fileName;
+
+        QStyleOptionViewItem optCopy = option;
+
+        initStyleOption(&optCopy, index);
+
+//        optCopy.text = "hee";
+
+        optCopy.palette.setColor(QPalette::WindowText, Qt::red);
+//        optCopy.palette.setBrush(QPalette::Window, QBrush(Qt::blue));
+//        optCopy.palette.text();
+
+        if (!fileName.contains(index.data().toString() + "."))
+            optCopy.font.setBold(true);
+        else
+            optCopy.font.setBold(false);
+
+        QStyledItemDelegate::paint(painter, optCopy, index);
+    }
+    else
+        QStyledItemDelegate::paint(painter, option, index);
+}
+
 QWidget *FPropertyItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const

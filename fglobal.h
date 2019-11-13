@@ -31,7 +31,6 @@ public:
     int msec_rounded_to_fps(int msec);
     QString msec_to_time(int msec);
     int frames_to_msec(int frames);
-//    static const int hintIndex = 12;
 };
 
 #endif // FGLOBAL_H

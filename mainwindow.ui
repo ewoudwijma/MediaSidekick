@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>963</width>
-    <height>602</height>
+    <width>1157</width>
+    <height>591</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
          <enum>QTabWidget::South</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_folder">
          <attribute name="title">
@@ -85,49 +85,9 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
-                <widget class="STimeSpinBox" name="defaultMinSpinBox">
-                 <property name="minimumSize">
-                  <size>
-                   <width>80</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_2">
-                 <property name="text">
-                  <string>&lt;--</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
                 <widget class="QPushButton" name="newEditButton">
                  <property name="text">
                   <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_3">
-                 <property name="text">
-                  <string>--&gt;</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="STimeSpinBox" name="defaultPlusSpinBox">
-                 <property name="minimumSize">
-                  <size>
-                   <width>80</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
                 </widget>
                </item>
@@ -189,13 +149,6 @@
                 <widget class="QCheckBox" name="fileOnlyCheckBox">
                  <property name="text">
                   <string>File only</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="stretchedCheckBox">
-                 <property name="text">
-                  <string>Stretched</string>
                  </property>
                 </widget>
                </item>
@@ -273,7 +226,7 @@
              <item>
               <widget class="QCheckBox" name="propertyDiffCheckBox">
                <property name="text">
-                <string>Diff only</string>
+                <string>Diff</string>
                </property>
                <property name="tristate">
                 <bool>true</bool>
@@ -294,10 +247,27 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QCheckBox" name="authorCheckBox">
+               <property name="text">
+                <string>Author</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
             <widget class="FPropertyTreeView" name="propertyTreeView"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tabLog">
+          <attribute name="title">
+           <string>Log</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_8">
+           <item>
+            <widget class="FLogTableView" name="logTableView"/>
            </item>
           </layout>
          </widget>
@@ -323,32 +293,80 @@
          </widget>
         </widget>
        </widget>
-      </widget>
-      <widget class="QTabWidget" name="timelineTabWidget">
-       <property name="tabPosition">
-        <enum>QTabWidget::South</enum>
-       </property>
-       <property name="currentIndex">
-        <number>0</number>
-       </property>
-       <widget class="QWidget" name="tab_timeline">
-        <attribute name="title">
-         <string>Timeline</string>
-        </attribute>
+       <widget class="QWidget" name="genWidget" native="true">
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="FTimeline" name="timelineWidget" native="true">
-           <layout class="QVBoxLayout" name="verticalLayout_10">
+          <widget class="QGroupBox" name="positionGroupBox">
+           <property name="title">
+            <string>Position</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_11">
             <item>
-             <layout class="QHBoxLayout" name="timelineHorizontalLayout">
-              <item>
-               <widget class="QLabel" name="transisitionTimeLabel">
+             <widget class="QDial" name="positionDial">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
+              <property name="notchesVisible">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QFormLayout" name="formLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_10">
                 <property name="text">
-                 <string>Transition time</string>
+                 <string>Increment</string>
                 </property>
                </widget>
               </item>
-              <item>
+              <item row="0" column="1">
+               <widget class="QSlider" name="incrementSlider">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="transitionGroupBox">
+           <property name="title">
+            <string>Transition</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_15">
+            <item>
+             <widget class="QDial" name="transitionDial">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="notchesVisible">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QFormLayout" name="formLayout_4">
+              <item row="0" column="0">
+               <widget class="QLabel" name="transisitionTimeLabel">
+                <property name="text">
+                 <string>Time</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
                <widget class="STimeSpinBox" name="transitionTimeSpinBox">
                 <property name="minimumSize">
                  <size>
@@ -358,17 +376,14 @@
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QDial" name="transitionDial"/>
-              </item>
-              <item>
+              <item row="1" column="0">
                <widget class="QLabel" name="label_6">
                 <property name="text">
                  <string>Transition</string>
                 </property>
                </widget>
               </item>
-              <item>
+              <item row="1" column="1">
                <widget class="QComboBox" name="transitionComboBox">
                 <item>
                  <property name="text">
@@ -382,187 +397,223 @@
                 </item>
                </widget>
               </item>
-              <item>
-               <widget class="QLabel" name="stretchedDurationLabel">
-                <property name="text">
-                 <string>Stretched duration</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="STimeSpinBox" name="stretchedDurationSpinBox">
-                <property name="minimumSize">
-                 <size>
-                  <width>80</width>
-                  <height>0</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="stretch100Button">
-                <property name="text">
-                 <string>100%</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QDial" name="stretchDial"/>
-              </item>
-              <item>
-               <widget class="QDial" name="positionDial"/>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_2">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
              </layout>
             </item>
            </layout>
           </widget>
          </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_generate">
-        <attribute name="title">
-         <string>Generate</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_12">
+         <item>
+          <widget class="QGroupBox" name="generateGroupBox">
+           <property name="title">
+            <string>Generate</string>
+           </property>
+           <layout class="QFormLayout" name="formLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>Target</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="generateTargetComboBox">
+              <item>
+               <property name="text">
+                <string>Lossless</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Encode</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Premiere</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Shotcut</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Size</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="generateSizeComboBox">
+              <property name="currentIndex">
+               <number>4</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>240p</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>360p</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>480p</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>720p</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>1K</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>2.7K</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>4K</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>8K</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>Framerate</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="framerateComboBox">
+              <property name="currentIndex">
+               <number>3</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>1</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>5</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>10</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>25</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>30</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>50</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>60</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>90</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>100</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>120</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSpinBox" name="frameRateSpinBox">
+              <property name="maximum">
+               <number>120</number>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Audio</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QCheckBox" name="audioCheckBox">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QPushButton" name="generateButton">
+              <property name="text">
+               <string>Generate</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QProgressBar" name="progressBar">
+              <property name="value">
+               <number>24</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
          <item>
           <widget class="FGenerate" name="generateWidget" native="true">
-           <layout class="QVBoxLayout" name="verticalLayout_14">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_3">
-              <item>
-               <widget class="QLabel" name="label_4">
-                <property name="text">
-                 <string>Target</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="generateTargetComboBox">
-                <item>
-                 <property name="text">
-                  <string>Preview</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Final Cut</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Shotcut</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Da Vinci</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Premiere</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_5">
-                <property name="text">
-                 <string>Size</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="generateSizeComboBox">
-                <item>
-                 <property name="text">
-                  <string>Original (lossless)</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>1K</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>2.7K</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>4K</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_7">
-                <property name="text">
-                 <string>Framerate</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSpinBox" name="frameRateSpinBox"/>
-              </item>
-              <item>
-               <widget class="QPushButton" name="generateButton">
-                <property name="text">
-                 <string>Generate</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QProgressBar" name="progressBar">
-           <property name="value">
-            <number>24</number>
-           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_14"/>
           </widget>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_log">
-        <attribute name="title">
-         <string>Log</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_8">
-         <item>
-          <widget class="FLogTableView" name="logTableView"/>
-         </item>
-        </layout>
-       </widget>
+      </widget>
+      <widget class="QGroupBox" name="timelineGroupBox">
+       <property name="title">
+        <string>Timeline</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_12">
+        <item>
+         <widget class="FTimeline" name="timelineWidget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_10"/>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -573,7 +624,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>963</width>
+     <width>1157</width>
      <height>17</height>
     </rect>
    </property>

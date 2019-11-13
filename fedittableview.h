@@ -11,14 +11,14 @@
 #include <QDir>
 #include <QListView>
 #include <QTableView>
-
+#include <QTime>
 
 class FEditTableView: public QTableView
 {
     Q_OBJECT
 public:
     FEditTableView(QWidget *parent = nullptr);
-    void addEdit(int minus, int plus);
+    void addEdit();
     void saveModel(QString folderName, QString fileName);
     void toggleAlike();
     void giveStars(int starCount);
@@ -39,7 +39,7 @@ private:
     void selectEdits();
     void onTagsChanged(const QModelIndex &parent, int first, int last);
     int editCounter;
-    FProcessManager *processManager;
+//    FProcessManager *processManager;
     bool doNotUpdate;
 
 public slots:
@@ -50,11 +50,11 @@ public slots:
     void onScrubberOutChanged(int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-    void onFileDelete(QString fileName);
+    void onEditsDelete(QString fileName);
     void onTrim(QString fileName);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
-    void onFileRename();
+    void onReloadEdits();
 private slots:
     void onIndexClicked(QModelIndex index);
     void onEditRightClickMenu(const QPoint &point);
@@ -70,13 +70,18 @@ signals:
     void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
     void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void addLogEntry(QString function);
-    void addLogToEntry(QString function, QString log);
+    void addLogEntry(QString folder, QString file, QString action, QString *id);
+    void addLogToEntry(QString id, QString log);
     void getPropertyValue(QString fileName, QString key, QString *value);
-    void trim(QString fileName);
+    void reloadProperties(QString fileName);
     void updateIn(int frames);
     void updateOut(int frames);
     void frameRateChanged(int frameRate);
+    void propertiesLoaded();
+    void propertyUpdate(QString selectedFolderName, QString fileName, QString targetFileName);
+    void trim(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage);
+    void reloadAll(bool includingSRT);
+
 };
 
 #endif // FEDITTABLEVIEW_H

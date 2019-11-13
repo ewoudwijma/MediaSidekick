@@ -23,8 +23,16 @@ void FProcessManager::startProcess(QString code, QMap<QString, QString> paramete
     parameterQueue->append(parameters);
     processOutputQueue->append(processOutput);
     processResultsQueue->append(processResult);
-//    processResult("hoi");
     ExecuteProcess();
+}
+
+void FProcessManager::startProcess(QMap<QString, QString> parameters, void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
+{
+    processQueue->append("");
+//    allDoneProcess = pallDoneProcess;
+    parameterQueue->append(parameters);
+    processOutputQueue->append(nullptr);
+    processResultsQueue->append(processResult);
 }
 
 void FProcessManager::stopAll()
@@ -40,9 +48,17 @@ void FProcessManager::ExecuteProcess()
         processOutputString = "";
         QString tf = processQueue->takeFirst();
 //        qDebug()<<"FProcessManager::ExecuteProcess()"<<tf;
-//        if (tf != "") //in case no command (execute processfinished after other commands)
+        if (tf != "") //in case no command (execute processfinished after other commands)
             process->start(tf);
+        else
+            processFinished(0, QProcess::NormalExit);
     }
+//   else if (allDoneProcess != nullptr)
+//   {
+//       qDebug()<<"alldone process"<<allDoneProcess<<parameterQueue->count();
+//       QMap<QString, QString> parameters = parameterQueue->first();
+//       allDoneProcess(parentWidget(), parameters);
+//   }
 }
 
 void FProcessManager::processOutput()
