@@ -27,6 +27,9 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     connect( this, &QTreeView::clicked, this, &FFilesTreeView::onIndexClicked);
+    connect( this, &QTreeView::activated, this, &FFilesTreeView::onIndexActivated);
+
+    connect(fileModel, &QFileSystemModel::directoryLoaded, this, &FFilesTreeView::onDirectoryLoaded);
 
 //    QString lastFolder = QSettings().value("LastFolder").toString();
 //    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
@@ -77,6 +80,12 @@ void FFilesTreeView::onIndexClicked(QModelIndex index)
 //    }
     if (!index.data().toString().contains(".mlt") && !index.data().toString().contains(".xml"))
         emit indexClicked(index, selectionModel()->selectedIndexes());
+}
+
+void FFilesTreeView::onIndexActivated(QModelIndex index)
+{
+    qDebug()<<"FFilesTreeView::onIndexActivated"<<index.row()<<index.column()<<index.data().toString();
+    onIndexClicked(index);
 }
 
 void FFilesTreeView::loadModel(QUrl folderUrl)
@@ -299,20 +308,64 @@ void FFilesTreeView::onEditsDelete()
      fileContextMenu->close();
 }
 
-void FFilesTreeView::onFolderIndexClicked(QModelIndex index)
+void FFilesTreeView::onFolderIndexClicked(QModelIndex index)//index
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-//    qDebug()<<"FFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
+    qDebug()<<"FFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
     loadModel(lastFolder);
 }
 
 
 void FFilesTreeView::onEditIndexClicked(QModelIndex index)
 {
-//    qDebug()<<"FFilesTreeView::onEditIndexClicked"<<index;
+    qDebug()<<"FFilesTreeView::onEditIndexClicked"<<index;
     QString folderName = index.model()->index(index.row(),folderIndex).data().toString();
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
     QModelIndex modelIndex = fileModel->index(folderName + fileName, 0);
     qDebug()<<"FFilesTreeView::onEditIndexClicked"<<index.data().toString()<<fileName<<modelIndex.data().toString();
     setCurrentIndex(modelIndex); //does also the scrollTo
+}
+
+QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIndex)
+{
+    QModelIndex fileIndex = QModelIndex();
+    for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
+    {
+        QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
+        if (childIndex.data().toString().toLower().contains(".mp4") || childIndex.data().toString().toLower().contains(".avi") || childIndex.data().toString().toLower().contains(".wmv") || childIndex.data().toString().toLower().contains(".mts")) // && fileIndex == QModelIndex()
+        {
+            qDebug()<<"recursiveFiles"<<childIndex.data().toString();
+            return childIndex;
+        }
+        fileIndex = recursiveFirstFile(fileModel, childIndex);
+    }
+    return fileIndex;
+}
+
+void FFilesTreeView::onDirectoryLoaded(const QString &path)
+{
+    qDebug()<<"FFilesTreeView::onDirectoryLoaded"<<path<<fileModel->rowCount()<<model()->rowCount();
+    QModelIndex fileIndex = QModelIndex();
+//    for (int row=0; row<fileModel->rowCount();row++)
+//    {
+        QModelIndex parentIndex = rootIndex();
+
+//        qDebug()<<"FFilesTreeView::onDirectoryLoaded"<<parentIndex.data().toString()<<fileModel->index(row, 1).data().toString()<<fileModel->rowCount(parentIndex);
+        fileIndex = recursiveFirstFile(fileModel, parentIndex);
+
+//        if (fileModel->index(row, 0).data().toString().toLower().contains(".mp4") && fileIndex == QModelIndex())
+//            fileIndex = fileModel->index(row, 0);
+//        for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
+//        {
+//            QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
+//            if (childIndex.data().toString().toLower().contains(".mp4") && fileIndex == QModelIndex())
+//                fileIndex = childIndex;
+//        }
+//    }
+
+    if (fileIndex != QModelIndex())
+    {
+        onIndexClicked(fileIndex);
+        setCurrentIndex(fileIndex);
+    }
 }

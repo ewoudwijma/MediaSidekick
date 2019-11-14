@@ -68,7 +68,7 @@ public slots:
     void rewind();
     void onEditsChangedToVideo(QAbstractItemModel *editProxyModel);
     void onTimelinePositionChanged(int progress, int row, int relativeProgress);
-    void onFileDelete(QString fileName);
+    void onReleaseMedia(QString fileName);
     void skipNext();
     void skipPrevious();
     void onSpinnerPositionChanged(int frames);

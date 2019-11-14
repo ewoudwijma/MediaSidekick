@@ -9,7 +9,7 @@
 #include <QWidget>
 #include <QXmlStreamWriter>
 
-
+#include <QLabel>
 
 class FGenerate: public QWidget
 {
@@ -17,7 +17,7 @@ class FGenerate: public QWidget
 public:
     explicit FGenerate(QWidget *parent = nullptr);
 
-    void generate(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeMSecs, QProgressBar *progressBar, bool includingSRT, bool includeAudio);
+    void generate(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeMSecs, QProgressBar *progressBar, bool includingSRT, bool includeAudio, QLabel *spinnerLabel);
 private:
 //    MainWindow *mainWindow;
     FProcessManager *processManager;
@@ -27,7 +27,10 @@ private:
     void shotcutTransitionTractor(QXmlStreamWriter *stream, int transitionTime);
     void s(QString y, QString arg1 = "", QString arg2 ="", QString arg3="");
 
-//    void propertyUpdate(QString folderName, QString fileNameSource, QString fileNameTarget);
+    QString processError = "";
+
+    QLabel *spinnerLabel;
+
 signals:
     void addLogEntry(QString folder, QString file, QString action, QString *id);
     void addLogToEntry(QString function, QString log);

@@ -15,7 +15,9 @@
 void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
-    QColor backgroundColor = index.data(Qt::BackgroundRole).value<QColor>();
+    QColor backgroundColor = option.palette.color(QPalette::Base);//index.data(Qt::BackgroundRole).value<QColor>();
+
+//    qDebug()<<"FEditItemDelegate::paint"<<painter<<option.state<<index.data()<<option.palette.background()<<backgroundColor;
 //    if (index.column() == ratingIndex)
 //        qDebug()<<"backgroundColor"<<index.data().toString()<<backgroundColor<<QColor();
     QPalette optionPalette = option.palette;
@@ -34,8 +36,6 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         spinBox->setValue(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
 
         spinBox->setGeometry(option.rect);
-
-//        qDebug()<<"FEditItemDelegate::paint"<<painter<<option.state<<index.data()<<option.palette.background()<<backgroundColor;
 
         if(option.state & QStyle::State_Selected)
         {

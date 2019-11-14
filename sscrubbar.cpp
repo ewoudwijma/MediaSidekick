@@ -84,12 +84,12 @@ void SScrubBar::setInOutPoint(int row, int in, int out)
 
     if (foundRow != -1)
     {
-        if (m_in_out_list[foundRow].in != in)
+        if (m_in_out_list[foundRow].in != in && in<m_in_out_list[foundRow].out)
         {
             m_in_out_list[foundRow].in = in;
             emit scrubberInChanged(row, in);
         }
-        if (m_in_out_list[foundRow].out != out)
+        if (m_in_out_list[foundRow].out != out && out>m_in_out_list[foundRow].in )
         {
             m_in_out_list[foundRow].out = out;
             emit scrubberOutChanged(row, out);
@@ -200,7 +200,7 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
             //        foreach (EditInOutStruct inOut, m_in_out_list)
 //        for (int i=0; i< m_in_out_list.count();i++)
         {
-            qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<currentEdit<<x;
+//            qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<currentEdit<<x;
             int i = currentEdit;
             EditInOutStruct inOut = m_in_out_list[i];
 
@@ -212,7 +212,7 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
                 if ( i == 0 || (i > 0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
 //                if (x >= in - 24 && x <= in + 12)
                 {
-                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
+//                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
                     if (pos < inOut.out)
                         setInOutPoint(inOut.row, pos, inOut.out); //out the same
                 }
@@ -222,7 +222,7 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
                 if ( i == m_in_out_list.count()-1 || (i<m_in_out_list.count()-1 && pos < m_in_out_list[i+1].in - 12)) //not overlapping previous
 //                if (x >= out - 24 && x <= out + 100)
                 {
-                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
+//                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
                     if (inOut.in < pos)
                         setInOutPoint(inOut.row, inOut.in, pos); //in the same
                 }
@@ -235,7 +235,7 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
                      ((i== 0 && newIn >= 0)|| (i>0 && newIn > m_in_out_list[i-1].out + 12))                     ) //not overlapping previous
 //                if (x > in + 12 && x < out -24)
                 {
-                    qDebug()<<"SScrubBar::mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
+//                    qDebug()<<"SScrubBar::mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
                     setInOutPoint(inOut.row, newIn, newOut);
                 }
             }

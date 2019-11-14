@@ -47,6 +47,8 @@ FLogTableView::FLogTableView(QWidget *parent) : QTableView(parent)
     setColumnHidden(allIndex, true);
 
     setSortingEnabled(true);
+
+    verticalHeader()->setSectionResizeMode (QHeaderView::Fixed);
 }
 
 void FLogTableView::onAddEntry(QString folder, QString file, QString action, QString* id)
@@ -54,6 +56,7 @@ void FLogTableView::onAddEntry(QString folder, QString file, QString action, QSt
     *id =QString::number(logItemModel->rowCount()).rightJustified(5, '0');
 
     QList<QStandardItem *> items;
+
 
     items.append(new QStandardItem(*id));
     items.append(new QStandardItem(QTime().currentTime().toString("hh:mm:ss.zzz"))); //timestamp

@@ -125,7 +125,7 @@ void FPropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList se
             selectedFileNames << index.data().toString();
         }
     }
-    qDebug()<<"FPropertyTreeView::onFileIndexClicked"<<index.data().toString()<<selectedIndices.count()<<selectedFileNames.count();
+//    qDebug()<<"FPropertyTreeView::onFileIndexClicked"<<index.data().toString()<<selectedIndices.count()<<selectedFileNames.count();
 //    QModelIndexList *selectedIndices = index.model().selectionModel->sele;
 //    QModelIndex modelIndex = propertyProxyModel->index(propertyProxyModel->rowCount(),0);
     setCellStyle(selectedFileNames);
@@ -693,9 +693,9 @@ void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
     }
 } //on onPropertyChanged
 
-void FPropertyTreeView::onFileDelete(QString fileName)
+void FPropertyTreeView::onRemoveFile(QString fileName)
 {
-    qDebug()<<"FPropertyTreeView::onFileDelete"<<fileName;
+    qDebug()<<"FPropertyTreeView::onRemoveFile"<<fileName;
 
     for (int column=0; column<propertyItemModel->columnCount();column++)
     {

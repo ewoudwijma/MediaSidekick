@@ -19,7 +19,7 @@ FFolderTreeView::FFolderTreeView(QWidget *parent) : QTreeView(parent)
     this->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     QString lastFolder = QSettings().value("LastFolder").toString();
-    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
+    if (lastFolder != ""  && lastFolder.length()>4) //not the root folder
     {
         QModelIndex modelIndex;
         modelIndex = directoryModel->index(QSettings().value("LastFolder").toString());
@@ -46,9 +46,7 @@ void FFolderTreeView::onIndexClicked(const QModelIndex &index)
     QSettings().setValue("LastFolder", lastFolder);
     QSettings().sync();
 
-    folderSettings = new QSettings(lastFolder + "acvc.ini", QSettings::IniFormat);
-
-    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
+    if (lastFolder != ""  && lastFolder.length()>4) //not the root folder
     {
         emit indexClicked(selectedIndex);
     }

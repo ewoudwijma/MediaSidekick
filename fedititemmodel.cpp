@@ -37,3 +37,15 @@ bool FEditItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
     }
     return false;
 }
+
+void FEditItemModel::currentChanged(const QModelIndex &current, const QModelIndex &previous)
+{
+    qDebug()<<"FEditItemModel::currentChanged"<<current.data()<<previous.data();
+
+}
+
+void FEditItemModel::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
+{
+    qDebug()<<"FEditItemModel::selectionChanged"<<selected<<deselected;
+
+}

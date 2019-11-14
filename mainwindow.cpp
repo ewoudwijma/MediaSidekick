@@ -52,14 +52,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //added designer settings
     ui->propertyDiffCheckBox->setCheckState(Qt::PartiallyChecked);
-    ui->starEditorFilterWidget->setMaximumHeight(ui->newEditButton->height());
+
     ui->tagFilter1ListView->setMaximumHeight(ui->newEditButton->height());
     ui->tagFilter2ListView->setMaximumHeight(ui->newEditButton->height());
 //    ui->newEditButton->setText(nullptr);
     ui->newEditButton->setIcon(style()->standardIcon(QStyle::SP_FileDialogStart));
-//    ui->videoWidget->setMinimumHeight(500);
-
-    //
 
     tagFilter1Model = new QStandardItemModel(this);
     ui->tagFilter1ListView->setModel(tagFilter1Model);
@@ -68,8 +65,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tagFilter1ListView->setDragDropMode(QListView::DragDrop);
     ui->tagFilter1ListView->setDefaultDropAction(Qt::MoveAction);
     ui->tagFilter1ListView->setSpacing(4);
-    connect(tagFilter1Model, &QStandardItemModel::dataChanged,  this, &MainWindow::onEditFilterChanged);
-    connect(tagFilter1Model, &QStandardItemModel::rowsRemoved,  this, &MainWindow::onEditFilterChanged); //datachanged not signalled when removing
+    connect(tagFilter1Model, &QStandardItemModel::dataChanged,  this, &MainWindow::onTagFiltersChanged);
+    connect(tagFilter1Model, &QStandardItemModel::rowsRemoved,  this, &MainWindow::onTagFiltersChanged); //datachanged not signalled when removing
     ui->graphicsView1->connectNodes("tf1", "main", "filter");
 
     tagFilter2Model = new QStandardItemModel(this);
@@ -79,15 +76,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tagFilter2ListView->setDragDropMode(QListView::DragDrop);
     ui->tagFilter2ListView->setDefaultDropAction(Qt::MoveAction);
     ui->tagFilter2ListView->setSpacing(4);
-    connect(tagFilter2Model, &QStandardItemModel::dataChanged,  this, &MainWindow::onEditFilterChanged);
-    connect(tagFilter2Model, &QStandardItemModel::rowsRemoved,  this, &MainWindow::onEditFilterChanged); //datachanged not signalled when removing
+    connect(tagFilter2Model, &QStandardItemModel::dataChanged,  this, &MainWindow::onTagFiltersChanged);
+    connect(tagFilter2Model, &QStandardItemModel::rowsRemoved,  this, &MainWindow::onTagFiltersChanged); //datachanged not signalled when removing
     ui->graphicsView1->connectNodes("tf2", "main", "filter");
-
-//    ui->newTagLineEdit->setDragEnabled(true);
-//    setDefaultDropAction(Qt::MoveAction);
-
-
-//    ui->verticalLayout_player->insertWidget(1,ui->videoWidget->scrubBar);
 
     QRect savedGeometry = QSettings().value("Geometry").toRect();
     if (savedGeometry != geometry())
@@ -106,7 +97,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->filesTreeView, &FFilesTreeView::indexClicked, ui->editTableView, &FEditTableView::onFileIndexClicked);
     ui->graphicsView1->connectNodes("files", "edit", "file");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onFileDelete); //stop and release
+    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onReleaseMedia); //stop and release
     ui->graphicsView1->connectNodes("files", "video", "delete");
 //    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->videoWidget, &FVideoWidget::onFileRename); //stop and release
 //    ui->graphicsView1->connectNodes("files", "video", "rename");
@@ -116,7 +107,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView1->connectNodes("files", "edit", "delete");
     connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->editTableView, &FEditTableView::onReloadEdits); //reload
     ui->graphicsView1->connectNodes("files", "edit", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->propertyTreeView, &FPropertyTreeView::onFileDelete); //remove from column
+    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->propertyTreeView, &FPropertyTreeView::onRemoveFile); //remove from column
     ui->graphicsView1->connectNodes("files", "prop", "delete");
     connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
     ui->graphicsView1->connectNodes("files", "prop", "rename");
@@ -196,7 +187,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->propertyTreeView, &FPropertyTreeView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
     ui->graphicsView1->connectNodes("video", "prop", "get");
     connect(ui->propertyTreeView, &FPropertyTreeView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
-    connect(ui->propertyTreeView, &FPropertyTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onFileDelete); // on property change, stop video
+    connect(ui->propertyTreeView, &FPropertyTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onReleaseMedia); // on property change, stop video
 
     connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &FPropertyTreeView::onPropertyFilterChanged);
     ui->graphicsView1->connectNodes("main", "prop", "filter");
@@ -212,19 +203,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->generateWidget, &FGenerate::reloadEdits, ui->editTableView, &FEditTableView::onReloadEdits); //reload
     connect(ui->generateWidget, &FGenerate::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
 
-    connect(ui->starEditorFilterWidget, &FStarEditor::editingFinished, this, &MainWindow::onEditFilterChanged);
-    ui->graphicsView1->connectNodes("star", "main", "filter");
-
-    connect(ui->fileOnlyCheckBox, &QCheckBox::clicked, this, &MainWindow::onEditFilterChanged);
-    connect(ui->alikeCheckBox, &QCheckBox::clicked, this, &MainWindow::onEditFilterChanged);
 
     //load settings
 
 //    qDebug()<<"tagFilter1"<<QSettings().value("tagFilter1").toString();
 //    qDebug()<<"tagFilter2"<<QSettings().value("tagFilter2").toString();
     QStringList tagList1 = QSettings().value("tagFilter1").toString().split(";", QString::SkipEmptyParts);
-//    if (tagList1.count()==1 && tagList1[0] == "")
-//        tagList1.clear();
 
     for (int j=0; j < tagList1.count(); j++)//tbd: add as method of tagslistview
     {
@@ -237,8 +221,6 @@ MainWindow::MainWindow(QWidget *parent) :
         tagFilter1Model->appendRow(items);
     }
     QStringList tagList2 = QSettings().value("tagFilter2").toString().split(";", QString::SkipEmptyParts);
-//    if (tagList2.count()==1 && tagList2[0] == "")
-//        tagList2.clear();
 
     for (int j=0; j < tagList2.count(); j++)
     {
@@ -265,21 +247,13 @@ MainWindow::MainWindow(QWidget *parent) :
         checkState = Qt::Unchecked;
     ui->fileOnlyCheckBox->setCheckState(checkState);
 
-    //
-//    onEditFilterChanged(); //initial setup, before MainWindow::onFolderIndexClicked because this is done after edits are loaded
-    emit editFilterChanged(ui->starEditorFilterWidget, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
-
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), false, ui->editTableView);
-
-    ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
-
 //    ui->progressBar->setRange(0, 100);
     ui->progressBar->setValue(0);
 
 
-    //    QPixmap pixmap(":/fiprelogo.ico");
+    //    QPixmap pixmap(":/acvclogo.ico");
 //        QLabel *mylabel = new QLabel (this);
-//        ui->logoLabel->setPixmap( QPixmap (":/fiprelogo.ico"));
+//        ui->logoLabel->setPixmap( QPixmap (":/acvclogo.ico"));
 //        mylabel->show();
 //        mylabel->update();
     //    m_durationLabel->setPixmap(pixmap);
@@ -307,7 +281,57 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->filesTtabWidget->setCurrentIndex(QSettings().value("filesTabIndex").toInt());
     ui->editTabWidget->setCurrentIndex(QSettings().value("editTabIndex").toInt());
 
+    ui->ratingFilterComboBox->setCurrentText(QSettings().value("ratingFilterComboBox").toString());
+
+    ui->transitionTimeSpinBox->setValue(QSettings().value("transitionTime").toInt());
+    ui->transitionComboBox->setCurrentText(QSettings().value("transitionType").toString());
+
+    ui->generateTargetComboBox->setCurrentText(QSettings().value("generateTarget").toString());
+    ui->generateSizeComboBox->setCurrentText(QSettings().value("generateSize").toString());
+    ui->generateSizeComboBox->setEnabled(ui->generateTargetComboBox->currentText() != "Lossless");
+    ui->generateFramerateComboBox->setEnabled(ui->generateTargetComboBox->currentText() != "Lossless");
+
+    ui->generateFramerateComboBox->setCurrentText(QSettings().value("generateFrameRate").toString());
+
+    int lframeRate = QSettings().value("frameRate").toInt();
+    if (lframeRate < 1)
+            lframeRate = 25;
+    ui->frameRateSpinBox->setValue(lframeRate);
+
+    if (QSettings().value("audioCheckBox").toBool())
+        checkState = Qt::Checked;
+    else
+        checkState = Qt::Unchecked;
+    ui->audioCheckBox->setCheckState(checkState);
+
+    onEditFilterChanged(); //crash if removed...
+
+    ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
+
+//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+
     //tooltips
+
+    //folder and file
+    ui->folderTreeView->setToolTip(tr("<p><b>Folder</b></p>"
+                                      "<p><i>Select a folder containing video files</i></p>"
+                                      "<ul>"
+                                      "<li>Select folder: After selecting a folder, the files tab is shown and edits, tags and properties of all files are loaded</li>"
+                                      "<li>Warning: For movie files with more than 100 edits and if more than 100 files with edits are loaded, a warning will be given with the option to skip or cancel.</li>"
+                                      "</ul>"));
+
+    ui->filesTreeView->setToolTip(tr("<p><b>File</b></p>"
+                                     "<p><i>Files within the selected folder</i></p>"
+                                     "<ul>"
+                                     "<li>Click on file: Show the edits of this file on the timeline and highlight the edits of the file in the edit tab</li>"
+                                     "</ul>"
+                                     "<p>Right mouse click:</p>"
+                                      "<ul>"
+                                     "<li>Trim: create new video file based on the edits of the video file. Rating, alike and tags as well as relevant properties are copied</li>"
+                                     "<li>Rename: Rename the file to the suggested file name (go to the properties tab to manage selected file names</li>"
+                                     "<li>Delete file(s): Delete the video file and its supporting files (edits)</li>"
+                                     "<li>Delete edits: Delete the edits of the file</li>"
+                                      "</ul>"));
 
     //tt edit filters
     ui->alikeCheckBox->setToolTip(tr("<p><b>Alike</b></p>"
@@ -316,29 +340,39 @@ MainWindow::MainWindow(QWidget *parent) :
                                      "<ul>"
                                      "<li>Alike filter checkbox: Show only alike edits</li>"
                                      "<li>Alike column: Set if this edit is like another edit <CTRL-A></li>"
-                                     "<li>Exclude: Give the best of the alikes a higher rating than the others</li>"
+                                     "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
+                                     "<li>Hint: Give the best of the alikes a higher rating than the others</li>"
                                      "<li>Hint: Give alike edits the same tags to filter on them later</li>"
                                      "</ul>"
                                   ));
 
-    ui->starEditorFilterWidget->setToolTip(tr("<p><b>Rates</b></p>"
-                                              "<p><i>Description</i></p>"
+    ui->ratingFilterComboBox->setToolTip(tr("<p><b>Ratings</b></p>"
+                                              "<p><i>Give a rating to an edit (0 to 5 stars)</i></p>"
                                               "<ul>"
-                                              "<li>Feature 1</li>"
+                                                "<li>Rating filter: Select 0 to 5 stars. All edits with same or higher rating will be shown</li>"
+                                                "<li>Rating column: Double click to change the rating (or CTRL-0 to CTRL-5 to rate the current edit)</li>"
+                                                "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
                                               "</ul>"));
 
-    ui->tagFilter1ListView->setToolTip(tr("<p><b>Tag filter...</b></p>"
-                                          "<p><i>Description</i></p>"
+    ui->tagFilter1ListView->setToolTip(tr("<p><b>Tag filters</b></p>"
+                                          "<p><i>Define which edits are shown based on their tags</i></p>"
                                           "<ul>"
-                                          "<li>Feature 1</li>"
+                                          "<li>Tag fields: The following logical condition applies: (Left1 or left2 or left3 ...) and (right1 or right2 or right3 ...)</li>"
+                                          "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
                                           "</ul>"));
 
     ui->tagFilter2ListView->setToolTip(ui->tagFilter1ListView->toolTip());
 
     ui->fileOnlyCheckBox->setToolTip(tr("<p><b>File only</b></p>"
-                                        "<p><i>Description</i></p>"
+                                        "<p><i>Show only edits of the selected file</i></p>"
                                         "<ul>"
-                                        "<li>Feature 1</li>"
+                                        "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
+                                        "</ul>"));
+
+    ui->frameRateSpinBox->setToolTip(tr("<p><b>Framerate</b></p>"
+                                        "<p><i>The framerate used in the editor</i></p>"
+                                        "<ul>"
+                                        "<li>Normally the same as the video files used. However sometimes different video files have different framerates and one of them should be selected.</li>"
                                         "</ul>"));
 
     //tt edit table
@@ -361,7 +395,7 @@ MainWindow::MainWindow(QWidget *parent) :
                                                                                    "</ul>"));
     ui->editTableView->editItemModel->horizontalHeaderItem(outIndex)->setToolTip( ui->editTableView->editItemModel->horizontalHeaderItem(inIndex)->toolTip());
     ui->editTableView->editItemModel->horizontalHeaderItem(durationIndex)->setToolTip( ui->editTableView->editItemModel->horizontalHeaderItem(inIndex)->toolTip());
-    ui->editTableView->editItemModel->horizontalHeaderItem(ratingIndex)->setToolTip(ui->starEditorFilterWidget->toolTip());
+    ui->editTableView->editItemModel->horizontalHeaderItem(ratingIndex)->setToolTip(ui->ratingFilterComboBox->toolTip());
     ui->editTableView->editItemModel->horizontalHeaderItem(alikeIndex)->setToolTip(ui->alikeCheckBox->toolTip());
     ui->editTableView->editItemModel->horizontalHeaderItem(tagIndex)->setToolTip(tr("<p><b>Tags per edit</b></p>"
                                                                                     "<p><i>Show the tags per edit</i></p>"
@@ -425,10 +459,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->generateTargetComboBox->setToolTip(tr("<p><b>Generate target</b></p>"
                                  "<p><i>Determines what will be generated</i></p>"
                                  "<ul>"
-                                 "<li>Preview: FFMpeg generated video files</li>"
-                                              "<li>Premiere XML: Final cut XML project file for Adobe Premiere</li>"
+                                              "<li>Lossless: FFMpeg generated video file. Very fast!!!</li>"
+                                              "<li>Encode: FFMpeg generated video file</li>"
+                                              "<li>Premiere: Final cut XML project file for Adobe Premiere</li>"
                                               "<li>Shotcut: Mlt project file</li>"
+                                              "<li>Remark: Lossless and encode will not contain transition filters. Instead of this a cut is done in the middle of the transition for the edit before and the edit after the transition.</li>"
                                  "</ul>"));
+
+    ui->generateFramerateComboBox->setToolTip(tr("<p><b>Generate framerate</b></p>"
+                                                 "<p><i>The framerate of the generated files</i></p>"
+                                                 "<ul>"
+                                                 "<li></li>"
+                                                 "</ul>"));
 
     //log
     ui->logTableView->setToolTip(tr("<p><b>Log items</b></p>"
@@ -451,7 +493,6 @@ MainWindow::MainWindow(QWidget *parent) :
 //    ui->positionDial->setGeometry(ui->positionDial->geometry().x(), ui->positionDial->geometry().y(), ui->positionGroupBox->width()*2/3, ui->positionGroupBox->width()*2/3);
 //    ui->transitionDial->setMinimumHeight(ui->positionGroupBox->width()*2/3);
 
-    m_upgradeUrl = "https://www.actioncamvideocompanion.com/download/";
     connect(&m_network, SIGNAL(finished(QNetworkReply*)), SLOT(onUpgradeCheckFinished(QNetworkReply*)));
 
     QTimer::singleShot(0, this, [this]()->void
@@ -521,6 +562,8 @@ void MainWindow::on_actionBlack_theme_triggered()
 
     QSettings().setValue("theme", "Black");
     QSettings().sync();
+
+    ui->editTableView->update();
 }
 
 void MainWindow::on_actionWhite_theme_triggered()
@@ -572,6 +615,8 @@ void MainWindow::on_actionWhite_theme_triggered()
 
     QSettings().setValue("theme", "White");
     QSettings().sync();
+
+    ui->editTableView->update();
 }
 
 void MainWindow::on_actionQuit_triggered()
@@ -584,13 +629,14 @@ void MainWindow::on_actionAbout_triggered()
     QMessageBox::about(this, tr("About ACVC"),
             tr("<p><b>ACVC</b> is an Action Cam Video Companion</p>"
                "<p>Version  %1</p>"
-               "<p>Copyright (c)2019 <a href=\"https://actioncamvideocompanion.com\">ACVC</a></p>"
+               "<p>License: <a href=\"https://www.gnu.org/licenses/lgpl-3.0.html\">LGPL</a></p>"
+               "<p>Copyright (c)2019 <a href=\"http://bit.ly/ACVCHome\">ACVC</a></p>"
                "<p>This program proudly uses the following projects:</p>"
                "<ul>"
                "<li><a href=\"https://www.qt.io/\">Qt</a> application and UI framework</li>"
                "<li><a href=\"https://www.shotcut.org/\">Shotcut</a> Open source video editor (timeline and version check)</li>"
-               "<li><a href=\"https://www.ffmpeg.org/\">FFmpeg</a> multimedia format and codec libraries (generate previews)</li>"
-               "<li><a href=\"https://www.sno.phy.queensu.ca/~phil/exiftool/\">Exiftool</a> Read, Write and Edit Meta Information! (Metadata)</li>"
+               "<li><a href=\"https://www.ffmpeg.org/\">FFmpeg</a> multimedia format and codec libraries (lossless and encoded previews)</li>"
+               "<li><a href=\"https://www.sno.phy.queensu.ca/~phil/exiftool/\">Exiftool</a> Read, Write and Edit Meta Information! (Properties)</li>"
                "</ul>"
                ).arg(qApp->applicationVersion()));
 }
@@ -628,33 +674,7 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 
     ui->filesTtabWidget->setCurrentIndex(1); //go to files tab
 
-    //load folder settings
-
-    Qt::CheckState checkState;
-
-    int starInt = ui->folderTreeView->folderSettings->value("starsFilter").toInt();
-    QVariant starVar = QVariant::fromValue(FStarRating(starInt));
-    FStarRating starRating = qvariant_cast<FStarRating>(starVar);
-    ui->starEditorFilterWidget->setStarRating(starRating);
-
-    ui->transitionTimeSpinBox->setValue(ui->folderTreeView->folderSettings->value("transitionTime").toInt());
-    ui->transitionComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("transitionType").toString());
-
-    ui->generateTargetComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("generateTarget").toString());
-    ui->generateSizeComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("generateSize").toString());
-    ui->framerateComboBox->setCurrentText(ui->folderTreeView->folderSettings->value("frameRate").toString());
-    int lframeRate = ui->folderTreeView->folderSettings->value("frameRate").toInt();
-    if (lframeRate < 1)
-            lframeRate = 25;
-    ui->frameRateSpinBox->setValue(lframeRate);
-
-    if (ui->folderTreeView->folderSettings->value("audioCheckBox").toBool())
-        checkState = Qt::Checked;
-    else
-        checkState = Qt::Unchecked;
-    ui->audioCheckBox->setCheckState(checkState);
-
-
+//    Qt::CheckState checkState;
 
 //    ui->alikeCheckBox->setCheckState(Qt::Unchecked);
 //    on_alikeCheckBox_clicked(false); //save in QSettings
@@ -666,34 +686,25 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 //    ui->fileOnlyCheckBox->setCheckState(Qt::Unchecked);
 //    on_fileOnlyCheckBox_clicked(false); //save in QSettings
 
-//    onEditFilterChanged(); //already done in constructor
-
-    emit editFilterChanged(ui->starEditorFilterWidget, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
+    onEditFilterChanged();
     emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
 }
 
-void MainWindow::onFileIndexClicked(QModelIndex index)
+void MainWindow::onFileIndexClicked(QModelIndex )//index
 {
-    qDebug()<<"MainWindow::onFileIndexClicked"<<index.data().toString();
-//    onEditFilterChanged();
-    emit editFilterChanged(ui->starEditorFilterWidget, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
+//    qDebug()<<"MainWindow::onFileIndexClicked"<<index.data().toString();
+
+    onEditFilterChanged();
 }
 
 void MainWindow::onEditFilterChanged()
 {
     ui->editrowsCounterLabel->setText(QString::number(ui->editTableView->model()->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
 
-    qDebug()<<"MainWindow::onEditFilterChanged"<<ui->folderTreeView->folderSettings->value("starsFilter")<<ui->starEditorFilterWidget->starRating().starCount();
-    onTagFiltersChanged(); //save tagfilters
+//    qDebug()<<"MainWindow::onEditFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
 
-    if (ui->folderTreeView->folderSettings->value("starsFilter") != ui->starEditorFilterWidget->starRating().starCount())
-    {
-        ui->folderTreeView->folderSettings->setValue("starsFilter", ui->starEditorFilterWidget->starRating().starCount());
-        ui->folderTreeView->folderSettings->sync();
-    }
-
-    emit editFilterChanged(ui->starEditorFilterWidget, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
-//    qDebug()<<"MainWindow::onEditFilterChanged"<<ui->folderTreeView->folderSettings->value("starsFilter")<<ui->starEditorFilterWidget->starRating().starCount();
+    emit editFilterChanged(ui->ratingFilterComboBox, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
+//    qDebug()<<"MainWindow::onEditFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
 }
 
 void MainWindow::onTagFiltersChanged()
@@ -724,6 +735,7 @@ void MainWindow::onTagFiltersChanged()
         QSettings().setValue("tagFilter2", string2);
         QSettings().sync();
     }
+    onEditFilterChanged();
 }
 
 void MainWindow::on_action5_stars_triggered()
@@ -779,7 +791,10 @@ void MainWindow::on_actionSave_triggered()
     //        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
             ui->editTableView->saveModel(ui->editTableView->srtFileItemModel->index(row, 0).data().toString(), ui->editTableView->srtFileItemModel->index(row, 1).data().toString());
         }
+        ui->statusBar->showMessage(QString::number(changeCount) + " edit changes saved", 5000);
     }
+    else
+        ui->statusBar->showMessage("No edit changes to save", 5000);
 }
 
 void MainWindow::on_actionPlay_Pause_triggered()
@@ -848,7 +863,7 @@ void MainWindow::on_generateButton_clicked()
     int transitionTime = 0;
     if (ui->transitionComboBox->currentText() != "No transition")
         transitionTime = ui->transitionTimeSpinBox->value();
-    ui->generateWidget->generate(ui->editTableView->editProxyModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->framerateComboBox->currentText(), transitionTime, ui->progressBar, false, ui->audioCheckBox->checkState() == Qt::Checked);
+    ui->generateWidget->generate(ui->editTableView->editProxyModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->generateFramerateComboBox->currentText(), transitionTime, ui->progressBar, false, ui->audioCheckBox->checkState() == Qt::Checked, ui->spinnerLabel);
 
 //    if (QSettings().value("firstUsedDate") == QVariant())
 //    {
@@ -860,44 +875,43 @@ void MainWindow::on_generateButton_clicked()
     QSettings().setValue("generateCounter", QSettings().value("generateCounter").toInt()+1);
     QSettings().sync();
     qDebug()<<"generateCounter"<<QSettings().value("generateCounter").toInt();
-    if (QSettings().value("generateCounter").toInt() == 5 || QSettings().value("generateCounter").toInt() == 25 || QSettings().value("generateCounter").toInt() == 100)
+    if (QSettings().value("generateCounter").toInt() == 50)
     {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Support", tr("If you like this software consider supporting it. Click Yes to go to the support page on the ACVC website") + " " + QSettings().value("generateCounter").toString(), QMessageBox::Yes|QMessageBox::No);
+        reply = QMessageBox::question(this, "Donate", tr("If you like this software, consider to make a donation. Go to the Donate page on the ACVC website for more information") + " " + QSettings().value("generateCounter").toString(), QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes)
-            QDesktopServices::openUrl(QUrl("https://www.actioncamvideocompanion.com/support/"));
+            QDesktopServices::openUrl(QUrl("http://bit.ly/ACVCSupport"));
     }
 }
 
 void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg1)
 {
-    if (ui->folderTreeView->folderSettings->value("generateTarget") != arg1)
+    if (QSettings().value("generateTarget") != arg1)
     {
-        ui->folderTreeView->folderSettings->setValue("generateTarget", arg1);
-        ui->folderTreeView->folderSettings->sync();
+        QSettings().setValue("generateTarget", arg1);
+        QSettings().sync();
     }
 
     ui->generateSizeComboBox->setEnabled(arg1 != "Lossless");
-    ui->framerateComboBox->setEnabled(arg1 != "Lossless");
+    ui->generateFramerateComboBox->setEnabled(arg1 != "Lossless");
 }
 
 void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
 {
-    if (ui->folderTreeView->folderSettings->value("generateSize") != arg1)
+    if (QSettings().value("generateSize") != arg1)
     {
-        ui->folderTreeView->folderSettings->setValue("generateSize", arg1);
-        ui->folderTreeView->folderSettings->sync();
+        QSettings().setValue("generateSize", arg1);
+        QSettings().sync();
     }
 }
 
-void MainWindow::on_framerateComboBox_currentTextChanged(const QString &arg1)
+void MainWindow::on_generateFramerateComboBox_currentTextChanged(const QString &arg1)
 {
-//    ui->transitionDial->setRange(0, ui->framerateComboBox->currentText().toInt() * 4);
-//    QSettings().setValue("frameRate", arg1); //as used globally
-    if (ui->folderTreeView->folderSettings->value("frameRate") != arg1)
+//    ui->transitionDial->setRange(0, ui->generateFramerateComboBox->currentText().toInt() * 4);
+    if (QSettings().value("generateFramerate") != arg1)
     {
-        ui->folderTreeView->folderSettings->setValue("frameRate", arg1);
-        ui->folderTreeView->folderSettings->sync();
+        QSettings().setValue("generateFramerate", arg1);
+        QSettings().sync();
     }
 }
 
@@ -905,10 +919,10 @@ void MainWindow::on_frameRateSpinBox_valueChanged(int arg1)
 {
     ui->transitionDial->setRange(0, ui->frameRateSpinBox->value() * 4);
     QSettings().setValue("frameRate", arg1); //as used globally
-    if (ui->folderTreeView->folderSettings->value("frameRate") != arg1)
+    if (QSettings().value("frameRate") != arg1)
     {
-        ui->folderTreeView->folderSettings->setValue("frameRate", arg1);
-        ui->folderTreeView->folderSettings->sync();
+        QSettings().setValue("frameRate", arg1);
+        QSettings().sync();
     }
 }
 
@@ -929,6 +943,7 @@ void MainWindow::on_alikeCheckBox_clicked(bool checked)
         QSettings().setValue("alikeCheckBox", checked);
         QSettings().sync();
     }
+    onEditFilterChanged();
 }
 
 void MainWindow::on_fileOnlyCheckBox_clicked(bool checked)
@@ -938,11 +953,12 @@ void MainWindow::on_fileOnlyCheckBox_clicked(bool checked)
         QSettings().setValue("fileOnlyCheckBox", checked);
         QSettings().sync();
     }
+    onEditFilterChanged();
 }
 
 void MainWindow::on_actionDebug_mode_triggered(bool checked)
 {
-    qDebug()<<"on_actionDebug_mode_triggered"<<checked;
+//    qDebug()<<"on_actionDebug_mode_triggered"<<checked;
 
     if (checked)
     {
@@ -1028,11 +1044,11 @@ void MainWindow::on_cameraCheckBox_clicked(bool checked)
 
 void MainWindow::on_transitionComboBox_currentTextChanged(const QString &arg1)
 {
-    if (ui->folderTreeView->folderSettings->value("transitionType") != arg1)
+    if (QSettings().value("transitionType") != arg1)
     {
         qDebug()<<"MainWindow::on_transitionComboBox_currentTextChanged"<<arg1;
-        ui->folderTreeView->folderSettings->setValue("transitionType", arg1);
-        ui->folderTreeView->folderSettings->sync();
+        QSettings().setValue("transitionType", arg1);
+        QSettings().sync();
         emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
     }
 }
@@ -1044,13 +1060,13 @@ void MainWindow::onEditsChangedToTimeline(QAbstractItemModel *) //itemModel
         double result;
         result = ui->transitionTimeSpinBox->value();
 
-        qDebug()<<"MainWindow::onEditsChangedToTimeline transition"<< ui->timelineWidget->transitiontimeDuration<<int(result);
+//        qDebug()<<"MainWindow::onEditsChangedToTimeline transition"<< ui->timelineWidget->transitiontimeDuration<<int(result);
 
         transitionValueChangedBy = "SpinBox";
         ui->transitionDial->setValue( int(result ));
         transitionValueChangedBy = "";
 
-        qDebug()<<"MainWindow::onEditsChangedToTimeline transition after"<< ui->timelineWidget->transitiontimeDuration<<int(result);
+//        qDebug()<<"MainWindow::onEditsChangedToTimeline transition after"<< ui->timelineWidget->transitiontimeDuration<<int(result);
     }
 }
 
@@ -1075,11 +1091,11 @@ void MainWindow::on_transitionDial_valueChanged(int value)
 
 void MainWindow::on_transitionTimeSpinBox_valueChanged(int arg1)
 {
-    if (ui->folderTreeView->folderSettings->value("transitionTime") != arg1)
+    if (QSettings().value("transitionTime") != arg1)
     {
         qDebug()<<"MainWindow::on_transitionTimeSpinBox_valueChanged"<<arg1<<transitionValueChangedBy;
-        ui->folderTreeView->folderSettings->setValue("transitionTime", arg1);
-        ui->folderTreeView->folderSettings->sync();
+        QSettings().setValue("transitionTime", arg1);
+        QSettings().sync();
 
         emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
     }
@@ -1124,48 +1140,64 @@ void MainWindow::showUpgradePrompt()
 {
     qDebug()<<"MainWindow::showUpgradePrompt";
 //    QSettings().setValue("checkUpgradeAutomatic", false);
-    if (QSettings().value("checkUpgradeAutomatic").toBool())
-    {
-        ui->statusBar->showMessage("Checking for upgrade1...", 15000);
-        QNetworkRequest request(QUrl("http://www.actioncamvideocompanion.com/version.json"));
-        QSslConfiguration sslConfig = request.sslConfiguration();
-        sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
-        request.setSslConfiguration(sslConfig);
+//    if (QSettings().value("checkUpgradeAutomatic").toBool())
+//    {
+        ui->statusBar->showMessage("Checking for upgrade...", 15000);
+        QNetworkRequest request(QUrl("http://bit.ly/ACVCVersionCheck"));
+//        QSslConfiguration sslConfig = request.sslConfiguration();
+//        sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
+//        request.setSslConfiguration(sslConfig);
         m_network.get(request);
-    } else {
-        m_network.setStrictTransportSecurityEnabled(false);
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Upgrade", tr("Click here to check for a new version of ACVC."), QMessageBox::Yes|QMessageBox::No);
-        if (reply == QMessageBox::Yes)
-            on_actionUpgrade_triggered();
-    }
+//    } else {
+//        m_network.setStrictTransportSecurityEnabled(false);
+//        QMessageBox::StandardButton reply;
+//        reply = QMessageBox::question(this, "Upgrade", tr("Click here to check for a new version of ACVC."), QMessageBox::Yes|QMessageBox::No);
+//        if (reply == QMessageBox::Yes)
+//            on_actionUpgrade_triggered();
+//    }
 }
 
-void MainWindow::on_actionUpgrade_triggered()
-{
-    qDebug()<<"MainWindow::on_actionUpgrade_triggered";
-    if (QSettings().value("askUpgradeAutomatic", true).toBool())
-    {
-        QMessageBox dialog(QMessageBox::Question, qApp->applicationName(), tr("Do you want to automatically check for updates in the future?"), QMessageBox::No | QMessageBox::Yes, this);
-        dialog.setWindowModality(Qt::ApplicationModal);//QmlApplication::dialogModality()
-        dialog.setDefaultButton(QMessageBox::Yes);
-        dialog.setEscapeButton(QMessageBox::No);
-        dialog.setCheckBox(new QCheckBox(tr("Do not show this anymore.", "Automatic upgrade check dialog")));
-        QSettings().setValue("checkUpgradeAutomatic", dialog.exec() == QMessageBox::Yes);
-        if (dialog.checkBox()->isChecked())
-            QSettings().setValue("askUpgradeAutomatic", false);
-    }
-    ui->statusBar->showMessage("Checking for upgrade2...", 15000);
-    m_network.get(QNetworkRequest(QUrl("http://actioncamvideocompanion.com/version.json")));
-}
+//void MainWindow::on_actionUpgrade_triggered()
+//{
+//    qDebug()<<"MainWindow::on_actionUpgrade_triggered";
+//    if (QSettings().value("askUpgradeAutomatic", true).toBool())
+//    {
+//        QMessageBox dialog(QMessageBox::Question, qApp->applicationName(), tr("Do you want to automatically check for updates in the future?"), QMessageBox::No | QMessageBox::Yes, this);
+//        dialog.setWindowModality(Qt::ApplicationModal);//QmlApplication::dialogModality()
+//        dialog.setDefaultButton(QMessageBox::Yes);
+//        dialog.setEscapeButton(QMessageBox::No);
+//        dialog.setCheckBox(new QCheckBox(tr("Do not show this anymore.", "Automatic upgrade check dialog")));
+//        QSettings().setValue("checkUpgradeAutomatic", dialog.exec() == QMessageBox::Yes);
+//        if (dialog.checkBox()->isChecked())
+//            QSettings().setValue("askUpgradeAutomatic", false);
+//    }
+//    ui->statusBar->showMessage("Checking for upgrade2...", 15000);
+//    m_network.get(QNetworkRequest(QUrl("http://actioncamvideocompanion.com/version.json")));
+//}
 
 void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 {
-    qDebug()<<"MainWindow::onUpgradeCheckFinished";
+//    qDebug()<<"MainWindow::onUpgradeCheckFinished";
+    QString m_upgradeUrl = "http://bit.ly/ACVCDownload";
+
     if (!reply->error())
     {
         QByteArray response = reply->readAll();
 //        qDebug() << "response: " << response;
+
+        if (response.contains("Bitly"))
+        {
+            int indexOfAOpen = response.indexOf("<a href=\"");
+            int indexOfAClose = response.indexOf("\">");
+            QString httpString = response.mid(indexOfAOpen + 9, indexOfAClose - indexOfAOpen + 1 - 10);
+//            qDebug() << "response: " << httpString;
+
+            QNetworkRequest request(httpString);
+//            QNetworkRequest request(QUrl("http://www.actioncamvideocompanion.com/version.json"));
+            m_network.get(request);
+            return;
+        }
+
         QJsonParseError *error = new QJsonParseError();
         QJsonDocument json = QJsonDocument::fromJson(response, error);
         QString current = qApp->applicationVersion();
@@ -1179,9 +1211,9 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
                     m_upgradeUrl = json.object().value("url").toString();
 
                 QMessageBox::StandardButton reply;
-                reply = QMessageBox::question(this, "Upgrade", tr("ACVC version %1 is available! Click here to get it.").arg(latest), QMessageBox::Yes|QMessageBox::No);
+                reply = QMessageBox::question(this, "Upgrade", tr("ACVC version %1 is available! Click Yes to get it.").arg(latest), QMessageBox::Yes|QMessageBox::No);
                 if (reply == QMessageBox::Yes)
-                    onUpgradeTriggered();
+                    QDesktopServices::openUrl(QUrl(m_upgradeUrl));
 
             } else {
                 ui->statusBar->showMessage(tr("You are running the latest version of ACVC."), 15000);
@@ -1197,14 +1229,8 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
     QMessageBox::StandardButton mreply;
     mreply = QMessageBox::question(this, "Upgrade", tr("Failed to read version.json when checking. Click here to go to the Web site."), QMessageBox::Yes|QMessageBox::No);
     if (mreply == QMessageBox::Yes)
-        onUpgradeTriggered();
+        QDesktopServices::openUrl(QUrl(m_upgradeUrl));
     reply->deleteLater();
-}
-
-void MainWindow::onUpgradeTriggered()
-{
-    qDebug()<<"MainWindow::onUpgradeTriggered";
-    QDesktopServices::openUrl(QUrl(m_upgradeUrl));
 }
 
 void MainWindow::onPropertiesLoaded()
@@ -1247,4 +1273,38 @@ void MainWindow::on_filesTtabWidget_currentChanged(int index)
         QSettings().setValue("filesTabIndex", index);
         QSettings().sync();
     }
+}
+
+void MainWindow::on_actionDonate_triggered()
+{
+    QDesktopServices::openUrl(QUrl("http://bit.ly/ACVCSupport"));
+}
+
+void MainWindow::on_actionCheck_for_updates_triggered()
+{
+    showUpgradePrompt();
+}
+
+void MainWindow::on_ratingFilterComboBox_currentTextChanged(const QString &arg1)
+{
+    if (QSettings().value("ratingFilterComboBox").toString() != arg1)
+    {
+        QSettings().setValue("ratingFilterComboBox", arg1);
+        QSettings().sync();
+    }
+
+    onEditFilterChanged();
+}
+
+void MainWindow::on_actionHelp_triggered()
+{
+    QMessageBox::about(this, tr("Help"),
+            tr("<p><b>ACVC</b> is an Action Cam Video Companion</p>"
+               "<p>Version  %1</p>"
+               "<h1>Test</h1>"
+               "<p><a href=\"http://bit.ly/ACVCSupport\">ACVC testscript</a></p>"
+               "<ul>"
+                   "<li></li>"
+               "</ul>"
+               ).arg(qApp->applicationVersion()));
 }

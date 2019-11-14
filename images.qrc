@@ -1,7 +1,8 @@
 <RCC>
     <qresource prefix="/">
-        <file>fiprelogo.png</file>
-        <file>fiprelogosquare.png</file>
-        <file>fiprelogo.ico</file>
+        <file>Spinner.gif</file>
+        <file>acvclogo.ico</file>
+        <file>acvclogosquare.png</file>
+        <file>acvclogo.png</file>
     </qresource>
 </RCC>

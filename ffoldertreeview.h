@@ -13,7 +13,6 @@ public:
 
     QFileSystemModel *directoryModel;
     void onIndexClicked(const QModelIndex &index);
-    QSettings *folderSettings;
 
 signals:
     void indexClicked(QModelIndex index);

@@ -211,22 +211,22 @@ void FTimeline::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
     }
     timelineDuration -= transitiontime * (countNrOfEdits - 1); //subtrackt all the transitions
 
-    qDebug()<<"FTimeline::onEditsChangedToTimeline"<<timelineDuration<<transitiontime;
+//    qDebug()<<"FTimeline::onEditsChangedToTimeline"<<timelineDuration<<transitiontime;
 
     if (!allowed)
     {
         if (transitiontimeLastGood != -1 )
         {
-            qDebug()<<"timeline error"<<transitiontimeLastGood;
+//            qDebug()<<"timeline error"<<transitiontimeLastGood;
             emit adjustTransitionTime(transitiontimeLastGood);
             return;
         }
-        else
-            qDebug()<<"timeline other error"<<transitiontimeLastGood;
+//        else
+//            qDebug()<<"timeline other error"<<transitiontimeLastGood;
     }
     else
     {
-        qDebug()<<"timeline good"<<transitiontimeLastGood;
+//        qDebug()<<"timeline good"<<transitiontimeLastGood;
         transitiontimeLastGood = transitiontime;
     }
 
@@ -266,7 +266,7 @@ void FTimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitio
     else
         transitiontime = 0;
 
-    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType;
+    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<editTableView->model()->rowCount();
 
     onEditsChangedToTimeline(editTableView->editProxyModel);
 

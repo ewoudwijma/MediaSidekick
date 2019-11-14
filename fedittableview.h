@@ -12,6 +12,7 @@
 #include <QListView>
 #include <QTableView>
 #include <QTime>
+#include <QComboBox>
 
 class FEditTableView: public QTableView
 {
@@ -28,6 +29,7 @@ public:
     QStandardItemModel *srtFileItemModel;
     bool checkSaveIfEditsChanged();
     int originalDuration;
+
 private:
     QString selectedFolderName;
     QString selectedFileName;
@@ -39,29 +41,31 @@ private:
     void selectEdits();
     void onTagsChanged(const QModelIndex &parent, int first, int last);
     int editCounter;
-//    FProcessManager *processManager;
+    int fileCounter;
     bool doNotUpdate;
+    bool continueLoading;
 
 public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-
     void onScrubberInChanged(int row, int in);
     void onScrubberOutChanged(int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onEditFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
+    void onEditFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
     void onEditsDelete(QString fileName);
     void onTrim(QString fileName);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
     void onReloadEdits();
+
 private slots:
     void onIndexClicked(QModelIndex index);
     void onEditRightClickMenu(const QPoint &point);
     void onEditDelete();
-
-//    void onSpinnerChanged(STimeSpinBox *timeSpinBox);
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+
+    void onIndexActivated(QModelIndex index);
+    void onSectionEntered(int logicalIndex);
 signals:
     void indexClicked(QModelIndex index);
     void editAdded(QModelIndex editInIndex);

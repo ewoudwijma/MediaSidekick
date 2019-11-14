@@ -8,6 +8,8 @@
 
 #include <QMessageBox>
 
+#include <QMovie>
+
 FGenerate::FGenerate(QWidget *parent) : QWidget(parent)
 {
     processManager = new FProcessManager(this);
@@ -103,7 +105,7 @@ typedef struct {
     int counter;
 } FileStruct;
 
-void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeFrames, QProgressBar *p_progressBar, bool includingSRT, bool includeAudio)
+void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeFrames, QProgressBar *p_progressBar, bool includingSRT, bool includeAudio, QLabel *pSpinnerLabel)
 {
     if (timelineModel->rowCount()==0)
     {
@@ -220,6 +222,12 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         height = "4320";
     }
 
+    spinnerLabel = pSpinnerLabel;
+    QMovie *movie = new QMovie(":/spinner.gif");
+    spinnerLabel->setMovie(movie);
+    spinnerLabel->show();
+    movie->start();
+
     if (target == "Lossless") //Lossless FFMpeg
     {
         qDebug()<<"fileNameWithoutExtension"<<fileNameWithoutExtension;
@@ -260,12 +268,20 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
 
             QString *processId = new QString();
 
-            emit addLogEntry(currentDirectory, fileNameWithoutExtension + ".mp4", "FFMpeg lossless", processId);
+            int lastIndex = filesMap.first().fileName.lastIndexOf(".");
+            QString fileExtension = filesMap.first().fileName.mid(lastIndex);
 
-            QString code = "ffmpeg -f concat -safe 0 -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + ".txt\" -c copy -r 10 -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + ".mp4\"";
+            emit addLogEntry(currentDirectory, fileNameWithoutExtension + fileExtension, "FFMpeg lossless", processId);
+
+            QString code = "ffmpeg -f concat -safe 0 -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + ".txt\" -c copy -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + fileExtension + "\"";
 
             if (!includeAudio)
-                code.replace("-c copy -y", "-c copy -an -y");
+                code.replace("-c copy -y", " -an -c copy -y");
+
+//            if (pframeRate != "")
+//                code.replace("-c copy -y", " -r " + pframeRate + " -c copy -y");
+
+            emit addLogToEntry(*processId, code + "\n");
 
             QMap<QString, QString> parameters;
             parameters["processId"] = *processId;
@@ -273,8 +289,20 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
             processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
             {
                 FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
-    //            MainWindow *mainWindow = qobject_cast<MainWindow *>(parent);
                 emit generateWidget->addLogToEntry(parameters["processId"], result);
+
+                if (result.contains("Could not"))
+                {
+                    foreach (QString resultLine, result.split("\n"))
+                    {
+                        if (resultLine.contains("Could not"))
+                        {
+                            generateWidget->processError = resultLine;
+                            qDebug()<<"error"<<generateWidget->processError;
+                        }
+                    }
+                }
+
             },  [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
             {
                 FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
@@ -282,11 +310,15 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                 generateWidget->progressBar->setValue(generateWidget->progressBar->maximum());
                 generateWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
 
-                emit generateWidget->addLogToEntry(parameters["processId"], command.split(" ").last() + "\n" + "Completed");
+                qDebug()<<"error"<<parameters["error"];
+                if (generateWidget->processError != "")
+                    emit generateWidget->addLogToEntry(parameters["processId"], generateWidget->processError);
+                else
+                    emit generateWidget->addLogToEntry(parameters["processId"], "Completed");
 
             });
 
-            onPropertyUpdate(currentDirectory, filesMap.first().fileName, fileNameWithoutExtension + ".mp4");
+            onPropertyUpdate(currentDirectory, filesMap.first().fileName, fileNameWithoutExtension + fileExtension);
 
             onReloadAll(includingSRT);
 
@@ -340,7 +372,6 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                 resultDurationMSec += duration;
 
                 qDebug()<<row<<timelineModel->index(row, inIndex).data().toString()<<timelineModel->index(row, outIndex).data().toString();
-                QString targetFileName = fileNameWithoutExtension + "-" + QString::number(row) + ".mp4";
 
                 double inSeconds = inTime.msecsSinceStartOfDay() / 1000.0;
                 double outSeconds = outTime.msecsSinceStartOfDay() / 1000.0;
@@ -356,11 +387,12 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                     filterComplexString2 += "[a" + QString::number(row) + "]";
                 }
 
+//                QString targetFileName = fileNameWithoutExtension + "-" + QString::number(row) + ".mp4";
 //                onTrim(timelineModel->index(i, folderIndex).data().toString(),  timelineModel->index(i, fileIndex).data().toString(), targetFileName, inTime, outTime, 10*i/(timelineModel->rowCount())); //not -1 to avoid divby0
             }
         }
 
-        //ffmpeg -i "20190723 bentwoud2.mp4" -i ..\fiprelogo.ico -filter_complex "overlay = main_w-overlay_w-10:main_h-overlay_h-10" output.mp4
+        //ffmpeg -i "20190723 bentwoud2.mp4" -i ..\acvclogo.ico -filter_complex "overlay = main_w-overlay_w-10:main_h-overlay_h-10" output.mp4
 
         //ffmpeg -i "2000-01-19 00-00-00 +53632ms.MP4" -i "Numbered Frames.mp4" -filter_complex "[0:v]trim=1.2:2.5,setpts=PTS-STARTPTS,scale=270x152,setdar=16/9[v0]; [0:a]atrim=1.2:2.5,asetpts=PTS-STARTPTS[a0]; [1:v]trim=10:13.3,setpts=PTS-STARTPTS,scale=270x152,setdar=16/9[v1]; [1:a]atrim=10:13.3,asetpts=PTS-STARTPTS[a1];
         //              [v0][a0][v1][a1]concat=n=2:v=1:a=1[out]" -map "[out]" -r 50 -y out.mp4
@@ -400,6 +432,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
         {
             FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
+
             emit generateWidget->addLogToEntry(parameters["processId"], result);
 
             int timeIndex = result.indexOf("time=");
@@ -449,7 +482,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         emit addLogToEntry(*processId, QString("Generating %1\n\n").arg(fileName));
 
         s("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-        s("<mlt LC_NUMERIC=\"C\" version=\"6.17.0\" title=\"Shotcut by Fipre\" producer=\"main_bin\">");
+        s("<mlt LC_NUMERIC=\"C\" version=\"6.17.0\" title=\"Shotcut by ACVC\" producer=\"main_bin\">");
         s("  <profile description=\"automatic\" width=\"%1\" height=\"%2\" progressive=\"1\" sample_aspect_num=\"1\" sample_aspect_den=\"1\" display_aspect_num=\"%1\" display_aspect_den=\"%2\" frame_rate_num=\"%3\" frame_rate_den=\"1\"/>", width, height, pframeRate);
 
         emit addLogToEntry(*processId, "Producers\n");
@@ -862,10 +895,19 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
 
         fileWrite.close();
 \
-        progressBar->setValue(progressBar->maximum());
-        progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
 
         emit addLogToEntry(*processId, "\nSuccesfully completed");
     }
+
+    QMap<QString, QString> parameters;
+    processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> , QStringList ) //command, parameters, result
+    {
+        FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
+        generateWidget->progressBar->setValue(generateWidget->progressBar->maximum());
+        generateWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+        generateWidget->spinnerLabel->movie()->stop();
+//        generateWidget->spinnerLabel->setMovie(nullptr);
+    });
+    //https://stackoverflow.com/questions/26958644/qt-loading-indicator-widget/26958738
 }
 

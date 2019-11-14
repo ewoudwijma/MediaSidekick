@@ -23,7 +23,7 @@ public slots:
     void onGetPropertyValue(QString fileName, QString key, QString *value);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void onEditIndexClicked(QModelIndex index);
-    void onFileDelete(QString fileName);
+    void onRemoveFile(QString fileName);
     void onReloadProperties();
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);

@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("00.00.01");
+    a.setApplicationVersion("0.0.2");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         QSettings().sync();
     }
 
-    QPixmap pixmap(":/fiprelogo.ico");
+    QPixmap pixmap(":/acvclogo.ico");
     QSplashScreen *splash = new QSplashScreen(pixmap);
 
     //    splash.set
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 }
 
 //deploy in shell (not powershell...)
-//cd D:\Projects\build-Fipre-Desktop_Qt_5_12_3_MSVC2017_32bit-Release\release>
+//cd D:\Projects\build-ACVC-Desktop_Qt_5_12_5_MinGW_64_bit-Release\release
 //d:\Qt\5.12.3\msvc2017\bin\windeployqt.exe --quick --no-translations .
 //D:\Qt\5.12.5\mingw73_64\bin\qtenv2.bat
 //D:\Qt\5.12.5\mingw73_64\bin\windeployqt.exe --quick --no-translations .
@@ -51,3 +51,6 @@ int main(int argc, char *argv[])
 
 //    ..\..\bin\binarycreator.exe -c config\config.xml -p packages ACVCInstaller.exe
 
+//<p><a href="https://ffmpeg.zeranoe.com/builds/">FFMpeg</a> (extract, move to c:\ffmpeg\, add \bin in environment variabe)</p>
+
+//<p><a href="https://www.sno.phy.queensu.ca/~phil/exiftool/">Exiftool</a> (download zip, remove -k, move to c:\ffmpeg\bin)</p>

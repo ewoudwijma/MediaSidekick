@@ -19,14 +19,18 @@ private slots:
     void onEditsDelete();
     void onIndexClicked(QModelIndex index);
     void onFileRename();
+
+    void onIndexActivated(QModelIndex index);
+    void onDirectoryLoaded(const QString &path);
 private:
     void loadModel(QUrl folderUrl);
     QFileSystemModel *fileModel;
     QMenu *fileContextMenu;
+
 public slots:
     void onEditIndexClicked(QModelIndex index);
-
     void onFolderIndexClicked(QModelIndex index);
+
 signals:
     void indexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void fileDelete(QString fileName);

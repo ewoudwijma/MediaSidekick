@@ -12,6 +12,7 @@
 #include <QNetworkAccessManager>
 #include <QSettings>
 #include <QStandardItemModel>
+#include <QComboBox>
 
 namespace Ui {
 class MainWindow;
@@ -113,13 +114,12 @@ private slots:
     void showUpgradePrompt();
 
     void onUpgradeCheckFinished(QNetworkReply *reply);
-    void onUpgradeTriggered();
     void onAdjustTransitionTime(int transitionTime);
 
     void onPropertiesLoaded();
 
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void on_framerateComboBox_currentTextChanged(const QString &arg1);
+    void on_generateFramerateComboBox_currentTextChanged(const QString &arg1);
 
     void on_authorCheckBox_clicked(bool checked);
 
@@ -128,6 +128,14 @@ private slots:
     void on_editTabWidget_currentChanged(int index);
 
     void on_filesTtabWidget_currentChanged(int index);
+
+    void on_actionDonate_triggered();
+
+    void on_actionCheck_for_updates_triggered();
+
+    void on_ratingFilterComboBox_currentTextChanged(const QString &arg1);
+
+    void on_actionHelp_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -140,13 +148,11 @@ private:
     QString transitionValueChangedBy;
     QString positionValueChangedBy;
     QNetworkAccessManager m_network;
-    QString m_upgradeUrl;
-    void on_actionUpgrade_triggered();
     int positiondialOldValue;
 
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
-    void editFilterChanged(FStarEditor *starEditorFilterWidget, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
+    void editFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
     void timelineWidgetsChanged(int transitionTime, QString transitionType, FEditTableView *editTableView);
 };
