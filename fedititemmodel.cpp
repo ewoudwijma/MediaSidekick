@@ -5,12 +5,12 @@
 
 #include "fglobal.h"
 
-FEditItemModel::FEditItemModel(QObject *parent)
+AClipsItemModel::AClipsItemModel(QObject *parent)
     : QStandardItemModel(parent)
 {
 }
 
-bool FEditItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
+bool AClipsItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
                                int row, int column, const QModelIndex &parent)
 {
     qDebug()<<"dropMimeData"<<row<<column<<parent.data();
@@ -38,14 +38,14 @@ bool FEditItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
     return false;
 }
 
-void FEditItemModel::currentChanged(const QModelIndex &current, const QModelIndex &previous)
+void AClipsItemModel::currentChanged(const QModelIndex &current, const QModelIndex &previous)
 {
-    qDebug()<<"FEditItemModel::currentChanged"<<current.data()<<previous.data();
+    qDebug()<<"AClipsItemModel::currentChanged"<<current.data()<<previous.data();
 
 }
 
-void FEditItemModel::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
+void AClipsItemModel::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
 {
-    qDebug()<<"FEditItemModel::selectionChanged"<<selected<<deselected;
+    qDebug()<<"AClipsItemModel::selectionChanged"<<selected<<deselected;
 
 }

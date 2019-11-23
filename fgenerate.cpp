@@ -10,12 +10,12 @@
 
 #include <QMovie>
 
-FGenerate::FGenerate(QWidget *parent) : QWidget(parent)
+AExport::AExport(QWidget *parent) : QWidget(parent)
 {
     processManager = new FProcessManager(this);
 }
 
-void FGenerate::s(QString inputString, QString arg1, QString arg2, QString arg3)
+void AExport::s(QString inputString, QString arg1, QString arg2, QString arg3)
 {
     if (arg3 != "")
         stream<<inputString.arg(arg1, arg2, arg3)<<endl;
@@ -27,7 +27,7 @@ void FGenerate::s(QString inputString, QString arg1, QString arg2, QString arg3)
         stream<<inputString<<endl;
 }
 
-void FGenerate::onPropertyUpdate(QString folderName, QString fileNameSource, QString fileNameTarget)
+void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QString fileNameTarget)
 {
     QString *processId = new QString();
     QMap<QString, QString> parameters;
@@ -48,18 +48,18 @@ void FGenerate::onPropertyUpdate(QString folderName, QString fileNameSource, QSt
     parameters["processId"] = *processId;
     processManager->startProcess(command, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
-        FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
-        emit generateWidget->addLogToEntry(parameters["processId"], result);
-    }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
+        AExport *exportWidget = qobject_cast<AExport *>(parent);
+        emit exportWidget->addLogToEntry(parameters["processId"], result);
+    }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList )//result
     {
-        FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
-        emit generateWidget->addLogToEntry(parameters["processId"], "Completed");
+        AExport *exportWidget = qobject_cast<AExport *>(parent);
+        emit exportWidget->addLogToEntry(parameters["processId"], "Completed");
     });
 }
 
-void FGenerate::onTrim(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage)
+void AExport::onTrim(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage)
 {
-    qDebug()<<"FGenerate::onTrim"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage<<progressBar;
+    qDebug()<<"AExport::onTrim"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage<<progressBar;
     int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
     QMap<QString, QString> parameters;
@@ -69,7 +69,6 @@ void FGenerate::onTrim(QString folderName, QString fileNameSource, QString fileN
     parameters["processId"] = *processId;
 
     QString code = "ffmpeg -y -i \"" + QString(folderName + "//" + fileNameSource).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
-//    code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
 
     emit addLogToEntry(parameters["processId"], code + "\n");
 
@@ -77,24 +76,24 @@ void FGenerate::onTrim(QString folderName, QString fileNameSource, QString fileN
 
     processManager->startProcess(code, parameters, nullptr,  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )
     {
-        FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
-        emit generateWidget->addLogToEntry(parameters["processId"], "Completed");
-        if (generateWidget->progressBar != nullptr)
-            generateWidget->progressBar->setValue(parameters["percentage"].toInt());
+        AExport *exportWidget = qobject_cast<AExport *>(parent);
+        emit exportWidget->addLogToEntry(parameters["processId"], "Completed");
+        if (exportWidget->progressBar != nullptr)
+            exportWidget->progressBar->setValue(parameters["percentage"].toInt());
     });
 
 }
 
-void FGenerate::onReloadAll(bool includingSRT)
+void AExport::onReloadAll(bool includingSRT)
 {
     QMap<QString, QString> parameters;
     parameters["includingSRT"] = QString::number(includingSRT);
-    processManager->startProcess(parameters, [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
+    processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList ) //command, result
     {
-        FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
+        AExport *exportWidget = qobject_cast<AExport *>(parent);
         if (parameters["includingSRT"].toInt())
-            emit generateWidget->reloadEdits();
-        emit generateWidget->reloadProperties();
+            emit exportWidget->reloadClips();
+        emit exportWidget->reloadProperties();
     });
 
 }
@@ -105,13 +104,21 @@ typedef struct {
     int counter;
 } FileStruct;
 
-void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeFrames, QProgressBar *p_progressBar, bool includingSRT, bool includeAudio, QLabel *pSpinnerLabel)
+void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeFrames, QProgressBar *p_progressBar, bool includingSRT, bool includeAudio, QLabel *pSpinnerLabel, QString watermarkFileName)
 {
     if (timelineModel->rowCount()==0)
     {
-        QMessageBox::information(this, "Generate", "No edits");
+        QMessageBox::information(this, "Export", "No clips");
         return;
     }
+
+    QMap<int,int> reorderMap;
+    for (int row = 0; row < timelineModel->rowCount();row++)
+    {
+        reorderMap[timelineModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
+    }
+
+
     int resultDurationMSec = 0;
     QString currentDirectory = QSettings().value("LastFolder").toString();
 
@@ -136,15 +143,19 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         {
             QTextStream srtStream( &srtOutputFile );
             int totalDuration = 0;
-            for (int row=0; row<timelineModel->rowCount();row++)
+            QMapIterator<int, int> orderIterator(reorderMap);
+            while (orderIterator.hasNext()) //all files
             {
+                orderIterator.next();
+                int row = orderIterator.value();
+
                 QString srtContentString = "";
 
                 QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
                 FStarRating starRating = qvariant_cast<FStarRating>(timelineModel->index(row, ratingIndex).data());
 
-                srtContentString += "<o>" + QString::number(timelineModel->index(row, orderAfterMovingIndex).data().toInt()+2) + "</o>"; //+1 for file trim, +2 for generate
+                srtContentString += "<o>" + QString::number(timelineModel->index(row, orderAfterMovingIndex).data().toInt()+2) + "</o>"; //+1 for file trim, +2 for export
                 srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
                 srtContentString += "<a>" + timelineModel->index(row, alikeIndex).data().toString() + "</a>";
                 srtContentString += "<h>" + timelineModel->index(row, hintIndex).data().toString() + "</h>";
@@ -236,30 +247,36 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         {
             QTextStream vidlistStream( &vidlistFile );
 
-            qDebug()<<"timelineModel->rowCount()"<<timelineModel->rowCount();
-            for (int row=0; row<timelineModel->rowCount();row++)
+//            qDebug()<<"timelineModel->rowCount()"<<timelineModel->rowCount();
+            int rowCounter = 0;
+            QMapIterator<int, int> orderIterator(reorderMap);
+            while (orderIterator.hasNext()) //all files
             {
+                orderIterator.next();
+                int row = orderIterator.value();
+
                 vidlistStream << "file '" << timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString() << "'" << endl;
                 QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
 
                 if (transitionTimeMSecs > 0)
                 {
-                    if (row != 0)
+                    if (rowCounter != 0)
                     {
                         inTime = inTime.addMSecs(FGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
                     }
-                    if (row != timelineModel->rowCount()-1)
+                    if (rowCounter != timelineModel->rowCount()-1)
                     {
                         outTime = outTime.addMSecs(- FGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
                     }
                 }
-                qDebug()<<"gen"<<row<<transitionTimeMSecs<<transitionTimeFrames/2<<qRound(transitionTimeFrames/2.0)<<FGlobal().frames_to_msec((transitionTimeFrames/2))<<inTime<<outTime;
+//                qDebug()<<"gen"<<row<<transitionTimeMSecs<<transitionTimeFrames/2<<qRound(transitionTimeFrames/2.0)<<FGlobal().frames_to_msec((transitionTimeFrames/2))<<inTime<<outTime;
 
                 vidlistStream << "inpoint " <<  QString::number(inTime.msecsSinceStartOfDay() / 1000.0, 'g', 6) << endl;
                 vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << endl;
                 //      qDebug()<< videoUrl << srtItemModel->index(i,inIndex).data().toString() << " --> " << srtItemModel->index(i,outIndex).data().toString() << srtItemModel->index(i,tagIndex).data().toString();
 
+                rowCounter++;
             }
 
             vidlistFile.close();
@@ -288,8 +305,8 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
 
             processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
             {
-                FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
-                emit generateWidget->addLogToEntry(parameters["processId"], result);
+                AExport *exportWidget = qobject_cast<AExport *>(parent);
+                emit exportWidget->addLogToEntry(parameters["processId"], result);
 
                 if (result.contains("Could not"))
                 {
@@ -297,24 +314,24 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                     {
                         if (resultLine.contains("Could not"))
                         {
-                            generateWidget->processError = resultLine;
-                            qDebug()<<"error"<<generateWidget->processError;
+                            exportWidget->processError = resultLine;
+//                            qDebug()<<"error"<<exportWidget->processError;
                         }
                     }
                 }
 
-            },  [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
+            },  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )//command, result
             {
-                FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
+                AExport *exportWidget = qobject_cast<AExport *>(parent);
 
-                generateWidget->progressBar->setValue(generateWidget->progressBar->maximum());
-                generateWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+                exportWidget->progressBar->setValue(exportWidget->progressBar->maximum());
+                exportWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
 
-                qDebug()<<"error"<<parameters["error"];
-                if (generateWidget->processError != "")
-                    emit generateWidget->addLogToEntry(parameters["processId"], generateWidget->processError);
+//                qDebug()<<"error"<<parameters["error"];
+                if (exportWidget->processError != "")
+                    emit exportWidget->addLogToEntry(parameters["processId"], exportWidget->processError);
                 else
-                    emit generateWidget->addLogToEntry(parameters["processId"], "Completed");
+                    emit exportWidget->addLogToEntry(parameters["processId"], "Completed");
 
             });
 
@@ -348,21 +365,27 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
             filesString = filesString + " -i \"" + filesIterator.value().folderName + filesIterator.value().fileName + "\"";
         }
 
-        for (int row=0; row<timelineModel->rowCount();row++)
+        int rowCounter = 0;
+        QMapIterator<int, int> orderIterator(reorderMap);
+        while (orderIterator.hasNext()) //all files
         {
+            orderIterator.next();
+            int row = orderIterator.value();
+
             {
                 QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
                 QString folderName = timelineModel->index(row, folderIndex).data().toString();
                 QString fileName = timelineModel->index(row, fileIndex).data().toString();
+                QString tags = timelineModel->index(row, tagIndex).data().toString();
 
                 if (transitionTimeMSecs > 0)
                 {
-                    if (row != 0)
+                    if (rowCounter != 0)
                     {
                         inTime = inTime.addMSecs(FGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
                     }
-                    if (row != timelineModel->rowCount()-1)
+                    if (rowCounter != timelineModel->rowCount()-1)
                     {
                         outTime = outTime.addMSecs(- FGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
                     }
@@ -377,7 +400,17 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                 double outSeconds = outTime.msecsSinceStartOfDay() / 1000.0;
                 int fileCounter = filesMap[folderName + fileName].counter;
 
-                filterComplexString += "[" + QString::number(fileCounter) + ":v]trim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",setpts=PTS-STARTPTS,scale=" + width + "x" + height + ",setdar=16/9[v" + QString::number(row) + "];";
+                QString newfcs = "[" + QString::number(fileCounter) + ":v]trim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",setpts=PTS-STARTPTS,scale=" + width + "x" + height + ",setdar=16/9[v" + QString::number(row) + "];";
+
+                if (tags.toLower().contains("backwards"))
+                    newfcs.replace("setdar=16/9", "setdar=16/9, reverse");
+                //https://stackoverflow.com/questions/42257354/concat-a-video-with-itself-but-in-reverse-using-ffmpeg
+                if (tags.toLower().contains("slowmotion"))
+                    newfcs.replace("setpts=PTS-STARTPTS", "setpts=2.0*PTS");
+                if (tags.toLower().contains("fastmotion"))
+                    newfcs.replace("setpts=PTS-STARTPTS", "setpts=0.5*PTS");
+
+                filterComplexString += newfcs;
 
                 filterComplexString2 += "[v" + QString::number(row) + "]";
 
@@ -390,32 +423,37 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
 //                QString targetFileName = fileNameWithoutExtension + "-" + QString::number(row) + ".mp4";
 //                onTrim(timelineModel->index(i, folderIndex).data().toString(),  timelineModel->index(i, fileIndex).data().toString(), targetFileName, inTime, outTime, 10*i/(timelineModel->rowCount())); //not -1 to avoid divby0
             }
+            rowCounter++;
         }
 
-        //ffmpeg -i "20190723 bentwoud2.mp4" -i ..\acvclogo.ico -filter_complex "overlay = main_w-overlay_w-10:main_h-overlay_h-10" output.mp4
+        QString code = "ffmpeg " + filesString;
 
-        //ffmpeg -i "2000-01-19 00-00-00 +53632ms.MP4" -i "Numbered Frames.mp4" -filter_complex "[0:v]trim=1.2:2.5,setpts=PTS-STARTPTS,scale=270x152,setdar=16/9[v0]; [0:a]atrim=1.2:2.5,asetpts=PTS-STARTPTS[a0]; [1:v]trim=10:13.3,setpts=PTS-STARTPTS,scale=270x152,setdar=16/9[v1]; [1:a]atrim=10:13.3,asetpts=PTS-STARTPTS[a1];
-        //              [v0][a0][v1][a1]concat=n=2:v=1:a=1[out]" -map "[out]" -r 50 -y out.mp4
+        if (watermarkFileName != "")
+        {
+            code += " -i \"" + watermarkFileName + "\"";
+            filterComplexString += "[" + QString::number(filesMap.count()) + ":v]scale=" + QString::number(width.toInt()/10) + "x" + QString::number(height.toInt()/10) + ",setdar=16/9[wtm];";
+        }
 
-
-        QString code = "ffmpeg " + filesString + " -filter_complex \"" + filterComplexString + " " + filterComplexString2 + " concat=n=" + QString::number(timelineModel->rowCount()) + ":v=1";
+        code += " -filter_complex \"" + filterComplexString + " " + filterComplexString2 + " concat=n=" + QString::number(timelineModel->rowCount()) + ":v=1";
 
         if (includeAudio)
             code += ":a=1";
 
-        code += "[out]\" -map \"[out]\"";
+        code += "[out]";
+
+        if (watermarkFileName != "")
+            code += ";[out][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[out2]\" -map \"[out2]\"";
+        else
+            code += "\" -map \"[out]\"";
 
         if (pframeRate != "")
             code += " -r " + pframeRate;
 
-//        code += " flags=bicubic -vf scale=1920:-1";
+        code +=  "  -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + ".mp4\"";
 
-        code +=  " -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + ".mp4\"";
-
-        qDebug()<<"filter_complex"<<code;
+//        qDebug()<<"filter_complex"<<code;
 
         //        -filter_complex \"[0:v]scale=640x640 [0:a] [1:v]scale=640x640 [1:a] concat=n=2:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" .\\outputreencode.mp4";
-        //        -filter_complex \"[0]scale=2704x1520,setdar=16/9[a];[1]scale=2704x1520,setdar=16/9[b]; [a][b] concat=n=2:v=1\" -y D:\\output2.mp4";
 
         //https://ffmpeg.org/ffmpeg-filters.html#trim
 
@@ -431,25 +469,25 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         parameters["fileNameWithoutExtension"] = fileNameWithoutExtension;
         processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
         {
-            FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
+            AExport *exportWidget = qobject_cast<AExport *>(parent);
 
-            emit generateWidget->addLogToEntry(parameters["processId"], result);
+            emit exportWidget->addLogToEntry(parameters["processId"], result);
 
             int timeIndex = result.indexOf("time=");
             if (timeIndex > 0)
             {
                 QString timeString = result.mid(timeIndex + 5, 11) + "0";
                 QTime time = QTime::fromString(timeString,"HH:mm:ss.zzz");
-                generateWidget->progressBar->setValue(10 + 90*time.msecsSinceStartOfDay()/parameters["resultDurationMSec"].toInt());
+                exportWidget->progressBar->setValue(10 + 90*time.msecsSinceStartOfDay()/parameters["resultDurationMSec"].toInt());
             }
 
-            emit generateWidget->addLogToEntry(parameters["processId"], result);
+            emit exportWidget->addLogToEntry(parameters["processId"], result);
         },  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )
         {
-            FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
+            AExport *exportWidget = qobject_cast<AExport *>(parent);
 
-            generateWidget->progressBar->setValue(generateWidget->progressBar->maximum());
-            generateWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+            exportWidget->progressBar->setValue(exportWidget->progressBar->maximum());
+            exportWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
 
             QDir dir(parameters["currentDirectory"]);
             dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
@@ -459,7 +497,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                     dir.remove( dirItem );
             }
 
-            emit generateWidget->addLogToEntry(parameters["processId"], "completed");
+            emit exportWidget->addLogToEntry(parameters["processId"], "completed");
         });
 
         onPropertyUpdate(currentDirectory, filesMap.first().fileName, fileNameWithoutExtension + ".mp4");
@@ -469,7 +507,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
     else if (target == "Shotcut")
     {
         QString *processId = new QString();
-        emit addLogEntry(currentDirectory, fileNameWithoutExtension, "file generate", processId);
+        emit addLogEntry(currentDirectory, fileNameWithoutExtension, "file export", processId);
 
         QString fileName = fileNameWithoutExtension + ".mlt";
         QFile fileWrite(currentDirectory + "//" + fileName);
@@ -498,7 +536,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
             {
                 QString durationString = *durationPointer;
                 durationString = durationString.left(durationString.length()-2); //remove " -s"
-                durationTime = QTime::fromMSecsSinceStartOfDay(durationString.toDouble()*1000.0);
+                durationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble()*1000.0));
             }
 
             s("  <producer id=\"producer%1\" title=\"Anonymous Submission\" in=\"00:00:00.000\" out=\"%2\">", QString::number(filesIterator.value().counter), durationTime.toString("hh:mm:ss.zzz"));
@@ -514,11 +552,16 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         emit addLogToEntry(*processId, "Playlist\n");
         s("  <playlist id=\"main_bin\" title=\"Main playlist\">");
         s("    <property name=\"xml_retain\">1</property>");
-        for (int i=0; i<timelineModel->rowCount();i++)
+
+        QMapIterator<int, int> orderIterator(reorderMap);
+        while (orderIterator.hasNext()) //all files
         {
-            QTime inTime = QTime::fromString(timelineModel->index(i, inIndex).data().toString(),"HH:mm:ss.zzz");
-            QTime outTime = QTime::fromString(timelineModel->index(i, outIndex).data().toString(),"HH:mm:ss.zzz");
-            int fileCounter = filesMap[timelineModel->index(i, folderIndex).data().toString() + timelineModel->index(i, fileIndex).data().toString()].counter;
+            orderIterator.next();
+            int row = orderIterator.value();
+
+            QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
+            int fileCounter = filesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()].counter;
 
             s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
               , QString::number(fileCounter) //fileCounter
@@ -530,15 +573,20 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
 
         emit addLogToEntry(*processId, "Transitions\n");
         int tractorCounter = 0;
-        int producerCounter = 0;
+//        int producerCounter = 0;
         //transitions
         if (transitionTimeMSecs > 0)
         {
             QTime previousInTime = QTime();
             QTime previousOutTime = QTime();
             QString previousProducerNr = "-1""";
-            for (int row=0; row<timelineModel->rowCount();row++)
+
+            QMapIterator<int, int> orderIterator(reorderMap);
+            while (orderIterator.hasNext()) //all files
             {
+                orderIterator.next();
+                int row = orderIterator.value();
+
                 QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
                 QString producerNr = QString::number(filesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()].counter);
@@ -581,8 +629,14 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
         s("  <playlist id=\"playlist0\">");
         s("    <property name=\"shotcut:video\">1</property>");
         s("    <property name=\"shotcut:name\">V1</property>");
-        for (int row=0; row<timelineModel->rowCount();row++)
+
+        int rowCounter = 0;
+        orderIterator.toFront();
+        while (orderIterator.hasNext()) //all files
         {
+            orderIterator.next();
+            int row = orderIterator.value();
+
             QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
 
@@ -592,19 +646,20 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
             QString outString = outTime.toString("HH:mm:ss.zzz");
             if (transitionTimeMSecs > 0)
             {
-                if (row != 0) //first
+                if (rowCounter != 0) //first
                 {
                     s("    <entry producer=\"tractor%1\" in=\"00:00:00.000\" out=\"%2\"/>", QString::number(row-1), transitionTime.toString("HH:mm:ss.zzz"));
                     inString = inTime.addMSecs(transitionTimeMSecs).toString("HH:mm:ss.zzz");
                     emit addLogToEntry(*processId, QString("  Transition%1 %2\n").arg( QString::number(row-1), transitionTime.toString("HH:mm:ss.zzz")));
                 }
 
-                if (row != timelineModel->rowCount() - 1) //last
+                if (rowCounter != timelineModel->rowCount() - 1) //last
                     outString = outTime.addMSecs(-transitionTimeMSecs).toString("HH:mm:ss.zzz");
             }
 
             s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", producerNr, inString, outString );
             emit addLogToEntry(*processId, QString("  Producer%1 %2 %3\n").arg( producerNr, inString, outString ));
+            rowCounter++;
         }
 
         s("  </playlist>"); //playlist0
@@ -632,7 +687,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
     else if (target == "Premiere")
     {
         QString *processId = new QString();
-        emit addLogEntry(currentDirectory, fileNameWithoutExtension, "file generate", processId);
+        emit addLogEntry(currentDirectory, fileNameWithoutExtension, "file export", processId);
 
 
         QString fileName = fileNameWithoutExtension + ".xml";
@@ -684,8 +739,13 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                 s("    <track>");
 
                 int totalFrames = 0;
-                for (int row=0; row<timelineModel->rowCount();row++)
+
+                QMapIterator<int, int> orderIterator(reorderMap);
+                while (orderIterator.hasNext()) //all files
                 {
+                    orderIterator.next();
+                    int row = orderIterator.value();
+
                     QString folderName = timelineModel->index(row, folderIndex).data().toString();
                     QString fileName = timelineModel->index(row, fileIndex).data().toString();
                     QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
@@ -698,7 +758,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                     QString *frameRatePointer = new QString();
                     emit getPropertyValue(fileName, "VideoFrameRate", frameRatePointer);
 
-                    if (trackNr == 1 && row%2 == 1 && transitionTimeFramesExported > 0) //track 2 and not first edit (never is)
+                    if (trackNr == 1 && row%2 == 1 && transitionTimeFramesExported > 0) //track 2 and not first clip (never is)
                     {
                         s("     <transitionitem>");
                         s("     	<start>%1</start>", QString::number(totalFrames));
@@ -828,7 +888,7 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
                         s("     </clipitem>");
                     }
 
-                    if (trackNr == 1 && row%2 == 1 && row != timelineModel->rowCount() && transitionTimeFramesExported > 0) //track 2 and not last edit
+                    if (trackNr == 1 && row%2 == 1 && row != timelineModel->rowCount() && transitionTimeFramesExported > 0) //track 2 and not last clip
                     {
                         s("     <transitionitem>");
                         s("     	<start>%1</start>", QString::number(totalFrames));
@@ -902,11 +962,11 @@ void FGenerate::generate(QAbstractItemModel *timelineModel, QString target, QStr
     QMap<QString, QString> parameters;
     processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> , QStringList ) //command, parameters, result
     {
-        FGenerate *generateWidget = qobject_cast<FGenerate *>(parent);
-        generateWidget->progressBar->setValue(generateWidget->progressBar->maximum());
-        generateWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
-        generateWidget->spinnerLabel->movie()->stop();
-//        generateWidget->spinnerLabel->setMovie(nullptr);
+        AExport *exportWidget = qobject_cast<AExport *>(parent);
+        exportWidget->progressBar->setValue(exportWidget->progressBar->maximum());
+        exportWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+        exportWidget->spinnerLabel->movie()->stop();
+//        exportWidget->spinnerLabel->setMovie(nullptr);
     });
     //https://stackoverflow.com/questions/26958644/qt-loading-indicator-widget/26958738
 }

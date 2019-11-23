@@ -24,7 +24,7 @@ SScrubBar::SScrubBar(QWidget *parent)
     setMouseTracking(true);
     setMinimumHeight(fontMetrics().height() + 2 * selectionSize);
 
-    currentEdit = -1;
+    currentClip = -1;
 }
 
 void SScrubBar::setScale(int maximum)
@@ -101,7 +101,7 @@ void SScrubBar::setInOutPoint(int row, int in, int out)
     updatePixmap();
 }
 
-EditInOutStruct SScrubBar::getInOutPoint(int row)
+ClipInOutStruct SScrubBar::getInOutPoint(int row)
 {
     int foundRow = -1;
     for (int i=0; i< m_in_out_list.count();i++)
@@ -115,7 +115,7 @@ EditInOutStruct SScrubBar::getInOutPoint(int row)
         return m_in_out_list[foundRow];
     }
     else
-        return EditInOutStruct();
+        return ClipInOutStruct();
 }
 
 void SScrubBar::clearInOuts()
@@ -134,36 +134,36 @@ void SScrubBar::setMarkers(const QList<int> &list)
 void SScrubBar::mousePressEvent(QMouseEvent * event)
 {
     int x = event->x() - margin;
-    int head = m_head * m_scale;
-    int pos = CLAMP(x / m_scale, 0, m_max);
+    int head = int(m_head * m_scale);
+    int pos = int(CLAMP(x / m_scale, 0, m_max));
 
-    currentEdit = -1;
+    currentClip = -1;
     if (!readOnly)
-//    foreach (EditInOutStruct inOut, m_in_out_list)
+//    foreach (ClipInOutStruct inOut, m_in_out_list)
     for (int i=0; i< m_in_out_list.count();i++)
     {
-        EditInOutStruct inOut = m_in_out_list[i];
+        ClipInOutStruct inOut = m_in_out_list[i];
 
-        int in = inOut.in * m_scale;
-        int out = inOut.out * m_scale;
+        int in = int(inOut.in * m_scale);
+        int out = int(inOut.out * m_scale);
 
         if (x >= in - 12 && x <= in + 6)
         {
             m_activeControl = CONTROL_IN;
 //            setInOutPoint(inOut.row, pos, inOut.out); //out the same
-            currentEdit = i;
+            currentClip = i;
         }
         else if (x >= out - 6 && x <= out + 12)
         {
             m_activeControl = CONTROL_OUT;
 //            setInOutPoint(inOut.row, inOut.in, pos); //in the same
-            currentEdit = i;
+            currentClip = i;
         }
         else if (x > in + 6 && x < out -12)
         {
             m_activeControl = CONTROL_BOTH;
-            currentEdit = i;
-            qDebug()<<"mousePressEvent"<<event->x()<<currentEdit<<in<<x<<out;
+            currentClip = i;
+//            qDebug()<<"mousePressEvent"<<event->x()<<currentClip<<in<<x<<out;
         }
     }
 
@@ -185,64 +185,65 @@ void SScrubBar::mouseReleaseEvent(QMouseEvent * event)
 //    qDebug()<<"mouseReleaseEvent";
     Q_UNUSED(event)
     m_activeControl = CONTROL_NONE;
-    currentEdit = -1;
+    currentClip = -1;
 }
 
 void SScrubBar::mouseMoveEvent(QMouseEvent * event)
 {
     int x = event->x() - margin;
-    int pos = CLAMP(x / m_scale, 0, m_max);
+    int pos = int(CLAMP(x / m_scale, 0, m_max));
 
     if (event->buttons() & Qt::LeftButton)
     {
-
-        if (!readOnly && currentEdit != -1)
-            //        foreach (EditInOutStruct inOut, m_in_out_list)
-//        for (int i=0; i< m_in_out_list.count();i++)
+        if (!readOnly && currentClip != -1)
         {
-//            qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<currentEdit<<x;
-            int i = currentEdit;
-            EditInOutStruct inOut = m_in_out_list[i];
+            //no currentclip or odd currentclip and lower then currentclip or even currentclip and higher or lower then currentclip
+            if (currentClip == -1 || (currentClip%2 == 0 && event->y() < height() * 0.33)  || (currentClip%2 == 1 && (event->y() > height() * 0.33 && event->y() < height() * 0.67)))
+            {
+                //            qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<currentClip<<x;
+                            int i = currentClip;
+                            ClipInOutStruct inOut = m_in_out_list[i];
 
-            int in = inOut.in * m_scale;
-            int out = inOut.out * m_scale;
+                //            int in = inOut.in * m_scale;
+                //            int out = inOut.out * m_scale;
 
-            if (m_activeControl == CONTROL_IN)
-            {
-                if ( i == 0 || (i > 0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
-//                if (x >= in - 24 && x <= in + 12)
-                {
-//                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
-                    if (pos < inOut.out)
-                        setInOutPoint(inOut.row, pos, inOut.out); //out the same
-                }
-            }
-            else if (m_activeControl == CONTROL_OUT)
-            {
-                if ( i == m_in_out_list.count()-1 || (i<m_in_out_list.count()-1 && pos < m_in_out_list[i+1].in - 12)) //not overlapping previous
-//                if (x >= out - 24 && x <= out + 100)
-                {
-//                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
-                    if (inOut.in < pos)
-                        setInOutPoint(inOut.row, inOut.in, pos); //in the same
-                }
-            }
-            else if (m_activeControl == CONTROL_BOTH)//move whole edit
-            {
-                int newIn = pos - (inOut.out - inOut.in)/2;
-                int newOut = pos + (inOut.out - inOut.in)/2;
-                if ( ((i == m_in_out_list.count()-1 && newOut <= m_max ) || (i<m_in_out_list.count()-1 && newOut < m_in_out_list[i+1].in - 12)) &&
-                     ((i== 0 && newIn >= 0)|| (i>0 && newIn > m_in_out_list[i-1].out + 12))                     ) //not overlapping previous
-//                if (x > in + 12 && x < out -24)
-                {
-//                    qDebug()<<"SScrubBar::mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
-                    setInOutPoint(inOut.row, newIn, newOut);
-                }
+                            if (m_activeControl == CONTROL_IN)
+                            {
+                                if ( i == 0 || (i > 0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
+                //                if (x >= in - 24 && x <= in + 12)
+                                {
+                //                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
+                                    if (pos < inOut.out)
+                                        setInOutPoint(inOut.row, pos, inOut.out); //out the same
+                                }
+                            }
+                            else if (m_activeControl == CONTROL_OUT)
+                            {
+                                if ( i == m_in_out_list.count()-1 || (i<m_in_out_list.count()-1 && pos < m_in_out_list[i+1].in - 12)) //not overlapping previous
+                //                if (x >= out - 24 && x <= out + 100)
+                                {
+                //                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
+                                    if (inOut.in < pos)
+                                        setInOutPoint(inOut.row, inOut.in, pos); //in the same
+                                }
+                            }
+                            else if (m_activeControl == CONTROL_BOTH)//move whole clip
+                            {
+                                int newIn = pos - (inOut.out - inOut.in)/2;
+                                int newOut = pos + (inOut.out - inOut.in)/2;
+                                if ( ((i == m_in_out_list.count()-1 && newOut <= m_max ) || (i<m_in_out_list.count()-1 && newOut < m_in_out_list[i+1].in - 12)) &&
+                                     ((i== 0 && newIn >= 0)|| (i>0 && newIn > m_in_out_list[i-1].out + 12))                     ) //not overlapping previous
+                //                if (x > in + 12 && x < out -24)
+                                {
+                //                    qDebug()<<"SScrubBar::mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
+                                    setInOutPoint(inOut.row, newIn, newOut);
+                                }
+                            }
             }
         }
 
         if (m_activeControl == CONTROL_HEAD) {
-            const int head = m_head * m_scale;
+            const int head = int(m_head * m_scale);
             const int offset = height() / 2;
             const int x = head;
             const int w = qAbs(x - head);
@@ -258,7 +259,7 @@ bool SScrubBar::onSeek(int value)
     if (m_activeControl != CONTROL_HEAD)
         m_head = value;
     int oldPos = m_cursorPosition;
-    m_cursorPosition = value * m_scale;
+    m_cursorPosition = int(value * m_scale);
     const int offset = height() / 2;
     const int x = qMin(oldPos, m_cursorPosition);
     const int w = qAbs(oldPos - m_cursorPosition);
@@ -272,7 +273,7 @@ void SScrubBar::progressToRow(int position, int *prevRow, int *nextRow, int* rel
     *prevRow = -1;
     *nextRow = 99999;
     *relativePosition = -1;
-    foreach (EditInOutStruct inOut, m_in_out_list)
+    foreach (ClipInOutStruct inOut, m_in_out_list)
     {
         if (inOut.in <= position)
             *prevRow = qMax(inOut.row, *prevRow);
@@ -289,7 +290,7 @@ void SScrubBar::progressToRow(int position, int *prevRow, int *nextRow, int* rel
 void SScrubBar::rowToPosition(int row, int* relativePosition)
 {
     *relativePosition = -1;
-    foreach (EditInOutStruct inOut, m_in_out_list)
+    foreach (ClipInOutStruct inOut, m_in_out_list)
     {
         if (inOut.row == row)
         {
@@ -318,23 +319,23 @@ void SScrubBar::paintEvent(QPaintEvent *e)
     p.drawPolygon(pa);
     p.setPen(pen);
     if (m_head >= 0) {
-        head = margin + m_head * m_scale;
+        head = int(margin + m_head * m_scale);
         p.drawLine(head, 0, head, height() - 1);
     }
 
     int altY = 0;
     if (!readOnly)
     {
-        foreach (EditInOutStruct inOut, m_in_out_list)
+        foreach (ClipInOutStruct inOut, m_in_out_list)
         {
 
-            int in = margin + inOut.in * m_scale;
-            int out = margin + inOut.out * m_scale;
+            int in = int(margin + inOut.in * m_scale);
+            int out = int(margin + inOut.out * m_scale);
 
             // draw in point
 //            const int in = margin + m_in_list[i] * m_scale;
-            int selsiz = selectionSize*0.8;
-            int plusY = selectionSize * 0.1;
+            int selsiz = int(selectionSize * 0.8);
+            int plusY = int(selectionSize * 0.1);
             pa.setPoints(3, in - selsiz / 2, altY + plusY, in - selsiz / 2, selsiz - 1 + altY + plusY, in - 1, selsiz / 2 + altY + plusY);
             p.setBrush(palette().text().color());
             p.setPen(Qt::NoPen);
@@ -406,11 +407,11 @@ void SScrubBar::updatePixmap()
 
     int altY = 0;
     // selected region
-    foreach (EditInOutStruct inOut, m_in_out_list)
+    foreach (ClipInOutStruct inOut, m_in_out_list)
     {
 
-        int in = inOut.in * m_scale * ratio;
-        int out = inOut.out * m_scale * ratio;
+        int in = int(inOut.in * m_scale * ratio);
+        int out = int(inOut.out * m_scale * ratio);
 
         //        qDebug()<<"updatepixmap"<<m_in_list[i]<<m_out_list[i]<<m_scale<<ratio;
                 p.fillRect(l_margin + in, altY, out - in, l_selectionSize, Qt::red);
@@ -467,9 +468,9 @@ void SScrubBar::updatePixmap()
     {
         int i = 1;
         foreach (int pos, m_markers) {
-            int x = l_margin + pos * m_scale * ratio;
+            int x = int(l_margin + pos * m_scale * ratio);
             QString s = QString::number(i++);
-            int markerWidth = fontMetrics().width(s) * 1.5;
+            int markerWidth = int(fontMetrics().width(s) * 1.5);
             p.fillRect(x, 0, 1, l_height, palette().highlight().color());
             p.fillRect(x - markerWidth/2, 0, markerWidth, markerHeight, palette().highlight().color());
             p.drawText(x - markerWidth/3, markerHeight - 2 * ratio, s);

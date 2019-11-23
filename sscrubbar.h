@@ -8,7 +8,7 @@ typedef struct {
     int row;
     int in;
     int out;
-} EditInOutStruct;
+} ClipInOutStruct;
 
 class SScrubBar : public QWidget
 {
@@ -48,7 +48,7 @@ public:
     void setInOutPoint(int row, int in, int out);
     void progressToRow(int position, int *prevRow, int *nextRow, int *relativePosition);
     void rowToPosition(int row, int* relativePosition);
-    EditInOutStruct getInOutPoint(int row);
+    ClipInOutStruct getInOutPoint(int row);
 signals:
     void seeked(int);
     void scrubberInChanged(int row, int in);
@@ -73,8 +73,8 @@ private:
 //    int m_out;
 //    QList<int> m_in_list;
 //    QList<int> m_out_list;
-//    QMap<int, EditInOutStruct> m_in_out_map;
-    QList<EditInOutStruct> m_in_out_list;
+//    QMap<int, ClipInOutStruct> m_in_out_map;
+    QList<ClipInOutStruct> m_in_out_list;
     enum controls m_activeControl;
     QPixmap m_pixmap;
     int m_timecodeWidth;
@@ -83,7 +83,7 @@ private:
 
     void updatePixmap();
 
-    int currentEdit;
+    int currentClip;
 };
 
 #endif // SSCRUBBAR_H

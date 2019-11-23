@@ -5,12 +5,12 @@
 
 #include "fglobal.h"
 
-FEditSortFilterProxyModel::FEditSortFilterProxyModel(QObject *parent)
+AClipsSortFilterProxyModel::AClipsSortFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
 {
 }
 
-bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
+bool AClipsSortFilterProxyModel::filterAcceptsRow(int sourceRow,
         const QModelIndex &sourceParent) const
 {
     QString expString = filterRegExp().pattern();
@@ -35,8 +35,8 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
     QString tags = sourceModel()->index(sourceRow, tagIndex, sourceParent).data().toString().toLower();
     QString fileNameValue = sourceModel()->index(sourceRow, fileIndex, sourceParent).data().toString();
 
-//    qDebug()<<"FEditSortFilterProxyModel::filterAcceptsRow"<<starString<<starRating.starCount()<<expList.count()<<tag1List.count()<<tag2List.count()<<tag1String<<tag2String<<tags;
-//    qDebug()<<"FEditSortFilterProxyModel::filterAcceptsRow"<<alikeString<<alikeValue<<fileNameString<<fileNameValue;
+//    qDebug()<<"AClipsSortFilterProxyModel::filterAcceptsRow"<<starString<<starRating.starCount()<<expList.count()<<tag1List.count()<<tag2List.count()<<tag1String<<tag2String<<tags;
+//    qDebug()<<"AClipsSortFilterProxyModel::filterAcceptsRow"<<alikeString<<alikeValue<<fileNameString<<fileNameValue;
 
     bool allFound = true;
     bool found;
@@ -76,7 +76,7 @@ bool FEditSortFilterProxyModel::filterAcceptsRow(int sourceRow,
     return starRating.starCount() >= starString.toInt() && allFound;
 }
 
-bool FEditSortFilterProxyModel::lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const
+bool AClipsSortFilterProxyModel::lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const
 {
     if (source_left.column() == orderAtLoadIndex)
         return source_left.data().toInt() < source_right.data().toInt();

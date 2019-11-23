@@ -51,20 +51,18 @@ private:
 
 public slots:
     void onDurationChanged(int duration);
-    void onFolderIndexClicked(QAbstractItemModel *itemModel);
-    void onEditsChangedToTimeline(QAbstractItemModel *itemModel);
+    void onClipsChangedToTimeline(QAbstractItemModel *itemModel);
     void onFileIndexClicked(QModelIndex index);
-
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onTimelineWidgetsChanged(int transitiontime, QString transitionType, FEditTableView *editTableView);
+    void onTimelineWidgetsChanged(int transitiontime, QString transitionType, AClipsTableView *clipsTableView);
 
 private slots:
     void onScrubberSeeked(int mseconds);
+
 signals:
-    void timelinePositionChanged(int position, int editRow, int relativeProgress);
-//    void getPropertyValue(QString fileName, QString key, QString *value);
-    void editsChangedToVideo(QAbstractItemModel *itemModel);
-    void editsChangedToTimeline(QAbstractItemModel *itemModel);
+    void timelinePositionChanged(int position, int clipRow, int relativeProgress);
+    void clipsChangedToVideo(QAbstractItemModel *itemModel);
+    void clipsChangedToTimeline(QAbstractItemModel *itemModel);
     void adjustTransitionTime(int transitionTime);
 
 };

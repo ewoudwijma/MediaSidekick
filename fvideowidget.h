@@ -62,11 +62,11 @@ private:
 public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index);
-    void onEditIndexClicked(QModelIndex index);
+    void onClipIndexClicked(QModelIndex index);
     void togglePlayPaused();
     void fastForward();
     void rewind();
-    void onEditsChangedToVideo(QAbstractItemModel *editProxyModel);
+    void onClipsChangedToVideo(QAbstractItemModel *clipsProxyModel);
     void onTimelinePositionChanged(int progress, int row, int relativeProgress);
     void onReleaseMedia(QString fileName);
     void skipNext();
@@ -90,7 +90,7 @@ private slots:
     void onPlaybackRateChanged(qreal rate);
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
 signals:
-    void videoPositionChanged(int position, int editRow, int relativeProgress);
+    void videoPositionChanged(int position, int clipRow, int relativeProgress);
     void scrubberInChanged(int row, int in);
     void scrubberOutChanged(int row, int out);
     void getPropertyValue(QString fileName, QString key, QString *value);

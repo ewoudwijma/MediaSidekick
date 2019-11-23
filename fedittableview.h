@@ -1,5 +1,5 @@
-#ifndef FEDITTABLEVIEW_H
-#define FEDITTABLEVIEW_H
+#ifndef AClipsTableView_H
+#define AClipsTableView_H
 
 #include "fedititemmodel.h"
 #include "feditsortfilterproxymodel.h"
@@ -14,20 +14,20 @@
 #include <QTime>
 #include <QComboBox>
 
-class FEditTableView: public QTableView
+class AClipsTableView: public QTableView
 {
     Q_OBJECT
 public:
-    FEditTableView(QWidget *parent = nullptr);
-    void addEdit();
+    AClipsTableView(QWidget *parent = nullptr);
+    void addClip();
     void saveModel(QString folderName, QString fileName);
     void toggleAlike();
     void giveStars(int starCount);
-    FEditItemModel *editItemModel;
-    FEditSortFilterProxyModel *editProxyModel;
+    AClipsItemModel *clipsItemModel;
+    AClipsSortFilterProxyModel *clipsProxyModel;
     int highLightedRow;
     QStandardItemModel *srtFileItemModel;
-    bool checkSaveIfEditsChanged();
+    bool checkSaveIfClipsChanged();
     int originalDuration;
 
 private:
@@ -36,11 +36,11 @@ private:
     void loadModel(QString folderName);
     void scanDir(QDir dir);
     QStandardItemModel *read(QString folderName, QString fileName);
-    QMenu *editContextMenu;
+    QMenu *clipContextMenu;
     int position;
-    void selectEdits();
+    void selectClips();
     void onTagsChanged(const QModelIndex &parent, int first, int last);
-    int editCounter;
+    int clipCounter;
     int fileCounter;
     bool doNotUpdate;
     bool continueLoading;
@@ -51,26 +51,26 @@ public slots:
     void onScrubberInChanged(int row, int in);
     void onScrubberOutChanged(int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
-    void onEditFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-    void onEditsDelete(QString fileName);
+    void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
+    void onClipsDelete(QString fileName);
     void onTrim(QString fileName);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
-    void onReloadEdits();
+    void onReloadClips();
 
 private slots:
     void onIndexClicked(QModelIndex index);
-    void onEditRightClickMenu(const QPoint &point);
-    void onEditDelete();
+    void onClipRightClickMenu(const QPoint &point);
+    void onClipDelete();
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
 
     void onIndexActivated(QModelIndex index);
     void onSectionEntered(int logicalIndex);
 signals:
     void indexClicked(QModelIndex index);
-    void editAdded(QModelIndex editInIndex);
-    void editsChangedToVideo(QAbstractItemModel *itemModel);
-    void editsChangedToTimeline(FEditSortFilterProxyModel *editProxyModel);
+    void clipAdded(QModelIndex clipInIndex);
+    void clipsChangedToVideo(QAbstractItemModel *itemModel);
+    void clipsChangedToTimeline(AClipsSortFilterProxyModel *clipProxyModel);
     void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
     void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
@@ -88,4 +88,4 @@ signals:
 
 };
 
-#endif // FEDITTABLEVIEW_H
+#endif // s_H

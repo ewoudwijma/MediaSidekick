@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.0.2");
+    a.setApplicationVersion("0.0.3");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         QSettings().sync();
     }
 
-    QPixmap pixmap(":/acvclogo.ico");
+    QPixmap pixmap(":/acvc.ico");
     QSplashScreen *splash = new QSplashScreen(pixmap);
 
     //    splash.set
@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
 //deploy in shell (not powershell...)
 //cd D:\Projects\build-ACVC-Desktop_Qt_5_12_5_MinGW_64_bit-Release\release
 //d:\Qt\5.12.3\msvc2017\bin\windeployqt.exe --quick --no-translations .
-//D:\Qt\5.12.5\mingw73_64\bin\qtenv2.bat
-//D:\Qt\5.12.5\mingw73_64\bin\windeployqt.exe --quick --no-translations .
+//C:\Qt\5.12.6\mingw73_64\bin\qtenv2.bat
+//c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --quick --no-translations .
 
 //http://www.gnu.org/licenses/lgpl-3.0.html
 //https://doc.qt.io/qtinstallerframework/index.html

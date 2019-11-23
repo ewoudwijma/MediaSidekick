@@ -14,18 +14,18 @@
 
 #include "fglobal.h"
 
-FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
+AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
 {
-    editItemModel = new FEditItemModel(this);
+    clipsItemModel = new AClipsItemModel(this);
     QStringList labels;
     labels << "OrderBL" << "OrderAL"<<"OrderAM"<<"Changed"<< "Path" << "File"<<"Fps"<<"FDur"<<"In"<<"Out"<<"Duration"<<"Rating"<<"Alike"<<"Hint"<<"Tags";
-    editItemModel->setHorizontalHeaderLabels(labels);
+    clipsItemModel->setHorizontalHeaderLabels(labels);
 
-    editProxyModel = new FEditSortFilterProxyModel(this);
+    clipsProxyModel = new AClipsSortFilterProxyModel(this);
 
-    editProxyModel->setSourceModel(editItemModel);
+    clipsProxyModel->setSourceModel(clipsItemModel);
 
-    setModel(editProxyModel);
+    setModel(clipsProxyModel);
 
     horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     verticalHeader()->setSectionsMovable(true);
@@ -63,100 +63,100 @@ FEditTableView::FEditTableView(QWidget *parent) : QTableView(parent)
 //                                | QAbstractItemView::SelectedClicked);
 //    setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    FEditItemDelegate *editItemDelegate = new FEditItemDelegate(this);
-    setItemDelegate(editItemDelegate);
+    AClipsItemDelegate *clipsItemDelegate = new AClipsItemDelegate(this);
+    setItemDelegate(clipsItemDelegate);
 
-    connect( this, &QTableView::clicked, this, &FEditTableView::onIndexClicked);
-    connect( this, &QTableView::activated, this, &FEditTableView::onIndexActivated);
-    connect( editItemModel, &FEditItemModel::dataChanged, this, &FEditTableView::onDataChanged);
-    connect( verticalHeader(), &QHeaderView::sectionMoved, this, &FEditTableView::onSectionMoved);
-    connect( verticalHeader(), &QHeaderView::sectionEntered, this, &FEditTableView::onSectionEntered);
+    connect( this, &QTableView::clicked, this, &AClipsTableView::onIndexClicked);
+    connect( this, &QTableView::activated, this, &AClipsTableView::onIndexActivated);
+    connect( clipsItemModel, &AClipsItemModel::dataChanged, this, &AClipsTableView::onDataChanged);
+    connect( verticalHeader(), &QHeaderView::sectionMoved, this, &AClipsTableView::onSectionMoved);
+    connect( verticalHeader(), &QHeaderView::sectionEntered, this, &AClipsTableView::onSectionEntered);
 
-//    connect( editItemDelegate, &FEditItemDelegate::spinnerChanged, this, &FEditTableView::onSpinnerChanged);
+//    connect( clipsItemDelegate, &AClipsItemDelegate::spinnerChanged, this, &AClipsTableView::onSpinnerChanged);
 
-    editContextMenu = new QMenu(this);
+    clipContextMenu = new QMenu(this);
     setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onEditRightClickMenu(const QPoint &)));
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onClipRightClickMenu(const QPoint &)));
 
-    editContextMenu->addAction(new QAction("Delete",editContextMenu));
-    connect(editContextMenu->actions().last(), SIGNAL(triggered()), this, SLOT(onEditDelete()));
+    clipContextMenu->addAction(new QAction("Delete",clipContextMenu));
+    connect(clipContextMenu->actions().last(), SIGNAL(triggered()), this, SLOT(onClipDelete()));
 
     srtFileItemModel = new QStandardItemModel(this);
 
     doNotUpdate = false;
 }
 
-void FEditTableView::onIndexClicked(QModelIndex index)
+void AClipsTableView::onIndexClicked(QModelIndex index)
 {
-    qDebug()<<"FEditTableView::onIndexClicked"<<index.data()<<editProxyModel->index(index.row(),fileIndex).data().toString()<<selectedFileName;
-//    if (editProxyModel->index(index.row(),fileIndex).data().toString()!=fileUrl.fileName())
+    qDebug()<<"AClipsTableView::onIndexClicked"<<index.data()<<clipsProxyModel->index(index.row(),fileIndex).data().toString()<<selectedFileName;
+//    if (clipsProxyModel->index(index.row(),fileIndex).data().toString()!=fileUrl.fileName())
 //    {
-//        qDebug()<<"tableClicked different!!!"<<index.data()<<editProxyModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
+//        qDebug()<<"tableClicked different!!!"<<index.data()<<clipsProxyModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
 //    }
 
     emit indexClicked(index);
 
-    if (editProxyModel->index(index.row(),fileIndex).data().toString() != selectedFileName)
+    if (clipsProxyModel->index(index.row(),fileIndex).data().toString() != selectedFileName)
     {
-        emit editsChangedToVideo(model()); //not to timeline because this can only happen if all edits are shown and they are in the timeline already then
-        selectedFileName = editProxyModel->index(index.row(),fileIndex).data().toString();
-//        qDebug()<<"FEditTableView::onIndexClicked change selectedFileName"<<selectedFileName;
-        selectEdits();
+        emit clipsChangedToVideo(model()); //not to timeline because this can only happen if all clips are shown and they are in the timeline already then
+        selectedFileName = clipsProxyModel->index(index.row(),fileIndex).data().toString();
+//        qDebug()<<"AClipsTableView::onIndexClicked change selectedFileName"<<selectedFileName;
+        selectClips();
     }
 }
 
-void FEditTableView::onIndexActivated(QModelIndex index)
+void AClipsTableView::onIndexActivated(QModelIndex index)
 {
-    qDebug()<<"FEditTableView::onIndexActivated"<<index.data();
+    qDebug()<<"AClipsTableView::onIndexActivated"<<index.data();
 }
 
-void FEditTableView::onSectionEntered(int logicalIndex)
+void AClipsTableView::onSectionEntered(int logicalIndex)
 {
-    qDebug()<<"FEditTableView::onSectionEntered"<<logicalIndex;
+    qDebug()<<"AClipsTableView::onSectionEntered"<<logicalIndex;
 }
 
-void FEditTableView::onSectionMoved(int , int , int ) //logicalIndex, oldVisualIndex, newVisualIndex
+void AClipsTableView::onSectionMoved(int , int , int ) //logicalIndex, oldVisualIndex, newVisualIndex
 {
 
-//    qDebug()<<"FEditTableView::onSectionMoved"<<logicalIndex<< oldVisualIndex<< newVisualIndex;
+//    qDebug()<<"AClipsTableView::onSectionMoved"<<logicalIndex<< oldVisualIndex<< newVisualIndex;
 //    doNotUpdate = true;
-    for (int row=0; row<editProxyModel->rowCount();row++)
+    for (int row=0; row<clipsProxyModel->rowCount();row++)
     {
         int newOrder = (verticalHeader()->visualIndex(row) + 1) * 10;
-        if (editProxyModel->index(row, orderAfterMovingIndex).data().toInt() != newOrder)
+        if (clipsProxyModel->index(row, orderAfterMovingIndex).data().toInt() != newOrder)
         {
-            editProxyModel->setData(editProxyModel->index(row, orderAfterMovingIndex), newOrder);
-            editProxyModel->setData(editProxyModel->index(row, changedIndex), "yes");
+            clipsProxyModel->setData(clipsProxyModel->index(row, orderAfterMovingIndex), newOrder);
+            clipsProxyModel->setData(clipsProxyModel->index(row, changedIndex), "yes");
         }
     }
 //    doNotUpdate = false;
 
-    emit editsChangedToTimeline(editProxyModel); //not to video because this will not change the video
+    emit clipsChangedToTimeline(clipsProxyModel); //not to video because this will not change the video
 }
 
-void FEditTableView::onFolderIndexClicked(QModelIndex )//index
+void AClipsTableView::onFolderIndexClicked(QModelIndex )//index
 {
     selectedFolderName = QSettings().value("LastFolder").toString();
-//    qDebug()<<"FEditTableView::onFolderIndexClicked"<<selectedFolderName;
+//    qDebug()<<"AClipsTableView::onFolderIndexClicked"<<selectedFolderName;
     loadModel(selectedFolderName);
 
-    emit folderIndexClickedItemModel(editItemModel);
+    emit folderIndexClickedItemModel(clipsItemModel);
     emit folderIndexClickedProxyModel(model());
 }
 
-void FEditTableView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
+void AClipsTableView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
 {
-    qDebug()<<"FEditTableView::onFileIndexClicked"<<index.data().toString();
+//    qDebug()<<"AClipsTableView::onFileIndexClicked"<<index.data().toString();
 
     selectedFolderName = QSettings().value("LastFileFolder").toString();
     selectedFileName = index.data().toString();
 
-    selectEdits();
+    selectClips();
 
     emit fileIndexClicked(index, selectedIndices);
 }
 
-void FEditTableView::selectEdits()
+void AClipsTableView::selectClips()
 {
 //    clearSelection();
 //    setSelectionMode(QAbstractItemView::MultiSelection);
@@ -165,18 +165,18 @@ void FEditTableView::selectEdits()
     int firstRow = -1;
     for (int row=0; row < model()->rowCount(); row++)
     {
-        QModelIndex editFileIndex = model()->index(row, fileIndex);
-//        QModelIndex editInIndex = model()->index(row, inIndex);
+        QModelIndex clipsFileIndex = model()->index(row, fileIndex);
+//        QModelIndex clipsInIndex = model()->index(row, inIndex);
 
         QColor backgroundColor;
-        if (editFileIndex.data().toString() == selectedFileName)
+        if (clipsFileIndex.data().toString() == selectedFileName)
         {
             if (firstRow == -1)
                 firstRow = row;
-//            qDebug()<<"selectEdits"<<selectedFileName<<editFileIndex.data();
-//            setCurrentIndex(editInIndex); //does also the scrollTo
+//            qDebug()<<"selectClips"<<selectedFileName<<clipsFileIndex.data();
+//            setCurrentIndex(clipsInIndex); //does also the scrollTo
             backgroundColor = qApp->palette().color(QPalette::AlternateBase);
-//            emit editAdded(editInIndex);
+//            emit clipAdded(clipInIndex);
         }
         else {
             backgroundColor = qApp->palette().color(QPalette::Base);
@@ -192,11 +192,11 @@ void FEditTableView::selectEdits()
     doNotUpdate = false;
 }
 
-void FEditTableView::addEdit()
+void AClipsTableView::addClip()
 {
     if (selectedFileName == "")
     {
-        QMessageBox::information(this, "Add edit", tr("No file selected"));
+        QMessageBox::information(this, "Add clip", tr("No file selected"));
         return;
     }
 
@@ -207,25 +207,25 @@ void FEditTableView::addEdit()
     int fileRow = -1;
     int maxOrderAtLoad = 0;
     int maxOrderAfterMoving = 0;
-    for (int row=0; row<editItemModel->rowCount();row++)
+    for (int row=0; row<clipsItemModel->rowCount();row++)
     {
-        QString fileName = editItemModel->index(row, fileIndex).data().toString();
-        QTime inTime = QTime::fromString(editItemModel->index(row,inIndex).data().toString(), "HH:mm:ss.zzz");
-        QTime outTime = QTime::fromString(editItemModel->index(row,outIndex).data().toString(), "HH:mm:ss.zzz");
-        QTime fileDuration = QTime::fromString(editItemModel->index(row, fileDurationIndex).data().toString(), "HH:mm:ss.zzz");
+        QString fileName = clipsItemModel->index(row, fileIndex).data().toString();
+        QTime inTime = QTime::fromString(clipsItemModel->index(row,inIndex).data().toString(), "HH:mm:ss.zzz");
+        QTime outTime = QTime::fromString(clipsItemModel->index(row,outIndex).data().toString(), "HH:mm:ss.zzz");
+        QTime fileDuration = QTime::fromString(clipsItemModel->index(row, fileDurationIndex).data().toString(), "HH:mm:ss.zzz");
 
-        //check overlapping, remove overlap from this edit if this is the case
+        //check overlapping, remove overlap from this clip if this is the case
         if (fileName == selectedFileName && inTime.msecsTo(newOutTime) >= 0 && outTime.msecsTo(newInTime) <= 0) //intime before newouttime and outtime after newintime
         {
-//            qDebug()<<"addedit"<<row<<"overlapping"<<inTime<<outTime<<newInTime<<newOutTime;
+            qDebug()<<"addclip"<<row<<"overlapping"<<inTime<<outTime<<newInTime<<newOutTime;
             if (outTime.msecsTo(newOutTime) <= 0) //outtime after newouttime
             {
-//                qDebug()<<"addedit"<<row<<"adjust outtime";
+//                qDebug()<<"addclip"<<row<<"adjust outtime";
                 newOutTime = inTime.addMSecs( - FGlobal().frames_to_msec(1) );
             }
             if (inTime.msecsTo(newInTime) >= 0) //intime after newintime
             {
-//                qDebug()<<"addedit"<<row<<"adjust intime";
+//                qDebug()<<"addclip"<<row<<"adjust intime";
                 newInTime = outTime.addMSecs( FGlobal().frames_to_msec(1) );
             }
         }
@@ -239,11 +239,11 @@ void FEditTableView::addEdit()
         if (selectedFileName == fileName && newInTime.msecsTo(inTime) > 0 && rowToAppendBefore == -1)
             rowToAppendBefore = row;
 
-        maxOrderAtLoad = qMax(maxOrderAtLoad, editItemModel->index(row, orderAtLoadIndex).data().toInt());
-        maxOrderAfterMoving = qMax(maxOrderAtLoad, editItemModel->index(row, orderAfterMovingIndex).data().toInt());
+        maxOrderAtLoad = qMax(maxOrderAtLoad, clipsItemModel->index(row, orderAtLoadIndex).data().toInt());
+        maxOrderAfterMoving = qMax(maxOrderAtLoad, clipsItemModel->index(row, orderAfterMovingIndex).data().toInt());
     }
 
-    if (newInTime.msecsTo(newOutTime) <= 0) //if no place for new edit then cancel operation
+    if (newInTime.msecsTo(newOutTime) <= 0) //if no place for new clip then cancel operation
         return;
 
     if (rowToAppendBefore == -1)
@@ -251,16 +251,16 @@ void FEditTableView::addEdit()
 
     if (rowToAppendBefore != -1) //move all rows after rowToAppendBefore
     {
-        for (int row=rowToAppendBefore; row<editItemModel->rowCount();row++)
+        for (int row=rowToAppendBefore; row<clipsItemModel->rowCount();row++)
         {
-                editItemModel->setData(editItemModel->index(row, orderBeforeLoadIndex), editItemModel->index(row, orderBeforeLoadIndex).data().toInt()+1);
-                editItemModel->setData(editItemModel->index(row, orderAtLoadIndex), editItemModel->index(row, orderAtLoadIndex).data().toInt()+10);
-                editItemModel->setData(editItemModel->index(row, orderAfterMovingIndex), editItemModel->index(row, orderAfterMovingIndex).data().toInt()+10);
-                editItemModel->setData(editItemModel->index(row, changedIndex), "yes");
+                clipsItemModel->setData(clipsItemModel->index(row, orderBeforeLoadIndex), clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt()+1);
+                clipsItemModel->setData(clipsItemModel->index(row, orderAtLoadIndex), clipsItemModel->index(row, orderAtLoadIndex).data().toInt()+10);
+                clipsItemModel->setData(clipsItemModel->index(row, orderAfterMovingIndex), clipsItemModel->index(row, orderAfterMovingIndex).data().toInt()+10);
+                clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
         }
     }
 
-    qDebug()<<"FEditTableView::addEdit"<<position<<newInTime<<newOutTime<<selectedFolderName<<selectedFileName<<rowToAppendBefore<<editItemModel->index(rowToAppendBefore, orderBeforeLoadIndex).data().toInt();
+    qDebug()<<"AClipsTableView::addClip"<<position<<newInTime<<newOutTime<<selectedFolderName<<selectedFileName<<rowToAppendBefore<<clipsItemModel->index(rowToAppendBefore, orderBeforeLoadIndex).data().toInt();
 
     QList<QStandardItem *> items;
 
@@ -270,17 +270,17 @@ void FEditTableView::addEdit()
 
     if (rowToAppendBefore == -1) //add at the end
     {
-        items.append(new QStandardItem(QString::number(editItemModel->rowCount()+1)));
+        items.append(new QStandardItem(QString::number(clipsItemModel->rowCount()+1)));
         items.append(new QStandardItem(QString::number(maxOrderAtLoad + 10)));
         items.append(new QStandardItem(QString::number(maxOrderAfterMoving + 10)));
-//        qDebug()<<"FEditTableView::addEditAfter"<<position<<newInTime<<newOutTime<<selectedFolderName<<selectedFileName<<rowToAppendBefore<<editItemModel->index(rowToAppendBefore, orderBeforeLoadIndex).data().toString();
+//        qDebug()<<"AClipsTableView::addClipAfter"<<position<<newInTime<<newOutTime<<selectedFolderName<<selectedFileName<<rowToAppendBefore<<clipsItemModel->index(rowToAppendBefore, orderBeforeLoadIndex).data().toString();
     }
     else //add in between
     {
-        QModelIndex orderBeforeLoadIndexx = editItemModel->index(rowToAppendBefore, orderBeforeLoadIndex);
-        QModelIndex orderAtLoadIndexx = editItemModel->index(rowToAppendBefore, orderAtLoadIndex);
-        QModelIndex orderAFterMovingIndexx = editItemModel->index(rowToAppendBefore, orderAfterMovingIndex);
-//        qDebug()<<"FEditTableView::addEditBetween"<<position<<newInTime<<newOutTime<<orderAtLoadIndexx.data().toString()<<selectedFolderName<<selectedFileName<<rowToAppendBefore<<editItemModel->index(rowToAppendBefore, orderBeforeLoadIndex).data().toInt();
+        QModelIndex orderBeforeLoadIndexx = clipsItemModel->index(rowToAppendBefore, orderBeforeLoadIndex);
+        QModelIndex orderAtLoadIndexx = clipsItemModel->index(rowToAppendBefore, orderAtLoadIndex);
+        QModelIndex orderAFterMovingIndexx = clipsItemModel->index(rowToAppendBefore, orderAfterMovingIndex);
+//        qDebug()<<"AClipsTableView::addClipBetween"<<position<<newInTime<<newOutTime<<orderAtLoadIndexx.data().toString()<<selectedFolderName<<selectedFileName<<rowToAppendBefore<<clipsItemModel->index(rowToAppendBefore, orderBeforeLoadIndex).data().toInt();
 
         items.append(new QStandardItem(QString::number(orderBeforeLoadIndexx.data().toInt()-1)));
         items.append(new QStandardItem(QString::number(orderAtLoadIndexx.data().toInt()-1)));
@@ -297,7 +297,7 @@ void FEditTableView::addEdit()
     {
         QString durationString = *durationPointer;
         durationString = durationString.left(durationString.length()-2); //remove " s"
-        fileDurationTime = QTime::fromMSecsSinceStartOfDay(durationString.toDouble()*1000);
+        fileDurationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble()*1000.0));
     }
 
     if (fileDurationTime.msecsSinceStartOfDay() == 0)
@@ -318,73 +318,73 @@ void FEditTableView::addEdit()
 
     if (rowToAppendBefore == -1)
     {
-        editItemModel->appendRow(items);
-//        qDebug()<<"setCurrentIndex1"<<editItemModel->rowCount()-1<<editItemModel->index(editItemModel->rowCount()-1, inIndex).data();
-        setCurrentIndex(model()->index(editItemModel->rowCount()-1, inIndex));
+        clipsItemModel->appendRow(items);
+//        qDebug()<<"setCurrentIndex1"<<clipsItemModel->rowCount()-1<<clipsItemModel->index(clipsItemModel->rowCount()-1, inIndex).data();
+        setCurrentIndex(model()->index(clipsItemModel->rowCount()-1, inIndex));
     }
     else
     {
-        editItemModel->insertRow(rowToAppendBefore,items);
-//        qDebug()<<"setCurrentIndex2"<<rowToAppendBefore<<editItemModel->index(rowToAppendBefore, inIndex).data()<<model()->index(rowToAppendBefore, inIndex).data();
+        clipsItemModel->insertRow(rowToAppendBefore,items);
+//        qDebug()<<"setCurrentIndex2"<<rowToAppendBefore<<clipsItemModel->index(rowToAppendBefore, inIndex).data()<<model()->index(rowToAppendBefore, inIndex).data();
         setCurrentIndex(model()->index(rowToAppendBefore, inIndex));
     }
 
-    emit editsChangedToVideo(model());
-    emit editsChangedToTimeline(editProxyModel);
-} //addEdit
+    emit clipsChangedToVideo(model());
+    emit clipsChangedToTimeline(clipsProxyModel);
+} //addClip
 
-void FEditTableView::onEditRightClickMenu(const QPoint &point)
+void AClipsTableView::onClipRightClickMenu(const QPoint &point)
 {
 
     QModelIndex index = indexAt(point);
-//    qDebug()<<"onEditRightClickMenu"<<point;
+//    qDebug()<<"onClipRightClickMenu"<<point;
     if (index.isValid() )
-        editContextMenu->exec(viewport()->mapToGlobal(point));
+        clipContextMenu->exec(viewport()->mapToGlobal(point));
 }
 
-void FEditTableView::onEditsDelete(QString fileName)
+void AClipsTableView::onClipsDelete(QString fileName)
 {
-    bool isEditChanged = false;
-    for (int row=editItemModel->rowCount()-1; row>=0; row--) //reverse as takeRow is changing rows
+    bool isClipChanged = false;
+    for (int row=clipsItemModel->rowCount()-1; row>=0; row--) //reverse as takeRow is changing rows
     {
-        QString folderNameX = editItemModel->index(row, folderIndex).data().toString();
-        QString fileNameX = editItemModel->index(row, fileIndex).data().toString();
+        QString folderNameX = clipsItemModel->index(row, folderIndex).data().toString();
+        QString fileNameX = clipsItemModel->index(row, fileIndex).data().toString();
 
-        qDebug()<<"FEditTableView::onEditsDelete"<<folderNameX<<selectedFolderName<<fileNameX<<fileName;
+//        qDebug()<<"AClipsTableView::onClipsDelete"<<folderNameX<<selectedFolderName<<fileNameX<<fileName;
         if (folderNameX == selectedFolderName && fileNameX == fileName)
         {
-            editItemModel->takeRow(row);
-            isEditChanged = true;
+            clipsItemModel->takeRow(row);
+            isClipChanged = true;
         }
     }
 
-    if (isEditChanged) //reset orderBeforeLoadIndex
+    if (isClipChanged) //reset orderBeforeLoadIndex
     {
-        for (int row = 0; row<editItemModel->rowCount();row++)
+        for (int row = 0; row<clipsItemModel->rowCount();row++)
         {
-            int order = editItemModel->index(row, orderBeforeLoadIndex).data().toInt();
+            int order = clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt();
             if (order != row+1)
             {
-                editItemModel->setData(editItemModel->index(row, orderBeforeLoadIndex), row+1);
-                editItemModel->setData(editItemModel->index(row, changedIndex), "yes");
+                clipsItemModel->setData(clipsItemModel->index(row, orderBeforeLoadIndex), row+1);
+                clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
             }
         }
 
-        emit editsChangedToVideo(model());
-        emit editsChangedToTimeline(editProxyModel);
+        emit clipsChangedToVideo(model());
+        emit clipsChangedToTimeline(clipsProxyModel);
     }
 }
 
-void FEditTableView::onReloadEdits()
+void AClipsTableView::onReloadClips()
 {
-    qDebug()<<"FEditTableView::onReloadEdits";
+//    qDebug()<<"AClipsTableView::onReloadClips";
     loadModel(selectedFolderName);
 }
 
-void FEditTableView::onTrim(QString pfileName)
+void AClipsTableView::onTrim(QString pfileName)
 {
-    qDebug()<<"FEditTableView::onTrim"<< pfileName;
-    if (checkSaveIfEditsChanged())
+//    qDebug()<<"AClipsTableView::onTrim"<< pfileName;
+    if (checkSaveIfClipsChanged())
     {
         onSectionMoved(-1,-1,-1); //to reorder the items
 
@@ -394,17 +394,17 @@ void FEditTableView::onTrim(QString pfileName)
         }
     }
 
-    qDebug()<<"FEditTableView::onTrim saved"<< pfileName;
+//    qDebug()<<"AClipsTableView::onTrim saved"<< pfileName;
 
-    for (int row = 0; row < editItemModel->rowCount(); row++) // for each edit of file
+    for (int row = 0; row < clipsItemModel->rowCount(); row++) // for each clip of file
     {
-        QString fileName = editItemModel->index(row,fileIndex).data().toString();
+        QString fileName = clipsItemModel->index(row,fileIndex).data().toString();
 
         if (fileName == pfileName)
         {
-            qDebug()<<"FEditTableView::onTrim saved"<< fileName;
-            QTime inTime = QTime::fromString(editItemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
-            QTime outTime = QTime::fromString(editItemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+            qDebug()<<"AClipsTableView::onTrim saved"<< fileName;
+            QTime inTime = QTime::fromString(clipsItemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(clipsItemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
             int deltaIn = qMin(1000, inTime.msecsSinceStartOfDay());
             inTime = inTime.addMSecs(-deltaIn);
@@ -422,7 +422,7 @@ void FEditTableView::onTrim(QString pfileName)
             else
                 targetFileName = targetFileName + "+" + QString::number(inTime.msecsSinceStartOfDay()) + "ms";
 
-            qDebug()<<"FEditTableView::onTrim before emit"<< selectedFolderName<<fileName<<targetFileName<<inTime<<outTime;
+            qDebug()<<"AClipsTableView::onTrim before emit"<< selectedFolderName<<fileName<<targetFileName<<inTime<<outTime;
             emit trim(selectedFolderName, fileName, targetFileName, inTime, outTime, 10);
 
 //            QString code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
@@ -436,14 +436,14 @@ void FEditTableView::onTrim(QString pfileName)
 
 //            processManager->startProcess(code, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
 //            {
-//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-//                emit editTableView->addLogToEntry(parameters["processId"], result);
+//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
+//                emit clipsTableView->addLogToEntry(parameters["processId"], result);
 //            }, [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
 //            {
-//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
+//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
 //                qDebug()<<"trim"<<parent <<command;
-//    //            emit editTableView->addLogToEntry("trim ", result.join("\n"));
-//                emit editTableView->addLogToEntry(parameters["processId"], "Completed");
+//    //            emit clipsTableView->addLogToEntry("trim ", result.join("\n"));
+//                emit clipsTableView->addLogToEntry(parameters["processId"], "Completed");
 //            });
 
             emit propertyUpdate(selectedFolderName, fileName, targetFileName);
@@ -466,12 +466,12 @@ void FEditTableView::onTrim(QString pfileName)
 //            parameters["processId"] = *processId;
 //            processManager->startProcess(command, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
 //            {
-//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-//                emit editTableView->addLogToEntry(parameters["processId"], result);
+//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
+//                emit clipsTableView->addLogToEntry(parameters["processId"], result);
 //            }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
 //            {
-//                FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-//                emit editTableView->addLogToEntry(parameters["processId"], "Completed");
+//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
+//                emit clipsTableView->addLogToEntry(parameters["processId"], "Completed");
 //            });
 
             //create srt file
@@ -484,16 +484,16 @@ void FEditTableView::onTrim(QString pfileName)
             if ( file.open(QIODevice::WriteOnly) )
             {
                 QTextStream stream( &file );
-                FStarRating starRating = qvariant_cast<FStarRating>(editItemModel->index(row, ratingIndex).data());
+                FStarRating starRating = qvariant_cast<FStarRating>(clipsItemModel->index(row, ratingIndex).data());
 
-                int order = editItemModel->index(row, orderAfterMovingIndex).data().toInt();
+                int order = clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
 
                 QString srtContentString = "";
-                srtContentString += "<o>" + QString::number(order + 1) + "</o>"; //+1 for file trim, +2 for generate
+                srtContentString += "<o>" + QString::number(order + 1) + "</o>"; //+1 for file trim, +2 for export
                 srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
-                srtContentString += "<a>" + editItemModel->index(row, alikeIndex).data().toString() + "</a>";
-                srtContentString += "<h>" + editItemModel->index(row, hintIndex).data().toString() + "</h>";
-                srtContentString += "<t>" + editItemModel->index(row, tagIndex).data().toString() + "</t>";
+                srtContentString += "<a>" + clipsItemModel->index(row, alikeIndex).data().toString() + "</a>";
+                srtContentString += "<h>" + clipsItemModel->index(row, hintIndex).data().toString() + "</h>";
+                srtContentString += "<t>" + clipsItemModel->index(row, tagIndex).data().toString() + "</t>";
 
                 stream << 1 << endl;
                 stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
@@ -502,10 +502,10 @@ void FEditTableView::onTrim(QString pfileName)
 
                 file.close();
             }
-//            editItemModel->setData(editItemModel->index(row, hintIndex), "copied");
-//            editItemModel->setData(editItemModel->index(row, changedIndex), "yes");
+//            clipsItemModel->setData(clipsItemModel->index(row, hintIndex), "copied");
+//            clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
         }
-    } //for each edit of file
+    } //for each clip of file
 
     //save copied, auto save because trim is done anyway
 //    onSectionMoved(-1,-1,-1); //to reorder the items
@@ -519,25 +519,25 @@ void FEditTableView::onTrim(QString pfileName)
 //    QMap<QString, QString> parameters;
 //    processManager->startProcess(parameters, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
 //    {
-//        FEditTableView *editTableView = qobject_cast<FEditTableView *>(parent);
-//        editTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
-//        emit editTableView->reloadProperties(""); //triggers property load
+//        AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
+//        clipsTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
+//        emit clipsTableView->reloadProperties(""); //triggers property load
 //    });
 
 } //onTrim
 
-void FEditTableView::onPropertiesLoaded()
+void AClipsTableView::onPropertiesLoaded()
 {
     int fpsSuggested = -1;
     bool fpsFound = false;
 
     QMap<int, QString> fpsMap;
-    for (int row=0; row<editItemModel->rowCount();row++)
+    for (int row=0; row<clipsItemModel->rowCount();row++)
     {
         QString *fpsPointer = new QString();
-        emit getPropertyValue(editItemModel->index(row, fileIndex).data().toString(), "VideoFrameRate", fpsPointer);
-//        qDebug()<<"FEditTableView::onPropertiesLoaded"<<*fpsPointer<<(*fpsPointer).toDouble();
-        editItemModel->setData(editItemModel->index(row, fpsIndex), *fpsPointer);
+        emit getPropertyValue(clipsItemModel->index(row, fileIndex).data().toString(), "VideoFrameRate", fpsPointer);
+//        qDebug()<<"AClipsTableView::onPropertiesLoaded"<<*fpsPointer<<(*fpsPointer).toDouble();
+        clipsItemModel->setData(clipsItemModel->index(row, fpsIndex), *fpsPointer);
 
         if (qRound((*fpsPointer).toDouble()) == QSettings().value("frameRate").toInt())
             fpsFound = true;
@@ -548,7 +548,7 @@ void FEditTableView::onPropertiesLoaded()
         }
 
         QString *durationPointer = new QString();
-        emit getPropertyValue(editItemModel->index(row, fileIndex).data().toString(), "Duration", durationPointer);
+        emit getPropertyValue(clipsItemModel->index(row, fileIndex).data().toString(), "Duration", durationPointer);
         QTime fileDurationTime = QTime::fromString(*durationPointer,"h:mm:ss");
         if (fileDurationTime == QTime())
         {
@@ -560,10 +560,10 @@ void FEditTableView::onPropertiesLoaded()
         if (fileDurationTime.msecsSinceStartOfDay() == 0)
             fileDurationTime = QTime::fromMSecsSinceStartOfDay(24*60*60*1000 - 1);
 
-        editItemModel->setData(editItemModel->index(row, fileDurationIndex), fileDurationTime.toString("HH:mm:ss.zzz"));
+        clipsItemModel->setData(clipsItemModel->index(row, fileDurationIndex), fileDurationTime.toString("HH:mm:ss.zzz"));
     }
 
-//    qDebug()<<"FEditTableView::onPropertiesLoaded"<<fpsSuggested<<fpsFound;
+//    qDebug()<<"AClipsTableView::onPropertiesLoaded"<<fpsSuggested<<fpsFound;
 
     if (!fpsFound && fpsSuggested > 0)
     {
@@ -581,15 +581,15 @@ void FEditTableView::onPropertiesLoaded()
 
         messageBox.addButton(QMessageBox::No);
 
-        messageBox.setWindowTitle( "Loading edits");
-        messageBox.setText("There are no edits with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to one of below founded frame rates ?");
+        messageBox.setWindowTitle( "Loading clips");
+        messageBox.setText("There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to one of below founded frame rates ?");
         int result = messageBox.exec();
 
 //                   QMessageBox::StandardButton reply;
 
-//         reply = QMessageBox::question(this, "Loading edits", "There are no edits with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
+//         reply = QMessageBox::question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
 //                                       QMessageBox::Yes|QMessageBox::No);
-//         reply = messageBox.question(this, "Loading edits", "There are no edits with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
+//         reply = messageBox.question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
 //                             QMessageBox::Yes|QMessageBox::No);
 
         if (result != QMessageBox::No)
@@ -601,10 +601,10 @@ void FEditTableView::onPropertiesLoaded()
     emit propertiesLoaded();
 }
 
-void FEditTableView::onEditDelete()
+void AClipsTableView::onClipDelete()
 {
     QModelIndexList indexList = selectionModel()->selectedIndexes();
-//    qDebug()<<"FEditTableView::onEditDelete"<<selectionModel()<<indexList.count()<<indexList.first().data().toString();
+//    qDebug()<<"AClipsTableView::onClipDelete"<<selectionModel()<<indexList.count()<<indexList.first().data().toString();
 
     QMap<int, int> rowMap; //sorted by fileName and inTime
     for (int i=0; i < indexList.count() ;i++)
@@ -612,51 +612,51 @@ void FEditTableView::onEditDelete()
         QModelIndex currentModelIndex = indexList[i];
         if (currentModelIndex.row() >= 0 && currentModelIndex.column() >= 0)
         {
-            rowMap[currentModelIndex.row()] = editProxyModel->index(currentModelIndex.row(), orderAtLoadIndex).data().toInt();
-//            qDebug()<<"  FEditTableView::onEditDelete"<<currentModelIndex.row()<<currentModelIndex.data().toString();
+            rowMap[currentModelIndex.row()] = clipsProxyModel->index(currentModelIndex.row(), orderAtLoadIndex).data().toInt();
+//            qDebug()<<"  AClipsTableView::onClipDelete"<<currentModelIndex.row()<<currentModelIndex.data().toString();
         }
     }
 
-    for (int row = 0; row < editItemModel->rowCount(); row++)
+    for (int row = 0; row < clipsItemModel->rowCount(); row++)
     {
         QMapIterator<int, int> rowIterator(rowMap);
         while (rowIterator.hasNext()) //all files in reverse order
         {
             rowIterator.next();
 
-//            qDebug()<<"  FEditTableView::onEditDelete"<<row<<rowIterator.key()<<rowIterator.value()<<editItemModel->index(row, orderAtLoadIndex).data().toInt();
-            if (editItemModel->index(row, orderAtLoadIndex).data().toInt() == rowIterator.value())
+//            qDebug()<<"  AClipsTableView::onClipDelete"<<row<<rowIterator.key()<<rowIterator.value()<<clipsItemModel->index(row, orderAtLoadIndex).data().toInt();
+            if (clipsItemModel->index(row, orderAtLoadIndex).data().toInt() == rowIterator.value())
             {
-                editItemModel->takeRow(row);
+                clipsItemModel->takeRow(row);
             }
         }
     }
 
     //set orderBeforeLoadIndex correct
-    for (int row = 0; row<editItemModel->rowCount();row++)
+    for (int row = 0; row<clipsItemModel->rowCount();row++)
     {
-        int order = editItemModel->index(row, orderBeforeLoadIndex).data().toInt();
+        int order = clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt();
         if (order != row+1)
         {
-            editItemModel->setData(editItemModel->index(row, orderBeforeLoadIndex), row+1);
-            editItemModel->setData(editItemModel->index(row, changedIndex), "yes");
+            clipsItemModel->setData(clipsItemModel->index(row, orderBeforeLoadIndex), row+1);
+            clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
         }
         else
-            editItemModel->setData(editItemModel->index(row, changedIndex), "yes"); //set to yes to make sure delete is saved!
+            clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes"); //set to yes to make sure delete is saved!
     }
 
-//    //auto save because edit is gone
+//    //auto save because clip is gone
 //    onSectionMoved(-1,-1,-1); //to reorder the items
 //    for (int row =0; row < srtFileItemModel->rowCount();row++)
 //    {
 //        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
 //    }
 
-    emit editsChangedToVideo(model());
-    emit editsChangedToTimeline(editProxyModel);
-} //onEditDelete
+    emit clipsChangedToVideo(model());
+    emit clipsChangedToTimeline(clipsProxyModel);
+} //onClipDelete
 
-void FEditTableView::onVideoPositionChanged(int progress, int row, int ) //relativeProgress
+void AClipsTableView::onVideoPositionChanged(int progress, int row, int ) //relativeProgress
 {
     position = progress;
 
@@ -671,7 +671,7 @@ void FEditTableView::onVideoPositionChanged(int progress, int row, int ) //relat
                 foundRow = i;
             }
         }
-//        qDebug()<<"FEditTableView::onVideoPositionChanged: " << progress<<row<<foundRow;
+//        qDebug()<<"AClipsTableView::onVideoPositionChanged: " << progress<<row<<foundRow;
 
         if (foundRow != -1)
         {
@@ -696,75 +696,75 @@ void FEditTableView::onVideoPositionChanged(int progress, int row, int ) //relat
     }
 }
 
-void FEditTableView::onScrubberInChanged(int row, int in)
+void AClipsTableView::onScrubberInChanged(int row, int in)
 {
     QTime newInTime = QTime::fromMSecsSinceStartOfDay(FGlobal().msec_rounded_to_fps(in));
 
     if (!doNotUpdate)
     {
-        for (int i=0;i<editItemModel->rowCount();i++)
+        for (int i=0;i<clipsItemModel->rowCount();i++)
         {
-            int editCounter = editItemModel->index(i,orderBeforeLoadIndex).data().toInt();
-            if (editCounter == row)
+            int clipsCounter = clipsItemModel->index(i,orderBeforeLoadIndex).data().toInt();
+            if (clipsCounter == row)
             {
-                QTime outTime = QTime::fromString(editItemModel->index(i,outIndex).data().toString(),"HH:mm:ss.zzz");
-    //            qDebug()<<"FEditTableView::onScrubberInChanged"<<i<< in<<newInTime.msecsSinceStartOfDay();
+                QTime outTime = QTime::fromString(clipsItemModel->index(i,outIndex).data().toString(),"HH:mm:ss.zzz");
+    //            qDebug()<<"AClipsTableView::onScrubberInChanged"<<i<< in<<newInTime.msecsSinceStartOfDay();
                 doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
-                editItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
-                editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
-                editItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
+                clipsItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
+                clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
+                clipsItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
                 doNotUpdate = false;
-                emit editsChangedToTimeline(editProxyModel); //not to video because video initiated it
+                emit clipsChangedToTimeline(clipsProxyModel); //not to video because video initiated it
             }
         }
     }
 }
 
-void FEditTableView::onScrubberOutChanged(int row, int out)
+void AClipsTableView::onScrubberOutChanged(int row, int out)
 {
     QTime newOutTime = QTime::fromMSecsSinceStartOfDay(FGlobal().msec_rounded_to_fps(out));
 
     if (!doNotUpdate)
     {
-        for (int i=0;i<editItemModel->rowCount();i++)
+        for (int i=0;i<clipsItemModel->rowCount();i++)
         {
-            int editCounter = editItemModel->index(i,orderBeforeLoadIndex).data().toInt();
-            if (editCounter == row)
+            int clipCounter = clipsItemModel->index(i,orderBeforeLoadIndex).data().toInt();
+            if (clipCounter == row)
             {
-                QTime inTime = QTime::fromString(editItemModel->index(i,inIndex).data().toString(),"HH:mm:ss.zzz");
-    //            qDebug()<<"FEditTableView::onScrubberOutChanged"<<i<< out<<newOutTime.msecsSinceStartOfDay()<<QSettings().value("frameRate");
+                QTime inTime = QTime::fromString(clipsItemModel->index(i,inIndex).data().toString(),"HH:mm:ss.zzz");
+    //            qDebug()<<"AClipsTableView::onScrubberOutChanged"<<i<< out<<newOutTime.msecsSinceStartOfDay()<<QSettings().value("frameRate");
                 doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
-                editItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
-                editItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
-                editItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
+                clipsItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
+                clipsItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
+                clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
                 doNotUpdate = false;
-                emit editsChangedToTimeline(editProxyModel); //not to video because video initiated it
+                emit clipsChangedToTimeline(clipsProxyModel); //not to video because video initiated it
             }
         }
     }
 }
 
-void FEditTableView::onDataChanged(const QModelIndex &topLeft, const QModelIndex &) //bottomRight
+void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelIndex &) //bottomRight
 {
     if (!doNotUpdate)
     {
         if (topLeft.column() == inIndex || topLeft.column() == outIndex || topLeft.column() == durationIndex)
         {
             QTime time = QTime::fromString(topLeft.data().toString(),"HH:mm:ss.zzz");
-            QTime inTime = QTime::fromString(editItemModel->index(topLeft.row(),inIndex).data().toString(), "HH:mm:ss.zzz");
-            QTime outTime = QTime::fromString(editItemModel->index(topLeft.row(),outIndex).data().toString(), "HH:mm:ss.zzz");
-            qDebug()<<"FEditTableView::onDataChanged"<<topLeft.column()<<time.msecsSinceStartOfDay()<<inTime.msecsSinceStartOfDay()<<outTime.msecsSinceStartOfDay();
+            QTime inTime = QTime::fromString(clipsItemModel->index(topLeft.row(),inIndex).data().toString(), "HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(clipsItemModel->index(topLeft.row(),outIndex).data().toString(), "HH:mm:ss.zzz");
+//            qDebug()<<"AClipsTableView::onDataChanged"<<topLeft.column()<<time.msecsSinceStartOfDay()<<inTime.msecsSinceStartOfDay()<<outTime.msecsSinceStartOfDay();
 
             if (topLeft.column() == inIndex)
             {
                 doNotUpdate = true;
-                editItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(time.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+                clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(time.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
                 emit updateIn(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
             }
             else if (topLeft.column() == outIndex)
             {
                 doNotUpdate = true;
-                editItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+                clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
                 emit updateOut(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
             }
             else if (topLeft.column() == durationIndex)
@@ -774,32 +774,32 @@ void FEditTableView::onDataChanged(const QModelIndex &topLeft, const QModelIndex
                 int newIn = inTime.addMSecs(-delta/2).msecsSinceStartOfDay();
                 int newOut = outTime.addMSecs(delta/2).msecsSinceStartOfDay();
 
-    //            qDebug()<<"FEditTableView::onDataChanged"<<topLeft.column()<<time.msecsSinceStartOfDay()<<inTime.msecsSinceStartOfDay()<<newIn<<outTime.msecsSinceStartOfDay()<<newOut;
+    //            qDebug()<<"AClipsTableView::onDataChanged"<<topLeft.column()<<time.msecsSinceStartOfDay()<<inTime.msecsSinceStartOfDay()<<newIn<<outTime.msecsSinceStartOfDay()<<newOut;
 
                 doNotUpdate = true;
                 if (newIn != inTime.msecsSinceStartOfDay())
                 {
-                    editItemModel->item(topLeft.row(), inIndex)->setData(QTime::fromMSecsSinceStartOfDay(newIn).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+                    clipsItemModel->item(topLeft.row(), inIndex)->setData(QTime::fromMSecsSinceStartOfDay(newIn).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
                     emit updateIn(FGlobal().msec_to_frames(newIn));
                 }
                 if (newOut != outTime.msecsSinceStartOfDay())
                 {
-                    editItemModel->item(topLeft.row(), outIndex)->setData(QTime::fromMSecsSinceStartOfDay(newOut).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+                    clipsItemModel->item(topLeft.row(), outIndex)->setData(QTime::fromMSecsSinceStartOfDay(newOut).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
                     emit updateOut(FGlobal().msec_to_frames(newOut));
                 }
             }
             if (doNotUpdate)
             {
-                emit editsChangedToTimeline(editProxyModel); //not to video because video done using emit update in/out
+                emit clipsChangedToTimeline(clipsProxyModel); //not to video because video done using emit update in/out
                 doNotUpdate = false;
             }
         }
     }
 }
 
-QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
+QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
 {
-//    qDebug()<<"FEditTableView::read"<<folderName << fileName;
+//    qDebug()<<"AClipsTableView::read"<<folderName << fileName;
     QString srtFileName;
 //    fileName = QString(mediaFilePath.toString()).replace(".mp4",".srt").replace(".jpg",".srt").replace(".avi",".srt").replace(".wmv",".srt");
 //    fileName.replace(".MP4",".srt").replace(".JPG",".srt").replace(".AVI",".srt").replace(".WMV",".srt");
@@ -899,7 +899,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
             {
                 tags = srtContentString;
 
-                order = QString::number(editCounter*10);
+                order = QString::number(clipCounter*10);
 
                 QVariant starVar = QVariant::fromValue(FStarRating(0));
                 if (tags.indexOf("r9") >= 0)
@@ -923,7 +923,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
 
             int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
             QList<QStandardItem *> items;
-            items.append(new QStandardItem(QString::number(editCounter)));
+            items.append(new QStandardItem(QString::number(clipCounter)));
             items.append(new QStandardItem(order));
             items.append(new QStandardItem(order));
             items.append(new QStandardItem("no"));
@@ -940,7 +940,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
             items.append(new QStandardItem(tags));
             srtItemModel->appendRow(items);
 //                QLineEdit *edit = new QLineEdit(this);
-            editCounter++;
+            clipCounter++;
             originalDuration += FGlobal().msec_to_frames(duration);
         }
     }
@@ -948,7 +948,7 @@ QStandardItemModel* FEditTableView::read(QString folderName, QString fileName)
     return srtItemModel;
 } //read
 
-void FEditTableView::scanDir(QDir dir)
+void AClipsTableView::scanDir(QDir dir)
 {
     if (!continueLoading)
         return;
@@ -969,7 +969,7 @@ void FEditTableView::scanDir(QDir dir)
     dir.setNameFilters(filters);
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks);
 
-//    qDebug() << "FEditTableView::scanDir" << dir.path();
+//    qDebug() << "AClipsTableView::scanDir" << dir.path();
 
     QStringList fileList = dir.entryList();
     for (int i=0; i<fileList.count(); i++)
@@ -982,7 +982,7 @@ void FEditTableView::scanDir(QDir dir)
         if (fileCounter > 10 && fileCounter%100==0)
         {
             QMessageBox::StandardButton reply;
-             reply = QMessageBox::question(this, "Loading files", "Are you sure you want to continue (" + QString::number(fileCounter) + " files with edits counted in "  + selectedFolderName + ")?",
+             reply = QMessageBox::question(this, "Loading files", "Are you sure you want to continue (" + QString::number(fileCounter) + " files with clips counted in "  + selectedFolderName + ")?",
                                            QMessageBox::Yes|QMessageBox::No);
 
             if (reply == QMessageBox::No)
@@ -997,15 +997,15 @@ void FEditTableView::scanDir(QDir dir)
         items.append(new QStandardItem(fileList[i]));
         srtFileItemModel->appendRow(items);
 
-        bool continueLoadingEdits = true;
+        bool continueLoadingClips = true;
         if (srtItemModel->rowCount()>100)
         {
             QMessageBox::StandardButton reply;
-             reply = QMessageBox::question(this, "Loading edits", "Are you sure you want to add " + QString::number(srtItemModel->rowCount()) + " edits from " + dir.path() + fileList[i] + "?",
+             reply = QMessageBox::question(this, "Loading clips", "Are you sure you want to add " + QString::number(srtItemModel->rowCount()) + " clips from " + dir.path() + fileList[i] + "?",
                                            QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
 
             if (reply == QMessageBox::No)
-                continueLoadingEdits = false;
+                continueLoadingClips = false;
             if (reply == QMessageBox::Cancel)
             {
                 continueLoading = false;
@@ -1013,16 +1013,16 @@ void FEditTableView::scanDir(QDir dir)
             }
         }
 
-        if (continueLoadingEdits)
+        if (continueLoadingClips)
             while (srtItemModel->rowCount()>0)
-                editItemModel->appendRow(srtItemModel->takeRow(0));
+                clipsItemModel->appendRow(srtItemModel->takeRow(0));
     }
 }
 
-void FEditTableView::loadModel(QString folderName)
+void AClipsTableView::loadModel(QString folderName)
 {
-//    qDebug() << "FEditTableView::loadModel" << folderName;
-    if (checkSaveIfEditsChanged())
+//    qDebug() << "AClipsTableView::loadModel" << folderName;
+    if (checkSaveIfClipsChanged())
     {
         onSectionMoved(-1,-1,-1); //to reorder the items
 
@@ -1032,28 +1032,28 @@ void FEditTableView::loadModel(QString folderName)
         }
     }
 
-    editCounter = 1;
+    clipCounter = 1;
     fileCounter = 0;
     originalDuration = 0;
     continueLoading = true;
-    editItemModel->removeRows(0, editItemModel->rowCount());
+    clipsItemModel->removeRows(0, clipsItemModel->rowCount());
     srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
     scanDir(QDir(folderName));
-//    qDebug() << "FEditTableView::loadModel done" << folderName;
+//    qDebug() << "AClipsTableView::loadModel done" << folderName;
 }
 
-bool FEditTableView::checkSaveIfEditsChanged()
+bool AClipsTableView::checkSaveIfClipsChanged()
 {
     int changeCount = 0;
-    for (int row=0; row<editItemModel->rowCount();row++)
+    for (int row=0; row<clipsItemModel->rowCount();row++)
     {
-        if (editItemModel->index(row, changedIndex).data().toString() == "yes")
+        if (clipsItemModel->index(row, changedIndex).data().toString() == "yes")
             changeCount++;
     }
     if (changeCount>0)
     {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "There are " + QString::number(changeCount) + " edits with changes", "Do you want to save these changes ?",
+        reply = QMessageBox::question(this, "There are " + QString::number(changeCount) + " clips with changes", "Do you want to save these changes ?",
                                       QMessageBox::Yes|QMessageBox::No);
 
         if (reply == QMessageBox::Yes)
@@ -1062,17 +1062,17 @@ bool FEditTableView::checkSaveIfEditsChanged()
     return false;
 }
 
-void FEditTableView::saveModel(QString folderName, QString fileName)
+void AClipsTableView::saveModel(QString folderName, QString fileName)
 {
     int changeCount = 0;
     QMap<QString, int> inMap; //sorted by fileName and inTime
-    for (int row = 0; row<editItemModel->rowCount();row++)
+    for (int row = 0; row<clipsItemModel->rowCount();row++)
     {
-        if (editItemModel->index(row, folderIndex).data().toString() == folderName && editItemModel->index(row, fileIndex).data().toString() == fileName)
+        if (clipsItemModel->index(row, folderIndex).data().toString() == folderName && clipsItemModel->index(row, fileIndex).data().toString() == fileName)
         {
-            QString inTime = editItemModel->index(row, inIndex).data().toString();
+            QString inTime = clipsItemModel->index(row, inIndex).data().toString();
             inMap[inTime] = row;
-            if (editItemModel->index(row, changedIndex).data().toString() == "yes")
+            if (clipsItemModel->index(row, changedIndex).data().toString() == "yes")
                 changeCount++;
         }
     }
@@ -1084,14 +1084,13 @@ void FEditTableView::saveModel(QString folderName, QString fileName)
 
     if (inMap.count() > 0)
     {
-        qDebug()<<"FEditTableView::saveModel"<<editItemModel->rowCount()<<fileName<<changeCount<<inMap.count();
+        qDebug()<<"AClipsTableView::saveModel"<<clipsItemModel->rowCount()<<fileName<<changeCount<<inMap.count();
 
         if (changeCount > 0) //changes in this file
         {
-            int editPerFileCounter = 0;
-            editPerFileCounter = 1;
+            int clipPerFileCounter = 1;
 
-//            qDebug()<<"FEditTableView::saveModel"<<srtFileName;
+//            qDebug()<<"AClipsTableView::saveModel"<<srtFileName;
 
             file.open(QIODevice::WriteOnly);
 
@@ -1104,22 +1103,22 @@ void FEditTableView::saveModel(QString folderName, QString fileName)
 
                 QTextStream stream(&file);
 
-                FStarRating starRating = qvariant_cast<FStarRating>(editItemModel->index(row, ratingIndex).data());
+                FStarRating starRating = qvariant_cast<FStarRating>(clipsItemModel->index(row, ratingIndex).data());
 
                 QString srtContentString = "";
-                srtContentString += "<o>" + editItemModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
+                srtContentString += "<o>" + clipsItemModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
                 srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
-                srtContentString += "<a>" + editItemModel->index(row, alikeIndex).data().toString() + "</a>";
-                srtContentString += "<h>" + editItemModel->index(row, hintIndex).data().toString() + "</h>";
-                srtContentString += "<t>" + editItemModel->index(row, tagIndex).data().toString() + "</t>";
+                srtContentString += "<a>" + clipsItemModel->index(row, alikeIndex).data().toString() + "</a>";
+                srtContentString += "<h>" + clipsItemModel->index(row, hintIndex).data().toString() + "</h>";
+                srtContentString += "<t>" + clipsItemModel->index(row, tagIndex).data().toString() + "</t>";
 
-                stream << editPerFileCounter << endl;
-                stream << editItemModel->index(row,inIndex).data().toString() << " --> " << editItemModel->index(row,outIndex).data().toString() << endl;
+                stream << clipPerFileCounter << endl;
+                stream << clipsItemModel->index(row,inIndex).data().toString() << " --> " << clipsItemModel->index(row,outIndex).data().toString() << endl;
                 stream << srtContentString << endl;
                 stream << endl;
-                editPerFileCounter++;
+                clipPerFileCounter++;
 
-                editItemModel->setData(editItemModel->index(row, changedIndex), "no");
+                clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "no");
             }
             file.close();
         }
@@ -1132,9 +1131,9 @@ void FEditTableView::saveModel(QString folderName, QString fileName)
     }
 }
 
-void FEditTableView::onEditFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox )
+void AClipsTableView::onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox )
 {
-//    qDebug()<<"FEditTableView::onEditFilterChanged"<<ratingFilterComboBox->currentText()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount();
+//    qDebug()<<"AClipsTableView::onClipsFilterChanged"<<ratingFilterComboBox->currentText()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount();
     QString string1 = "";
     QString sep = "";
     for (int i=0; i < tagFilter1ListView->model()->rowCount();i++)
@@ -1172,29 +1171,29 @@ void FEditTableView::onEditFilterChanged(QComboBox *ratingFilterComboBox, QCheck
         starCount = "5";
 
     QString regExp = starCount + "|" + alikeVariant.toString() + "|" + string1 + "|" + string2 + "|" + fileName;
-//    qDebug()<<"FEditTableView::onEditFilterChanged"<<starEditorFilterWidget->starRating().starCount()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount()<<regExp;
+//    qDebug()<<"AClipsTableView::onClipsFilterChanged"<<starEditorFilterWidget->starRating().starCount()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount()<<regExp;
 
-    editProxyModel->setFilterRegExp(QRegExp(regExp, Qt::CaseInsensitive,
+    clipsProxyModel->setFilterRegExp(QRegExp(regExp, Qt::CaseInsensitive,
                                                 QRegExp::FixedString));
-    editProxyModel->setFilterKeyColumn(-1);
+    clipsProxyModel->setFilterKeyColumn(-1);
 
-//    qDebug()<<"FEditTableView::onEditFilterChanged"<<starEditorFilterWidget->starRating().starCount();
+//    qDebug()<<"AClipsTableView::onClipsFilterChanged"<<starEditorFilterWidget->starRating().starCount();
 
-    emit editsChangedToVideo(model());
-    emit editsChangedToTimeline(editProxyModel);
+    emit clipsChangedToVideo(model());
+    emit clipsChangedToTimeline(clipsProxyModel);
 }
 
-void FEditTableView::giveStars(int starCount)
+void AClipsTableView::giveStars(int starCount)
 {
-    qDebug()<<"FEditTableView::onGiveStars"<<starCount<<currentIndex().data().toString();
-    editProxyModel->setData(editProxyModel->index(currentIndex().row(), ratingIndex), QVariant::fromValue(FStarRating(starCount)));
-    editProxyModel->setData(editProxyModel->index(currentIndex().row(), changedIndex), "yes");
+//    qDebug()<<"AClipsTableView::onGiveStars"<<starCount<<currentIndex().data().toString();
+    clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), ratingIndex), QVariant::fromValue(FStarRating(starCount)));
+    clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), changedIndex), "yes");
 }
 
-void FEditTableView::toggleAlike()
+void AClipsTableView::toggleAlike()
 {
-    editProxyModel->setData(editProxyModel->index(currentIndex().row(), alikeIndex), !editProxyModel->index(currentIndex().row(), alikeIndex).data().toBool());
-    editProxyModel->setData(editProxyModel->index(currentIndex().row(), changedIndex), "yes");
+    clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), alikeIndex), !clipsProxyModel->index(currentIndex().row(), alikeIndex).data().toBool());
+    clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), changedIndex), "yes");
 }
 
 

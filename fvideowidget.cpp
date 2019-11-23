@@ -74,6 +74,14 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
     connect(m_scrubber, &SScrubBar::scrubberInChanged, this, &FVideoWidget::onScrubberInChanged);
     connect(m_scrubber, &SScrubBar::scrubberOutChanged, this, &FVideoWidget::onScrubberOutChanged);
 
+    m_scrubber->setToolTip(tr("<p><b>Scrub bar</b></p>"
+                              "<p><i>Show and change current position and clips</i></p>"
+                              "<ul>"
+                              "<li>Drag begin of clip: Change in point</li>"
+                              "<li>Drag end of clip: Change out point</li>"
+                              "<li>Drag middle of clip: Change in and out point, duration unchanged</li>"
+                              "<li>Drag outside of clip: Change position</li>"
+                              "</ul>"));
     actionPlay->setToolTip(tr("<p><b>Play or pause</b></p>"
                               "<p><i>Play or pause the video</i></p>"
                               "<ul>"
@@ -83,8 +91,8 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
                                 "<p><i>Stop the video</i></p>"
                                 ));
 
-    actionSkipNext->setToolTip(tr("<p><b>Go to next or previous edit</b></p>"
-                              "<p><i>Go to next or previous edit</i></p>"
+    actionSkipNext->setToolTip(tr("<p><b>Go to next or previous clip</b></p>"
+                              "<p><i>Go to next or previous clip</i></p>"
                               "<ul>"
                               "<li>Shortcut: ctrl-up and ctrl-down</li>"
                               "</ul>"));
@@ -98,7 +106,7 @@ FVideoWidget::FVideoWidget(QWidget *parent) : QVideoWidget(parent)
     actionFastForward->setToolTip(actionRewind->toolTip());
 
     actionUpdateIn->setToolTip(tr("<p><b>Update in- and out- point</b></p>"
-                                  "<p><i>Change the in- or outpoint of the current edit to the current position on the timeline</i></p>"
+                                  "<p><i>Change the in- or outpoint of the current clip to the current position on the timeline</i></p>"
                                   "<ul>"
                                   "<li>Shortcut: ctrl-i and ctrl-o</li>"
                                   "</ul>"));
@@ -277,7 +285,7 @@ void FVideoWidget::onFileIndexClicked(QModelIndex index)
     m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
 }
 
-void FVideoWidget::onEditIndexClicked(QModelIndex index)
+void FVideoWidget::onClipIndexClicked(QModelIndex index)
 {
     QString folderName = index.model()->index(index.row(),folderIndex).data().toString();
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
@@ -288,7 +296,7 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
     if (selectedFileName != fileName)
         selectedFileName = fileName;
 
-    qDebug()<<"FVideoWidget::onEditIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
+    qDebug()<<"FVideoWidget::onClipIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
 
     if (QUrl(folderFileName) != m_player->media().canonicalUrl())
     {
@@ -296,7 +304,7 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
 //        emit getPropertyValue(selectedFileName, "VideoFrameRate", fpsPointer);
 //        fpsRounded = int( qRound(index.model()->index(index.row(),fpsIndex).data().toDouble() / 5) * 5);
 
-//        qDebug()<<"FVideoWidget::onEditIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
+//        qDebug()<<"FVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
         QMediaPlayer::State oldState = m_player->state();
 //        bool oldMuted = m_player->isMuted();
         m_player->setMedia(QUrl(folderFileName));
@@ -310,7 +318,7 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
         m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
     }
 
-//    qDebug()<<"FVideoWidget::onEditIndexClicked"<<index.column()<<m_player->position();
+//    qDebug()<<"FVideoWidget::onClipIndexClicked"<<index.column()<<m_player->position();
 
     if (index.column() == inIndex)
         m_player->setPosition(inTime.msecsSinceStartOfDay());
@@ -322,33 +330,33 @@ void FVideoWidget::onEditIndexClicked(QModelIndex index)
 //        m_player->pause();
 }
 
-void FVideoWidget::onEditsChangedToVideo(QAbstractItemModel *itemModel)
+void FVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
 {
     isLoading = true;
     m_scrubber->clearInOuts();
 
-    FEditSortFilterProxyModel *edititemModel = qobject_cast<FEditSortFilterProxyModel *>(itemModel);
-//    qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<itemModel<<edititemModel;
+    AClipsSortFilterProxyModel *clipsitemModel = qobject_cast<AClipsSortFilterProxyModel *>(itemModel);
+//    qDebug()<<"FVideoWidget::onClipsChangedToVideo"<<itemModel<<clipsitemModel;
 
-    if (edititemModel == nullptr) //not edit
+    if (clipsitemModel == nullptr) //not clip
         m_scrubber->readOnly = true;
     else
         m_scrubber->readOnly = false;
 
-//    qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<itemModel->rowCount();
+//    qDebug()<<"FVideoWidget::onClipsChangedToVideo"<<itemModel->rowCount();
     for (int row = 0; row < itemModel->rowCount();row++)
     {
         QString fileName = itemModel->index(row,fileIndex).data().toString();
-//        qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<fileName<<selectedFileName;
+//        qDebug()<<"FVideoWidget::onClipsChangedToVideo"<<fileName<<selectedFileName;
         if (fileName == selectedFileName)
         {
             QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
-            int editCounter = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
+            int clipCounter = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
 
-//            qDebug()<<"FVideoWidget::onEditsChangedToVideo"<<inTime<<outTime<<folderFileName<<m_player->media().canonicalUrl();
+//            qDebug()<<"FVideoWidget::onClipsChangedToVideo"<<inTime<<outTime<<folderFileName<<m_player->media().canonicalUrl();
 
-            m_scrubber->setInOutPoint(editCounter, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
+            m_scrubber->setInOutPoint(clipCounter, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
         }
     }
     isLoading = false;
@@ -635,7 +643,7 @@ void FVideoWidget::onUpdateIn(int frames)
     qDebug()<<"FVideoWidget::onUpdateIn"<<frames<<m_player->position()<<lastHighlightedRow;
     if (lastHighlightedRow != -1)
     {
-        EditInOutStruct inOut = m_scrubber->getInOutPoint(lastHighlightedRow);
+        ClipInOutStruct inOut = m_scrubber->getInOutPoint(lastHighlightedRow);
 
         m_scrubber->setInOutPoint(lastHighlightedRow, FGlobal().frames_to_msec(frames),  inOut.out);
 //        onScrubberInChanged(lastHighlightedRow, m_player->position());
@@ -656,7 +664,7 @@ void FVideoWidget::onUpdateOut(int frames)
     qDebug()<<"FVideoWidget::onUpdateOut"<<frames<<m_player->position()<<lastHighlightedRow;
     if (lastHighlightedRow != -1)
     {
-        EditInOutStruct inOut = m_scrubber->getInOutPoint(lastHighlightedRow);
+        ClipInOutStruct inOut = m_scrubber->getInOutPoint(lastHighlightedRow);
 
         m_scrubber->setInOutPoint(lastHighlightedRow, inOut.in, FGlobal().frames_to_msec(frames));
 //        onScrubberOutChanged(lastHighlightedRow, m_player->position());

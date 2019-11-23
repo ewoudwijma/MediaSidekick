@@ -132,9 +132,9 @@ void FPropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList se
 
 }
 
-void FPropertyTreeView::onEditIndexClicked(QModelIndex index)
+void FPropertyTreeView::onClipIndexClicked(QModelIndex index)
 {
-//    qDebug()<<"FFilesTreeView::onEditIndexClicked"<<index;
+//    qDebug()<<"FFilesTreeView::onClipIndexClicked"<<index;
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
     QStringList selectedFileNames;
     selectedFileNames <<fileName;
@@ -143,7 +143,7 @@ void FPropertyTreeView::onEditIndexClicked(QModelIndex index)
 
 void FPropertyTreeView::loadModel(QString folderName)
 {
-    qDebug() << "FPropertyTreeView::loadModel" << folderName;
+//    qDebug() << "FPropertyTreeView::loadModel" << folderName;
     propertyItemModel->removeRows(0, propertyItemModel->rowCount());
     while (propertyItemModel->columnCount()>firstFileColumnIndex) //remove old columns
         propertyItemModel->removeColumn(propertyItemModel->columnCount()-1);
@@ -180,7 +180,6 @@ void FPropertyTreeView::loadModel(QString folderName)
             topLevelItems[topLevelItemNames[i]] = topLevelItem;
         }
 
-//        qDebug()<<"loadModel2"<<parent<<result.last();
         QString folderFileName;
         QUrl folderFile;
 
@@ -196,9 +195,7 @@ void FPropertyTreeView::loadModel(QString folderName)
             {
                 folderFileName = result[resultIndex].mid(indexOf+9);
                 folderFile = QUrl(folderFileName);
-//                qDebug()<<"newfile"<<folderFile.fileName()<<fileMediaMap[folderFile.fileName()];
                 emit propertyTreeView->addLogToEntry(parameters["processId"], "Processing " + folderFileName + "\n");
-
             }
             else
             {
@@ -347,8 +344,6 @@ void FPropertyTreeView::loadModel(QString folderName)
         emit propertyTreeView->addLogToEntry(parameters["processId"], "Completed");
 
     });
-//    qDebug() << "FPropertyTreeView::loadModel done" << folderName;
-
 } //loadmodel
 
 //! [init part1]
@@ -445,7 +440,7 @@ void FPropertyTreeView::updateFrozenTableGeometry()
 
 void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox)
 {
-    qDebug()<<"FPropertyTreeView::onPropertyFilterChanged"<<propertyFilterLineEdit->text()<<propertyDiffCheckBox->checkState()<<locationCheckBox->checkState()<<cameraCheckBox->checkState();
+//    qDebug()<<"FPropertyTreeView::onPropertyFilterChanged"<<propertyFilterLineEdit->text()<<propertyDiffCheckBox->checkState()<<locationCheckBox->checkState()<<cameraCheckBox->checkState();
     QString diffString;
     if (propertyDiffCheckBox->checkState() == Qt::Unchecked)
         diffString = "0";
@@ -695,7 +690,7 @@ void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
 
 void FPropertyTreeView::onRemoveFile(QString fileName)
 {
-    qDebug()<<"FPropertyTreeView::onRemoveFile"<<fileName;
+//    qDebug()<<"FPropertyTreeView::onRemoveFile"<<fileName;
 
     for (int column=0; column<propertyItemModel->columnCount();column++)
     {
@@ -707,6 +702,6 @@ void FPropertyTreeView::onRemoveFile(QString fileName)
 void FPropertyTreeView::onReloadProperties()
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-    qDebug()<<"FPropertyTreeView::onReloadProperties"<<lastFolder;
+//    qDebug()<<"FPropertyTreeView::onReloadProperties"<<lastFolder;
     loadModel(lastFolder);
 }

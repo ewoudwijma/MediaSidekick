@@ -22,7 +22,7 @@ public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onGetPropertyValue(QString fileName, QString key, QString *value);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void onEditIndexClicked(QModelIndex index);
+    void onClipIndexClicked(QModelIndex index);
     void onRemoveFile(QString fileName);
     void onReloadProperties();
 private slots:

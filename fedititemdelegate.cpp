@@ -12,12 +12,12 @@
 #include <QStandardItemModel>
 #include <QTime>
 
-void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
     QColor backgroundColor = option.palette.color(QPalette::Base);//index.data(Qt::BackgroundRole).value<QColor>();
 
-//    qDebug()<<"FEditItemDelegate::paint"<<painter<<option.state<<index.data()<<option.palette.background()<<backgroundColor;
+//    qDebug()<<"AClipsItemDelegate::paint"<<painter<<option.state<<index.data()<<option.palette.background()<<backgroundColor;
 //    if (index.column() == ratingIndex)
 //        qDebug()<<"backgroundColor"<<index.data().toString()<<backgroundColor<<QColor();
     QPalette optionPalette = option.palette;
@@ -130,7 +130,7 @@ void FEditItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 }
 
-QWidget *FEditItemDelegate::createEditor(QWidget *parent,
+QWidget *AClipsItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 {
@@ -170,14 +170,14 @@ QWidget *FEditItemDelegate::createEditor(QWidget *parent,
 //        qDebug()<<"createEditor"<<index.row()<<index.column()<<index.data();
         FStarEditor *editor = new FStarEditor(parent);
         connect(editor, &FStarEditor::editingFinished,
-                this, &FEditItemDelegate::commitAndCloseEditor);
+                this, &AClipsItemDelegate::commitAndCloseEditor);
         return editor;
     }
     else
         return QStyledItemDelegate::createEditor(parent, option, index);
 }
 
-void FEditItemDelegate::setEditorData(QWidget *editor,
+void AClipsItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
     if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
@@ -223,14 +223,14 @@ void FEditItemDelegate::setEditorData(QWidget *editor,
         QStyledItemDelegate::setEditorData(editor, index);
 }
 
-void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
+void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
     model->setData(model->index(index.row(), changedIndex), "yes");
     if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
-        qDebug()<<"FEditItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
+//        qDebug()<<"AClipsItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
         QTime time = QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }
@@ -267,7 +267,7 @@ void FEditItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     }
 }
 
-QSize FEditItemDelegate::sizeHint(const QStyleOptionViewItem &option,
+QSize AClipsItemDelegate::sizeHint(const QStyleOptionViewItem &option,
                              const QModelIndex &index) const
 {
     qDebug()<<"sizeHint"<<index.row()<<index.column()<<index.data();
@@ -288,7 +288,7 @@ QSize FEditItemDelegate::sizeHint(const QStyleOptionViewItem &option,
         return QStyledItemDelegate::sizeHint(option, index);
 }
 
-bool FEditItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
+bool AClipsItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
 {
     if (index.column() == alikeIndex && event->type() == QEvent::MouseButtonRelease && false)
     {
@@ -317,7 +317,7 @@ bool FEditItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, co
 }
 
 //! [5]
-void FEditItemDelegate::commitAndCloseEditor()
+void AClipsItemDelegate::commitAndCloseEditor()
 {
     FStarEditor *editor = qobject_cast<FStarEditor *>(sender());
     emit commitData(editor);
@@ -325,10 +325,10 @@ void FEditItemDelegate::commitAndCloseEditor()
 }
 //! [5]
 
-void FEditItemDelegate::onSpinnerPositionChanged(int frames)
+void AClipsItemDelegate::onSpinnerPositionChanged(int )//frames
 {
     STimeSpinBox *editor = qobject_cast<STimeSpinBox *>(sender());
-//    qDebug()<<"FEditItemDelegate::onSpinnerPositionChanged"<<frames<<editor->value();
+//    qDebug()<<"AClipsItemDelegate::onSpinnerPositionChanged"<<frames<<editor->value();
     emit commitData(editor);
 //    emit spinnerChanged(editor);
 }

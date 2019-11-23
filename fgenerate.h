@@ -1,5 +1,5 @@
-#ifndef FGENERATE_H
-#define FGENERATE_H
+#ifndef AEXPORT_h
+#define AEXPORT_h
 
 #include "feditsortfilterproxymodel.h"
 #include "mainwindow.h"
@@ -11,13 +11,13 @@
 
 #include <QLabel>
 
-class FGenerate: public QWidget
+class AExport: public QWidget
 {
     Q_OBJECT
 public:
-    explicit FGenerate(QWidget *parent = nullptr);
+    explicit AExport(QWidget *parent = nullptr);
 
-    void generate(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeMSecs, QProgressBar *progressBar, bool includingSRT, bool includeAudio, QLabel *spinnerLabel);
+    void exportClips(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeMSecs, QProgressBar *progressBar, bool includingSRT, bool includeAudio, QLabel *spinnerLabel, QString watermarkFileName);
 private:
 //    MainWindow *mainWindow;
     FProcessManager *processManager;
@@ -36,7 +36,7 @@ signals:
     void addLogToEntry(QString function, QString log);
     void getPropertyValue(QString fileName, QString key, QString *value);
 
-    void reloadEdits();
+    void reloadClips();
     void reloadProperties();
 
 public slots:
@@ -46,4 +46,4 @@ public slots:
     void onReloadAll(bool includingSRT);
 };
 
-#endif // FGENERATE_H
+#endif // AEXPORT_h

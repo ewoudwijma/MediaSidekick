@@ -1,15 +1,15 @@
-#ifndef FEDITSORTFILTERPROXYMODEL_H
-#define FEDITSORTFILTERPROXYMODEL_H
+#ifndef AClipsSortFilterProxyModel_H
+#define AClipsSortFilterProxyModel_H
 
 
 #include <QSortFilterProxyModel>
 
-class FEditSortFilterProxyModel : public QSortFilterProxyModel
+class AClipsSortFilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
 public:
-    FEditSortFilterProxyModel(QObject *parent = nullptr);
+    AClipsSortFilterProxyModel(QObject *parent = nullptr);
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
@@ -18,4 +18,4 @@ protected:
 private:
 };
 
-#endif // FEDITSORTFILTERPROXYMODEL_H
+#endif // AClipsSortFilterProxyModel_H

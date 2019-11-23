@@ -108,16 +108,6 @@ void FTimeline::setupActions(QWidget* widget)
     QMetaObject::connectSlotsByName(widget);
 }
 
-void FTimeline::onFolderIndexClicked(QAbstractItemModel *itemModel)
-{
-//    QString fileFolderName = QSettings().value("LastFolder").toString() + index.data().toString(); //+ "//"
-    qDebug()<<"FTimeline::onFolderIndexClicked"<<itemModel->rowCount();
-
-//    onEditsChangedToTimeline(itemModel);
-
-//    emit fileIndexClicked(index);
-}
-
 void FTimeline::onDurationChanged(int duration)
 {
     qDebug()<<"FTimeline::onDurationChanged: " << duration;
@@ -137,7 +127,7 @@ void FTimeline::onDurationChanged(int duration)
     actionFastForward->setEnabled(m_isSeekable);
 }
 
-void FTimeline::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
+void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 {
     originalDuration = 0;
     QMap<int,int> reorderMap;
@@ -165,7 +155,7 @@ void FTimeline::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
 
     m_scrubber->clearInOuts();
 
-    int countNrOfEdits = 0;
+    int countNrOfClips = 0;
     QMapIterator<int, int> orderIterator(reorderMap);
     while (orderIterator.hasNext()) //all files
     {
@@ -177,22 +167,22 @@ void FTimeline::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
             QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 //                QTime fileDurationTime = QTime::fromString(itemModel->index(row,fileDurationIndex).data().toString(),"HH:mm:ss.zzz");
 
-            int editduration = FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
+            int clipduration = FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
 
             int inpoint, outpoint;
 
-            if (countNrOfEdits == 0) //first
+            if (countNrOfClips == 0) //first
             {
                 inpoint = 0;
-                outpoint = editduration;
+                outpoint = clipduration;
             }
             else
             {
                 inpoint = previousOut - transitiontime;
-                outpoint = inpoint + editduration;
+                outpoint = inpoint + clipduration;
             }
 
-            timelineDuration += editduration;
+            timelineDuration += clipduration;
 
             int porderBeforeLoadIndex = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
             m_scrubber->setInOutPoint(porderBeforeLoadIndex,FGlobal().frames_to_msec( inpoint), FGlobal().frames_to_msec(outpoint));
@@ -200,18 +190,18 @@ void FTimeline::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
             if (previousPreviousRow != -1 && itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt() >= inpoint)
             {
                 allowed = false;
-//                    qDebug()<<"FTimeline::onEditsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
+//                    qDebug()<<"FTimeline::onClipsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
             }
 
             previousOut = outpoint;
             previousPreviousRow = previousRow;
             previousRow = row;
-            countNrOfEdits ++;
+            countNrOfClips ++;
         }
     }
-    timelineDuration -= transitiontime * (countNrOfEdits - 1); //subtrackt all the transitions
+    timelineDuration -= transitiontime * (countNrOfClips - 1); //subtrackt all the transitions
 
-//    qDebug()<<"FTimeline::onEditsChangedToTimeline"<<timelineDuration<<transitiontime;
+//    qDebug()<<"FTimeline::onClipsChangedToTimeline"<<timelineDuration<<transitiontime;
 
     if (!allowed)
     {
@@ -235,12 +225,12 @@ void FTimeline::onEditsChangedToTimeline(QAbstractItemModel *itemModel)
         m_durationLabel->setText(FGlobal().frames_to_time(originalDuration).prepend(" / ") + FGlobal().frames_to_time(transitiontimeDuration).prepend(" -> "));
     }
 
-    emit editsChangedToTimeline(itemModel);
+    emit clipsChangedToTimeline(itemModel);
 }
 
 void FTimeline::onFileIndexClicked(QModelIndex index)
 {
-    qDebug()<<"FTimeline::onFileIndexClicked"<<index.data().toString();
+//    qDebug()<<"FTimeline::onFileIndexClicked"<<index.data().toString();
 }
 
 void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
@@ -259,19 +249,19 @@ void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgre
     }
 }
 
-void FTimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitionType, FEditTableView *editTableView)
+void FTimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitionType, AClipsTableView *clipsTableView)
 {
     if (transitionType != "No transition")
         transitiontime = p_transitiontime;
     else
         transitiontime = 0;
 
-    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<editTableView->model()->rowCount();
+//    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<clipsTableView->model()->rowCount();
 
-    onEditsChangedToTimeline(editTableView->editProxyModel);
+    onClipsChangedToTimeline(clipsTableView->clipsProxyModel);
 
 //    qDebug()<<"FTimeline::onTimelineWidgetsChanged done"<<p_transitiontime<<transitionType;
-    emit editsChangedToVideo(editTableView->model());
+    emit clipsChangedToVideo(clipsTableView->model());
 }
 
 void FTimeline::onScrubberSeeked(int mseconds)

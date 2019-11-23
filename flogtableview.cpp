@@ -89,7 +89,7 @@ void FLogTableView::onAddLogToEntry(QString id, QString log)
 void FLogTableView::mouseMoveEvent(QMouseEvent *event)
 {
     QModelIndex index = indexAt(event->pos());
-    qDebug()<<"FLogTableView::mouseMoveEvent"<<index.data().toString();
+//    qDebug()<<"FLogTableView::mouseMoveEvent"<<index.data().toString();
 }
 
 void FLogTableView::mousePressEvent(QMouseEvent *event)

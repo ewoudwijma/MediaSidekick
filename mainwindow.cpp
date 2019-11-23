@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView1->addNode("tf2", 13, 3);
 
     ui->graphicsView1->addNode("files", 0, 6);
-    ui->graphicsView1->addNode("edit", 8, 6);
+    ui->graphicsView1->addNode("clip", 8, 6);
     ui->graphicsView1->addNode("tags", 13, 6);
 
 //    ui->graphicsView2->addNode("folder", 0, 0);
@@ -48,15 +48,17 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView2->addNode("video", 6, 0);
 
 //    ui->graphicsView2->addNode("files", 0, 6);
-    ui->graphicsView2->addNode("edit", 0, 3);
+    ui->graphicsView2->addNode("clip", 0, 3);
 
     //added designer settings
     ui->propertyDiffCheckBox->setCheckState(Qt::PartiallyChecked);
 
-    ui->tagFilter1ListView->setMaximumHeight(ui->newEditButton->height());
-    ui->tagFilter2ListView->setMaximumHeight(ui->newEditButton->height());
-//    ui->newEditButton->setText(nullptr);
-    ui->newEditButton->setIcon(style()->standardIcon(QStyle::SP_FileDialogStart));
+    ui->tagFilter1ListView->setMaximumHeight(ui->newClipButton->height());
+    ui->tagFilter2ListView->setMaximumHeight(ui->newClipButton->height());
+//    ui->newClipButton->setText(nullptr);
+    ui->newClipButton->setIcon(style()->standardIcon(QStyle::SP_FileDialogStart));
+
+    ui->resetSortButton->setIcon(style()->standardIcon(QStyle::SP_TitleBarCloseButton));
 
     tagFilter1Model = new QStandardItemModel(this);
     ui->tagFilter1ListView->setModel(tagFilter1Model);
@@ -81,95 +83,93 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView1->connectNodes("tf2", "main", "filter");
 
     QRect savedGeometry = QSettings().value("Geometry").toRect();
-    if (savedGeometry != geometry())
+    if (savedGeometry != geometry() && savedGeometry.width() != 0) //initial
         setGeometry(savedGeometry);
 
     connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "prop", "folder");
     connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->filesTreeView, &FFilesTreeView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "files", "folder");
-    connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->editTableView, &FEditTableView::onFolderIndexClicked);
-    ui->graphicsView1->connectNodes("folder", "edit", "folder");
+    connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFolderIndexClicked);
+    ui->graphicsView1->connectNodes("folder", "clip", "folder");
     connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->videoWidget, &FVideoWidget::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "video", "folder");
 
-    connect(ui->propertyTreeView, &FPropertyTreeView::propertiesLoaded, ui->editTableView, &FEditTableView::onPropertiesLoaded);
+    connect(ui->propertyTreeView, &FPropertyTreeView::propertiesLoaded, ui->clipsTableView, &AClipsTableView::onPropertiesLoaded);
 
-    connect(ui->filesTreeView, &FFilesTreeView::indexClicked, ui->editTableView, &FEditTableView::onFileIndexClicked);
-    ui->graphicsView1->connectNodes("files", "edit", "file");
+    connect(ui->filesTreeView, &FFilesTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
+    ui->graphicsView1->connectNodes("files", "clip", "file");
     connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onReleaseMedia); //stop and release
     ui->graphicsView1->connectNodes("files", "video", "delete");
 //    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->videoWidget, &FVideoWidget::onFileRename); //stop and release
 //    ui->graphicsView1->connectNodes("files", "video", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->editTableView, &FEditTableView::onEditsDelete); //remove from edits
-    ui->graphicsView1->connectNodes("files", "edit", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::editsDelete, ui->editTableView, &FEditTableView::onEditsDelete); //remove from edits
-    ui->graphicsView1->connectNodes("files", "edit", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->editTableView, &FEditTableView::onReloadEdits); //reload
-    ui->graphicsView1->connectNodes("files", "edit", "rename");
+    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
+    ui->graphicsView1->connectNodes("files", "clip", "delete");
+    connect(ui->filesTreeView, &FFilesTreeView::clipsDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
+    ui->graphicsView1->connectNodes("files", "clip", "delete");
+    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->clipsTableView, &AClipsTableView::onReloadClips); //reload
+    ui->graphicsView1->connectNodes("files", "clip", "rename");
     connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->propertyTreeView, &FPropertyTreeView::onRemoveFile); //remove from column
     ui->graphicsView1->connectNodes("files", "prop", "delete");
     connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
     ui->graphicsView1->connectNodes("files", "prop", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::trim, ui->editTableView, &FEditTableView::onTrim);
-    ui->graphicsView1->connectNodes("files", "edit", "trim");
+    connect(ui->filesTreeView, &FFilesTreeView::trim, ui->clipsTableView, &AClipsTableView::onTrim);
+    ui->graphicsView1->connectNodes("files", "clip", "trim");
     connect(ui->filesTreeView, &FFilesTreeView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 
-    connect(ui->editTableView, &FEditTableView::folderIndexClickedItemModel, ui->tagsListView, &FTagsListView::onFolderIndexClicked);
-    ui->graphicsView1->connectNodes("edit", "tags", "folder");
-    connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, ui->timelineWidget, &FTimeline::onFolderIndexClicked);
-    ui->graphicsView2->connectNodes("edit", "time", "folder");
-    connect(ui->editTableView, &FEditTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set edit counter
-    ui->graphicsView1->connectNodes("edit", "main", "folder");
-    connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->videoWidget, &FVideoWidget::onFileIndexClicked); //setmedia
-    ui->graphicsView1->connectNodes("edit", "video", "file");
-    connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->timelineWidget, &FTimeline::onFileIndexClicked); //currently nothing happens
-    ui->graphicsView2->connectNodes("edit", "time", "file");
-    connect(ui->editTableView, &FEditTableView::fileIndexClicked, ui->propertyTreeView, &FPropertyTreeView::onFileIndexClicked);
-    ui->graphicsView1->connectNodes("edit", "prop", "file");
-    connect(ui->editTableView, &FEditTableView::fileIndexClicked, this, &MainWindow::onFileIndexClicked); //trigger oneditfilterchanged
-    ui->graphicsView1->connectNodes("edit", "prop", "file");
-    connect(ui->editTableView, &FEditTableView::indexClicked, ui->filesTreeView, &FFilesTreeView::onEditIndexClicked);
-    ui->graphicsView1->connectNodes("edit", "files", "edit");
-    connect(ui->editTableView, &FEditTableView::indexClicked, ui->videoWidget, &FVideoWidget::onEditIndexClicked);
-    ui->graphicsView1->connectNodes("edit", "video", "edit");
-    connect(ui->editTableView, &FEditTableView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onEditIndexClicked);
-    ui->graphicsView1->connectNodes("edit", "video", "edit");
-    connect(ui->editTableView, &FEditTableView::editsChangedToVideo, ui->videoWidget, &FVideoWidget::onEditsChangedToVideo);
-    ui->graphicsView2->connectNodes("edit", "video", "editchangevideo");
-    connect(ui->editTableView, &FEditTableView::editsChangedToVideo, this,  &MainWindow::onEditsChangedToVideo);
-    ui->graphicsView2->connectNodes("edit", "main", "editchangevideo");
-    connect(ui->editTableView, &FEditTableView::editsChangedToTimeline, ui->timelineWidget,  &FTimeline::onEditsChangedToTimeline);
-    ui->graphicsView2->connectNodes("edit", "time", "editchangetimeline");
-    connect(ui->editTableView, &FEditTableView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
-//    ui->graphicsView1->connectNodes("edit", "prop", "get");
-    connect(ui->editTableView, &FEditTableView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedItemModel, ui->tagsListView, &FTagsListView::onFolderIndexClicked);
+    ui->graphicsView1->connectNodes("clip", "tags", "folder");
+    connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set clip counter
+    ui->graphicsView1->connectNodes("clip", "main", "folder");
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->videoWidget, &FVideoWidget::onFileIndexClicked); //setmedia
+    ui->graphicsView1->connectNodes("clip", "video", "file");
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->timelineWidget, &FTimeline::onFileIndexClicked); //currently nothing happens
+    ui->graphicsView2->connectNodes("clip", "time", "file");
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->propertyTreeView, &FPropertyTreeView::onFileIndexClicked);
+    ui->graphicsView1->connectNodes("clip", "prop", "file");
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, this, &MainWindow::onFileIndexClicked); //trigger onclipfilterchanged
+    ui->graphicsView1->connectNodes("clip", "prop", "file");
+    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->filesTreeView, &FFilesTreeView::onClipIndexClicked);
+    ui->graphicsView1->connectNodes("clip", "files", "clip");
+    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->videoWidget, &FVideoWidget::onClipIndexClicked);
+    ui->graphicsView1->connectNodes("clip", "video", "clip");
+    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onClipIndexClicked);
+    ui->graphicsView1->connectNodes("clip", "video", "clip");
+    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, ui->videoWidget, &FVideoWidget::onClipsChangedToVideo);
+    ui->graphicsView2->connectNodes("clip", "video", "clipchangevideo");
+    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, this,  &MainWindow::onClipsChangedToVideo);
+    ui->graphicsView2->connectNodes("clip", "main", "clipchangevideo");
+    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToTimeline, ui->timelineWidget,  &FTimeline::onClipsChangedToTimeline);
+    ui->graphicsView2->connectNodes("clip", "time", "clipchangetimeline");
+    connect(ui->clipsTableView, &AClipsTableView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+//    ui->graphicsView1->connectNodes("clip", "prop", "get");
+    connect(ui->clipsTableView, &AClipsTableView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
     ui->graphicsView1->connectNodes("video", "prop", "get");
-    connect(ui->editTableView, &FEditTableView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
+    connect(ui->clipsTableView, &AClipsTableView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
 
-    connect(ui->editTableView, &FEditTableView::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties);
+    connect(ui->clipsTableView, &AClipsTableView::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties);
 
-    connect(ui->editTableView, &FEditTableView::updateIn, ui->videoWidget, &FVideoWidget::onUpdateIn);
-    connect(ui->editTableView, &FEditTableView::updateOut, ui->videoWidget, &FVideoWidget::onUpdateOut);
+    connect(ui->clipsTableView, &AClipsTableView::updateIn, ui->videoWidget, &FVideoWidget::onUpdateIn);
+    connect(ui->clipsTableView, &AClipsTableView::updateOut, ui->videoWidget, &FVideoWidget::onUpdateOut);
 
-    connect(ui->editTableView, &FEditTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
+    connect(ui->clipsTableView, &AClipsTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
 
-    connect(ui->editTableView, &FEditTableView::propertiesLoaded, this, &MainWindow::onPropertiesLoaded);
+    connect(ui->clipsTableView, &AClipsTableView::propertiesLoaded, this, &MainWindow::onPropertiesLoaded);
 
-    connect(ui->editTableView, &FEditTableView::propertyUpdate, ui->generateWidget, &FGenerate::onPropertyUpdate);
-    connect(ui->editTableView, &FEditTableView::trim, ui->generateWidget, &FGenerate::onTrim);
-    connect(ui->editTableView, &FEditTableView::reloadAll, ui->generateWidget, &FGenerate::onReloadAll);
+    connect(ui->clipsTableView, &AClipsTableView::propertyUpdate, ui->exportWidget, &AExport::onPropertyUpdate);
+    connect(ui->clipsTableView, &AClipsTableView::trim, ui->exportWidget, &AExport::onTrim);
+    connect(ui->clipsTableView, &AClipsTableView::reloadAll, ui->exportWidget, &AExport::onReloadAll);
 
-    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->editTableView, &FEditTableView::onVideoPositionChanged);
-    ui->graphicsView1->connectNodes("video", "edit", "pos");
+    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->clipsTableView, &AClipsTableView::onVideoPositionChanged);
+    ui->graphicsView1->connectNodes("video", "clip", "pos");
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->timelineWidget, &FTimeline::onVideoPositionChanged);
     ui->graphicsView2->connectNodes("video", "time", "pos");
     connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, this, &MainWindow::onVideoPositionChanged);
     ui->graphicsView2->connectNodes("video", "main", "pos");
-    connect(ui->videoWidget, &FVideoWidget::scrubberInChanged, ui->editTableView, &FEditTableView::onScrubberInChanged);
-    ui->graphicsView1->connectNodes("video", "edit", "in");
-    connect(ui->videoWidget, &FVideoWidget::scrubberOutChanged, ui->editTableView, &FEditTableView::onScrubberOutChanged);
-    ui->graphicsView1->connectNodes("video", "edit", "out");
+    connect(ui->videoWidget, &FVideoWidget::scrubberInChanged, ui->clipsTableView, &AClipsTableView::onScrubberInChanged);
+    ui->graphicsView1->connectNodes("video", "clip", "in");
+    connect(ui->videoWidget, &FVideoWidget::scrubberOutChanged, ui->clipsTableView, &AClipsTableView::onScrubberOutChanged);
+    ui->graphicsView1->connectNodes("video", "clip", "out");
     connect(ui->videoWidget, &FVideoWidget::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView1->connectNodes("video", "prop", "get");
 
@@ -177,10 +177,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView2->connectNodes("time", "video", "pos");
 //    connect(ui->timelineWidget, &FTimeline::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView1->connectNodes("time", "prop", "get");
-    connect(ui->timelineWidget, &FTimeline::editsChangedToVideo, ui->videoWidget, &FVideoWidget::onEditsChangedToVideo);
-    ui->graphicsView2->connectNodes("time", "video", "editchangevideo");
-    connect(ui->timelineWidget, &FTimeline::editsChangedToTimeline, this, &MainWindow::onEditsChangedToTimeline);
-    ui->graphicsView2->connectNodes("time", "main", "editchangetimeline");
+    connect(ui->timelineWidget, &FTimeline::clipsChangedToVideo, ui->videoWidget, &FVideoWidget::onClipsChangedToVideo);
+    ui->graphicsView2->connectNodes("time", "video", "clipchangevideo");
+    connect(ui->timelineWidget, &FTimeline::clipsChangedToTimeline, this, &MainWindow::onClipsChangedToTimeline);
+    ui->graphicsView2->connectNodes("time", "main", "clipchangetimeline");
 
     connect(ui->timelineWidget, &FTimeline::adjustTransitionTime, this, &MainWindow::onAdjustTransitionTime);
 
@@ -191,17 +191,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &FPropertyTreeView::onPropertyFilterChanged);
     ui->graphicsView1->connectNodes("main", "prop", "filter");
-    connect(this, &MainWindow::editFilterChanged, ui->editTableView, &FEditTableView::onEditFilterChanged);
-    ui->graphicsView1->connectNodes("main", "edit", "filter");
+    connect(this, &MainWindow::clipsFilterChanged, ui->clipsTableView, &AClipsTableView::onClipsFilterChanged);
+    ui->graphicsView1->connectNodes("main", "clip", "filter");
 
     connect(this, &MainWindow::timelineWidgetsChanged, ui->timelineWidget, &FTimeline::onTimelineWidgetsChanged);
     ui->graphicsView2->connectNodes("main", "video", "widgetchanged");
 
-    connect(ui->generateWidget, &FGenerate::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
-    connect(ui->generateWidget, &FGenerate::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
-    connect(ui->generateWidget, &FGenerate::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
-    connect(ui->generateWidget, &FGenerate::reloadEdits, ui->editTableView, &FEditTableView::onReloadEdits); //reload
-    connect(ui->generateWidget, &FGenerate::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
+    connect(ui->exportWidget, &AExport::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    connect(ui->exportWidget, &AExport::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
+    connect(ui->exportWidget, &AExport::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+    connect(ui->exportWidget, &AExport::reloadClips, ui->clipsTableView, &AClipsTableView::onReloadClips); //reload
+    connect(ui->exportWidget, &AExport::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
 
 
     //load settings
@@ -224,7 +224,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     for (int j=0; j < tagList2.count(); j++)
     {
-        qDebug()<<"tagList2[j].toLower()"<<j<<tagList2[j].toLower();
+//        qDebug()<<"tagList2[j].toLower()"<<j<<tagList2[j].toLower();
         QList<QStandardItem *> items;
         QStandardItem *item = new QStandardItem(tagList2[j].toLower());
         item->setBackground(QBrush(Qt::red));
@@ -251,9 +251,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->progressBar->setValue(0);
 
 
-    //    QPixmap pixmap(":/acvclogo.ico");
+    //    QPixmap pixmap(":/acvc.ico");
 //        QLabel *mylabel = new QLabel (this);
-//        ui->logoLabel->setPixmap( QPixmap (":/acvclogo.ico"));
+//        ui->logoLabel->setPixmap( QPixmap (":/acvc.ico"));
 //        mylabel->show();
 //        mylabel->update();
     //    m_durationLabel->setPixmap(pixmap);
@@ -279,19 +279,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->authorCheckBox->setCheckState(checkState);
 
     ui->filesTtabWidget->setCurrentIndex(QSettings().value("filesTabIndex").toInt());
-    ui->editTabWidget->setCurrentIndex(QSettings().value("editTabIndex").toInt());
+    ui->clipsTabWidget->setCurrentIndex(QSettings().value("clipTabIndex").toInt());
 
     ui->ratingFilterComboBox->setCurrentText(QSettings().value("ratingFilterComboBox").toString());
 
     ui->transitionTimeSpinBox->setValue(QSettings().value("transitionTime").toInt());
     ui->transitionComboBox->setCurrentText(QSettings().value("transitionType").toString());
 
-    ui->generateTargetComboBox->setCurrentText(QSettings().value("generateTarget").toString());
-    ui->generateSizeComboBox->setCurrentText(QSettings().value("generateSize").toString());
-    ui->generateSizeComboBox->setEnabled(ui->generateTargetComboBox->currentText() != "Lossless");
-    ui->generateFramerateComboBox->setEnabled(ui->generateTargetComboBox->currentText() != "Lossless");
+    ui->exportTargetComboBox->setCurrentText(QSettings().value("exportTarget").toString());
+    ui->exportSizeComboBox->setCurrentText(QSettings().value("exportSize").toString());
+    ui->exportSizeComboBox->setEnabled(ui->exportTargetComboBox->currentText() != "Lossless");
+    ui->exportFramerateComboBox->setEnabled(ui->exportTargetComboBox->currentText() != "Lossless");
 
-    ui->generateFramerateComboBox->setCurrentText(QSettings().value("generateFrameRate").toString());
+    ui->exportFramerateComboBox->setCurrentText(QSettings().value("exportFrameRate").toString());
 
     int lframeRate = QSettings().value("frameRate").toInt();
     if (lframeRate < 1)
@@ -302,13 +302,13 @@ MainWindow::MainWindow(QWidget *parent) :
         checkState = Qt::Checked;
     else
         checkState = Qt::Unchecked;
-    ui->audioCheckBox->setCheckState(checkState);
+    ui->exportAudioCheckBox->setCheckState(checkState);
 
-    onEditFilterChanged(); //crash if removed...
+    onClipsFilterChanged(); //crash if removed...
 
     ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
 
     //tooltips
 
@@ -316,89 +316,93 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->folderTreeView->setToolTip(tr("<p><b>Folder</b></p>"
                                       "<p><i>Select a folder containing video files</i></p>"
                                       "<ul>"
-                                      "<li>Select folder: After selecting a folder, the files tab is shown and edits, tags and properties of all files are loaded</li>"
-                                      "<li>Warning: For movie files with more than 100 edits and if more than 100 files with edits are loaded, a warning will be given with the option to skip or cancel.</li>"
+                                      "<li>Select folder: After selecting a folder, the files tab is shown and clips, tags and properties of all files are loaded</li>"
+                                      "<li>Warning: For movie files with more than 100 clips and if more than 100 files with clips are loaded, a warning will be given with the option to skip or cancel.</li>"
                                       "</ul>"));
 
     ui->filesTreeView->setToolTip(tr("<p><b>File</b></p>"
                                      "<p><i>Files within the selected folder</i></p>"
                                      "<ul>"
-                                     "<li>Click on file: Show the edits of this file on the timeline and highlight the edits of the file in the edit tab</li>"
+                                     "<li>Click on file: Show the clips of this file on the timeline and highlight the clips of the file in the clips tab</li>"
                                      "</ul>"
                                      "<p>Right mouse click:</p>"
                                       "<ul>"
-                                     "<li>Trim: create new video file based on the edits of the video file. Rating, alike and tags as well as relevant properties are copied</li>"
+                                     "<li>Trim: create new video file based on the clips of the video file. Rating, alike and tags as well as relevant properties are copied</li>"
                                      "<li>Rename: Rename the file to the suggested file name (go to the properties tab to manage selected file names</li>"
-                                     "<li>Delete file(s): Delete the video file and its supporting files (edits)</li>"
-                                     "<li>Delete edits: Delete the edits of the file</li>"
+                                     "<li>Delete file(s): Delete the video file and its supporting files (clips)</li>"
+                                     "<li>Delete clips: Delete the clips of the file</li>"
                                       "</ul>"));
 
-    //tt edit filters
+    //tt clip filters
     ui->alikeCheckBox->setToolTip(tr("<p><b>Alike</b></p>"
-                                     "<p><i>Check if other edits are 'alike' this edit. This is typically the case with Action-cam footage: multiple shots which are similar.</i></p>"
-                                     "<p><i>This is used to exclude similar edits from the generated video.</i></p>"
+                                     "<p><i>Check if other clips are 'alike' this clip. This is typically the case with Action-cam footage: multiple shots which are similar.</i></p>"
+                                     "<p><i>This is used to exclude similar clips from the exported video.</i></p>"
                                      "<ul>"
-                                     "<li>Alike filter checkbox: Show only alike edits</li>"
-                                     "<li>Alike column: Set if this edit is like another edit <CTRL-A></li>"
-                                     "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
+                                     "<li>Alike filter checkbox: Show only alike clips</li>"
+                                     "<li>Alike column: Set if this clip is like another clip <CTRL-A></li>"
+                                     "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
                                      "<li>Hint: Give the best of the alikes a higher rating than the others</li>"
-                                     "<li>Hint: Give alike edits the same tags to filter on them later</li>"
+                                     "<li>Hint: Give alike clips the same tags to filter on them later</li>"
                                      "</ul>"
                                   ));
 
     ui->ratingFilterComboBox->setToolTip(tr("<p><b>Ratings</b></p>"
-                                              "<p><i>Give a rating to an edit (0 to 5 stars)</i></p>"
+                                              "<p><i>Give a rating to an clip (0 to 5 stars)</i></p>"
                                               "<ul>"
-                                                "<li>Rating filter: Select 0 to 5 stars. All edits with same or higher rating will be shown</li>"
-                                                "<li>Rating column: Double click to change the rating (or CTRL-0 to CTRL-5 to rate the current edit)</li>"
-                                                "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
+                                                "<li>Rating filter: Select 0 to 5 stars. All clips with same or higher rating will be shown</li>"
+                                                "<li>Rating column: Double click to change the rating (or CTRL-0 to CTRL-5 to rate the current clip)</li>"
+                                                "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
                                               "</ul>"));
 
     ui->tagFilter1ListView->setToolTip(tr("<p><b>Tag filters</b></p>"
-                                          "<p><i>Define which edits are shown based on their tags</i></p>"
+                                          "<p><i>Define which clips are shown based on their tags</i></p>"
                                           "<ul>"
                                           "<li>Tag fields: The following logical condition applies: (Left1 or left2 or left3 ...) and (right1 or right2 or right3 ...)</li>"
-                                          "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
+                                          "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
                                           "</ul>"));
 
     ui->tagFilter2ListView->setToolTip(ui->tagFilter1ListView->toolTip());
 
     ui->fileOnlyCheckBox->setToolTip(tr("<p><b>File only</b></p>"
-                                        "<p><i>Show only edits of the selected file</i></p>"
+                                        "<p><i>Show only clips of the selected file</i></p>"
                                         "<ul>"
-                                        "<li>Timeline: Only edits which meet the filter criteria are shown in the timeline</li>"
+                                        "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
                                         "</ul>"));
 
     ui->frameRateSpinBox->setToolTip(tr("<p><b>Framerate</b></p>"
-                                        "<p><i>The framerate used in the editor</i></p>"
+                                        "<p><i>The framerate used in the clips</i></p>"
                                         "<ul>"
                                         "<li>Normally the same as the video files used. However sometimes different video files have different framerates and one of them should be selected.</li>"
                                         "</ul>"));
 
-    //tt edit table
-    ui->editTableView->setToolTip(tr("<p><b>Edit list</b></p>"
-                                     "<p><i>Show the edits for the files in the selected folder</i></p>"
+    //tt clips table
+    ui->resetSortButton->setToolTip(tr("<p><b>Reset sort</b></p>"
+                                       "<p><i>Set the order of clips back to file default</i></p>"
+                                       ));
+
+    ui->clipsTableView->setToolTip(tr("<p><b>Clips list</b></p>"
+                                     "<p><i>Show the clips for the files in the selected folder</i></p>"
                                      "<ul>"
-                                     "<li>Only edits applying to the filters above this table are shown</li>"
+                                     "<li>Only clips applying to the filters above this table are shown</li>"
                                      "<li>Move over the column headers to see column tooltips</li>"
-                                     "<li>Edits belonging to the selected file are highlighted gray</li>"
-                                     "<li>The edit currently shown in the video window is highlighted blue</li>"
-                                     "<li>To delete an edit: right mouse click</li>"
-                                     "<li>To change the order of edits: drag the number on the left of this table up or down</li>"
+                                     "<li>Clips belonging to the selected file are highlighted gray</li>"
+                                     "<li>The clip currently shown in the video window is highlighted blue</li>"
+                                     "<li>To delete a clip: right mouse click</li>"
+                                     "<li>To change the order of clips: drag the number on the left of this table up or down</li>"
                                      "</ul>"
                                      ));
 
-    ui->editTableView->editItemModel->horizontalHeaderItem(inIndex)->setToolTip(tr("<p><b>Title</b></p>"
+    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(inIndex)->setToolTip(tr("<p><b>Title</b></p>"
                                                                                    "<p><i>Description</i></p>"
                                                                                    "<ul>"
                                                                                    "<li>Feature 1</li>"
                                                                                    "</ul>"));
-    ui->editTableView->editItemModel->horizontalHeaderItem(outIndex)->setToolTip( ui->editTableView->editItemModel->horizontalHeaderItem(inIndex)->toolTip());
-    ui->editTableView->editItemModel->horizontalHeaderItem(durationIndex)->setToolTip( ui->editTableView->editItemModel->horizontalHeaderItem(inIndex)->toolTip());
-    ui->editTableView->editItemModel->horizontalHeaderItem(ratingIndex)->setToolTip(ui->ratingFilterComboBox->toolTip());
-    ui->editTableView->editItemModel->horizontalHeaderItem(alikeIndex)->setToolTip(ui->alikeCheckBox->toolTip());
-    ui->editTableView->editItemModel->horizontalHeaderItem(tagIndex)->setToolTip(tr("<p><b>Tags per edit</b></p>"
-                                                                                    "<p><i>Show the tags per edit</i></p>"
+    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(outIndex)->setToolTip( ui->clipsTableView->clipsItemModel->horizontalHeaderItem(inIndex)->toolTip());
+    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(durationIndex)->setToolTip( ui->clipsTableView->clipsItemModel->horizontalHeaderItem(inIndex)->toolTip());
+    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(ratingIndex)->setToolTip(ui->ratingFilterComboBox->toolTip());
+    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(alikeIndex)->setToolTip(ui->alikeCheckBox->toolTip());
+    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(tagIndex)->setToolTip(tr("<p><b>Tags per clip</b></p>"
+                                                                                    "<p><i>Show the tags per clip</i></p>"
                                                                                     "<ul>"
                                                                                     "<li>To Add: drag tag on the right to Tags field</li>"
                                                                                     "<li>To delete: Double click on a tag field, then drag tag to Tags field on the right</li>"
@@ -410,13 +414,13 @@ MainWindow::MainWindow(QWidget *parent) :
                                       "<p><i>Create and remove tags</i></p>"
                                       "<ul>"
                                       "<li>Add new tag to tag list: fill in tag name and press return</li>"
-                                      "<li>Delete tags from filter, edits and taglist: drag tag and drop in the tag field</li>"
+                                      "<li>Delete tags from filter, clips and taglist: drag tag and drop in the tag field</li>"
                                       "</ul>"
                                       ));
     ui->tagsListView->setToolTip(tr("<p><b>Tag list</b></p>"
-                                    "<p><i>List of tags used in edits or filter</i></p>"
+                                    "<p><i>List of tags used in clips or filter</i></p>"
                                     "<ul>"
-                                    "<li>Add tag to edit: Drag and drop to tag column of edits</li>"
+                                    "<li>Add tag to clip: Drag and drop to tag column of clips</li>"
                                     "<li>Add tag to filter: Drag and drop to filters</li>"
                                     "</ul>"
                                     ));
@@ -427,7 +431,7 @@ MainWindow::MainWindow(QWidget *parent) :
                                      "<ul>"
                                         "<li>Only properties applying to the filters above this table are shown</li>"
                                         "<li>Properties belonging to the selected file are highlighted in blue</li>"
-                                        "<li>The properties in the generated tab can be updated (except for filename and generated name).</li>"
+                                        "<li>The properties in the general, location, camera and author section can be updated (except for filename and suggested name).</li>"
                                         "<li>If a suggested name differs from the filename it will be bold (indicating you can rename it in the files tab)</li>"
                                      "</ul>"
                                      ));
@@ -455,19 +459,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->cameraCheckBox->setToolTip(ui->locationCheckBox->toolTip());
     ui->authorCheckBox->setToolTip(ui->locationCheckBox->toolTip());
 
-    //generate
-    ui->generateTargetComboBox->setToolTip(tr("<p><b>Generate target</b></p>"
-                                 "<p><i>Determines what will be generated</i></p>"
+    //export
+    ui->exportTargetComboBox->setToolTip(tr("<p><b>Export target</b></p>"
+                                 "<p><i>Determines what will be exported</i></p>"
                                  "<ul>"
                                               "<li>Lossless: FFMpeg generated video file. Very fast!!!</li>"
                                               "<li>Encode: FFMpeg generated video file</li>"
                                               "<li>Premiere: Final cut XML project file for Adobe Premiere</li>"
                                               "<li>Shotcut: Mlt project file</li>"
-                                              "<li>Remark: Lossless and encode will not contain transition filters. Instead of this a cut is done in the middle of the transition for the edit before and the edit after the transition.</li>"
+                                              "<li>Remark: Lossless and encode will not contain transition filters. Instead of this a cut is done in the middle of the transition for the clip before and the clip after the transition.</li>"
                                  "</ul>"));
 
-    ui->generateFramerateComboBox->setToolTip(tr("<p><b>Generate framerate</b></p>"
-                                                 "<p><i>The framerate of the generated files</i></p>"
+    ui->exportFramerateComboBox->setToolTip(tr("<p><b>Export framerate</b></p>"
+                                                 "<p><i>The framerate of the exported files</i></p>"
                                                  "<ul>"
                                                  "<li></li>"
                                                  "</ul>"));
@@ -482,8 +486,8 @@ MainWindow::MainWindow(QWidget *parent) :
     //end tooltips
 
     //do not show the graph tab (only in debug mode)
-    graphWidget1 = ui->editTabWidget->widget(3);
-    graphWidget2 = ui->editTabWidget->widget(4);
+    graphWidget1 = ui->clipsTabWidget->widget(3);
+    graphWidget2 = ui->clipsTabWidget->widget(4);
 
     on_actionDebug_mode_triggered(false); //no debug mode
 
@@ -509,7 +513,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    if (ui->editTableView->checkSaveIfEditsChanged())
+    if (ui->clipsTableView->checkSaveIfClipsChanged())
         on_actionSave_triggered();
 
 //    qDebug()<<"Destructor"<<geometry();
@@ -563,7 +567,7 @@ void MainWindow::on_actionBlack_theme_triggered()
     QSettings().setValue("theme", "Black");
     QSettings().sync();
 
-    ui->editTableView->update();
+    ui->clipsTableView->update();
 }
 
 void MainWindow::on_actionWhite_theme_triggered()
@@ -616,7 +620,7 @@ void MainWindow::on_actionWhite_theme_triggered()
     QSettings().setValue("theme", "White");
     QSettings().sync();
 
-    ui->editTableView->update();
+    ui->clipsTableView->update();
 }
 
 void MainWindow::on_actionQuit_triggered()
@@ -627,17 +631,19 @@ void MainWindow::on_actionQuit_triggered()
 void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, tr("About ACVC"),
-            tr("<p><b>ACVC</b> is an Action Cam Video Companion</p>"
+            tr("<p><b>ACVC</b> is a free action cam video companion</p>"
                "<p>Version  %1</p>"
-               "<p>License: <a href=\"https://www.gnu.org/licenses/lgpl-3.0.html\">LGPL</a></p>"
-               "<p>Copyright (c)2019 <a href=\"http://bit.ly/ACVCHome\">ACVC</a></p>"
+               "<p>Licensed under the: <a href=\"https://www.gnu.org/licenses/lgpl-3.0.html\">GNU Lesser General Public License v3.0</a></p>"
+               "<p>Copyright © 2019 <a href=\"http://bit.ly/ACVCHome\">ACVC</a></p>"
                "<p>This program proudly uses the following projects:</p>"
                "<ul>"
                "<li><a href=\"https://www.qt.io/\">Qt</a> application and UI framework</li>"
                "<li><a href=\"https://www.shotcut.org/\">Shotcut</a> Open source video editor (timeline and version check)</li>"
                "<li><a href=\"https://www.ffmpeg.org/\">FFmpeg</a> multimedia format and codec libraries (lossless and encoded previews)</li>"
-               "<li><a href=\"https://www.sno.phy.queensu.ca/~phil/exiftool/\">Exiftool</a> Read, Write and Edit Meta Information! (Properties)</li>"
+               "<li><a href=\"https://www.sno.phy.queensu.ca/~phil/exiftool/\">Exiftool</a> Read, Write and Edit Meta Information (Properties)</li>"
                "</ul>"
+               "<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>"
+               "<p>ACVC issuetracker on GitHub <a href=\"http://bit.ly/ACVCGithubIssues\">GitHub ACVC issues</a></p>"
                ).arg(qApp->applicationVersion()));
 }
 
@@ -646,9 +652,9 @@ void MainWindow::on_actionAbout_Qt_triggered()
     qApp->aboutQt();
 }
 
-void MainWindow::on_newEditButton_clicked()
+void MainWindow::on_newClipButton_clicked()
 {
-    ui->editTableView->addEdit();
+    ui->clipsTableView->addClip();
 }
 
 void MainWindow::on_propertyFilterLineEdit_textChanged(const QString &)//arg1
@@ -661,16 +667,16 @@ void MainWindow::on_propertyDiffCheckBox_stateChanged(int )//arg1
     emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
 }
 
-void MainWindow::onEditsChangedToVideo(QAbstractItemModel *itemModel)
+void MainWindow::onClipsChangedToVideo(QAbstractItemModel *itemModel)
 {
-    ui->editrowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
+    ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
 }
 
 void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 {
-    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount()<<ui->timelineWidget->transitiontimeDuration;
+//    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount()<<ui->timelineWidget->transitiontimeDuration;
 
-    ui->editrowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
+    ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
 
     ui->filesTtabWidget->setCurrentIndex(1); //go to files tab
 
@@ -686,25 +692,25 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 //    ui->fileOnlyCheckBox->setCheckState(Qt::Unchecked);
 //    on_fileOnlyCheckBox_clicked(false); //save in QSettings
 
-    onEditFilterChanged();
-    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+    onClipsFilterChanged();
+    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
 }
 
 void MainWindow::onFileIndexClicked(QModelIndex )//index
 {
 //    qDebug()<<"MainWindow::onFileIndexClicked"<<index.data().toString();
 
-    onEditFilterChanged();
+    onClipsFilterChanged();
 }
 
-void MainWindow::onEditFilterChanged()
+void MainWindow::onClipsFilterChanged()
 {
-    ui->editrowsCounterLabel->setText(QString::number(ui->editTableView->model()->rowCount()) + " / " + QString::number(ui->editTableView->editItemModel->rowCount()));
+    ui->clipRowsCounterLabel->setText(QString::number(ui->clipsTableView->model()->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
 
-//    qDebug()<<"MainWindow::onEditFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
+//    qDebug()<<"MainWindow::onClipFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
 
-    emit editFilterChanged(ui->ratingFilterComboBox, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
-//    qDebug()<<"MainWindow::onEditFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
+    emit clipsFilterChanged(ui->ratingFilterComboBox, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
+//    qDebug()<<"MainWindow::onClipsFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
 }
 
 void MainWindow::onTagFiltersChanged()
@@ -735,66 +741,66 @@ void MainWindow::onTagFiltersChanged()
         QSettings().setValue("tagFilter2", string2);
         QSettings().sync();
     }
-    onEditFilterChanged();
+    onClipsFilterChanged();
 }
 
 void MainWindow::on_action5_stars_triggered()
 {
-    ui->editTableView->giveStars(5);
+    ui->clipsTableView->giveStars(5);
 }
 
 void MainWindow::on_action4_stars_triggered()
 {
-    ui->editTableView->giveStars(4);
+    ui->clipsTableView->giveStars(4);
 }
 
 void MainWindow::on_action1_star_triggered()
 {
-    ui->editTableView->giveStars(1);
+    ui->clipsTableView->giveStars(1);
 }
 
 void MainWindow::on_action2_stars_triggered()
 {
-    ui->editTableView->giveStars(2);
+    ui->clipsTableView->giveStars(2);
 }
 
 void MainWindow::on_action3_stars_triggered()
 {
-    ui->editTableView->giveStars(3);
+    ui->clipsTableView->giveStars(3);
 }
 
 void MainWindow::on_action0_stars_triggered()
 {
-    ui->editTableView->giveStars(0);
+    ui->clipsTableView->giveStars(0);
 
 }
 
 void MainWindow::on_actionAlike_triggered()
 {
-    ui->editTableView->toggleAlike();
+    ui->clipsTableView->toggleAlike();
 }
 
 void MainWindow::on_actionSave_triggered()
 {
     int changeCount = 0;
-    for (int row=0; row<ui->editTableView->editItemModel->rowCount();row++)
+    for (int row=0; row<ui->clipsTableView->clipsItemModel->rowCount();row++)
     {
-        if (ui->editTableView->editItemModel->index(row, changedIndex).data().toString() == "yes")
+        if (ui->clipsTableView->clipsItemModel->index(row, changedIndex).data().toString() == "yes")
             changeCount++;
     }
     if (changeCount>0)
     {
-        ui->editTableView->onSectionMoved(-1,-1,-1); //to reorder the items
+        ui->clipsTableView->onSectionMoved(-1,-1,-1); //to reorder the items
 
-        for (int row =0; row < ui->editTableView->srtFileItemModel->rowCount();row++)
+        for (int row =0; row < ui->clipsTableView->srtFileItemModel->rowCount();row++)
         {
-    //        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->editTableView->srtFileItemModel->rowCount()<<row<<ui->editTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->editTableView->srtFileItemModel->index(row, 1).data().toString();
-            ui->editTableView->saveModel(ui->editTableView->srtFileItemModel->index(row, 0).data().toString(), ui->editTableView->srtFileItemModel->index(row, 1).data().toString());
+    //        qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->clipsTableView->srtFileItemModel->rowCount()<<row<<ui->clipsTableView->srtFileItemModel->index(row, 0).data().toString()<<ui->clipsTableView->srtFileItemModel->index(row, 1).data().toString();
+            ui->clipsTableView->saveModel(ui->clipsTableView->srtFileItemModel->index(row, 0).data().toString(), ui->clipsTableView->srtFileItemModel->index(row, 1).data().toString());
         }
-        ui->statusBar->showMessage(QString::number(changeCount) + " edit changes saved", 5000);
+        ui->statusBar->showMessage(QString::number(changeCount) + " clip changes saved", 5000);
     }
     else
-        ui->statusBar->showMessage("No edit changes to save", 5000);
+        ui->statusBar->showMessage("No clip changes to save", 5000);
 }
 
 void MainWindow::on_actionPlay_Pause_triggered()
@@ -804,18 +810,18 @@ void MainWindow::on_actionPlay_Pause_triggered()
 
 void MainWindow::on_actionNew_triggered()
 {
-    ui->editTableView->addEdit();
+    ui->clipsTableView->addClip();
 }
 
 void MainWindow::on_actionIn_triggered()
 {
-    qDebug()<<"MainWindow::on_updateInButton_clicked"<<ui->editTableView->highLightedRow<<ui->videoWidget->m_position;
+    qDebug()<<"MainWindow::on_updateInButton_clicked"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
     ui->videoWidget->onUpdateIn();
 }
 
 void MainWindow::on_actionOut_triggered()
 {
-    qDebug()<<"MainWindow::on_updateOutButton_clicked"<<ui->editTableView->highLightedRow<<ui->videoWidget->m_position;
+    qDebug()<<"MainWindow::on_updateOutButton_clicked"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
     ui->videoWidget->onUpdateOut();
 }
 
@@ -858,12 +864,12 @@ void MainWindow::on_newTagLineEdit_returnPressed()
         QMessageBox::information(this, "Add tag", "Tag " + ui->newTagLineEdit->text() + " already in list");
 }
 
-void MainWindow::on_generateButton_clicked()
+void MainWindow::on_exportButton_clicked()
 {
     int transitionTime = 0;
     if (ui->transitionComboBox->currentText() != "No transition")
         transitionTime = ui->transitionTimeSpinBox->value();
-    ui->generateWidget->generate(ui->editTableView->editProxyModel, ui->generateTargetComboBox->currentText(), ui->generateSizeComboBox->currentText(), ui->generateFramerateComboBox->currentText(), transitionTime, ui->progressBar, false, ui->audioCheckBox->checkState() == Qt::Checked, ui->spinnerLabel);
+    ui->exportWidget->exportClips(ui->clipsTableView->clipsProxyModel, ui->exportTargetComboBox->currentText(), ui->exportSizeComboBox->currentText(), ui->exportFramerateComboBox->currentText(), transitionTime, ui->progressBar, false, ui->exportAudioCheckBox->checkState() == Qt::Checked, ui->spinnerLabel, watermarkFileName);
 
 //    if (QSettings().value("firstUsedDate") == QVariant())
 //    {
@@ -872,45 +878,45 @@ void MainWindow::on_generateButton_clicked()
 //    }
 //    qint64 days = QSettings().value("firstUsedDate").toDateTime().daysTo(QDateTime::currentDateTime());
 
-    QSettings().setValue("generateCounter", QSettings().value("generateCounter").toInt()+1);
+    QSettings().setValue("exportCounter", QSettings().value("exportCounter").toInt()+1);
     QSettings().sync();
-    qDebug()<<"generateCounter"<<QSettings().value("generateCounter").toInt();
-    if (QSettings().value("generateCounter").toInt() == 50)
+//    qDebug()<<"exportCounter"<<QSettings().value("exportCounter").toInt();
+    if (QSettings().value("exportCounter").toInt() == 50)
     {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Donate", tr("If you like this software, consider to make a donation. Go to the Donate page on the ACVC website for more information") + " " + QSettings().value("generateCounter").toString(), QMessageBox::Yes|QMessageBox::No);
+        reply = QMessageBox::question(this, "Donate", tr("If you like this software, consider to make a donation. Go to the Donate page on the ACVC website for more information") + " " + QSettings().value("exportCounter").toString(), QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes)
             QDesktopServices::openUrl(QUrl("http://bit.ly/ACVCSupport"));
     }
 }
 
-void MainWindow::on_generateTargetComboBox_currentTextChanged(const QString &arg1)
+void MainWindow::on_exportTargetComboBox_currentTextChanged(const QString &arg1)
 {
-    if (QSettings().value("generateTarget") != arg1)
+    if (QSettings().value("exportTarget") != arg1)
     {
-        QSettings().setValue("generateTarget", arg1);
+        QSettings().setValue("exportTarget", arg1);
         QSettings().sync();
     }
 
-    ui->generateSizeComboBox->setEnabled(arg1 != "Lossless");
-    ui->generateFramerateComboBox->setEnabled(arg1 != "Lossless");
+    ui->exportSizeComboBox->setEnabled(arg1 != "Lossless");
+    ui->exportFramerateComboBox->setEnabled(arg1 != "Lossless");
 }
 
-void MainWindow::on_generateSizeComboBox_currentTextChanged(const QString &arg1)
+void MainWindow::on_exportSizeComboBox_currentTextChanged(const QString &arg1)
 {
-    if (QSettings().value("generateSize") != arg1)
+    if (QSettings().value("exportSize") != arg1)
     {
-        QSettings().setValue("generateSize", arg1);
+        QSettings().setValue("exportSize", arg1);
         QSettings().sync();
     }
 }
 
-void MainWindow::on_generateFramerateComboBox_currentTextChanged(const QString &arg1)
+void MainWindow::on_exportFramerateComboBox_currentTextChanged(const QString &arg1)
 {
-//    ui->transitionDial->setRange(0, ui->generateFramerateComboBox->currentText().toInt() * 4);
-    if (QSettings().value("generateFramerate") != arg1)
+//    ui->transitionDial->setRange(0, ui->exportFramerateComboBox->currentText().toInt() * 4);
+    if (QSettings().value("exportFramerate") != arg1)
     {
-        QSettings().setValue("generateFramerate", arg1);
+        QSettings().setValue("exportFramerate", arg1);
         QSettings().sync();
     }
 }
@@ -931,9 +937,9 @@ void MainWindow::onFrameRateChanged(int frameRate)
     ui->frameRateSpinBox->setValue(frameRate);
 }
 
-void MainWindow::on_actionGenerate_triggered()
+void MainWindow::on_actionExport_triggered()
 {
-    ui->generateButton->click();
+    ui->exportButton->click();
 }
 
 void MainWindow::on_alikeCheckBox_clicked(bool checked)
@@ -943,7 +949,7 @@ void MainWindow::on_alikeCheckBox_clicked(bool checked)
         QSettings().setValue("alikeCheckBox", checked);
         QSettings().sync();
     }
-    onEditFilterChanged();
+    onClipsFilterChanged();
 }
 
 void MainWindow::on_fileOnlyCheckBox_clicked(bool checked)
@@ -953,7 +959,7 @@ void MainWindow::on_fileOnlyCheckBox_clicked(bool checked)
         QSettings().setValue("fileOnlyCheckBox", checked);
         QSettings().sync();
     }
-    onEditFilterChanged();
+    onClipsFilterChanged();
 }
 
 void MainWindow::on_actionDebug_mode_triggered(bool checked)
@@ -962,40 +968,40 @@ void MainWindow::on_actionDebug_mode_triggered(bool checked)
 
     if (checked)
     {
-        ui->editTabWidget->insertTab(3, graphWidget1, "Graph1");
-        ui->editTabWidget->insertTab(4, graphWidget2, "Graph2");
+        ui->clipsTabWidget->insertTab(3, graphWidget1, "Graph1");
+        ui->clipsTabWidget->insertTab(4, graphWidget2, "Graph2");
     }
     else
     {
-        ui->editTabWidget->removeTab(4);
-        ui->editTabWidget->removeTab(3);
+        ui->clipsTabWidget->removeTab(4);
+        ui->clipsTabWidget->removeTab(3);
     }
 
-    ui->editTableView->setColumnHidden(orderBeforeLoadIndex, !checked);
-    ui->editTableView->setColumnHidden(orderAtLoadIndex, !checked);
-    ui->editTableView->setColumnHidden(orderAfterMovingIndex, !checked);
-    ui->editTableView->setColumnHidden(fpsIndex, !checked);
-    ui->editTableView->setColumnHidden(fileDurationIndex, !checked);
-    ui->editTableView->setColumnHidden(changedIndex, !checked);
+    ui->clipsTableView->setColumnHidden(orderBeforeLoadIndex, !checked);
+    ui->clipsTableView->setColumnHidden(orderAtLoadIndex, !checked);
+    ui->clipsTableView->setColumnHidden(orderAfterMovingIndex, !checked);
+    ui->clipsTableView->setColumnHidden(fpsIndex, !checked);
+    ui->clipsTableView->setColumnHidden(fileDurationIndex, !checked);
+    ui->clipsTableView->setColumnHidden(changedIndex, !checked);
 }
 
 void MainWindow::on_resetSortButton_clicked()
 {
-    for (int row=0;row<ui->editTableView->editItemModel->rowCount();row++)
+    for (int row=0;row<ui->clipsTableView->clipsItemModel->rowCount();row++)
     {
         //https://uvesway.wordpress.com/2013/01/08/qheaderview-sections-visualindex-vs-logicalindex/
-        ui->editTableView->verticalHeader()->moveSection(ui->editTableView->verticalHeader()->visualIndex(row), row);
-        if (ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->editTableView->editItemModel->index(row, orderAtLoadIndex).data().toInt())
+        ui->clipsTableView->verticalHeader()->moveSection(ui->clipsTableView->verticalHeader()->visualIndex(row), row);
+        if (ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->clipsTableView->clipsItemModel->index(row, orderAtLoadIndex).data().toInt())
         {
-            qDebug()<<"MainWindow::on_resetSortButton_clicked1"<<row<<ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->editTableView->editItemModel->index(row, orderAtLoadIndex).data().toInt()<<ui->editTableView->editItemModel;
-            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, orderAtLoadIndex), ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
-            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, changedIndex), "yes");
+            qDebug()<<"MainWindow::on_resetSortButton_clicked1"<<row<<ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->clipsTableView->clipsItemModel->index(row, orderAtLoadIndex).data().toInt()<<ui->clipsTableView->clipsItemModel;
+            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, orderAtLoadIndex), ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
+            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, changedIndex), "yes");
         }
-        if (ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->editTableView->editItemModel->index(row, orderAfterMovingIndex).data().toInt())
+        if (ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt())
         {
-            qDebug()<<"MainWindow::on_resetSortButton_clicked2"<<row<<ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->editTableView->editItemModel->index(row, orderAfterMovingIndex).data().toInt();
-            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, orderAfterMovingIndex), ui->editTableView->editItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
-            ui->editTableView->editItemModel->setData(ui->editTableView->editItemModel->index(row, changedIndex), "yes");
+            qDebug()<<"MainWindow::on_resetSortButton_clicked2"<<row<<ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
+            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex), ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
+            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, changedIndex), "yes");
         }
     }
 }
@@ -1049,24 +1055,24 @@ void MainWindow::on_transitionComboBox_currentTextChanged(const QString &arg1)
         qDebug()<<"MainWindow::on_transitionComboBox_currentTextChanged"<<arg1;
         QSettings().setValue("transitionType", arg1);
         QSettings().sync();
-        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
     }
 }
 
-void MainWindow::onEditsChangedToTimeline(QAbstractItemModel *) //itemModel
+void MainWindow::onClipsChangedToTimeline(QAbstractItemModel *) //itemModel
 {
     if (transitionValueChangedBy != "Dial")//do not change the dial if the dial triggers the change
     {
         double result;
         result = ui->transitionTimeSpinBox->value();
 
-//        qDebug()<<"MainWindow::onEditsChangedToTimeline transition"<< ui->timelineWidget->transitiontimeDuration<<int(result);
+//        qDebug()<<"MainWindow::onClipsChangedToTimeline transition"<< ui->timelineWidget->transitiontimeDuration<<int(result);
 
         transitionValueChangedBy = "SpinBox";
         ui->transitionDial->setValue( int(result ));
         transitionValueChangedBy = "";
 
-//        qDebug()<<"MainWindow::onEditsChangedToTimeline transition after"<< ui->timelineWidget->transitiontimeDuration<<int(result);
+//        qDebug()<<"MainWindow::onClipsChangedToTimeline transition after"<< ui->timelineWidget->transitiontimeDuration<<int(result);
     }
 }
 
@@ -1097,7 +1103,7 @@ void MainWindow::on_transitionTimeSpinBox_valueChanged(int arg1)
         QSettings().setValue("transitionTime", arg1);
         QSettings().sync();
 
-        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+        emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
     }
 }
 
@@ -1138,15 +1144,15 @@ void MainWindow::on_positionDial_valueChanged(int value)
 
 void MainWindow::showUpgradePrompt()
 {
-    qDebug()<<"MainWindow::showUpgradePrompt";
+//    qDebug()<<"MainWindow::showUpgradePrompt";
 //    QSettings().setValue("checkUpgradeAutomatic", false);
 //    if (QSettings().value("checkUpgradeAutomatic").toBool())
 //    {
         ui->statusBar->showMessage("Checking for upgrade...", 15000);
         QNetworkRequest request(QUrl("http://bit.ly/ACVCVersionCheck"));
-//        QSslConfiguration sslConfig = request.sslConfiguration();
-//        sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
-//        request.setSslConfiguration(sslConfig);
+        QSslConfiguration sslConfig = request.sslConfiguration();
+        sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
+        request.setSslConfiguration(sslConfig);
         m_network.get(request);
 //    } else {
 //        m_network.setStrictTransportSecurityEnabled(false);
@@ -1235,20 +1241,20 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 
 void MainWindow::onPropertiesLoaded()
 {
-    qDebug()<<"MainWindow::onPropertiesLoaded";
+//    qDebug()<<"MainWindow::onPropertiesLoaded";
     emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
 
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->editTableView);
+//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
 }
 
-void MainWindow::onVideoPositionChanged(int progress, int row, int relativeProgress)
+void MainWindow::onVideoPositionChanged(int progress, int , int )//row, relativeProgress
 {
     positionValueChangedBy = "SpinBox";
     ui->positionDial->setValue(FGlobal().msec_to_frames(progress)%100);
     positionValueChangedBy = "";
 }
 
-void MainWindow::on_audioCheckBox_clicked(bool checked)
+void MainWindow::on_exportAudioCheckBox_clicked(bool checked)
 {
     if (QSettings().value("audioCheckBox").toBool() != checked)
     {
@@ -1257,11 +1263,11 @@ void MainWindow::on_audioCheckBox_clicked(bool checked)
     }
 }
 
-void MainWindow::on_editTabWidget_currentChanged(int index)
+void MainWindow::on_clipsTabWidget_currentChanged(int index)
 {
-    if (QSettings().value("editTabIndex").toInt() != index)
+    if (QSettings().value("clipTabIndex").toInt() != index)
     {
-        QSettings().setValue("editTabIndex", index);
+        QSettings().setValue("clipTabIndex", index);
         QSettings().sync();
     }
 }
@@ -1293,7 +1299,7 @@ void MainWindow::on_ratingFilterComboBox_currentTextChanged(const QString &arg1)
         QSettings().sync();
     }
 
-    onEditFilterChanged();
+    onClipsFilterChanged();
 }
 
 void MainWindow::on_actionHelp_triggered()
@@ -1307,4 +1313,32 @@ void MainWindow::on_actionHelp_triggered()
                    "<li></li>"
                "</ul>"
                ).arg(qApp->applicationVersion()));
+}
+
+void MainWindow::on_watermarkButton_clicked()
+{
+    if (watermarkFileName == "")
+    {
+        watermarkFileName = QFileDialog::getOpenFileName(this,
+            tr("Open Image"), ui->folderTreeView->directoryModel->rootPath(), tr("Image Files (*.png *.jpg *.bmp *.ico)"));
+
+        QImage myImage;
+        myImage.load(watermarkFileName);
+
+        ui->watermarkLabel->setPixmap(QPixmap::fromImage(myImage).scaled(QSize(50,50)));
+
+        ui->watermarkLabel->show();
+    }
+    else
+    {
+        ui->watermarkLabel->setText("No Watermark");
+        watermarkFileName = "";
+    }
+
+}
+
+void MainWindow::on_actionGithub_ACVC_Issues_triggered()
+{
+    QDesktopServices::openUrl(QUrl("http://bit.ly/ACVCGithubIssues"));
+
 }

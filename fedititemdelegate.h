@@ -1,11 +1,11 @@
-#ifndef FEDITITEMDELEGATE_H
-#define FEDITITEMDELEGATE_H
+#ifndef AClipsItemDelegate_H
+#define AClipsItemDelegate_H
 
 #include "stimespinbox.h"
 
 #include <QStyledItemDelegate>
 
-class FEditItemDelegate : public QStyledItemDelegate
+class AClipsItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
@@ -30,5 +30,5 @@ private slots:
     void onSpinnerPositionChanged(int frames);
 };
 
-#endif // FEDITITEMDELEGATE_H
+#endif // AClipsItemDelegate_H
 

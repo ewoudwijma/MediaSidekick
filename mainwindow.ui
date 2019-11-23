@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1157</width>
-    <height>591</height>
+    <width>1190</width>
+    <height>702</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -68,16 +68,16 @@
           </item>
          </layout>
         </widget>
-        <widget class="QTabWidget" name="editTabWidget">
+        <widget class="QTabWidget" name="clipsTabWidget">
          <property name="tabPosition">
           <enum>QTabWidget::South</enum>
          </property>
          <property name="currentIndex">
           <number>0</number>
          </property>
-         <widget class="QWidget" name="tab_edit">
+         <widget class="QWidget" name="tab_clips">
           <attribute name="title">
-           <string>Edit</string>
+           <string>Clips</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_6">
            <item>
@@ -85,7 +85,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
-                <widget class="QPushButton" name="newEditButton">
+                <widget class="QPushButton" name="newClipButton">
                  <property name="text">
                   <string/>
                  </property>
@@ -94,7 +94,7 @@
                <item>
                 <widget class="QPushButton" name="resetSortButton">
                  <property name="text">
-                  <string>Reset sort</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -174,7 +174,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="editrowsCounterLabel">
+                <widget class="QLabel" name="clipRowsCounterLabel">
                  <property name="text">
                   <string>1 / 1</string>
                  </property>
@@ -214,7 +214,7 @@
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
-               <widget class="FEditTableView" name="editTableView"/>
+               <widget class="AClipsTableView" name="clipsTableView"/>
                <widget class="QGroupBox" name="tagsGroupBox">
                 <property name="maximumSize">
                  <size>
@@ -438,9 +438,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="generateGroupBox">
+          <widget class="QGroupBox" name="exportGroupBox">
            <property name="title">
-            <string>Generate</string>
+            <string>Export</string>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
             <item row="0" column="0">
@@ -451,7 +451,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="generateTargetComboBox">
+             <widget class="QComboBox" name="exportTargetComboBox">
               <item>
                <property name="text">
                 <string>Lossless</string>
@@ -482,7 +482,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="generateSizeComboBox">
+             <widget class="QComboBox" name="exportSizeComboBox">
               <property name="currentIndex">
                <number>4</number>
               </property>
@@ -536,7 +536,7 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QComboBox" name="generateFramerateComboBox">
+             <widget class="QComboBox" name="exportFramerateComboBox">
               <property name="currentIndex">
                <number>0</number>
               </property>
@@ -605,30 +605,50 @@
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="QCheckBox" name="audioCheckBox">
+             <widget class="QCheckBox" name="exportAudioCheckBox">
               <property name="text">
                <string/>
               </property>
              </widget>
             </item>
-            <item row="6" column="0">
-             <widget class="QPushButton" name="generateButton">
+            <item row="7" column="0">
+             <widget class="QPushButton" name="exportButton">
               <property name="text">
-               <string>Generate</string>
+               <string>Export</string>
               </property>
              </widget>
             </item>
-            <item row="6" column="1">
+            <item row="7" column="1">
              <widget class="QProgressBar" name="progressBar">
               <property name="value">
                <number>24</number>
               </property>
              </widget>
             </item>
-            <item row="7" column="1">
+            <item row="8" column="1">
              <widget class="QLabel" name="spinnerLabel">
               <property name="text">
-               <string>Spinner</string>
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QPushButton" name="watermarkButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Watermark</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QLabel" name="watermarkLabel">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string/>
               </property>
              </widget>
             </item>
@@ -636,7 +656,7 @@
           </widget>
          </item>
          <item>
-          <widget class="FGenerate" name="generateWidget" native="true">
+          <widget class="AExport" name="exportWidget" native="true">
            <layout class="QVBoxLayout" name="verticalLayout_14"/>
           </widget>
          </item>
@@ -664,7 +684,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1157</width>
+     <width>1190</width>
      <height>17</height>
     </rect>
    </property>
@@ -685,6 +705,7 @@
     <addaction name="actionDebug_mode"/>
     <addaction name="actionAbout"/>
     <addaction name="actionAbout_Qt"/>
+    <addaction name="actionGithub_ACVC_Issues"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -695,7 +716,7 @@
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>&amp;Edit</string>
+     <string>&amp;Clips</string>
     </property>
     <addaction name="actionNew"/>
     <addaction name="separator"/>
@@ -725,9 +746,9 @@
    </widget>
    <widget class="QMenu" name="menuGenerate">
     <property name="title">
-     <string>&amp;Generate</string>
+     <string>&amp;Export</string>
     </property>
-    <addaction name="actionGenerate"/>
+    <addaction name="actionExport"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -940,12 +961,15 @@
     <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="actionGenerate">
+  <action name="actionExport">
    <property name="text">
-    <string>&amp;Generate</string>
+    <string>&amp;Export</string>
+   </property>
+   <property name="toolTip">
+    <string>Export</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+G</string>
+    <string>Ctrl+E</string>
    </property>
   </action>
   <action name="actionDebug_mode">
@@ -982,6 +1006,11 @@
     <string>Help</string>
    </property>
   </action>
+  <action name="actionGithub_ACVC_Issues">
+   <property name="text">
+    <string>Github ACVC Issues</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -1000,11 +1029,6 @@
    <class>FFilesTreeView</class>
    <extends>QTreeView</extends>
    <header>ffilestreeview.h</header>
-  </customwidget>
-  <customwidget>
-   <class>FEditTableView</class>
-   <extends>QTableView</extends>
-   <header>fedittableview.h</header>
   </customwidget>
   <customwidget>
    <class>FPropertyTreeView</class>
@@ -1038,15 +1062,20 @@
    <header>qgraphwidget.h</header>
   </customwidget>
   <customwidget>
-   <class>FGenerate</class>
+   <class>FDragDropLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>fdragdroplineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>AExport</class>
    <extends>QWidget</extends>
    <header>fgenerate.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>FDragDropLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>fdragdroplineedit.h</header>
+   <class>AClipsTableView</class>
+   <extends>QTableView</extends>
+   <header>fedittableview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
