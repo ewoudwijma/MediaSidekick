@@ -20,7 +20,7 @@ public:
     void exportClips(QAbstractItemModel *timelineModel, QString target, QString size, QString pframeRate, int transitionTimeMSecs, QProgressBar *progressBar, bool includingSRT, bool includeAudio, QLabel *spinnerLabel, QString watermarkFileName);
 private:
 //    MainWindow *mainWindow;
-    FProcessManager *processManager;
+    AProcessManager *processManager;
     QProgressBar *progressBar;
     QTextStream stream;
 

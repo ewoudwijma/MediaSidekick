@@ -9,7 +9,7 @@
 
 #include "fglobal.h"
 
-FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
+AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 {
     fileModel = new QFileSystemModel();
 
@@ -26,10 +26,10 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     header()->setSectionResizeMode(QHeaderView::ResizeToContents);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
 
-    connect( this, &QTreeView::clicked, this, &FFilesTreeView::onIndexClicked);
-    connect( this, &QTreeView::activated, this, &FFilesTreeView::onIndexActivated);
+    connect( this, &QTreeView::clicked, this, &AFilesTreeView::onIndexClicked);
+    connect( this, &QTreeView::activated, this, &AFilesTreeView::onIndexActivated);
 
-    connect(fileModel, &QFileSystemModel::directoryLoaded, this, &FFilesTreeView::onDirectoryLoaded);
+    connect(fileModel, &QFileSystemModel::directoryLoaded, this, &AFilesTreeView::onDirectoryLoaded);
 
 //    QString lastFolder = QSettings().value("LastFolder").toString();
 //    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
@@ -41,7 +41,7 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu = new QMenu(this);
 //    setfileContextMenuPolicy(Qt::ActionsfileContextMenu);
     setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &FFilesTreeView::customContextMenuRequested, this, &FFilesTreeView::this_customContextMenuRequested);
+    connect(this, &AFilesTreeView::customContextMenuRequested, this, &AFilesTreeView::this_customContextMenuRequested);
 
 //    QColor darkColorAlt = QColor(45,90,45);
 //    QPalette palette = fileContextMenu->palette();
@@ -49,24 +49,24 @@ FFilesTreeView::FFilesTreeView(QWidget *parent) : QTreeView(parent)
 
     fileContextMenu->addAction(new QAction("Trim",fileContextMenu));
     fileContextMenu->actions().last()->setToolTip("tip");
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onTrim);
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onTrim);
 
     fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileRename);
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileRename);
 
     fileContextMenu->addAction(new QAction("Delete file(s)",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onFileDelete);
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileDelete);
 
     fileContextMenu->addAction(new QAction("Delete clips",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onClipsDelete);
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onClipsDelete);
 
 //    fileContextMenu->addAction(new QAction("Superview",fileContextMenu));
-//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &FFilesTreeView::onSuperview);
+//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onSuperview);
 
     fileContextMenu->addSeparator();
 }
 
-void FFilesTreeView::onIndexClicked(QModelIndex index)
+void AFilesTreeView::onIndexClicked(QModelIndex index)
 {
     QFileInfo fileInfo = fileModel->fileInfo(index);
     QString filePath = fileInfo.absolutePath() + "/";
@@ -76,7 +76,7 @@ void FFilesTreeView::onIndexClicked(QModelIndex index)
 
     QModelIndexList indexList = selectionModel()->selectedIndexes();
 
-//    qDebug()<<"FFilesTreeView::onIndexClicked"<<index.row()<<index.column()<<index.data().toString()<<filePath<<indexList.count();
+//    qDebug()<<"AFilesTreeView::onIndexClicked"<<index.row()<<index.column()<<index.data().toString()<<filePath<<indexList.count();
 //    if (clipsItemModel->index(index.row(),fileIndex).data().toString()!=fileUrl.fileName())
 //    {
 //        qDebug()<<"tableClicked different!!!"<<index.data()<<clipsItemModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
@@ -85,13 +85,13 @@ void FFilesTreeView::onIndexClicked(QModelIndex index)
         emit indexClicked(index, selectionModel()->selectedIndexes());
 }
 
-void FFilesTreeView::onIndexActivated(QModelIndex index)
+void AFilesTreeView::onIndexActivated(QModelIndex index)
 {
-//    qDebug()<<"FFilesTreeView::onIndexActivated"<<index.row()<<index.column()<<index.data().toString();
+//    qDebug()<<"AFilesTreeView::onIndexActivated"<<index.row()<<index.column()<<index.data().toString();
     onIndexClicked(index);
 }
 
-void FFilesTreeView::loadModel(QUrl folderUrl)
+void AFilesTreeView::loadModel(QUrl folderUrl)
 {
     fileModel->setRootPath(folderUrl.toString());
     int indexOf = folderUrl.toString().lastIndexOf("/");
@@ -99,11 +99,11 @@ void FFilesTreeView::loadModel(QUrl folderUrl)
 //    indexOf = folderName.lastIndexOf("/");
 //    folderName = folderName.left(indexOf);
 
-//    qDebug()<<"FFilesTreeView::loadModel"<<folderUrl<<indexOf<<folderName;
+//    qDebug()<<"AFilesTreeView::loadModel"<<folderUrl<<indexOf<<folderName;
     setRootIndex(fileModel->index(folderName));
 }
 
-void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
+void AFilesTreeView::this_customContextMenuRequested(const QPoint &point)
 {
     QModelIndex index = indexAt(point);
 //    qDebug()<<"onFileRightClickMenu"<<point;
@@ -112,7 +112,7 @@ void FFilesTreeView::this_customContextMenuRequested(const QPoint &point)
         }
 }
 
-void FFilesTreeView::onTrim()
+void AFilesTreeView::onTrim()
 {
     QModelIndexList indexList = selectionModel()->selectedIndexes();
     bool somethingTrimmed = false;
@@ -135,7 +135,7 @@ void FFilesTreeView::onTrim()
 
 }
 
-void FFilesTreeView::onFileRename()
+void AFilesTreeView::onFileRename()
 {
     QStringList fileNameList;
     QStringList newFileNameList;
@@ -210,7 +210,7 @@ void FFilesTreeView::onFileRename()
     fileContextMenu->close();
 }
 
-void FFilesTreeView::onFileDelete()
+void AFilesTreeView::onFileDelete()
 {
     QStringList fileNameList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
@@ -260,7 +260,7 @@ void FFilesTreeView::onFileDelete()
     fileContextMenu->close();
 }
 
-void FFilesTreeView::onClipsDelete()
+void AFilesTreeView::onClipsDelete()
 {
     QStringList fileNameList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
@@ -333,7 +333,7 @@ void BuildLookup(int width)
     }
 }
 
-void FFilesTreeView::onSuperview()
+void AFilesTreeView::onSuperview()
 {
        int target_width = 3500;//int(sys.argv[1])
        int height = 1520;//int(sys.argv[2])
@@ -377,20 +377,20 @@ void FFilesTreeView::onSuperview()
 
 }
 
-void FFilesTreeView::onFolderIndexClicked(QModelIndex )//index
+void AFilesTreeView::onFolderIndexClicked(QModelIndex )//index
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-//    qDebug()<<"FFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
+//    qDebug()<<"AFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
     loadModel(lastFolder);
 }
 
-void FFilesTreeView::onClipIndexClicked(QModelIndex index)
+void AFilesTreeView::onClipIndexClicked(QModelIndex index)
 {
-    qDebug()<<"FFilesTreeView::onClipIndexClicked"<<index;
+    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index;
     QString folderName = index.model()->index(index.row(),folderIndex).data().toString();
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
     QModelIndex modelIndex = fileModel->index(folderName + fileName, 0);
-    qDebug()<<"FFilesTreeView::onClipIndexClicked"<<index.data().toString()<<fileName<<modelIndex.data().toString();
+    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index.data().toString()<<fileName<<modelIndex.data().toString();
     setCurrentIndex(modelIndex); //does also the scrollTo
 }
 
@@ -410,15 +410,15 @@ QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIn
     return fileIndex;
 }
 
-void FFilesTreeView::onDirectoryLoaded(const QString &path)
+void AFilesTreeView::onDirectoryLoaded(const QString &path)
 {
-//    qDebug()<<"FFilesTreeView::onDirectoryLoaded"<<path<<fileModel->rowCount()<<model()->rowCount();
+//    qDebug()<<"AFilesTreeView::onDirectoryLoaded"<<path<<fileModel->rowCount()<<model()->rowCount();
     QModelIndex fileIndex = QModelIndex();
 //    for (int row=0; row<fileModel->rowCount();row++)
 //    {
         QModelIndex parentIndex = rootIndex();
 
-//        qDebug()<<"FFilesTreeView::onDirectoryLoaded"<<parentIndex.data().toString()<<fileModel->index(row, 1).data().toString()<<fileModel->rowCount(parentIndex);
+//        qDebug()<<"AFilesTreeView::onDirectoryLoaded"<<parentIndex.data().toString()<<fileModel->index(row, 1).data().toString()<<fileModel->rowCount(parentIndex);
         fileIndex = recursiveFirstFile(fileModel, parentIndex);
 
 //        if (fileModel->index(row, 0).data().toString().toLower().contains(".mp4") && fileIndex == QModelIndex())

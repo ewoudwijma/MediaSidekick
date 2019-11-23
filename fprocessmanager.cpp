@@ -2,7 +2,7 @@
 
 #include <QDebug>
 
-FProcessManager::FProcessManager(QWidget *parent) : QWidget(parent)
+AProcessManager::AProcessManager(QWidget *parent) : QWidget(parent)
 {
     process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
@@ -16,7 +16,7 @@ FProcessManager::FProcessManager(QWidget *parent) : QWidget(parent)
 
 }
 
-void FProcessManager::startProcess(QString code, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QString), void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
+void AProcessManager::startProcess(QString code, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QString), void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
 {
 //    qDebug()<<"startProcess"<<code<<processOutput<<processResult;
     processQueue->append(code);
@@ -26,7 +26,7 @@ void FProcessManager::startProcess(QString code, QMap<QString, QString> paramete
     ExecuteProcess();
 }
 
-void FProcessManager::startProcess(QMap<QString, QString> parameters, void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
+void AProcessManager::startProcess(QMap<QString, QString> parameters, void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
 {
     processQueue->append("");
 //    allDoneProcess = pallDoneProcess;
@@ -35,19 +35,19 @@ void FProcessManager::startProcess(QMap<QString, QString> parameters, void (*pro
     processResultsQueue->append(processResult);
 }
 
-void FProcessManager::stopAll()
+void AProcessManager::stopAll()
 {
     process->kill();
 }
 
-void FProcessManager::ExecuteProcess()
+void AProcessManager::ExecuteProcess()
 {
     //https://stackoverflow.com/questions/4713140/how-can-i-use-a-queue-with-qprocess
    if (!processQueue->isEmpty() && process->state() == QProcess::NotRunning)
     {
         processOutputString = "";
         QString tf = processQueue->takeFirst();
-//        qDebug()<<"FProcessManager::ExecuteProcess()"<<tf;
+//        qDebug()<<"AProcessManager::ExecuteProcess()"<<tf;
         if (tf != "") //in case no command (execute processfinished after other commands)
             process->start(tf);
         else
@@ -61,7 +61,7 @@ void FProcessManager::ExecuteProcess()
 //   }
 }
 
-void FProcessManager::processOutput()
+void AProcessManager::processOutput()
 {
     QString text = process->readAllStandardOutput();
     processOutputString += text;
@@ -74,7 +74,7 @@ void FProcessManager::processOutput()
 //    qDebug() << process->readAllStandardError();  // read error channel
 }
 
-void FProcessManager::processFinished(int exitCode , QProcess::ExitStatus exitStatus)
+void AProcessManager::processFinished(int exitCode , QProcess::ExitStatus exitStatus)
 {
     QStringList processOutputStringList = processOutputString.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
 

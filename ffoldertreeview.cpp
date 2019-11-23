@@ -5,10 +5,10 @@
 
 #include <QDebug>
 
-FFolderTreeView::FFolderTreeView(QWidget *parent) : QTreeView(parent)
+AFolderTreeView::AFolderTreeView(QWidget *parent) : QTreeView(parent)
 {
     directoryModel = new QFileSystemModel();
-//    qDebug()<<"FFolderTreeView::FFolderTreeView"<<directoryModel->myComputer();
+//    qDebug()<<"AFolderTreeView::AFolderTreeView"<<directoryModel->myComputer();
     directoryModel->setRootPath("");
     directoryModel->setFilter(QDir::Dirs|QDir::Drives|QDir::NoDotAndDotDot|QDir::AllDirs);
 //    directoryModel->setFilter(QDir::AllEntries);
@@ -27,10 +27,10 @@ FFolderTreeView::FFolderTreeView(QWidget *parent) : QTreeView(parent)
         setCurrentIndex(modelIndex); //does also the scrollTo
     }
 
-    connect( this, &QTreeView::clicked, this, &FFolderTreeView::onIndexClicked);
+    connect( this, &QTreeView::clicked, this, &AFolderTreeView::onIndexClicked);
 }
 
-void FFolderTreeView::onIndexClicked(const QModelIndex &index)
+void AFolderTreeView::onIndexClicked(const QModelIndex &index)
 {
     QModelIndex selectedIndex = index;
     if (selectedIndex == QModelIndex())
@@ -42,7 +42,7 @@ void FFolderTreeView::onIndexClicked(const QModelIndex &index)
         expand(selectedIndex);
 
     QString lastFolder = directoryModel->fileInfo(selectedIndex).absoluteFilePath() + "/";
-//    qDebug()<<"FFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
+//    qDebug()<<"AFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
     QSettings().setValue("LastFolder", lastFolder);
     QSettings().sync();
 

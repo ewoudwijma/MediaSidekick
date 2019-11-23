@@ -54,7 +54,7 @@
 #include "fstarrating.h"
 
 //! [0]
-FStarEditor::FStarEditor(QWidget *parent)
+AStarEditor::AStarEditor(QWidget *parent)
     : QWidget(parent)
 {
     setMouseTracking(true);
@@ -62,22 +62,22 @@ FStarEditor::FStarEditor(QWidget *parent)
 }
 //! [0]
 
-QSize FStarEditor::sizeHint() const
+QSize AStarEditor::sizeHint() const
 {
     return myStarRating.sizeHint();
 }
 
 //! [1]
-void FStarEditor::paintEvent(QPaintEvent *)
+void AStarEditor::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     myStarRating.paint(&painter, rect(), this->palette(),
-                       FStarRating::Editable);
+                       AStarRating::Editable);
 }
 //! [1]
 
 //! [2]
-void FStarEditor::mouseMoveEvent(QMouseEvent *event)
+void AStarEditor::mouseMoveEvent(QMouseEvent *event)
 {
     int star = starAtPosition(event->x());
 
@@ -95,7 +95,7 @@ void FStarEditor::mouseMoveEvent(QMouseEvent *event)
 //! [2]
 
 //! [3]
-void FStarEditor::mouseReleaseEvent(QMouseEvent * /* event */)
+void AStarEditor::mouseReleaseEvent(QMouseEvent * /* event */)
 {
 //    qDebug()<<"mouseReleaseEvent";
     oldStarRating = myStarRating;
@@ -104,7 +104,7 @@ void FStarEditor::mouseReleaseEvent(QMouseEvent * /* event */)
 //! [3]
 
 //! [4]
-int FStarEditor::starAtPosition(int x)
+int AStarEditor::starAtPosition(int x)
 {
     int star = (x / (myStarRating.sizeHint().width()
                      / (myStarRating.maxStarCount()+1))); //changed from 0..5 instead from 1..5

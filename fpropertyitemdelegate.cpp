@@ -9,18 +9,18 @@
 //#include <QLineEdit>
 
 
-FPropertyItemDelegate::FPropertyItemDelegate(QObject *parent)
+APropertyItemDelegate::APropertyItemDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
 {
 }
 
-void FPropertyItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+void APropertyItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
     if (index.model()->index(index.row(),0, index.parent()).data().toString() == "SuggestedName" and index.column()> 2) //suggestedName
     {
         QString fileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
-//        qDebug()<<"FPropertyItemDelegate::paint" <<index.data()<<index.row()<<index.column()<<fileName;
+//        qDebug()<<"APropertyItemDelegate::paint" <<index.data()<<index.row()<<index.column()<<fileName;
 
         QStyleOptionViewItem optCopy = option;
 
@@ -43,7 +43,7 @@ void FPropertyItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
         QStyledItemDelegate::paint(painter, option, index);
 }
 
-QWidget *FPropertyItemDelegate::createEditor(QWidget *parent,
+QWidget *APropertyItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 
@@ -63,7 +63,7 @@ QWidget *FPropertyItemDelegate::createEditor(QWidget *parent,
 
 }
 
-void FPropertyItemDelegate::setEditorData(QWidget *editor,
+void APropertyItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
     qDebug()<<"setEditorData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
@@ -82,7 +82,7 @@ void FPropertyItemDelegate::setEditorData(QWidget *editor,
     }
 }
 
-void FPropertyItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
+void APropertyItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
     qDebug()<<"setModelData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
@@ -99,7 +99,7 @@ void FPropertyItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     }
 }
 
-QSize FPropertyItemDelegate::sizeHint(const QStyleOptionViewItem &option,
+QSize APropertyItemDelegate::sizeHint(const QStyleOptionViewItem &option,
                              const QModelIndex &index) const
 {
 //    qDebug()<<"sizeHint"<<index.data();

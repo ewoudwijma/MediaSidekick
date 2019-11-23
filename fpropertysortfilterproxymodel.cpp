@@ -2,15 +2,15 @@
 
 #include <QDebug>
 
-FPropertySortFilterProxyModel::FPropertySortFilterProxyModel(QObject *parent)
+APropertySortFilterProxyModel::APropertySortFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
 {
 }
 
-bool FPropertySortFilterProxyModel::filterAcceptsRow(int sourceRow,
+bool APropertySortFilterProxyModel::filterAcceptsRow(int sourceRow,
         const QModelIndex &sourceParent) const
 {
-//    qDebug()<<"FPropertySortFilterProxyModel::filterAcceptsRow"<<sourceRow<<sourceParent.data().toString();
+//    qDebug()<<"APropertySortFilterProxyModel::filterAcceptsRow"<<sourceRow<<sourceParent.data().toString();
     QModelIndex index0 = sourceModel()->index(sourceRow, 0, sourceParent); //item name
     QModelIndex index2 = sourceModel()->index(sourceRow, 2, sourceParent); //diff yes no
 

@@ -21,10 +21,10 @@ static const int tagIndex = 14;
 
 //static const int frameRate = 25;
 
-class FGlobal
+class AGlobal
 {
 public:
-    FGlobal();
+    AGlobal();
     int time_to_frames(const QString time);
     QString frames_to_time(int frames);
     int msec_to_frames(int msec);

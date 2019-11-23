@@ -4,13 +4,13 @@
 
 #include <QStyledItemDelegate>
 
-class FPropertyItemDelegate : public QStyledItemDelegate
+class APropertyItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
 
-    FPropertyItemDelegate(QObject *parent = nullptr);
+    APropertyItemDelegate(QObject *parent = nullptr);
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const override;

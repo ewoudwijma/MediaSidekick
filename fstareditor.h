@@ -6,19 +6,19 @@
 #include "fstarrating.h"
 
 //! [0]
-class FStarEditor : public QWidget
+class AStarEditor : public QWidget
 {
     Q_OBJECT
 
 public:
-    FStarEditor(QWidget *parent = nullptr);
+    AStarEditor(QWidget *parent = nullptr);
 
     QSize sizeHint() const override;
-    void setStarRating(const FStarRating &starRating) {
+    void setStarRating(const AStarRating &starRating) {
         myStarRating = starRating;
         oldStarRating = starRating;
     }
-    FStarRating starRating() { return myStarRating; }
+    AStarRating starRating() { return myStarRating; }
 
 signals:
     void editingFinished();
@@ -31,8 +31,8 @@ protected:
 private:
     int starAtPosition(int x);
 
-    FStarRating myStarRating;
-    FStarRating oldStarRating;
+    AStarRating myStarRating;
+    AStarRating oldStarRating;
 };
 //! [0]
 

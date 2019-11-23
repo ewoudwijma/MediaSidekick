@@ -5,11 +5,11 @@
 #include <QProcess>
 #include <QWidget>
 
-class FProcessManager : public QWidget
+class AProcessManager : public QWidget
 {
     Q_OBJECT
 public:
-    explicit FProcessManager(QWidget *parent = nullptr);
+    explicit AProcessManager(QWidget *parent = nullptr);
 
     void startProcess(QString code, QMap<QString, QString> parameters, void (*)(QWidget *, QMap<QString, QString>, QString), void (*)(QWidget *, QString, QMap<QString, QString>, QStringList));
     void startProcess(QMap<QString, QString> parameters, void (*)(QWidget *, QString, QMap<QString, QString>, QStringList));

@@ -5,13 +5,13 @@
 #include <QMimeData>
 #include <QDebug>
 
-FDragDropLineEdit::FDragDropLineEdit(QWidget *parent)
+ADragDropLineEdit::ADragDropLineEdit(QWidget *parent)
     : QLineEdit(parent)
 {
 
 }
 
-void FDragDropLineEdit::dragEnterEvent(QDragEnterEvent *e)
+void ADragDropLineEdit::dragEnterEvent(QDragEnterEvent *e)
 {
     qDebug()<<"FDragDropLineEdit::dragEnterEvent"<<e->pos();
     if(e->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")){
@@ -19,7 +19,7 @@ void FDragDropLineEdit::dragEnterEvent(QDragEnterEvent *e)
     }
 }
 
-void FDragDropLineEdit::dropEvent(QDropEvent *e)
+void ADragDropLineEdit::dropEvent(QDropEvent *e)
 {
 
 

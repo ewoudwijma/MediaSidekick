@@ -6,11 +6,11 @@
 #include <QTreeView>
 #include <QUrl>
 
-class FFilesTreeView: public QTreeView
+class AFilesTreeView: public QTreeView
 {
     Q_OBJECT
 public:
-    FFilesTreeView(QWidget *parent);
+    AFilesTreeView(QWidget *parent);
 
 private slots:
     void this_customContextMenuRequested(const QPoint &point);

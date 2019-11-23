@@ -12,7 +12,7 @@
 
 AExport::AExport(QWidget *parent) : QWidget(parent)
 {
-    processManager = new FProcessManager(this);
+    processManager = new AProcessManager(this);
 }
 
 void AExport::s(QString inputString, QString arg1, QString arg2, QString arg3)
@@ -60,7 +60,7 @@ void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QStri
 void AExport::onTrim(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage)
 {
     qDebug()<<"AExport::onTrim"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage<<progressBar;
-    int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+    int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
     QMap<QString, QString> parameters;
 
@@ -122,7 +122,7 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
     int resultDurationMSec = 0;
     QString currentDirectory = QSettings().value("LastFolder").toString();
 
-    int transitionTimeMSecs = transitionTimeFrames * FGlobal().frames_to_msec(1);
+    int transitionTimeMSecs = transitionTimeFrames * AGlobal().frames_to_msec(1);
     QTime transitionTime = QTime::fromMSecsSinceStartOfDay(transitionTimeMSecs);
 
     progressBar = p_progressBar;
@@ -153,7 +153,7 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
 
                 QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
-                FStarRating starRating = qvariant_cast<FStarRating>(timelineModel->index(row, ratingIndex).data());
+                AStarRating starRating = qvariant_cast<AStarRating>(timelineModel->index(row, ratingIndex).data());
 
                 srtContentString += "<o>" + QString::number(timelineModel->index(row, orderAfterMovingIndex).data().toInt()+2) + "</o>"; //+1 for file trim, +2 for export
                 srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
@@ -161,10 +161,10 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
                 srtContentString += "<h>" + timelineModel->index(row, hintIndex).data().toString() + "</h>";
                 srtContentString += "<t>" + timelineModel->index(row, tagIndex).data().toString() + "</t>";
 
-                int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+                int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
                 srtStream << row+1 << endl;
-                srtStream << QTime::fromMSecsSinceStartOfDay(totalDuration).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(totalDuration + duration - FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
+                srtStream << QTime::fromMSecsSinceStartOfDay(totalDuration).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(totalDuration + duration - AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
                 srtStream << srtContentString << endl;//timelineModel->index(i, tagIndex).data().toString()
                 srtStream << endl;
 
@@ -263,11 +263,11 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
                 {
                     if (rowCounter != 0)
                     {
-                        inTime = inTime.addMSecs(FGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
+                        inTime = inTime.addMSecs(AGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
                     }
                     if (rowCounter != timelineModel->rowCount()-1)
                     {
-                        outTime = outTime.addMSecs(- FGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
+                        outTime = outTime.addMSecs(- AGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
                     }
                 }
 //                qDebug()<<"gen"<<row<<transitionTimeMSecs<<transitionTimeFrames/2<<qRound(transitionTimeFrames/2.0)<<FGlobal().frames_to_msec((transitionTimeFrames/2))<<inTime<<outTime;
@@ -383,15 +383,15 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
                 {
                     if (rowCounter != 0)
                     {
-                        inTime = inTime.addMSecs(FGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
+                        inTime = inTime.addMSecs(AGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
                     }
                     if (rowCounter != timelineModel->rowCount()-1)
                     {
-                        outTime = outTime.addMSecs(- FGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
+                        outTime = outTime.addMSecs(- AGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
                     }
                 }
 
-                int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+                int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
                 resultDurationMSec += duration;
 
                 qDebug()<<row<<timelineModel->index(row, inIndex).data().toString()<<timelineModel->index(row, outIndex).data().toString();
@@ -595,8 +595,8 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
                 {
                     s("<tractor id=\"tractor%1\" title=\"%2\" global_feed=\"1\" in=\"00:00:00.000\" out=\"%3\">", QString::number(tractorCounter), "Transition " + QString::number(row-1) + "-" + QString::number(row), transitionTime.toString("HH:mm:ss.zzz"));
                     s("   <property name=\"shotcut:transition\">lumaMix</property>");
-                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", previousProducerNr, previousOutTime.addMSecs(-transitionTimeMSecs + FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"), previousOutTime.toString("HH:mm:ss.zzz"));
-                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", producerNr, inTime.toString("HH:mm:ss.zzz"), inTime.addMSecs(transitionTimeMSecs - FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"));
+                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", previousProducerNr, previousOutTime.addMSecs(-transitionTimeMSecs + AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"), previousOutTime.toString("HH:mm:ss.zzz"));
+                    s("   <track producer=\"producer%1\" in=\"%2\" out=\"%3\"/>", producerNr, inTime.toString("HH:mm:ss.zzz"), inTime.addMSecs(transitionTimeMSecs - AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"));
                     s("   <transition id=\"transition0\" out=\"%1\">", transitionTime.toString("HH:mm:ss.zzz"));
                     s("     <property name=\"a_track\">0</property>");
                     s("     <property name=\"b_track\">1</property>");

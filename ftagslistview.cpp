@@ -5,7 +5,7 @@
 
 #include "fglobal.h"
 
-FTagsListView::FTagsListView(QWidget *parent) : QListView(parent)
+ATagsListView::ATagsListView(QWidget *parent) : QListView(parent)
 {
     tagsItemModel = new QStandardItemModel(this);
     setModel(tagsItemModel);
@@ -20,17 +20,17 @@ FTagsListView::FTagsListView(QWidget *parent) : QListView(parent)
     setHorizontalScrollMode(ScrollPerPixel);
     setVerticalScrollMode(ScrollPerPixel);
 //    setMaximumSize(100, size().height());
-    connect(this, &FTagsListView::doubleClicked, this, &FTagsListView::onDoubleClicked);
+    connect(this, &ATagsListView::doubleClicked, this, &ATagsListView::onDoubleClicked);
 }
 
-void FTagsListView::onFolderIndexClicked(QAbstractItemModel *model)
+void ATagsListView::onFolderIndexClicked(QAbstractItemModel *model)
 {
 //    QString lastFolder = QSettings().value("LastFolder").toString();
-//    qDebug()<<"FTagsListView::onFolderIndexClicked"<<model->rowCount();
+//    qDebug()<<"ATagsListView::onFolderIndexClicked"<<model->rowCount();
     loadModel(model);
 }
 
-bool FTagsListView::addTag(QString tagString)
+bool ATagsListView::addTag(QString tagString)
 {
     QList<QStandardItem *> foundItems = tagsItemModel->findItems(tagString);
     if (foundItems.count() > 0)
@@ -52,9 +52,9 @@ bool FTagsListView::addTag(QString tagString)
     }
 }
 
-void FTagsListView::loadModel(QAbstractItemModel *editItemModel)
+void ATagsListView::loadModel(QAbstractItemModel *editItemModel)
 {
-//    qDebug() << "FTagsListView::loadModel" << editItemModel->rowCount();
+//    qDebug() << "ATagsListView::loadModel" << editItemModel->rowCount();
 
     tagsItemModel->removeRows(0, tagsItemModel->rowCount());
     for (int i = 0; i < editItemModel->rowCount(); i++)
@@ -68,12 +68,12 @@ void FTagsListView::loadModel(QAbstractItemModel *editItemModel)
             addTag(tagList[j].toLower());
         }
     }
-//    qDebug() << "FTagsListView::loadModel done" << editItemModel->rowCount();
+//    qDebug() << "ATagsListView::loadModel done" << editItemModel->rowCount();
 }
 
-void FTagsListView::onDoubleClicked(const QModelIndex &index)
+void ATagsListView::onDoubleClicked(const QModelIndex &index)
 {
-    qDebug()<<"FTagsListView::onDoubleClicked";
+    qDebug()<<"ATagsListView::onDoubleClicked";
     tagsItemModel->takeRow(index.row());
     //tbd: move to addtagfield
 }

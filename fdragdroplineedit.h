@@ -3,11 +3,11 @@
 
 #include <QLineEdit>
 
-class FDragDropLineEdit: public QLineEdit
+class ADragDropLineEdit: public QLineEdit
 {
     Q_OBJECT
 public:
-    FDragDropLineEdit(QWidget *parent = nullptr);
+    ADragDropLineEdit(QWidget *parent = nullptr);
 
     void dragEnterEvent(QDragEnterEvent *e);
     void dropEvent(QDropEvent *e);

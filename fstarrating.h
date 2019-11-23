@@ -58,12 +58,12 @@
 #include <QVector>
 
 //! [0]
-class FStarRating
+class AStarRating
 {
 public:
     enum EditMode { Editable, ReadOnly };
 
-    explicit FStarRating(int starCount = 0, int maxStarCount = 5); //min is 0 instead of 1
+    explicit AStarRating(int starCount = 0, int maxStarCount = 5); //min is 0 instead of 1
 
     void paint(QPainter *painter, const QRect &rect,
                const QPalette &palette, EditMode mode) const;
@@ -82,7 +82,7 @@ private:
 //! [0]
 
 //! [1]
-Q_DECLARE_METATYPE(FStarRating)
+Q_DECLARE_METATYPE(AStarRating)
 //! [1]
 
 #endif

@@ -4,11 +4,11 @@
 #include <QStandardItemModel>
 #include <QTableView>
 
-class FLogTableView: public QTableView
+class ALogTableView: public QTableView
 {
     Q_OBJECT
 public:
-    FLogTableView(QWidget *parent = nullptr);
+    ALogTableView(QWidget *parent = nullptr);
 public slots:
     void onAddEntry(QString folder, QString file, QString action, QString* id);
     void onAddLogToEntry(QString id, QString log);

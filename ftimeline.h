@@ -14,11 +14,11 @@
 #include <QModelIndex>
 
 
-class FTimeline : public QWidget
+class ATimeline : public QWidget
 {
     Q_OBJECT
 public:
-    explicit FTimeline(QWidget *parent = nullptr);
+    explicit ATimeline(QWidget *parent = nullptr);
 
     int originalDuration;
     int transitiontimeDuration;

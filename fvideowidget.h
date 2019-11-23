@@ -15,12 +15,12 @@
 #include <QVBoxLayout>
 
 
-class FVideoWidget : public QVideoWidget
+class AVideoWidget : public QVideoWidget
 {
     Q_OBJECT
 
 public:
-    FVideoWidget(QWidget *parent = nullptr);
+    AVideoWidget(QWidget *parent = nullptr);
 //    int fpsRounded;
     int m_position;
     STimeSpinBox* m_positionSpinner;

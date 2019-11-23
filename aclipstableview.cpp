@@ -201,7 +201,7 @@ void AClipsTableView::addClip()
     }
 
     QTime newInTime = QTime::fromMSecsSinceStartOfDay(position);
-    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + 3000 - FGlobal().frames_to_msec(1));
+    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(position + 3000 - AGlobal().frames_to_msec(1));
 
     int rowToAppendBefore = -1;
     int fileRow = -1;
@@ -221,12 +221,12 @@ void AClipsTableView::addClip()
             if (outTime.msecsTo(newOutTime) <= 0) //outtime after newouttime
             {
 //                qDebug()<<"addclip"<<row<<"adjust outtime";
-                newOutTime = inTime.addMSecs( - FGlobal().frames_to_msec(1) );
+                newOutTime = inTime.addMSecs( - AGlobal().frames_to_msec(1) );
             }
             if (inTime.msecsTo(newInTime) >= 0) //intime after newintime
             {
 //                qDebug()<<"addclip"<<row<<"adjust intime";
-                newInTime = outTime.addMSecs( FGlobal().frames_to_msec(1) );
+                newInTime = outTime.addMSecs( AGlobal().frames_to_msec(1) );
             }
         }
 
@@ -265,7 +265,7 @@ void AClipsTableView::addClip()
     QList<QStandardItem *> items;
 
     QStandardItem *starItem = new QStandardItem;
-    QVariant starVar = QVariant::fromValue(FStarRating(0));
+    QVariant starVar = QVariant::fromValue(AStarRating(0));
     starItem->setData(starVar, Qt::EditRole);
 
     if (rowToAppendBefore == -1) //add at the end
@@ -310,7 +310,7 @@ void AClipsTableView::addClip()
     items.append(new QStandardItem(fileDurationTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newInTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newOutTime.toString("HH:mm:ss.zzz")));
-    items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"))); //durationIndex
+    items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"))); //durationIndex
     items.append(starItem);
     items.append(new QStandardItem(""));
     items.append(new QStandardItem(""));
@@ -410,7 +410,7 @@ void AClipsTableView::onTrim(QString pfileName)
             inTime = inTime.addMSecs(-deltaIn);
             int deltaOut = 1000;//fmin(1000, ui->videoWidget->m_player->duration() - outTime.msecsSinceStartOfDay());
             outTime = outTime.addMSecs(deltaOut);
-            int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+            int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
     //                qDebug()<<i<<srtItemModel->index(i,inIndex).data().toString()<<srtItemModel->index(i,outIndex).data().toString();
     //                qDebug()<<"times"<<inTime<< deltaIn<< outTime<< deltaOut<< duration<<ui->videoWidget->m_player->duration();
@@ -484,7 +484,7 @@ void AClipsTableView::onTrim(QString pfileName)
             if ( file.open(QIODevice::WriteOnly) )
             {
                 QTextStream stream( &file );
-                FStarRating starRating = qvariant_cast<FStarRating>(clipsItemModel->index(row, ratingIndex).data());
+                AStarRating starRating = qvariant_cast<AStarRating>(clipsItemModel->index(row, ratingIndex).data());
 
                 int order = clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
 
@@ -496,7 +496,7 @@ void AClipsTableView::onTrim(QString pfileName)
                 srtContentString += "<t>" + clipsItemModel->index(row, tagIndex).data().toString() + "</t>";
 
                 stream << 1 << endl;
-                stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  FGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
+                stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(duration - deltaOut -  AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
                 stream << srtContentString << endl;
                 stream << endl;
 
@@ -698,7 +698,7 @@ void AClipsTableView::onVideoPositionChanged(int progress, int row, int ) //rela
 
 void AClipsTableView::onScrubberInChanged(int row, int in)
 {
-    QTime newInTime = QTime::fromMSecsSinceStartOfDay(FGlobal().msec_rounded_to_fps(in));
+    QTime newInTime = QTime::fromMSecsSinceStartOfDay(AGlobal().msec_rounded_to_fps(in));
 
     if (!doNotUpdate)
     {
@@ -711,7 +711,7 @@ void AClipsTableView::onScrubberInChanged(int row, int in)
     //            qDebug()<<"AClipsTableView::onScrubberInChanged"<<i<< in<<newInTime.msecsSinceStartOfDay();
                 doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
                 clipsItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
-                clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
+                clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
                 clipsItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
                 doNotUpdate = false;
                 emit clipsChangedToTimeline(clipsProxyModel); //not to video because video initiated it
@@ -722,7 +722,7 @@ void AClipsTableView::onScrubberInChanged(int row, int in)
 
 void AClipsTableView::onScrubberOutChanged(int row, int out)
 {
-    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(FGlobal().msec_rounded_to_fps(out));
+    QTime newOutTime = QTime::fromMSecsSinceStartOfDay(AGlobal().msec_rounded_to_fps(out));
 
     if (!doNotUpdate)
     {
@@ -736,7 +736,7 @@ void AClipsTableView::onScrubberOutChanged(int row, int out)
                 doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
                 clipsItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
                 clipsItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
-                clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
+                clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
                 doNotUpdate = false;
                 emit clipsChangedToTimeline(clipsProxyModel); //not to video because video initiated it
             }
@@ -758,18 +758,18 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
             if (topLeft.column() == inIndex)
             {
                 doNotUpdate = true;
-                clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(time.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                emit updateIn(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
+                clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(time.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+                emit updateIn(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
             }
             else if (topLeft.column() == outIndex)
             {
                 doNotUpdate = true;
-                clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                emit updateOut(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
+                clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
+                emit updateOut(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
             }
             else if (topLeft.column() == durationIndex)
             {
-                int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+                int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
                 int delta = time.msecsSinceStartOfDay() - duration;
                 int newIn = inTime.addMSecs(-delta/2).msecsSinceStartOfDay();
                 int newOut = outTime.addMSecs(delta/2).msecsSinceStartOfDay();
@@ -780,12 +780,12 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
                 if (newIn != inTime.msecsSinceStartOfDay())
                 {
                     clipsItemModel->item(topLeft.row(), inIndex)->setData(QTime::fromMSecsSinceStartOfDay(newIn).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                    emit updateIn(FGlobal().msec_to_frames(newIn));
+                    emit updateIn(AGlobal().msec_to_frames(newIn));
                 }
                 if (newOut != outTime.msecsSinceStartOfDay())
                 {
                     clipsItemModel->item(topLeft.row(), outIndex)->setData(QTime::fromMSecsSinceStartOfDay(newOut).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                    emit updateOut(FGlobal().msec_to_frames(newOut));
+                    emit updateOut(AGlobal().msec_to_frames(newOut));
                 }
             }
             if (doNotUpdate)
@@ -864,7 +864,7 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
             else
                 value = "";
             QStandardItem *starItem = new QStandardItem;
-            starItem->setData(QVariant::fromValue(FStarRating(value.toInt())), Qt::EditRole);
+            starItem->setData(QVariant::fromValue(AStarRating(value.toInt())), Qt::EditRole);
 
             start = srtContentString.indexOf("<a>");
             end = srtContentString.indexOf("</a>");
@@ -901,17 +901,17 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
 
                 order = QString::number(clipCounter*10);
 
-                QVariant starVar = QVariant::fromValue(FStarRating(0));
+                QVariant starVar = QVariant::fromValue(AStarRating(0));
                 if (tags.indexOf("r9") >= 0)
-                    starVar = QVariant::fromValue(FStarRating(5));
+                    starVar = QVariant::fromValue(AStarRating(5));
                 else if (tags.indexOf("r8") >= 0)
-                    starVar = QVariant::fromValue(FStarRating(4));
+                    starVar = QVariant::fromValue(AStarRating(4));
                 else if (tags.indexOf("r7") >= 0)
-                    starVar = QVariant::fromValue(FStarRating(3));
+                    starVar = QVariant::fromValue(AStarRating(3));
                 else if (tags.indexOf("r6") >= 0)
-                    starVar = QVariant::fromValue(FStarRating(2));
+                    starVar = QVariant::fromValue(AStarRating(2));
                 else if (tags.indexOf("r5") >= 0)
-                    starVar = QVariant::fromValue(FStarRating(1));
+                    starVar = QVariant::fromValue(AStarRating(1));
                 starItem->setData(starVar, Qt::EditRole);
                 tags.replace(" r5", "").replace("r5","");
                 tags.replace(" r6", "").replace("r6","");
@@ -921,7 +921,7 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
                 tags.replace(" ", ";");
             }
 
-            int duration = FGlobal().frames_to_msec(FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+            int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
             QList<QStandardItem *> items;
             items.append(new QStandardItem(QString::number(clipCounter)));
             items.append(new QStandardItem(order));
@@ -941,7 +941,7 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
             srtItemModel->appendRow(items);
 //                QLineEdit *edit = new QLineEdit(this);
             clipCounter++;
-            originalDuration += FGlobal().msec_to_frames(duration);
+            originalDuration += AGlobal().msec_to_frames(duration);
         }
     }
 
@@ -1103,7 +1103,7 @@ void AClipsTableView::saveModel(QString folderName, QString fileName)
 
                 QTextStream stream(&file);
 
-                FStarRating starRating = qvariant_cast<FStarRating>(clipsItemModel->index(row, ratingIndex).data());
+                AStarRating starRating = qvariant_cast<AStarRating>(clipsItemModel->index(row, ratingIndex).data());
 
                 QString srtContentString = "";
                 srtContentString += "<o>" + clipsItemModel->index(row, orderAfterMovingIndex).data().toString() + "</o>";
@@ -1186,7 +1186,7 @@ void AClipsTableView::onClipsFilterChanged(QComboBox *ratingFilterComboBox, QChe
 void AClipsTableView::giveStars(int starCount)
 {
 //    qDebug()<<"AClipsTableView::onGiveStars"<<starCount<<currentIndex().data().toString();
-    clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), ratingIndex), QVariant::fromValue(FStarRating(starCount)));
+    clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), ratingIndex), QVariant::fromValue(AStarRating(starCount)));
     clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), changedIndex), "yes");
 }
 

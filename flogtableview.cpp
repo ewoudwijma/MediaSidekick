@@ -23,7 +23,7 @@ static const int fileIndex = 3;
 static const int logIndex = 5;
 static const int allIndex = 6;
 
-FLogTableView::FLogTableView(QWidget *parent) : QTableView(parent)
+ALogTableView::ALogTableView(QWidget *parent) : QTableView(parent)
 {
     logItemModel = new QStandardItemModel(this);
     QStringList labels;
@@ -32,7 +32,7 @@ FLogTableView::FLogTableView(QWidget *parent) : QTableView(parent)
 
     setModel(logItemModel);
 
-//    FLogItemDelegate *logItemDelegate = new FLogItemDelegate(this);
+//    ALogItemDelegate *logItemDelegate = new ALogItemDelegate(this);
 //    setItemDelegate(logItemDelegate);
 
     horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
@@ -51,7 +51,7 @@ FLogTableView::FLogTableView(QWidget *parent) : QTableView(parent)
     verticalHeader()->setSectionResizeMode (QHeaderView::Fixed);
 }
 
-void FLogTableView::onAddEntry(QString folder, QString file, QString action, QString* id)
+void ALogTableView::onAddEntry(QString folder, QString file, QString action, QString* id)
 {
     *id =QString::number(logItemModel->rowCount()).rightJustified(5, '0');
 
@@ -74,7 +74,7 @@ void FLogTableView::onAddEntry(QString folder, QString file, QString action, QSt
     sortByColumn(idIndex, Qt::DescendingOrder);
 }
 
-void FLogTableView::onAddLogToEntry(QString id, QString log)
+void ALogTableView::onAddLogToEntry(QString id, QString log)
 {
     for (int row = 0; row < logItemModel->rowCount();row++)
     {
@@ -86,16 +86,16 @@ void FLogTableView::onAddLogToEntry(QString id, QString log)
     }
 }
 
-void FLogTableView::mouseMoveEvent(QMouseEvent *event)
+void ALogTableView::mouseMoveEvent(QMouseEvent *event)
 {
     QModelIndex index = indexAt(event->pos());
-//    qDebug()<<"FLogTableView::mouseMoveEvent"<<index.data().toString();
+//    qDebug()<<"ALogTableView::mouseMoveEvent"<<index.data().toString();
 }
 
-void FLogTableView::mousePressEvent(QMouseEvent *event)
+void ALogTableView::mousePressEvent(QMouseEvent *event)
 {
     QModelIndex index = indexAt(event->pos());
-//    qDebug()<<"FLogTableView::mousePressEvent"<<index.data().toString();
+//    qDebug()<<"ALogTableView::mousePressEvent"<<index.data().toString();
 
     if (index.data().toString() != "") //only show if an item is clicked on
     {

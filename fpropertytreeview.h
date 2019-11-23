@@ -9,13 +9,13 @@
 #include <QTreeView>
 #include <QLineEdit>
 
-class FPropertyTreeView: public QTreeView
+class APropertyTreeView: public QTreeView
 {
     Q_OBJECT
 
 public:
-    FPropertyTreeView(QWidget *parent=nullptr);
-    ~FPropertyTreeView();
+    APropertyTreeView(QWidget *parent=nullptr);
+    ~APropertyTreeView();
 
 public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
@@ -30,9 +30,9 @@ private slots:
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
 private:
     QStandardItemModel *propertyItemModel;
-    FPropertySortFilterProxyModel *propertyProxyModel;
+    APropertySortFilterProxyModel *propertyProxyModel;
     void loadModel(QString folderName);
-    FProcessManager *processManager;
+    AProcessManager *processManager;
     void addSublevelItem(QUrl fileUrl, QString itemName, QString type, QString value);
     QStandardItem *getToplevelItem(QString itemName);
     QTreeView *frozenTableView;

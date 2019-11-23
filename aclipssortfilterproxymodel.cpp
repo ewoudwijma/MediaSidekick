@@ -30,7 +30,7 @@ bool AClipsSortFilterProxyModel::filterAcceptsRow(int sourceRow,
 
     QString fileNameString = expList[4];
 
-    FStarRating starRating = qvariant_cast<FStarRating>(sourceModel()->index(sourceRow, ratingIndex, sourceParent).data());
+    AStarRating starRating = qvariant_cast<AStarRating>(sourceModel()->index(sourceRow, ratingIndex, sourceParent).data());
     QString alikeValue = sourceModel()->index(sourceRow, alikeIndex, sourceParent).data().toString();
     QString tags = sourceModel()->index(sourceRow, tagIndex, sourceParent).data().toString().toLower();
     QString fileNameValue = sourceModel()->index(sourceRow, fileIndex, sourceParent).data().toString();

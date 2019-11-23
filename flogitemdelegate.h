@@ -5,12 +5,12 @@
 
 
 
-class FLogItemDelegate: public QStyledItemDelegate
+class ALogItemDelegate: public QStyledItemDelegate
 {
     Q_OBJECT
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
-    FLogItemDelegate(QObject *parent = nullptr);
+    ALogItemDelegate(QObject *parent = nullptr);
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
     QSize sizeHint(const QStyleOptionViewItem &option,

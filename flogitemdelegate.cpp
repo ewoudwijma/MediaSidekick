@@ -4,13 +4,13 @@
 #include <QPainter>
 #include <QScrollBar>
 
-FLogItemDelegate::FLogItemDelegate(QObject *parent)
+ALogItemDelegate::ALogItemDelegate(QObject *parent)
  : QStyledItemDelegate(parent)
 {
 
 }
 
-void FLogItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+void ALogItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
     if (index.column() == 3)
@@ -41,7 +41,7 @@ void FLogItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
     }
 }
 
-QWidget *FLogItemDelegate::createEditor(QWidget *parent,
+QWidget *ALogItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 
@@ -60,7 +60,7 @@ QWidget *FLogItemDelegate::createEditor(QWidget *parent,
     }
 }
 
-void FLogItemDelegate::setEditorData(QWidget *editor,
+void ALogItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
 //    qDebug()<<"setEditorData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
@@ -83,7 +83,7 @@ void FLogItemDelegate::setEditorData(QWidget *editor,
     }
 }
 
-void FLogItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
+void ALogItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
 //    qDebug()<<"setModelData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
@@ -101,7 +101,7 @@ void FLogItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     }
 }
 
-QSize FLogItemDelegate::sizeHint(const QStyleOptionViewItem &option,
+QSize ALogItemDelegate::sizeHint(const QStyleOptionViewItem &option,
                              const QModelIndex &index) const
 {
     qDebug()<<"sizeHint"<<index.data();

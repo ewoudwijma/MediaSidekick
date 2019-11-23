@@ -37,7 +37,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
-           <widget class="FFolderTreeView" name="folderTreeView"/>
+           <widget class="AFolderTreeView" name="folderTreeView"/>
           </item>
          </layout>
         </widget>
@@ -47,7 +47,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <widget class="FFilesTreeView" name="filesTreeView"/>
+           <widget class="AFilesTreeView" name="filesTreeView"/>
           </item>
          </layout>
         </widget>
@@ -59,7 +59,7 @@
         <widget class="QWidget" name="layoutWidget">
          <layout class="QVBoxLayout" name="verticalLayout_player">
           <item>
-           <widget class="FVideoWidget" name="videoWidget" native="true">
+           <widget class="AVideoWidget" name="videoWidget" native="true">
             <property name="styleSheet">
              <string notr="true">background-color: rgba(0,0,0)</string>
             </property>
@@ -227,14 +227,14 @@
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_9">
                  <item>
-                  <widget class="FDragDropLineEdit" name="newTagLineEdit">
+                  <widget class="ADragDropLineEdit" name="newTagLineEdit">
                    <property name="placeholderText">
                     <string>new tag</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="FTagsListView" name="tagsListView"/>
+                  <widget class="ATagsListView" name="tagsListView"/>
                  </item>
                 </layout>
                </widget>
@@ -292,7 +292,7 @@
             </layout>
            </item>
            <item>
-            <widget class="FPropertyTreeView" name="propertyTreeView"/>
+            <widget class="APropertyTreeView" name="propertyTreeView"/>
            </item>
           </layout>
          </widget>
@@ -302,7 +302,7 @@
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
-            <widget class="FLogTableView" name="logTableView"/>
+            <widget class="ALogTableView" name="logTableView"/>
            </item>
           </layout>
          </widget>
@@ -669,7 +669,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_12">
         <item>
-         <widget class="FTimeline" name="timelineWidget" native="true">
+         <widget class="ATimeline" name="timelineWidget" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_10"/>
          </widget>
         </item>
@@ -1015,33 +1015,33 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>FVideoWidget</class>
+   <class>AVideoWidget</class>
    <extends>QWidget</extends>
    <header>fvideowidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>FFolderTreeView</class>
+   <class>AFolderTreeView</class>
    <extends>QTreeView</extends>
    <header>ffoldertreeview.h</header>
   </customwidget>
   <customwidget>
-   <class>FFilesTreeView</class>
+   <class>AFilesTreeView</class>
    <extends>QTreeView</extends>
    <header>ffilestreeview.h</header>
   </customwidget>
   <customwidget>
-   <class>FPropertyTreeView</class>
+   <class>APropertyTreeView</class>
    <extends>QTreeView</extends>
    <header>fpropertytreeview.h</header>
   </customwidget>
   <customwidget>
-   <class>FTagsListView</class>
+   <class>ATagsListView</class>
    <extends>QListView</extends>
    <header>ftagslistview.h</header>
   </customwidget>
   <customwidget>
-   <class>FTimeline</class>
+   <class>ATimeline</class>
    <extends>QWidget</extends>
    <header>ftimeline.h</header>
    <container>1</container>
@@ -1052,7 +1052,7 @@
    <header>stimespinbox.h</header>
   </customwidget>
   <customwidget>
-   <class>FLogTableView</class>
+   <class>ALogTableView</class>
    <extends>QTableView</extends>
    <header>flogtableview.h</header>
   </customwidget>
@@ -1062,7 +1062,7 @@
    <header>qgraphwidget.h</header>
   </customwidget>
   <customwidget>
-   <class>FDragDropLineEdit</class>
+   <class>ADragDropLineEdit</class>
    <extends>QLineEdit</extends>
    <header>fdragdroplineedit.h</header>
   </customwidget>

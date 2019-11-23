@@ -33,7 +33,7 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     {
         STimeSpinBox *spinBox = new STimeSpinBox();
         QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
-        spinBox->setValue(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
+        spinBox->setValue(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
 
         spinBox->setGeometry(option.rect);
 
@@ -112,9 +112,9 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
         QPixmap map = listView->grab();
         painter->drawPixmap(option.rect.x(), option.rect.y(), map);
     }
-    else if (index.data().canConvert<FStarRating>())
+    else if (index.data().canConvert<AStarRating>())
     {
-            FStarRating starRating = qvariant_cast<FStarRating>(index.data());
+            AStarRating starRating = qvariant_cast<AStarRating>(index.data());
 
             if (option.state & QStyle::State_Selected)
                 painter->fillRect(option.rect, option.palette.highlight());
@@ -122,7 +122,7 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
                 painter->fillRect(option.rect, QBrush(backgroundColor));
 
             starRating.paint(painter, option.rect, optionPalette,
-                             FStarRating::EditMode::ReadOnly);
+                             AStarRating::EditMode::ReadOnly);
     }
     else
     {
@@ -165,11 +165,11 @@ QWidget *AClipsItemDelegate::createEditor(QWidget *parent,
 
         return listView;
     }
-    else if (index.data().canConvert<FStarRating>())
+    else if (index.data().canConvert<AStarRating>())
     {
 //        qDebug()<<"createEditor"<<index.row()<<index.column()<<index.data();
-        FStarEditor *editor = new FStarEditor(parent);
-        connect(editor, &FStarEditor::editingFinished,
+        AStarEditor *editor = new AStarEditor(parent);
+        connect(editor, &AStarEditor::editingFinished,
                 this, &AClipsItemDelegate::commitAndCloseEditor);
         return editor;
     }
@@ -184,7 +184,7 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
         QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
-        spinBox->setValue(FGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
+        spinBox->setValue(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
     }
     else if (index.column() == alikeIndex)
     {
@@ -212,11 +212,11 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
 
 //        qDebug()<<"setEditorData"<<listModel->rowCount();
     }
-    else if (index.data().canConvert<FStarRating>())
+    else if (index.data().canConvert<AStarRating>())
     {
         qDebug()<<"setEditorData"<<index.row()<<index.column()<<index.data();
-        FStarRating starRating = qvariant_cast<FStarRating>(index.data());
-        FStarEditor *starEditor = qobject_cast<FStarEditor *>(editor);
+        AStarRating starRating = qvariant_cast<AStarRating>(index.data());
+        AStarEditor *starEditor = qobject_cast<AStarEditor *>(editor);
         starEditor->setStarRating(starRating);
     }
     else
@@ -231,7 +231,7 @@ void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
 //        qDebug()<<"AClipsItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
-        QTime time = QTime::fromMSecsSinceStartOfDay(FGlobal().frames_to_msec(spinBox->value()));
+        QTime time = QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }
     else if (index.column() == alikeIndex)
@@ -254,9 +254,9 @@ void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
 
         model->setData(index, string);
     }
-    else if (index.data().canConvert<FStarRating>())
+    else if (index.data().canConvert<AStarRating>())
     {
-        FStarEditor *starEditor = qobject_cast<FStarEditor *>(editor);
+        AStarEditor *starEditor = qobject_cast<AStarEditor *>(editor);
 //        qDebug()<<"setModelData"<<index.row()<<index.column()<<index.data()<<starEditor->starRating().starCount();
         model->setData(index, QVariant::fromValue(starEditor->starRating()));
     }
@@ -279,9 +279,9 @@ QSize AClipsItemDelegate::sizeHint(const QStyleOptionViewItem &option,
     {
         return QSize(200,200);
     }
-    else if (index.data().canConvert<FStarRating>())
+    else if (index.data().canConvert<AStarRating>())
     {
-        FStarRating starRating = qvariant_cast<FStarRating>(index.data());
+        AStarRating starRating = qvariant_cast<AStarRating>(index.data());
         return starRating.sizeHint();
     }
     else
@@ -319,7 +319,7 @@ bool AClipsItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, c
 //! [5]
 void AClipsItemDelegate::commitAndCloseEditor()
 {
-    FStarEditor *editor = qobject_cast<FStarEditor *>(sender());
+    AStarEditor *editor = qobject_cast<AStarEditor *>(sender());
     emit commitData(editor);
     emit closeEditor(editor);
 }

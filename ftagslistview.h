@@ -4,11 +4,11 @@
 #include <QListView>
 #include <QStandardItemModel>
 
-class FTagsListView: public QListView
+class ATagsListView: public QListView
 {
     Q_OBJECT
 public:
-    FTagsListView(QWidget *parent = nullptr);
+    ATagsListView(QWidget *parent = nullptr);
     QStandardItemModel *tagsItemModel;
     bool addTag(QString tagString);
 private:

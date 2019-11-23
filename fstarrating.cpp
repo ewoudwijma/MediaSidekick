@@ -56,7 +56,7 @@
 const int PaintingScaleFactor = 20;
 
 //! [0]
-FStarRating::FStarRating(int starCount, int maxStarCount)
+AStarRating::AStarRating(int starCount, int maxStarCount)
 {
     myStarCount = starCount;
     myMaxStarCount = maxStarCount;
@@ -73,14 +73,14 @@ FStarRating::FStarRating(int starCount, int maxStarCount)
 //! [0]
 
 //! [1]
-QSize FStarRating::sizeHint() const
+QSize AStarRating::sizeHint() const
 {
     return PaintingScaleFactor * QSize(myMaxStarCount, 1);
 }
 //! [1]
 
 //! [2]
-void FStarRating::paint(QPainter *painter, const QRect &rect,
+void AStarRating::paint(QPainter *painter, const QRect &rect,
                        const QPalette &palette, EditMode mode) const
 {
     painter->save();

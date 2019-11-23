@@ -3,12 +3,12 @@
 
 #include <QSortFilterProxyModel>
 
-class FPropertySortFilterProxyModel : public QSortFilterProxyModel
+class APropertySortFilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
 public:
-    FPropertySortFilterProxyModel(QObject *parent = nullptr);
+    APropertySortFilterProxyModel(QObject *parent = nullptr);
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;

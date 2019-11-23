@@ -7,7 +7,7 @@
 #include <QDebug>
 #include <QSettings>
 
-FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
+ATimeline::ATimeline(QWidget *parent) : QWidget(parent)
 {
     parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
 
@@ -25,7 +25,7 @@ FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
     m_scrubber->onSeek(0);
 //    m_scrubber->readOnly = false;
 
-    connect(m_scrubber, &SScrubBar::seeked, this, &FTimeline::onScrubberSeeked);
+    connect(m_scrubber, &SScrubBar::seeked, this, &ATimeline::onScrubberSeeked);
 
     toolbar = new QToolBar(tr("Transport Controls"), this);
     int s = style()->pixelMetric(QStyle::PM_SmallIconSize);
@@ -74,7 +74,7 @@ FTimeline::FTimeline(QWidget *parent) : QWidget(parent)
 
 }
 
-void FTimeline::setupActions(QWidget* widget)
+void ATimeline::setupActions(QWidget* widget)
 {
     actionPlay = new QAction(widget);
     actionPlay->setObjectName(QString::fromUtf8("actionPlay"));
@@ -108,15 +108,15 @@ void FTimeline::setupActions(QWidget* widget)
     QMetaObject::connectSlotsByName(widget);
 }
 
-void FTimeline::onDurationChanged(int duration)
+void ATimeline::onDurationChanged(int duration)
 {
-    qDebug()<<"FTimeline::onDurationChanged: " << duration;
+    qDebug()<<"ATimeline::onDurationChanged: " << duration;
 //    m_duration = duration / 1000;
 //    ui->lcdDuration->display(QTime::fromMSecsSinceStartOfDay(duration).toString("HH:mm:ss.zzz"));
 
-//    m_duration = FGlobal().msec_to_frames(duration);
-    m_scrubber->setScale(FGlobal().msec_rounded_to_fps(duration));
-    m_durationLabel->setText(FGlobal().msec_to_time(duration).prepend(" / "));
+//    m_duration = AGlobal().msec_to_frames(duration);
+    m_scrubber->setScale(AGlobal().msec_rounded_to_fps(duration));
+    m_durationLabel->setText(AGlobal().msec_to_time(duration).prepend(" / "));
 
     m_isSeekable = true;
 
@@ -127,7 +127,7 @@ void FTimeline::onDurationChanged(int duration)
     actionFastForward->setEnabled(m_isSeekable);
 }
 
-void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
+void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 {
     originalDuration = 0;
     QMap<int,int> reorderMap;
@@ -136,7 +136,7 @@ void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
         QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
         QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
-        int frameDuration = FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
+        int frameDuration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
 
         originalDuration += frameDuration;
 
@@ -167,7 +167,7 @@ void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
             QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 //                QTime fileDurationTime = QTime::fromString(itemModel->index(row,fileDurationIndex).data().toString(),"HH:mm:ss.zzz");
 
-            int clipduration = FGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - FGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
+            int clipduration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
 
             int inpoint, outpoint;
 
@@ -185,12 +185,12 @@ void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
             timelineDuration += clipduration;
 
             int porderBeforeLoadIndex = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
-            m_scrubber->setInOutPoint(porderBeforeLoadIndex,FGlobal().frames_to_msec( inpoint), FGlobal().frames_to_msec(outpoint));
+            m_scrubber->setInOutPoint(porderBeforeLoadIndex,AGlobal().frames_to_msec( inpoint), AGlobal().frames_to_msec(outpoint));
 
             if (previousPreviousRow != -1 && itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt() >= inpoint)
             {
                 allowed = false;
-//                    qDebug()<<"FTimeline::onClipsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
+//                    qDebug()<<"ATimeline::onClipsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
             }
 
             previousOut = outpoint;
@@ -201,7 +201,7 @@ void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
     }
     timelineDuration -= transitiontime * (countNrOfClips - 1); //subtrackt all the transitions
 
-//    qDebug()<<"FTimeline::onClipsChangedToTimeline"<<timelineDuration<<transitiontime;
+//    qDebug()<<"ATimeline::onClipsChangedToTimeline"<<timelineDuration<<transitiontime;
 
     if (!allowed)
     {
@@ -221,57 +221,57 @@ void FTimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
     }
 
     {
-        m_scrubber->setScale(FGlobal().frames_to_msec(transitiontimeDuration));
-        m_durationLabel->setText(FGlobal().frames_to_time(originalDuration).prepend(" / ") + FGlobal().frames_to_time(transitiontimeDuration).prepend(" -> "));
+        m_scrubber->setScale(AGlobal().frames_to_msec(transitiontimeDuration));
+        m_durationLabel->setText(AGlobal().frames_to_time(originalDuration).prepend(" / ") + AGlobal().frames_to_time(transitiontimeDuration).prepend(" -> "));
     }
 
     emit clipsChangedToTimeline(itemModel);
 }
 
-void FTimeline::onFileIndexClicked(QModelIndex index)
+void ATimeline::onFileIndexClicked(QModelIndex index)
 {
-//    qDebug()<<"FTimeline::onFileIndexClicked"<<index.data().toString();
+//    qDebug()<<"ATimeline::onFileIndexClicked"<<index.data().toString();
 }
 
-void FTimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
+void ATimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
 {
-//    qDebug()<<"FTimeline::onVideoPositionChanged"<<progress<<row<<relativeProgress;
+//    qDebug()<<"ATimeline::onVideoPositionChanged"<<progress<<row<<relativeProgress;
     int *relativeProgressl = new int();
     m_scrubber->rowToPosition(row, relativeProgressl);
-//    qDebug()<<"  FTimeline::onVideoPositionChanged"<<progress<<row<<*relativeProgressl;
+//    qDebug()<<"  ATimeline::onVideoPositionChanged"<<progress<<row<<*relativeProgressl;
 
     if (relativeProgress != -1)
     {
-        m_scrubber->onSeek(FGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
+        m_scrubber->onSeek(AGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
         m_positionSpinner->blockSignals(true); //do not fire valuechanged signal
-        m_positionSpinner->setValue(FGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
+        m_positionSpinner->setValue(AGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
         m_positionSpinner->blockSignals(false);
     }
 }
 
-void FTimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitionType, AClipsTableView *clipsTableView)
+void ATimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitionType, AClipsTableView *clipsTableView)
 {
     if (transitionType != "No transition")
         transitiontime = p_transitiontime;
     else
         transitiontime = 0;
 
-//    qDebug()<<"FTimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<clipsTableView->model()->rowCount();
+//    qDebug()<<"ATimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<clipsTableView->model()->rowCount();
 
     onClipsChangedToTimeline(clipsTableView->clipsProxyModel);
 
-//    qDebug()<<"FTimeline::onTimelineWidgetsChanged done"<<p_transitiontime<<transitionType;
+//    qDebug()<<"ATimeline::onTimelineWidgetsChanged done"<<p_transitiontime<<transitionType;
     emit clipsChangedToVideo(clipsTableView->model());
 }
 
-void FTimeline::onScrubberSeeked(int mseconds)
+void ATimeline::onScrubberSeeked(int mseconds)
 {
     int *prevRow = new int();
     int *nextRow = new int();
     int *relativeProgress = new int();
     m_scrubber->progressToRow(mseconds, prevRow, nextRow, relativeProgress);
 
-    qDebug()<<"FTimeline::onScrubberSeeked"<<mseconds<< *prevRow<< *relativeProgress;
+    qDebug()<<"ATimeline::onScrubberSeeked"<<mseconds<< *prevRow<< *relativeProgress;
 //    if (m_player->state() != QMediaPlayer::PausedState)
 //        m_player->pause();
 //    m_player->setPosition(mseconds);

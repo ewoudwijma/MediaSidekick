@@ -5,11 +5,11 @@
 #include <QSettings>
 #include <QTreeView>
 
-class FFolderTreeView : public QTreeView
+class AFolderTreeView : public QTreeView
 {
     Q_OBJECT
 public:
-    FFolderTreeView(QWidget *parent);
+    AFolderTreeView(QWidget *parent);
 
     QFileSystemModel *directoryModel;
     void onIndexClicked(const QModelIndex &index);

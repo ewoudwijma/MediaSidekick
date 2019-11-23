@@ -12,14 +12,14 @@
 static const int deltaIndex = 2;
 static const int firstFileColumnIndex = 3;
 
-FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
+APropertyTreeView::APropertyTreeView(QWidget *parent) : QTreeView(parent)
 {
     propertyItemModel = new QStandardItemModel(this);
     QStringList labels;
     labels << "Property" << "Type" << "Diff";
     propertyItemModel->setHorizontalHeaderLabels(labels);
 
-    propertyProxyModel = new FPropertySortFilterProxyModel(this);
+    propertyProxyModel = new APropertySortFilterProxyModel(this);
 
     propertyProxyModel->setSourceModel(propertyItemModel);
 
@@ -33,7 +33,7 @@ FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
     setItemsExpandable(false);
     setColumnWidth(0,columnWidth(0) * 2);
 
-    FPropertyItemDelegate *propertyItemDelegate = new FPropertyItemDelegate(this);
+    APropertyItemDelegate *propertyItemDelegate = new APropertyItemDelegate(this);
     setItemDelegate(propertyItemDelegate);
     setColumnHidden(1, true); //type column
     setColumnHidden(2, true); //diffcolumn
@@ -46,7 +46,7 @@ FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
 
     //connect the headers and scrollbars of both tableviews together
     connect(header(),&QHeaderView::sectionResized, this,
-            &FPropertyTreeView::updateSectionWidth);
+            &APropertyTreeView::updateSectionWidth);
 //      connect(verticalHeader(),&QHeaderView::sectionResized, this,
 //              &FreezeTableWidget::updateSectionHeight);
 
@@ -55,10 +55,10 @@ FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
     connect(verticalScrollBar(), &QAbstractSlider::valueChanged,
             frozenTableView->verticalScrollBar(), &QAbstractSlider::setValue);
 
-    connect(propertyItemModel, &QStandardItemModel::itemChanged, this, &FPropertyTreeView::onPropertyChanged);
+    connect(propertyItemModel, &QStandardItemModel::itemChanged, this, &APropertyTreeView::onPropertyChanged);
     isLoading = false;
 
-    processManager = new FProcessManager(this);
+    processManager = new AProcessManager(this);
 
 //    QString lastFolder = QSettings().value("LastFolder").toString();
 //    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
@@ -67,21 +67,21 @@ FPropertyTreeView::FPropertyTreeView(QWidget *parent) : QTreeView(parent)
 //    }
 }
 
-FPropertyTreeView::~FPropertyTreeView()
+APropertyTreeView::~APropertyTreeView()
 {
       delete frozenTableView;
 }
 
-void FPropertyTreeView::onFolderIndexClicked(QModelIndex index)
+void APropertyTreeView::onFolderIndexClicked(QModelIndex index)
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-//    qDebug()<<"FPropertyTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
+//    qDebug()<<"APropertyTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
     loadModel(lastFolder);
 }
 
-void FPropertyTreeView::setCellStyle(QStringList fileNames)
+void APropertyTreeView::setCellStyle(QStringList fileNames)
 {
-//    qDebug()<<"FPropertyTreeView::setCellStyle"<<fileNames.count()<<propertyProxyModel->rowCount();
+//    qDebug()<<"APropertyTreeView::setCellStyle"<<fileNames.count()<<propertyProxyModel->rowCount();
     isLoading = true;
     QFont boldFont;
     boldFont.setBold(true);
@@ -90,7 +90,7 @@ void FPropertyTreeView::setCellStyle(QStringList fileNames)
         QModelIndex parentIndex = propertyProxyModel->index(parentRow, 0);
 //        propertyProxyModel->setData(parentIndex, boldFont, Qt::FontRole);
 
-//        qDebug()<<"FPropertyTreeView::setCellStyle"<<propertyProxyModel->rowCount(parentIndex)<<propertyProxyModel->columnCount(parentIndex);
+//        qDebug()<<"APropertyTreeView::setCellStyle"<<propertyProxyModel->rowCount(parentIndex)<<propertyProxyModel->columnCount(parentIndex);
         for (int childRow=0; childRow<propertyProxyModel->rowCount(parentIndex); childRow++)
         {
             for (int childColumn=0; childColumn<propertyProxyModel->columnCount(parentIndex);childColumn++)
@@ -114,7 +114,7 @@ void FPropertyTreeView::setCellStyle(QStringList fileNames)
 
 }
 
-void FPropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
+void APropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
 {
     QStringList selectedFileNames;
     for (int i=0;i<selectedIndices.count();i++)
@@ -125,31 +125,31 @@ void FPropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList se
             selectedFileNames << index.data().toString();
         }
     }
-//    qDebug()<<"FPropertyTreeView::onFileIndexClicked"<<index.data().toString()<<selectedIndices.count()<<selectedFileNames.count();
+//    qDebug()<<"APropertyTreeView::onFileIndexClicked"<<index.data().toString()<<selectedIndices.count()<<selectedFileNames.count();
 //    QModelIndexList *selectedIndices = index.model().selectionModel->sele;
 //    QModelIndex modelIndex = propertyProxyModel->index(propertyProxyModel->rowCount(),0);
     setCellStyle(selectedFileNames);
 
 }
 
-void FPropertyTreeView::onClipIndexClicked(QModelIndex index)
+void APropertyTreeView::onClipIndexClicked(QModelIndex index)
 {
-//    qDebug()<<"FFilesTreeView::onClipIndexClicked"<<index;
+//    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index;
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
     QStringList selectedFileNames;
     selectedFileNames <<fileName;
     setCellStyle(selectedFileNames);
 }
 
-void FPropertyTreeView::loadModel(QString folderName)
+void APropertyTreeView::loadModel(QString folderName)
 {
-//    qDebug() << "FPropertyTreeView::loadModel" << folderName;
+//    qDebug() << "APropertyTreeView::loadModel" << folderName;
     propertyItemModel->removeRows(0, propertyItemModel->rowCount());
     while (propertyItemModel->columnCount()>firstFileColumnIndex) //remove old columns
         propertyItemModel->removeColumn(propertyItemModel->columnCount()-1);
 
     QString command = "exiftool -s -c \"%02.6f\" \"" + folderName + "*\""; ////
-//    qDebug()<<"FPropertyTreeView::loadModel"<<folderName<<command<<processManager;
+//    qDebug()<<"APropertyTreeView::loadModel"<<folderName<<command<<processManager;
 
     QMap<QString, QString> parameters;
 
@@ -161,12 +161,12 @@ void FPropertyTreeView::loadModel(QString folderName)
     processManager->startProcess(command, parameters
                                    , [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
-        FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
+        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
         emit propertyTreeView->addLogToEntry(parameters["processId"], result);
     }
                                    , [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList result)
      {
-        FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
+        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
 
         //create topLevelItems
         QStringList topLevelItemNames;
@@ -347,7 +347,7 @@ void FPropertyTreeView::loadModel(QString folderName)
 } //loadmodel
 
 //! [init part1]
-void FPropertyTreeView::init()
+void APropertyTreeView::init()
 {
       frozenTableView->setModel(model());
       frozenTableView->setFocusPolicy(Qt::NoFocus);
@@ -384,7 +384,7 @@ void FPropertyTreeView::init()
 
 
 //! [sections]
-void FPropertyTreeView::updateSectionWidth(int logicalIndex, int /* oldSize */, int newSize)
+void APropertyTreeView::updateSectionWidth(int logicalIndex, int /* oldSize */, int newSize)
 {
       if (logicalIndex == 0){
             frozenTableView->setColumnWidth(logicalIndex, newSize);
@@ -392,7 +392,7 @@ void FPropertyTreeView::updateSectionWidth(int logicalIndex, int /* oldSize */, 
       }
 }
 
-void FPropertyTreeView::updateSectionHeight(int logicalIndex, int , int newSize)
+void APropertyTreeView::updateSectionHeight(int logicalIndex, int , int newSize)
 {
 //      frozenTableView->setRowHeight(logicalIndex, newSize);
 }
@@ -400,7 +400,7 @@ void FPropertyTreeView::updateSectionHeight(int logicalIndex, int , int newSize)
 
 
 //! [resize]
-void FPropertyTreeView::resizeEvent(QResizeEvent * event)
+void APropertyTreeView::resizeEvent(QResizeEvent * event)
 {
       QTreeView::resizeEvent(event);
       updateFrozenTableGeometry();
@@ -409,7 +409,7 @@ void FPropertyTreeView::resizeEvent(QResizeEvent * event)
 
 
 //! [navigate]
-QModelIndex FPropertyTreeView::moveCursor(CursorAction cursorAction,
+QModelIndex APropertyTreeView::moveCursor(CursorAction cursorAction,
                                           Qt::KeyboardModifiers modifiers)
 {
       QModelIndex current = QTreeView::moveCursor(cursorAction, modifiers);
@@ -424,13 +424,13 @@ QModelIndex FPropertyTreeView::moveCursor(CursorAction cursorAction,
 }
 //! [navigate]
 
-void FPropertyTreeView::scrollTo (const QModelIndex & index, ScrollHint hint){
+void APropertyTreeView::scrollTo (const QModelIndex & index, ScrollHint hint){
     if (index.column() > 0)
         QTreeView::scrollTo(index, hint);
 }
 
 //! [geometry]
-void FPropertyTreeView::updateFrozenTableGeometry()
+void APropertyTreeView::updateFrozenTableGeometry()
 {
       frozenTableView->setGeometry(frameWidth(),
                                    frameWidth(), columnWidth(0),
@@ -438,9 +438,9 @@ void FPropertyTreeView::updateFrozenTableGeometry()
 }
 //! [geometry]
 
-void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox)
+void APropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox)
 {
-//    qDebug()<<"FPropertyTreeView::onPropertyFilterChanged"<<propertyFilterLineEdit->text()<<propertyDiffCheckBox->checkState()<<locationCheckBox->checkState()<<cameraCheckBox->checkState();
+//    qDebug()<<"APropertyTreeView::onPropertyFilterChanged"<<propertyFilterLineEdit->text()<<propertyDiffCheckBox->checkState()<<locationCheckBox->checkState()<<cameraCheckBox->checkState();
     QString diffString;
     if (propertyDiffCheckBox->checkState() == Qt::Unchecked)
         diffString = "0";
@@ -474,7 +474,7 @@ void FPropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdi
     frozenTableView->expandAll();
 }
 
-void FPropertyTreeView::onGetPropertyValue(QString fileName, QString key, QString *value)
+void APropertyTreeView::onGetPropertyValue(QString fileName, QString key, QString *value)
 {
     *value = "testValue" + fileName + key;
     //get column / file value
@@ -486,7 +486,7 @@ void FPropertyTreeView::onGetPropertyValue(QString fileName, QString key, QStrin
           fileColumnNr = col;
       }
     }
-//    qDebug()<<"FPropertyTreeView::onGetPropertyValue"<<fileName<<fileColumnNr<<key<<propertyItemModel->rowCount();
+//    qDebug()<<"APropertyTreeView::onGetPropertyValue"<<fileName<<fileColumnNr<<key<<propertyItemModel->rowCount();
 
     if (fileColumnNr != -1)
     {
@@ -502,7 +502,7 @@ void FPropertyTreeView::onGetPropertyValue(QString fileName, QString key, QStrin
                 if (sublevelIndex.data().toString() == key)
                 {
                     *value = propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex).data().toString();
-//                    qDebug()<<  "FPropertyTreeView::onGetPropertyValue"<<topLevelIndex<<childRowIndex<<sublevelIndex.data().toString()<<*value;
+//                    qDebug()<<  "APropertyTreeView::onGetPropertyValue"<<topLevelIndex<<childRowIndex<<sublevelIndex.data().toString()<<*value;
                     return;
                 }
             }
@@ -514,7 +514,7 @@ void FPropertyTreeView::onGetPropertyValue(QString fileName, QString key, QStrin
         *value = "";
 }
 
-void FPropertyTreeView::updateSuggestedName(QModelIndex index)
+void APropertyTreeView::updateSuggestedName(QModelIndex index)
 {
     QString fileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
 
@@ -536,7 +536,7 @@ void FPropertyTreeView::updateSuggestedName(QModelIndex index)
 
         for (int childRow=0;childRow<index.model()->rowCount(parentIndex);childRow++)
         {
-//            qDebug()<<"FPropertyTreeView::updateSuggestedName"<<childRow<<index.model()->index(childRow,0, parentIndex).data().toString();
+//            qDebug()<<"APropertyTreeView::updateSuggestedName"<<childRow<<index.model()->index(childRow,0, parentIndex).data().toString();
             if (index.model()->index(childRow,0, parentIndex).data().toString() == "CreateDate")
                 createDate = index.model()->index(childRow,index.column(),parentIndex).data().toString();
             if (index.model()->index(childRow,0, parentIndex).data().toString() == "GPSAltitude")
@@ -560,7 +560,7 @@ void FPropertyTreeView::updateSuggestedName(QModelIndex index)
         }
         }
 
-//        qDebug()<<"FPropertyTreeView::updateSuggestedName"<<createDate<<locationInName<<cameraInName;
+//        qDebug()<<"APropertyTreeView::updateSuggestedName"<<createDate<<locationInName<<cameraInName;
         if (createDate != "0000:00:00 00:00:00") // && createDate.right(8) != "00:00:00"
         {
             suggestedName = createDate.replace(":", "-");
@@ -626,7 +626,7 @@ void FPropertyTreeView::updateSuggestedName(QModelIndex index)
         }
 }
 
-void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
+void APropertyTreeView::onPropertyChanged(QStandardItem *item)
 {
     QModelIndex index = item->index();
     QString key = item->model()->index(item->row(),0,index.parent()).data().toString();
@@ -680,7 +680,7 @@ void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
 
                 processManager->startProcess(code, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
                 {
-                    FPropertyTreeView *propertyTreeView = qobject_cast<FPropertyTreeView *>(parent);
+                    APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
                     emit propertyTreeView->addLogToEntry(parameters["processId"], result.join("\n"));
                 });
             }
@@ -688,9 +688,9 @@ void FPropertyTreeView::onPropertyChanged(QStandardItem *item)
     }
 } //on onPropertyChanged
 
-void FPropertyTreeView::onRemoveFile(QString fileName)
+void APropertyTreeView::onRemoveFile(QString fileName)
 {
-//    qDebug()<<"FPropertyTreeView::onRemoveFile"<<fileName;
+//    qDebug()<<"APropertyTreeView::onRemoveFile"<<fileName;
 
     for (int column=0; column<propertyItemModel->columnCount();column++)
     {
@@ -699,9 +699,9 @@ void FPropertyTreeView::onRemoveFile(QString fileName)
     }
 }
 
-void FPropertyTreeView::onReloadProperties()
+void APropertyTreeView::onReloadProperties()
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-//    qDebug()<<"FPropertyTreeView::onReloadProperties"<<lastFolder;
+//    qDebug()<<"APropertyTreeView::onReloadProperties"<<lastFolder;
     loadModel(lastFolder);
 }

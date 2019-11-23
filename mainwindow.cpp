@@ -86,71 +86,71 @@ MainWindow::MainWindow(QWidget *parent) :
     if (savedGeometry != geometry() && savedGeometry.width() != 0) //initial
         setGeometry(savedGeometry);
 
-    connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onFolderIndexClicked);
+    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->propertyTreeView, &APropertyTreeView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "prop", "folder");
-    connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->filesTreeView, &FFilesTreeView::onFolderIndexClicked);
+    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->filesTreeView, &AFilesTreeView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "files", "folder");
-    connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFolderIndexClicked);
+    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "clip", "folder");
-    connect(ui->folderTreeView, &FFolderTreeView::indexClicked, ui->videoWidget, &FVideoWidget::onFolderIndexClicked);
+    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->videoWidget, &AVideoWidget::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "video", "folder");
 
-    connect(ui->propertyTreeView, &FPropertyTreeView::propertiesLoaded, ui->clipsTableView, &AClipsTableView::onPropertiesLoaded);
+    connect(ui->propertyTreeView, &APropertyTreeView::propertiesLoaded, ui->clipsTableView, &AClipsTableView::onPropertiesLoaded);
 
-    connect(ui->filesTreeView, &FFilesTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
+    connect(ui->filesTreeView, &AFilesTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
     ui->graphicsView1->connectNodes("files", "clip", "file");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onReleaseMedia); //stop and release
+    connect(ui->filesTreeView, &AFilesTreeView::fileDelete, ui->videoWidget, &AVideoWidget::onReleaseMedia); //stop and release
     ui->graphicsView1->connectNodes("files", "video", "delete");
-//    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->videoWidget, &FVideoWidget::onFileRename); //stop and release
+//    connect(ui->filesTreeView, &AFilesTreeView::fileRename, ui->videoWidget, &AVideoWidget::onFileRename); //stop and release
 //    ui->graphicsView1->connectNodes("files", "video", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
+    connect(ui->filesTreeView, &AFilesTreeView::fileDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
     ui->graphicsView1->connectNodes("files", "clip", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::clipsDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
+    connect(ui->filesTreeView, &AFilesTreeView::clipsDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
     ui->graphicsView1->connectNodes("files", "clip", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->clipsTableView, &AClipsTableView::onReloadClips); //reload
+    connect(ui->filesTreeView, &AFilesTreeView::fileRename, ui->clipsTableView, &AClipsTableView::onReloadClips); //reload
     ui->graphicsView1->connectNodes("files", "clip", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::fileDelete, ui->propertyTreeView, &FPropertyTreeView::onRemoveFile); //remove from column
+    connect(ui->filesTreeView, &AFilesTreeView::fileDelete, ui->propertyTreeView, &APropertyTreeView::onRemoveFile); //remove from column
     ui->graphicsView1->connectNodes("files", "prop", "delete");
-    connect(ui->filesTreeView, &FFilesTreeView::fileRename, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
+    connect(ui->filesTreeView, &AFilesTreeView::fileRename, ui->propertyTreeView, &APropertyTreeView::onReloadProperties); //reload
     ui->graphicsView1->connectNodes("files", "prop", "rename");
-    connect(ui->filesTreeView, &FFilesTreeView::trim, ui->clipsTableView, &AClipsTableView::onTrim);
+    connect(ui->filesTreeView, &AFilesTreeView::trim, ui->clipsTableView, &AClipsTableView::onTrim);
     ui->graphicsView1->connectNodes("files", "clip", "trim");
-    connect(ui->filesTreeView, &FFilesTreeView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+    connect(ui->filesTreeView, &AFilesTreeView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 
-    connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedItemModel, ui->tagsListView, &FTagsListView::onFolderIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedItemModel, ui->tagsListView, &ATagsListView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("clip", "tags", "folder");
     connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set clip counter
     ui->graphicsView1->connectNodes("clip", "main", "folder");
-    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->videoWidget, &FVideoWidget::onFileIndexClicked); //setmedia
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->videoWidget, &AVideoWidget::onFileIndexClicked); //setmedia
     ui->graphicsView1->connectNodes("clip", "video", "file");
-    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->timelineWidget, &FTimeline::onFileIndexClicked); //currently nothing happens
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->timelineWidget, &ATimeline::onFileIndexClicked); //currently nothing happens
     ui->graphicsView2->connectNodes("clip", "time", "file");
-    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->propertyTreeView, &FPropertyTreeView::onFileIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->propertyTreeView, &APropertyTreeView::onFileIndexClicked);
     ui->graphicsView1->connectNodes("clip", "prop", "file");
     connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, this, &MainWindow::onFileIndexClicked); //trigger onclipfilterchanged
     ui->graphicsView1->connectNodes("clip", "prop", "file");
-    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->filesTreeView, &FFilesTreeView::onClipIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->filesTreeView, &AFilesTreeView::onClipIndexClicked);
     ui->graphicsView1->connectNodes("clip", "files", "clip");
-    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->videoWidget, &FVideoWidget::onClipIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->videoWidget, &AVideoWidget::onClipIndexClicked);
     ui->graphicsView1->connectNodes("clip", "video", "clip");
-    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->propertyTreeView, &FPropertyTreeView::onClipIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->propertyTreeView, &APropertyTreeView::onClipIndexClicked);
     ui->graphicsView1->connectNodes("clip", "video", "clip");
-    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, ui->videoWidget, &FVideoWidget::onClipsChangedToVideo);
+    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, ui->videoWidget, &AVideoWidget::onClipsChangedToVideo);
     ui->graphicsView2->connectNodes("clip", "video", "clipchangevideo");
     connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, this,  &MainWindow::onClipsChangedToVideo);
     ui->graphicsView2->connectNodes("clip", "main", "clipchangevideo");
-    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToTimeline, ui->timelineWidget,  &FTimeline::onClipsChangedToTimeline);
+    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToTimeline, ui->timelineWidget,  &ATimeline::onClipsChangedToTimeline);
     ui->graphicsView2->connectNodes("clip", "time", "clipchangetimeline");
-    connect(ui->clipsTableView, &AClipsTableView::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+    connect(ui->clipsTableView, &AClipsTableView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView1->connectNodes("clip", "prop", "get");
-    connect(ui->clipsTableView, &AClipsTableView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    connect(ui->clipsTableView, &AClipsTableView::addLogEntry, ui->logTableView, &ALogTableView::onAddEntry);
     ui->graphicsView1->connectNodes("video", "prop", "get");
-    connect(ui->clipsTableView, &AClipsTableView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
+    connect(ui->clipsTableView, &AClipsTableView::addLogToEntry, ui->logTableView, &ALogTableView::onAddLogToEntry);
 
-    connect(ui->clipsTableView, &AClipsTableView::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties);
+    connect(ui->clipsTableView, &AClipsTableView::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
 
-    connect(ui->clipsTableView, &AClipsTableView::updateIn, ui->videoWidget, &FVideoWidget::onUpdateIn);
-    connect(ui->clipsTableView, &AClipsTableView::updateOut, ui->videoWidget, &FVideoWidget::onUpdateOut);
+    connect(ui->clipsTableView, &AClipsTableView::updateIn, ui->videoWidget, &AVideoWidget::onUpdateIn);
+    connect(ui->clipsTableView, &AClipsTableView::updateOut, ui->videoWidget, &AVideoWidget::onUpdateOut);
 
     connect(ui->clipsTableView, &AClipsTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
 
@@ -160,48 +160,48 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->clipsTableView, &AClipsTableView::trim, ui->exportWidget, &AExport::onTrim);
     connect(ui->clipsTableView, &AClipsTableView::reloadAll, ui->exportWidget, &AExport::onReloadAll);
 
-    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->clipsTableView, &AClipsTableView::onVideoPositionChanged);
+    connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, ui->clipsTableView, &AClipsTableView::onVideoPositionChanged);
     ui->graphicsView1->connectNodes("video", "clip", "pos");
-    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, ui->timelineWidget, &FTimeline::onVideoPositionChanged);
+    connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, ui->timelineWidget, &ATimeline::onVideoPositionChanged);
     ui->graphicsView2->connectNodes("video", "time", "pos");
-    connect(ui->videoWidget, &FVideoWidget::videoPositionChanged, this, &MainWindow::onVideoPositionChanged);
+    connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, this, &MainWindow::onVideoPositionChanged);
     ui->graphicsView2->connectNodes("video", "main", "pos");
-    connect(ui->videoWidget, &FVideoWidget::scrubberInChanged, ui->clipsTableView, &AClipsTableView::onScrubberInChanged);
+    connect(ui->videoWidget, &AVideoWidget::scrubberInChanged, ui->clipsTableView, &AClipsTableView::onScrubberInChanged);
     ui->graphicsView1->connectNodes("video", "clip", "in");
-    connect(ui->videoWidget, &FVideoWidget::scrubberOutChanged, ui->clipsTableView, &AClipsTableView::onScrubberOutChanged);
+    connect(ui->videoWidget, &AVideoWidget::scrubberOutChanged, ui->clipsTableView, &AClipsTableView::onScrubberOutChanged);
     ui->graphicsView1->connectNodes("video", "clip", "out");
-    connect(ui->videoWidget, &FVideoWidget::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+    connect(ui->videoWidget, &AVideoWidget::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView1->connectNodes("video", "prop", "get");
 
-    connect(ui->timelineWidget, &FTimeline::timelinePositionChanged, ui->videoWidget, &FVideoWidget::onTimelinePositionChanged);
+    connect(ui->timelineWidget, &ATimeline::timelinePositionChanged, ui->videoWidget, &AVideoWidget::onTimelinePositionChanged);
     ui->graphicsView2->connectNodes("time", "video", "pos");
-//    connect(ui->timelineWidget, &FTimeline::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+//    connect(ui->timelineWidget, &FTimeline::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView1->connectNodes("time", "prop", "get");
-    connect(ui->timelineWidget, &FTimeline::clipsChangedToVideo, ui->videoWidget, &FVideoWidget::onClipsChangedToVideo);
+    connect(ui->timelineWidget, &ATimeline::clipsChangedToVideo, ui->videoWidget, &AVideoWidget::onClipsChangedToVideo);
     ui->graphicsView2->connectNodes("time", "video", "clipchangevideo");
-    connect(ui->timelineWidget, &FTimeline::clipsChangedToTimeline, this, &MainWindow::onClipsChangedToTimeline);
+    connect(ui->timelineWidget, &ATimeline::clipsChangedToTimeline, this, &MainWindow::onClipsChangedToTimeline);
     ui->graphicsView2->connectNodes("time", "main", "clipchangetimeline");
 
-    connect(ui->timelineWidget, &FTimeline::adjustTransitionTime, this, &MainWindow::onAdjustTransitionTime);
+    connect(ui->timelineWidget, &ATimeline::adjustTransitionTime, this, &MainWindow::onAdjustTransitionTime);
 
-    connect(ui->propertyTreeView, &FPropertyTreeView::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
+    connect(ui->propertyTreeView, &APropertyTreeView::addLogEntry, ui->logTableView, &ALogTableView::onAddEntry);
     ui->graphicsView1->connectNodes("video", "prop", "get");
-    connect(ui->propertyTreeView, &FPropertyTreeView::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
-    connect(ui->propertyTreeView, &FPropertyTreeView::fileDelete, ui->videoWidget, &FVideoWidget::onReleaseMedia); // on property change, stop video
+    connect(ui->propertyTreeView, &APropertyTreeView::addLogToEntry, ui->logTableView, &ALogTableView::onAddLogToEntry);
+    connect(ui->propertyTreeView, &APropertyTreeView::fileDelete, ui->videoWidget, &AVideoWidget::onReleaseMedia); // on property change, stop video
 
-    connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &FPropertyTreeView::onPropertyFilterChanged);
+    connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &APropertyTreeView::onPropertyFilterChanged);
     ui->graphicsView1->connectNodes("main", "prop", "filter");
     connect(this, &MainWindow::clipsFilterChanged, ui->clipsTableView, &AClipsTableView::onClipsFilterChanged);
     ui->graphicsView1->connectNodes("main", "clip", "filter");
 
-    connect(this, &MainWindow::timelineWidgetsChanged, ui->timelineWidget, &FTimeline::onTimelineWidgetsChanged);
+    connect(this, &MainWindow::timelineWidgetsChanged, ui->timelineWidget, &ATimeline::onTimelineWidgetsChanged);
     ui->graphicsView2->connectNodes("main", "video", "widgetchanged");
 
-    connect(ui->exportWidget, &AExport::addLogEntry, ui->logTableView, &FLogTableView::onAddEntry);
-    connect(ui->exportWidget, &AExport::addLogToEntry, ui->logTableView, &FLogTableView::onAddLogToEntry);
-    connect(ui->exportWidget, &AExport::getPropertyValue, ui->propertyTreeView, &FPropertyTreeView::onGetPropertyValue);
+    connect(ui->exportWidget, &AExport::addLogEntry, ui->logTableView, &ALogTableView::onAddEntry);
+    connect(ui->exportWidget, &AExport::addLogToEntry, ui->logTableView, &ALogTableView::onAddLogToEntry);
+    connect(ui->exportWidget, &AExport::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
     connect(ui->exportWidget, &AExport::reloadClips, ui->clipsTableView, &AClipsTableView::onReloadClips); //reload
-    connect(ui->exportWidget, &AExport::reloadProperties, ui->propertyTreeView, &FPropertyTreeView::onReloadProperties); //reload
+    connect(ui->exportWidget, &AExport::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties); //reload
 
 
     //load settings
@@ -1250,7 +1250,7 @@ void MainWindow::onPropertiesLoaded()
 void MainWindow::onVideoPositionChanged(int progress, int , int )//row, relativeProgress
 {
     positionValueChangedBy = "SpinBox";
-    ui->positionDial->setValue(FGlobal().msec_to_frames(progress)%100);
+    ui->positionDial->setValue(AGlobal().msec_to_frames(progress)%100);
     positionValueChangedBy = "";
 }
 
