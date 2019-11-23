@@ -1,5 +1,5 @@
-#ifndef FPROPERTYITEMDELEGATE_H
-#define FPROPERTYITEMDELEGATE_H
+#ifndef APROPERTYITEMDELEGATE_H
+#define APROPERTYITEMDELEGATE_H
 
 
 #include <QStyledItemDelegate>
@@ -34,4 +34,4 @@ private:
 //    QPersistentModelIndex currentEditedCellIndex;
 };
 
-#endif // FPROPERTYITEMDELEGATE_H
+#endif // APROPERTYITEMDELEGATE_H

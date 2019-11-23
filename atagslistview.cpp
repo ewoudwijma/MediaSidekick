@@ -1,9 +1,9 @@
-#include "ftagslistview.h"
+#include "atagslistview.h"
 
 #include <QSettings>
 #include <QDebug>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 ATagsListView::ATagsListView(QWidget *parent) : QListView(parent)
 {

@@ -3,8 +3,8 @@
 
 #include "aclipsitemmodel.h"
 #include "aclipssortfilterproxymodel.h"
-#include "fprocessmanager.h"
-#include "fstareditor.h"
+#include "aprocessmanager.h"
+#include "astareditor.h"
 #include "stimespinbox.h"
 
 #include <QCheckBox>

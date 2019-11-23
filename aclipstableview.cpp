@@ -1,6 +1,6 @@
 #include "aclipsitemdelegate.h"
 #include "aclipstableview.h"
-#include "fstarrating.h"
+#include "astarrating.h"
 #include "stimespinbox.h"
 
 #include <QApplication>
@@ -12,7 +12,7 @@
 
 #include <QDebug>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
 {

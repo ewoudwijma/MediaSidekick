@@ -1,5 +1,5 @@
-#ifndef FTAGSLISTVIEW_H
-#define FTAGSLISTVIEW_H
+#ifndef ATAGSLISTVIEW_H
+#define ATAGSLISTVIEW_H
 
 #include <QListView>
 #include <QStandardItemModel>
@@ -20,4 +20,4 @@ private slots:
     void onDoubleClicked(const QModelIndex &index);
 };
 
-#endif // FTAGSLISTVIEW_H
+#endif // ATAGSLISTVIEW_H

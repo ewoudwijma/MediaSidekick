@@ -1,8 +1,8 @@
 #include "aclipsitemdelegate.h"
 
-#include "fglobal.h"
-#include "fstareditor.h"
-#include "fstarrating.h"
+#include "aglobal.h"
+#include "astareditor.h"
+#include "astarrating.h"
 
 #include <QCheckBox>
 #include <QDebug>

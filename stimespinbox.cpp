@@ -1,4 +1,4 @@
-#include "fglobal.h"
+#include "aglobal.h"
 #include "stimespinbox.h"
 
 #include <QDebug>

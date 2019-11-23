@@ -1,9 +1,9 @@
 #include "aclipssortfilterproxymodel.h"
-#include "fstarrating.h"
+#include "astarrating.h"
 
 #include <QDebug>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 AClipsSortFilterProxyModel::AClipsSortFilterProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)

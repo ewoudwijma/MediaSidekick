@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QMimeData>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 AClipsItemModel::AClipsItemModel(QObject *parent)
     : QStandardItemModel(parent)

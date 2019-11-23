@@ -1,4 +1,4 @@
-#include "fvideowidget.h"
+#include "avideowidget.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -16,7 +16,7 @@
 #include <QVersionNumber>
 #include <QtDebug>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 #include <QtMath>
 
@@ -175,7 +175,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->timelineWidget, &ATimeline::timelinePositionChanged, ui->videoWidget, &AVideoWidget::onTimelinePositionChanged);
     ui->graphicsView2->connectNodes("time", "video", "pos");
-//    connect(ui->timelineWidget, &FTimeline::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
+//    connect(ui->timelineWidget, &ATimeline::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 //    ui->graphicsView1->connectNodes("time", "prop", "get");
     connect(ui->timelineWidget, &ATimeline::clipsChangedToVideo, ui->videoWidget, &AVideoWidget::onClipsChangedToVideo);
     ui->graphicsView2->connectNodes("time", "video", "clipchangevideo");

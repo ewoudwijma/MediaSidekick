@@ -1,5 +1,5 @@
-#ifndef FPROCESSMANAGER_H
-#define FPROCESSMANAGER_H
+#ifndef APROCESSMANAGER_H
+#define APROCESSMANAGER_H
 
 
 #include <QProcess>
@@ -30,4 +30,4 @@ private:
 //    void (*allDoneProcess)(QWidget *, QMap<QString, QString>);
 };
 
-#endif // FPROCESSMANAGER_H
+#endif // APROCESSMANAGER_H

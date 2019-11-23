@@ -1,5 +1,5 @@
-#ifndef FVIDEOWIDGET_H
-#define FVIDEOWIDGET_H
+#ifndef AVIDEOWIDGET_H
+#define AVIDEOWIDGET_H
 
 #include "aclipssortfilterproxymodel.h"
 #include "sscrubbar.h"
@@ -98,4 +98,4 @@ signals:
 
 };
 
-#endif // FVIDEOWIDGET_H
+#endif // AVIDEOWIDGET_H

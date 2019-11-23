@@ -4,7 +4,7 @@
 #include <QSettings>
 #include <QTime>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 #include <QMessageBox>
 
@@ -270,7 +270,7 @@ void AExport::exportClips(QAbstractItemModel *timelineModel, QString target, QSt
                         outTime = outTime.addMSecs(- AGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
                     }
                 }
-//                qDebug()<<"gen"<<row<<transitionTimeMSecs<<transitionTimeFrames/2<<qRound(transitionTimeFrames/2.0)<<FGlobal().frames_to_msec((transitionTimeFrames/2))<<inTime<<outTime;
+//                qDebug()<<"gen"<<row<<transitionTimeMSecs<<transitionTimeFrames/2<<qRound(transitionTimeFrames/2.0)<<AGlobal().frames_to_msec((transitionTimeFrames/2))<<inTime<<outTime;
 
                 vidlistStream << "inpoint " <<  QString::number(inTime.msecsSinceStartOfDay() / 1000.0, 'g', 6) << endl;
                 vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << endl;

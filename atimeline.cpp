@@ -1,5 +1,5 @@
-#include "fglobal.h"
-#include "ftimeline.h"
+#include "aglobal.h"
+#include "atimeline.h"
 
 #include <QTimer>
 #include <QStyle>

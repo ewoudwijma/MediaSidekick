@@ -1,5 +1,5 @@
-#ifndef FFILESTREEVIEW_H
-#define FFILESTREEVIEW_H
+#ifndef AFILESTREEVIEW_H
+#define AFILESTREEVIEW_H
 
 #include <QFileSystemModel>
 #include <QStandardItemModel>
@@ -42,4 +42,4 @@ signals:
 
 };
 
-#endif // FFILESTREEVIEW_H
+#endif // AFILESTREEVIEW_H

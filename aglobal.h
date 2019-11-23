@@ -1,5 +1,5 @@
-#ifndef FGLOBAL_H
-#define FGLOBAL_H
+#ifndef AGLOBAL_H
+#define AGLOBAL_H
 
 #include <QString>
 
@@ -33,4 +33,4 @@ public:
     int frames_to_msec(int frames);
 };
 
-#endif // FGLOBAL_H
+#endif // AGLOBAL_H

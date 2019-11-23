@@ -1,9 +1,9 @@
-#ifndef FSTAREDITOR_H
-#define FSTAREDITOR_H
+#ifndef ASTAREDITOR_H
+#define ASTAREDITOR_H
 
 #include <QWidget>
 
-#include "fstarrating.h"
+#include "astarrating.h"
 
 //! [0]
 class AStarEditor : public QWidget
@@ -36,4 +36,4 @@ private:
 };
 //! [0]
 
-#endif // FSTAREDITOR_H
+#endif // ASTAREDITOR_H

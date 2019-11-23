@@ -1,5 +1,5 @@
-#ifndef FLOGTABLEVIEW_H
-#define FLOGTABLEVIEW_H
+#ifndef ALOGTABLEVIEW_H
+#define ALOGTABLEVIEW_H
 
 #include <QStandardItemModel>
 #include <QTableView>
@@ -20,4 +20,4 @@ private:
 
 };
 
-#endif // FLOGTABLEVIEW_H
+#endif // ALOGTABLEVIEW_H

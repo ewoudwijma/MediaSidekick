@@ -49,68 +49,64 @@
 ****************************************************************************/
 
 #include <QtWidgets>
+#include <cmath>
 
-#include "fstareditor.h"
-#include "fstarrating.h"
+#include "astarrating.h"
+
+const int PaintingScaleFactor = 20;
 
 //! [0]
-AStarEditor::AStarEditor(QWidget *parent)
-    : QWidget(parent)
+AStarRating::AStarRating(int starCount, int maxStarCount)
 {
-    setMouseTracking(true);
-    setAutoFillBackground(true);
+    myStarCount = starCount;
+    myMaxStarCount = maxStarCount;
+
+    starPolygon << QPointF(1.0, 0.5);
+    for (int i = 1; i < 5; ++i)
+        starPolygon << QPointF(0.5 + 0.5 * std::cos(0.8 * i * 3.14),
+                               0.5 + 0.5 * std::sin(0.8 * i * 3.14));
+
+    diamondPolygon << QPointF(0.4, 0.5) << QPointF(0.5, 0.4)
+                   << QPointF(0.6, 0.5) << QPointF(0.5, 0.6)
+                   << QPointF(0.4, 0.5);
 }
 //! [0]
-
-QSize AStarEditor::sizeHint() const
-{
-    return myStarRating.sizeHint();
-}
 
 //! [1]
-void AStarEditor::paintEvent(QPaintEvent *)
+QSize AStarRating::sizeHint() const
 {
-    QPainter painter(this);
-    myStarRating.paint(&painter, rect(), this->palette(),
-                       AStarRating::Editable);
+    return PaintingScaleFactor * QSize(myMaxStarCount, 1);
 }
 //! [1]
 
 //! [2]
-void AStarEditor::mouseMoveEvent(QMouseEvent *event)
+void AStarRating::paint(QPainter *painter, const QRect &rect,
+                       const QPalette &palette, EditMode mode) const
 {
-    int star = starAtPosition(event->x());
+    painter->save();
 
-    if (event->x() <= 2 || event->x() >= width() - 2 || event->y() <= 2 || event->y() >= height() - 2) //if leaving the widget, reset to old value
-    {
-//        qDebug()<<"mouseMoveEvent"<<event<<event->x()<<event->y()<<event->localPos()<<star<<height()<<width()<<starRating().starCount()<<oldStarRating.starCount();
-        myStarRating.setStarCount(oldStarRating.starCount());
-        update();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(Qt::NoPen);
+
+    if (mode == Editable) {
+        painter->setBrush(palette.highlight());
+    } else {
+        painter->setBrush(palette.foreground());
     }
-    else if (star != myStarRating.starCount() && star != -1) {
-        myStarRating.setStarCount(star);
-        update();
+
+    int yOffset = (rect.height() - PaintingScaleFactor) / 2;
+    painter->translate(rect.x(), rect.y() + yOffset);
+    painter->scale(PaintingScaleFactor, PaintingScaleFactor);
+
+    for (int i = 0; i < myMaxStarCount; ++i) {
+        if (i < myStarCount) {
+            painter->drawPolygon(starPolygon, Qt::WindingFill);
+        } else if (mode == Editable) {
+            painter->drawPolygon(diamondPolygon, Qt::WindingFill);
+        }
+        painter->translate(1.0, 0.0);
     }
+
+    painter->restore();
 }
 //! [2]
-
-//! [3]
-void AStarEditor::mouseReleaseEvent(QMouseEvent * /* event */)
-{
-//    qDebug()<<"mouseReleaseEvent";
-    oldStarRating = myStarRating;
-    emit editingFinished();
-}
-//! [3]
-
-//! [4]
-int AStarEditor::starAtPosition(int x)
-{
-    int star = (x / (myStarRating.sizeHint().width()
-                     / (myStarRating.maxStarCount()+1))); //changed from 0..5 instead from 1..5
-    if (star < 0 || star > myStarRating.maxStarCount())
-        return -1;
-
-    return star;
-}
-//! [4]

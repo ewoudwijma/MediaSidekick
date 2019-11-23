@@ -1,4 +1,4 @@
-#include "fglobal.h"
+#include "aglobal.h"
 
 #include <QTime>
 #include <QDebug>
@@ -39,7 +39,7 @@ int AGlobal::msec_to_frames(int msec )
 int AGlobal::frames_to_msec(int frames )
 {
 
-//    qDebug()<<"FGlobal::frames_to_msec"<<frames<<qRound(1000.0 / QSettings().value("frameRate").toInt())<<frames*qRound(1000.0 / QSettings().value("frameRate").toInt());
+//    qDebug()<<"AGlobal::frames_to_msec"<<frames<<qRound(1000.0 / QSettings().value("frameRate").toInt())<<frames*qRound(1000.0 / QSettings().value("frameRate").toInt());
     return qRound(frames * 1000.0 / QSettings().value("frameRate").toInt());
 }
 

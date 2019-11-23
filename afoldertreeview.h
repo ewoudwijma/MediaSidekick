@@ -1,5 +1,5 @@
-#ifndef FFOLDERTREEVIEW_H
-#define FFOLDERTREEVIEW_H
+#ifndef AFOLDERTREEVIEW_H
+#define AFOLDERTREEVIEW_H
 
 #include <QFileSystemModel>
 #include <QSettings>
@@ -18,4 +18,4 @@ signals:
     void indexClicked(QModelIndex index);
 };
 
-#endif // FFOLDERTREEVIEW_H
+#endif // AFOLDERTREEVIEW_H

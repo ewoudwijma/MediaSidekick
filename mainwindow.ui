@@ -1017,33 +1017,33 @@
   <customwidget>
    <class>AVideoWidget</class>
    <extends>QWidget</extends>
-   <header>fvideowidget.h</header>
+   <header>avideowidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>AFolderTreeView</class>
    <extends>QTreeView</extends>
-   <header>ffoldertreeview.h</header>
+   <header>afoldertreeview.h</header>
   </customwidget>
   <customwidget>
    <class>AFilesTreeView</class>
    <extends>QTreeView</extends>
-   <header>ffilestreeview.h</header>
+   <header>afilestreeview.h</header>
   </customwidget>
   <customwidget>
    <class>APropertyTreeView</class>
    <extends>QTreeView</extends>
-   <header>fpropertytreeview.h</header>
+   <header>apropertytreeview.h</header>
   </customwidget>
   <customwidget>
    <class>ATagsListView</class>
    <extends>QListView</extends>
-   <header>ftagslistview.h</header>
+   <header>atagslistview.h</header>
   </customwidget>
   <customwidget>
    <class>ATimeline</class>
    <extends>QWidget</extends>
-   <header>ftimeline.h</header>
+   <header>atimeline.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
@@ -1054,7 +1054,7 @@
   <customwidget>
    <class>ALogTableView</class>
    <extends>QTableView</extends>
-   <header>flogtableview.h</header>
+   <header>alogtableview.h</header>
   </customwidget>
   <customwidget>
    <class>QGraphWidget</class>
@@ -1064,7 +1064,7 @@
   <customwidget>
    <class>ADragDropLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>fdragdroplineedit.h</header>
+   <header>adragdroplineedit.h</header>
   </customwidget>
   <customwidget>
    <class>AExport</class>

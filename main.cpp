@@ -2,7 +2,7 @@
 #include <QApplication>
 #include <QSplashScreen>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 int main(int argc, char *argv[])
 {

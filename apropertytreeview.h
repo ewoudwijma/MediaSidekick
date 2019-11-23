@@ -1,8 +1,8 @@
-#ifndef FPROPERTYTREEVIEW_H
-#define FPROPERTYTREEVIEW_H
+#ifndef APROPERTYTREEVIEW_H
+#define PROPERTYTREEVIEW_H
 
-#include "fprocessmanager.h"
-#include "fpropertysortfilterproxymodel.h"
+#include "aprocessmanager.h"
+#include "apropertysortfilterproxymodel.h"
 
 #include <QCheckBox>
 #include <QStandardItemModel>
@@ -58,4 +58,4 @@ signals:
       void fileDelete(QString fileName);
 };
 
-#endif // FPROPERTYTREEVIEW_H
+#endif // APROPERTYTREEVIEW_H

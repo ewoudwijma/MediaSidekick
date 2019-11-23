@@ -1,5 +1,5 @@
-#ifndef FLOGITEMDELEGATE_H
-#define FLOGITEMDELEGATE_H
+#ifndef ALOGITEMDELEGATE_H
+#define ALOGITEMDELEGATE_H
 
 #include <QStyledItemDelegate>
 
@@ -23,4 +23,4 @@ public:
 
 };
 
-#endif // FLOGITEMDELEGATE_H
+#endif // ALOGITEMDELEGATE_H

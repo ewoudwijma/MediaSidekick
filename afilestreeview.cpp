@@ -1,4 +1,4 @@
-#include "ffilestreeview.h"
+#include "afilestreeview.h"
 
 #include <QHeaderView>
 #include <QMenu>
@@ -7,7 +7,7 @@
 
 #include <QDebug>
 
-#include "fglobal.h"
+#include "aglobal.h"
 
 AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 {

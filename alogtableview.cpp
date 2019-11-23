@@ -1,5 +1,5 @@
-#include "flogitemdelegate.h"
-#include "flogtableview.h"
+#include "alogitemdelegate.h"
+#include "alogtableview.h"
 
 #include <QApplication>
 #include <QDialog>

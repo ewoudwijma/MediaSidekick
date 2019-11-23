@@ -1,4 +1,4 @@
-#include "fpropertysortfilterproxymodel.h"
+#include "apropertysortfilterproxymodel.h"
 
 #include <QDebug>
 

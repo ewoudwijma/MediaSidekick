@@ -1,4 +1,4 @@
-#include "flogitemdelegate.h"
+#include "alogitemdelegate.h"
 #include <QDebug>
 #include <QTextBrowser>
 #include <QPainter>

@@ -3,7 +3,7 @@
 
 #include "aclipssortfilterproxymodel.h"
 #include "aclipstableview.h"
-#include "fstareditor.h"
+#include "astareditor.h"
 
 #include <QCheckBox>
 #include <QLineEdit>

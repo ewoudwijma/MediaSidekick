@@ -48,8 +48,8 @@
 **
 ****************************************************************************/
 
-#ifndef FSTARRATING_H
-#define FSTARRATING_H
+#ifndef ASTARRATING_H
+#define ASTARRATING_H
 
 #include <QMetaType>
 #include <QPainter>

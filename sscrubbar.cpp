@@ -1,7 +1,7 @@
 #include "sscrubbar.h"
 
 #include <QtWidgets>
-#include "fglobal.h"
+#include "aglobal.h"
 
 static const int margin = 14;        /// left and right margins
 static const int selectionSize = 18; /// the height of the top bar

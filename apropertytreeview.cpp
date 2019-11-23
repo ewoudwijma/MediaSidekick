@@ -1,12 +1,12 @@
-#include "fpropertyitemdelegate.h"
-#include "fpropertytreeview.h"
+#include "apropertyitemdelegate.h"
+#include "apropertytreeview.h"
 
 #include <QHeaderView>
 #include <QDebug>
 #include <QSettings>
 #include <QUrl>
 #include <QScrollBar>
-#include "fglobal.h"
+#include "aglobal.h"
 #include <QDateTime>
 
 static const int deltaIndex = 2;

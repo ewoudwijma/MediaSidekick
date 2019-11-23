@@ -1,5 +1,5 @@
-#include "fglobal.h"
-#include "fvideowidget.h"
+#include "aglobal.h"
+#include "avideowidget.h"
 
 #include <QAbstractVideoSurface>
 #include <QDebug>

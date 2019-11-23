@@ -30,22 +30,22 @@ SOURCES += \
         aclipsitemmodel.cpp \
         aclipssortfilterproxymodel.cpp \
         aclipstableview.cpp \
+        adragdroplineedit.cpp \
         aexport.cpp \
-        fdragdroplineedit.cpp \
-        ffilestreeview.cpp \
-        ffoldertreeview.cpp \
-        fglobal.cpp \
-        flogitemdelegate.cpp \
-        flogtableview.cpp \
-        fprocessmanager.cpp \
-        fpropertyitemdelegate.cpp \
-        fpropertysortfilterproxymodel.cpp \
-        fpropertytreeview.cpp \
-        fstareditor.cpp \
-        fstarrating.cpp \
-        ftagslistview.cpp \
-        ftimeline.cpp \
-        fvideowidget.cpp \
+        afilestreeview.cpp \
+        afoldertreeview.cpp \
+        aglobal.cpp \
+        alogitemdelegate.cpp \
+        alogtableview.cpp \
+        aprocessmanager.cpp \
+        apropertyitemdelegate.cpp \
+        apropertysortfilterproxymodel.cpp \
+        apropertytreeview.cpp \
+        astareditor.cpp \
+        astarrating.cpp \
+        atagslistview.cpp \
+        atimeline.cpp \
+        avideowidget.cpp \
         main.cpp \
         mainwindow.cpp \
         qedge.cpp \
@@ -59,22 +59,22 @@ HEADERS += \
         aclipsitemmodel.h \
         aclipssortfilterproxymodel.h \
         aclipstableview.h \
+        adragdroplineedit.h \
         aexport.h \
-        fdragdroplineedit.h \
-        ffilestreeview.h \
-        ffoldertreeview.h \
-        fglobal.h \
-        flogitemdelegate.h \
-        flogtableview.h \
-        fprocessmanager.h \
-        fpropertyitemdelegate.h \
-        fpropertysortfilterproxymodel.h \
-        fpropertytreeview.h \
-        fstareditor.h \
-        fstarrating.h \
-        ftagslistview.h \
-        ftimeline.h \
-        fvideowidget.h \
+        afilestreeview.h \
+        afoldertreeview.h \
+        aglobal.h \
+        alogitemdelegate.h \
+        alogtableview.h \
+        aprocessmanager.h \
+        apropertyitemdelegate.h \
+        apropertysortfilterproxymodel.h \
+        apropertytreeview.h \
+        astareditor.h \
+        astarrating.h \
+        atagslistview.h \
+        atimeline.h \
+        avideowidget.h \
         mainwindow.h \
         qedge.h \
         qgraphwidget.h \

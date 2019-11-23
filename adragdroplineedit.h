@@ -1,5 +1,5 @@
-#ifndef FDRAGDROPLINEEDIT_H
-#define FDRAGDROPLINEEDIT_H
+#ifndef ADRAGDROPLINEEDIT_H
+#define ADRAGDROPLINEEDIT_H
 
 #include <QLineEdit>
 
@@ -14,4 +14,4 @@ public:
 
 };
 
-#endif // FDRAGDROPLINEEDIT_H
+#endif // ADRAGDROPLINEEDIT_H

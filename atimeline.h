@@ -1,5 +1,5 @@
-#ifndef FTIMELINE_H
-#define FTIMELINE_H
+#ifndef ATIMELINE_H
+#define ATIMELINE_H
 
 #include "aclipssortfilterproxymodel.h"
 #include "aclipstableview.h"
@@ -67,4 +67,4 @@ signals:
 
 };
 
-#endif // FTIMELINE_H
+#endif // ATIMELINE_H
