@@ -1,5 +1,5 @@
-#include "fedititemdelegate.h"
-#include "fedittableview.h"
+#include "aclipsitemdelegate.h"
+#include "aclipstableview.h"
 #include "fstarrating.h"
 #include "stimespinbox.h"
 

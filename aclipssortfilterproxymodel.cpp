@@ -1,4 +1,4 @@
-#include "feditsortfilterproxymodel.h"
+#include "aclipssortfilterproxymodel.h"
 #include "fstarrating.h"
 
 #include <QDebug>

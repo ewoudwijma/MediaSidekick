@@ -1,4 +1,4 @@
-#include "fedititemdelegate.h"
+#include "aclipsitemdelegate.h"
 
 #include "fglobal.h"
 #include "fstareditor.h"

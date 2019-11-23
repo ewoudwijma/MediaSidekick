@@ -1,7 +1,7 @@
 #ifndef FVIDEOWIDGET_H
 #define FVIDEOWIDGET_H
 
-#include "feditsortfilterproxymodel.h"
+#include "aclipssortfilterproxymodel.h"
 #include "sscrubbar.h"
 #include "stimespinbox.h"
 

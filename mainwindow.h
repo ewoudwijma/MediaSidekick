@@ -1,8 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "feditsortfilterproxymodel.h"
-#include "fedittableview.h"
+#include "aclipssortfilterproxymodel.h"
+#include "aclipstableview.h"
 #include "fstareditor.h"
 
 #include <QCheckBox>

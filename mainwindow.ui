@@ -714,7 +714,7 @@
     <addaction name="actionWhite_theme"/>
     <addaction name="actionBlack_theme"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
+   <widget class="QMenu" name="menuClips">
     <property name="title">
      <string>&amp;Clips</string>
     </property>
@@ -744,7 +744,7 @@
     <addaction name="actionIn"/>
     <addaction name="actionOut"/>
    </widget>
-   <widget class="QMenu" name="menuGenerate">
+   <widget class="QMenu" name="menuExport">
     <property name="title">
      <string>&amp;Export</string>
     </property>
@@ -753,8 +753,8 @@
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
    <addaction name="menuPlayer"/>
-   <addaction name="menuEdit"/>
-   <addaction name="menuGenerate"/>
+   <addaction name="menuClips"/>
+   <addaction name="menuExport"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -1069,13 +1069,13 @@
   <customwidget>
    <class>AExport</class>
    <extends>QWidget</extends>
-   <header>fgenerate.h</header>
+   <header>aexport.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>AClipsTableView</class>
    <extends>QTableView</extends>
-   <header>fedittableview.h</header>
+   <header>aclipstableview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -1,8 +1,8 @@
 #ifndef FTIMELINE_H
 #define FTIMELINE_H
 
-#include "feditsortfilterproxymodel.h"
-#include "fedittableview.h"
+#include "aclipssortfilterproxymodel.h"
+#include "aclipstableview.h"
 #include "sscrubbar.h"
 #include "stimespinbox.h"
 

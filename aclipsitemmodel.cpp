@@ -1,4 +1,4 @@
-#include "fedititemmodel.h"
+#include "aclipsitemmodel.h"
 
 #include <QDebug>
 #include <QMimeData>

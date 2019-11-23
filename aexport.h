@@ -1,7 +1,7 @@
 #ifndef AEXPORT_h
 #define AEXPORT_h
 
-#include "feditsortfilterproxymodel.h"
+#include "aclipssortfilterproxymodel.h"
 #include "mainwindow.h"
 
 #include <QProgressBar>

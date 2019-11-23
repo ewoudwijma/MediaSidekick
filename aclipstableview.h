@@ -1,8 +1,8 @@
 #ifndef AClipsTableView_H
 #define AClipsTableView_H
 
-#include "fedititemmodel.h"
-#include "feditsortfilterproxymodel.h"
+#include "aclipsitemmodel.h"
+#include "aclipssortfilterproxymodel.h"
 #include "fprocessmanager.h"
 #include "fstareditor.h"
 #include "stimespinbox.h"

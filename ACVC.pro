@@ -26,14 +26,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        aclipsitemdelegate.cpp \
+        aclipsitemmodel.cpp \
+        aclipssortfilterproxymodel.cpp \
+        aclipstableview.cpp \
+        aexport.cpp \
         fdragdroplineedit.cpp \
-        fedititemdelegate.cpp \
-        fedititemmodel.cpp \
-        feditsortfilterproxymodel.cpp \
-        fedittableview.cpp \
         ffilestreeview.cpp \
         ffoldertreeview.cpp \
-        fgenerate.cpp \
         fglobal.cpp \
         flogitemdelegate.cpp \
         flogtableview.cpp \
@@ -55,14 +55,14 @@ SOURCES += \
         stimespinbox.cpp
 
 HEADERS += \
+        aclipsitemdelegate.h \
+        aclipsitemmodel.h \
+        aclipssortfilterproxymodel.h \
+        aclipstableview.h \
+        aexport.h \
         fdragdroplineedit.h \
-        fedititemdelegate.h \
-        fedititemmodel.h \
-        feditsortfilterproxymodel.h \
-        fedittableview.h \
         ffilestreeview.h \
         ffoldertreeview.h \
-        fgenerate.h \
         fglobal.h \
         flogitemdelegate.h \
         flogtableview.h \
