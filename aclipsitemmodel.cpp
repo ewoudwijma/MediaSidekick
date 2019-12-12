@@ -13,7 +13,7 @@ AClipsItemModel::AClipsItemModel(QObject *parent)
 bool AClipsItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
                                int row, int column, const QModelIndex &parent)
 {
-    qDebug()<<"dropMimeData"<<row<<column<<parent.data();
+//    qDebug()<<"dropMimeData"<<row<<column<<parent.data();
     QByteArray encoded = data->data("application/x-qabstractitemmodeldatalist");
     QDataStream stream(&encoded, QIODevice::ReadOnly);
 

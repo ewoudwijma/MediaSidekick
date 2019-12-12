@@ -22,13 +22,24 @@ SScrubBar::SScrubBar(QWidget *parent)
 {
     readOnly = true;
     setMouseTracking(true);
-    setMinimumHeight(fontMetrics().height() + 2 * selectionSize);
+
+    audioOrVideo = "V";
 
     currentClip = -1;
 }
 
+void SScrubBar::setAudioOrVideo(QString AV)
+{
+    audioOrVideo = AV;
+}
+
 void SScrubBar::setScale(int maximum)
 {
+    if (readOnly) //av
+        setMinimumHeight(fontMetrics().height() + 4 * selectionSize);
+    else
+        setMinimumHeight(fontMetrics().height() + 2 * selectionSize);
+
 //    qDebug()<<"setScale"<<maximum;
     if (!m_timecodeWidth) {
         const int fontSize = font().pointSize() - (font().pointSize() > 10? 2 : (font().pointSize() > 8? 1 : 0));
@@ -37,7 +48,7 @@ void SScrubBar::setScale(int maximum)
     }
     m_max = maximum;
     /// m_scale is the pixels per frame ratio
-    m_scale = (double) (width() - 2 * margin) / (double) maximum;
+    m_scale = double(width() - 2 * margin) / double(maximum);
     if (m_scale == 0) m_scale = -1;
     m_secondsPerTick = qRound(double(m_timecodeWidth * 1.8) / m_scale / m_fps);
     if (m_secondsPerTick > 3600)
@@ -71,48 +82,59 @@ int SScrubBar::position() const
     return m_head;
 }
 
-void SScrubBar::setInOutPoint(int row, int in, int out)
+bool SScrubBar::setInOutPoint(QString AV, int row, int in, int out)
 {
 //    qDebug()<<"SScrubBar::setInOutPoint"<<row<<in<<out;
 
     int foundRow = -1;
-    for (int i=0; i< m_in_out_list.count();i++)
+    bool pointSet = false;
+    for (int i=0; i< video_in_out_list.count();i++)
     {
-        if (m_in_out_list[i].row == row)
+        if (video_in_out_list[i].AV == AV && video_in_out_list[i].row == row)
             foundRow = i;
     }
 
     if (foundRow != -1)
     {
-        if (m_in_out_list[foundRow].in != in && in<m_in_out_list[foundRow].out)
+        if (video_in_out_list[foundRow].in != in && in<video_in_out_list[foundRow].out)
         {
-            m_in_out_list[foundRow].in = in;
-            emit scrubberInChanged(row, in);
+            video_in_out_list[foundRow].in = in;
+            emit scrubberInChanged(AV, row, in);
+            pointSet = true;
         }
-        if (m_in_out_list[foundRow].out != out && out>m_in_out_list[foundRow].in )
+        if (video_in_out_list[foundRow].out != out && out>video_in_out_list[foundRow].in)
         {
-            m_in_out_list[foundRow].out = out;
-            emit scrubberOutChanged(row, out);
+            video_in_out_list[foundRow].out = out;
+            emit scrubberOutChanged(AV, row, out);
+            pointSet = true;
         }
     }
     else
-        m_in_out_list.append({row,in,out});
+    {
+        video_in_out_list.append({AV, row, in, out});
+        pointSet = true;
+    }
 
-    updatePixmap();
+    if (pointSet)
+    {
+        updatePixmap();
+
+    }
+    return pointSet;
 }
 
-ClipInOutStruct SScrubBar::getInOutPoint(int row)
+ClipInOutStruct SScrubBar::getInOutPoint(QString AV, int row)
 {
     int foundRow = -1;
-    for (int i=0; i< m_in_out_list.count();i++)
+    for (int i=0; i< video_in_out_list.count();i++)
     {
-        if (m_in_out_list[i].row == row)
+        if (video_in_out_list[i].AV == AV && video_in_out_list[i].row == row)
             foundRow = i;
     }
 
     if (foundRow != -1)
     {
-        return m_in_out_list[foundRow];
+        return video_in_out_list[foundRow];
     }
     else
         return ClipInOutStruct();
@@ -120,7 +142,7 @@ ClipInOutStruct SScrubBar::getInOutPoint(int row)
 
 void SScrubBar::clearInOuts()
 {
-    m_in_out_list.clear();
+    video_in_out_list.clear();
 //    qDebug()<<"SScrubBar::clearInOuts"<<m_in_out_list.count();
     updatePixmap();
 }
@@ -140,9 +162,9 @@ void SScrubBar::mousePressEvent(QMouseEvent * event)
     currentClip = -1;
     if (!readOnly)
 //    foreach (ClipInOutStruct inOut, m_in_out_list)
-    for (int i=0; i< m_in_out_list.count();i++)
+    for (int i=0; i< video_in_out_list.count();i++)
     {
-        ClipInOutStruct inOut = m_in_out_list[i];
+        ClipInOutStruct inOut = video_in_out_list[i];
 
         int in = int(inOut.in * m_scale);
         int out = int(inOut.out * m_scale);
@@ -202,41 +224,41 @@ void SScrubBar::mouseMoveEvent(QMouseEvent * event)
             {
                 //            qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<currentClip<<x;
                             int i = currentClip;
-                            ClipInOutStruct inOut = m_in_out_list[i];
+                            ClipInOutStruct inOut = video_in_out_list[i];
 
                 //            int in = inOut.in * m_scale;
                 //            int out = inOut.out * m_scale;
 
                             if (m_activeControl == CONTROL_IN)
                             {
-                                if ( i == 0 || (i > 0 && pos > m_in_out_list[i-1].out + 12)) //not overlapping previous
+                                if ( i == 0 || (i > 0 && pos > video_in_out_list[i-1].out + 12)) //not overlapping previous
                 //                if (x >= in - 24 && x <= in + 12)
                                 {
                 //                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<pos<<inOut.out;
                                     if (pos < inOut.out)
-                                        setInOutPoint(inOut.row, pos, inOut.out); //out the same
+                                        setInOutPoint(inOut.AV, inOut.row, pos, inOut.out); //out the same
                                 }
                             }
                             else if (m_activeControl == CONTROL_OUT)
                             {
-                                if ( i == m_in_out_list.count()-1 || (i<m_in_out_list.count()-1 && pos < m_in_out_list[i+1].in - 12)) //not overlapping previous
+                                if ( i == video_in_out_list.count()-1 || (i<video_in_out_list.count()-1 && pos < video_in_out_list[i+1].in - 12)) //not overlapping previous
                 //                if (x >= out - 24 && x <= out + 100)
                                 {
                 //                    qDebug()<<"SScrubBar::mouseMoveEvent"<<m_activeControl<<inOut.row<<inOut.in<<pos;
                                     if (inOut.in < pos)
-                                        setInOutPoint(inOut.row, inOut.in, pos); //in the same
+                                        setInOutPoint(inOut.AV, inOut.row, inOut.in, pos); //in the same
                                 }
                             }
                             else if (m_activeControl == CONTROL_BOTH)//move whole clip
                             {
                                 int newIn = pos - (inOut.out - inOut.in)/2;
                                 int newOut = pos + (inOut.out - inOut.in)/2;
-                                if ( ((i == m_in_out_list.count()-1 && newOut <= m_max ) || (i<m_in_out_list.count()-1 && newOut < m_in_out_list[i+1].in - 12)) &&
-                                     ((i== 0 && newIn >= 0)|| (i>0 && newIn > m_in_out_list[i-1].out + 12))                     ) //not overlapping previous
+                                if ( ((i == video_in_out_list.count()-1 && newOut <= m_max ) || (i<video_in_out_list.count()-1 && newOut < video_in_out_list[i+1].in - 12)) &&
+                                     ((i== 0 && newIn >= 0)|| (i>0 && newIn > video_in_out_list[i-1].out + 12))                     ) //not overlapping previous
                 //                if (x > in + 12 && x < out -24)
                                 {
                 //                    qDebug()<<"SScrubBar::mouseMoveEvent - moveinandout"<<m_activeControl<<inOut.row<<inOut.in<<inOut.out<<pos;
-                                    setInOutPoint(inOut.row, newIn, newOut);
+                                    setInOutPoint(inOut.AV, inOut.row, newIn, newOut);
                                 }
                             }
             }
@@ -267,34 +289,40 @@ bool SScrubBar::onSeek(int value)
     return true;
 }
 
-void SScrubBar::progressToRow(int position, int *prevRow, int *nextRow, int* relativePosition)
+void SScrubBar::progressToRow(QString AV, int position, int *prevRow, int *nextRow, int* relativePosition)
 {
 //    qDebug()<<"SScrubBar::progressToRow"<<position<<*row<<*relativePosition;
     *prevRow = -1;
     *nextRow = 99999;
     *relativePosition = -1;
-    foreach (ClipInOutStruct inOut, m_in_out_list)
+    foreach (ClipInOutStruct inOut, video_in_out_list)
     {
-        if (inOut.in <= position)
-            *prevRow = qMax(inOut.row, *prevRow);
-        if (inOut.out >= position)
-            *nextRow = qMin(inOut.row, *nextRow);
-
-        if (inOut.in <= position && inOut.out >= position)
+//        if (inOut.AV == AV)
         {
-            *relativePosition = position - inOut.in;
+            if (inOut.in <= position)
+                *prevRow = qMax(inOut.row, *prevRow);
+            if (inOut.out >= position)
+                *nextRow = qMin(inOut.row, *nextRow);
+
+            if (inOut.in <= position && inOut.out >= position)
+            {
+                *relativePosition = position - inOut.in;
+            }
         }
     }
 }
 
-void SScrubBar::rowToPosition(int row, int* relativePosition)
+void SScrubBar::rowToPosition(QString AV, int row, int* relativePosition)
 {
     *relativePosition = -1;
-    foreach (ClipInOutStruct inOut, m_in_out_list)
+    foreach (ClipInOutStruct inOut, video_in_out_list)
     {
-        if (inOut.row == row)
+//        if (inOut.AV == AV)
         {
-            *relativePosition = inOut.in;
+            if (inOut.row == row)
+            {
+                *relativePosition = inOut.in;
+            }
         }
     }
 }
@@ -326,7 +354,7 @@ void SScrubBar::paintEvent(QPaintEvent *e)
     int altY = 0;
     if (!readOnly)
     {
-        foreach (ClipInOutStruct inOut, m_in_out_list)
+        foreach (ClipInOutStruct inOut, video_in_out_list)
         {
 
             int in = int(margin + inOut.in * m_scale);
@@ -407,29 +435,71 @@ void SScrubBar::updatePixmap()
 
     int altY = 0;
     // selected region
-    foreach (ClipInOutStruct inOut, m_in_out_list)
+    foreach (ClipInOutStruct inOut, video_in_out_list)
     {
+        if (inOut.AV == audioOrVideo)
+        {
+            int in = int(inOut.in * m_scale * ratio);
+            int out = int(inOut.out * m_scale * ratio);
 
-        int in = int(inOut.in * m_scale * ratio);
-        int out = int(inOut.out * m_scale * ratio);
+            QColor clipColor;
 
-        //        qDebug()<<"updatepixmap"<<m_in_list[i]<<m_out_list[i]<<m_scale<<ratio;
-                p.fillRect(l_margin + in, altY, out - in, l_selectionSize, Qt::red);
-        //        p.fillRect(l_margin + in + (2 + ratio), ratio, // 2 for the in point line
-        //                   out - in - 2 * (2 + ratio) - qFloor(0.5 * ratio),
-        //                   l_selectionSize - ratio * 2,
-        //                   palette().highlight().color());
-                p.fillRect(l_margin + in + (ratio), altY + ratio, // 2 for the in point line
-                           out - in - 2 * (ratio) - qFloor(0.5 * ratio),
-                           l_selectionSize - ratio * 2,
-                           palette().highlight().color());
-                 int pixelsWide = fontMetrics().width(QString::number(inOut.row));
-                 if (pixelsWide <= (out-in))
-                    p.drawText(l_margin + in + (out-in)/2 - pixelsWide / 2, altY + l_selectionSize - ratio * 3, QString::number(inOut.row));
-                if (altY == 0)
-                    altY = l_selectionSize;
-                else
-                    altY = 0;
+            if (inOut.AV == "A")
+                clipColor = QColor(Qt::darkGreen);
+            else
+                clipColor = palette().highlight().color();
+
+            //        qDebug()<<"updatepixmap"<<m_in_list[i]<<m_out_list[i]<<m_scale<<ratio;
+                    p.fillRect(l_margin + in, altY, out - in, l_selectionSize, Qt::red);
+            //        p.fillRect(l_margin + in + (2 + ratio), ratio, // 2 for the in point line
+            //                   out - in - 2 * (2 + ratio) - qFloor(0.5 * ratio),
+            //                   l_selectionSize - ratio * 2,
+            //                   palette().highlight().color());
+                    p.fillRect(l_margin + in + (ratio), altY + ratio, // 2 for the in point line
+                               out - in - 2 * (ratio) - qFloor(0.5 * ratio),
+                               l_selectionSize - ratio * 2,
+                               clipColor);
+                     int pixelsWide = fontMetrics().width(QString::number(inOut.row));
+                     if (pixelsWide <= (out-in))
+                        p.drawText(l_margin + in + (out-in)/2 - pixelsWide / 2, altY + l_selectionSize - ratio * 3, QString::number(inOut.row));
+                    if (altY == 0)
+                        altY = l_selectionSize;
+                    else
+                        altY = 0;
+        }
+
+    }
+
+    if (readOnly) //av
+    {
+        int altY = selectionSize * 2;
+        // selected region
+        foreach (ClipInOutStruct inOut, video_in_out_list)
+        {
+            if (inOut.AV == "A")
+            {
+                int in = int(inOut.in * m_scale * ratio);
+                int out = int(inOut.out * m_scale * ratio);
+
+                //        qDebug()<<"updatepixmap"<<m_in_list[i]<<m_out_list[i]<<m_scale<<ratio;
+                        p.fillRect(l_margin + in, altY, out - in, l_selectionSize, Qt::red);
+                //        p.fillRect(l_margin + in + (2 + ratio), ratio, // 2 for the in point line
+                //                   out - in - 2 * (2 + ratio) - qFloor(0.5 * ratio),
+                //                   l_selectionSize - ratio * 2,
+                //                   palette().highlight().color());
+                        p.fillRect(l_margin + in + (ratio), altY + ratio, // 2 for the in point line
+                                   out - in - 2 * (ratio) - qFloor(0.5 * ratio),
+                                   l_selectionSize - ratio * 2,
+                                   QColor(Qt::darkGreen));
+                         int pixelsWide = fontMetrics().width(QString::number(inOut.row));
+                         if (pixelsWide <= (out-in))
+                            p.drawText(l_margin + in + (out-in)/2 - pixelsWide / 2, altY + l_selectionSize - ratio * 3, QString::number(inOut.row));
+                        if (altY == l_selectionSize * 2)
+                            altY = l_selectionSize * 3;
+                        else
+                            altY = l_selectionSize * 2;
+            }
+        }
     }
 
     // draw time ticks
@@ -437,7 +507,10 @@ void SScrubBar::updatePixmap()
     if (l_interval > 2) {
         for (int x = l_margin; x < l_width - l_margin; x += l_interval) {
 //            qDebug()<<"Drawline"<<x;
-            p.drawLine(x, l_selectionSize * 2, x, l_height - 1);
+            if (readOnly) //av
+                p.drawLine(x, l_selectionSize * 4, x, l_height - 1);
+            else
+                p.drawLine(x, l_selectionSize * 2, x, l_height - 1);
             if (x + l_interval / 4 < l_width - l_margin)
                 p.drawLine(x + l_interval / 4,     l_height - 3 * ratio, x + l_interval / 4,     l_height - 1);
             if (x + l_interval / 2 < l_width - l_margin)
@@ -452,7 +525,11 @@ void SScrubBar::updatePixmap()
     {
         int x = l_margin;
         for (int i = 0; x < l_width - l_margin - l_timecodeWidth; i++, x += l_interval) {
-            int y = l_selectionSize*2 + fontMetrics().ascent() - 2 * ratio;
+            int y;// = l_selectionSize * 4 + fontMetrics().ascent() - 2 * ratio;
+            if (readOnly) //av
+                y = l_selectionSize * 4 + fontMetrics().ascent() - 2 * ratio;
+            else
+                y = l_selectionSize * 2 + fontMetrics().ascent() - 2 * ratio;
             int frames = qRound(i * m_fps * m_secondsPerTick);
             QString frames_to_time = "5";
             QTime time = QTime::fromMSecsSinceStartOfDay(frames);
@@ -463,7 +540,7 @@ void SScrubBar::updatePixmap()
     }
 
     // draw markers
-    if (m_in_out_list.count() == 0)
+    if (video_in_out_list.count() == 0)
 //        if (m_in_list.count()==0 && m_out_list.count() == 0)
     {
         int i = 1;

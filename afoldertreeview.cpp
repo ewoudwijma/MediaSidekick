@@ -9,7 +9,6 @@ AFolderTreeView::AFolderTreeView(QWidget *parent) : QTreeView(parent)
 {
     directoryModel = new QFileSystemModel();
 //    qDebug()<<"AFolderTreeView::AFolderTreeView"<<directoryModel->myComputer();
-    directoryModel->setRootPath("");
     directoryModel->setFilter(QDir::Dirs|QDir::Drives|QDir::NoDotAndDotDot|QDir::AllDirs);
 //    directoryModel->setFilter(QDir::AllEntries);
 
@@ -18,16 +17,14 @@ AFolderTreeView::AFolderTreeView(QWidget *parent) : QTreeView(parent)
     setColumnWidth(0,columnWidth(0) * 4);
     this->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
+    connect( this, &QTreeView::clicked, this, &AFolderTreeView::onIndexClicked);
+
+    //loadmodel
+    directoryModel->setRootPath("");
+
     QString lastFolder = QSettings().value("LastFolder").toString();
     if (lastFolder != ""  && lastFolder.length()>4) //not the root folder
-    {
-        QModelIndex modelIndex;
-        modelIndex = directoryModel->index(QSettings().value("LastFolder").toString());
-//        qDebug()<<"modelIndex"<<QSettings().value("LastFolder").toString()<<modelIndex;
-        setCurrentIndex(modelIndex); //does also the scrollTo
-    }
-
-    connect( this, &QTreeView::clicked, this, &AFolderTreeView::onIndexClicked);
+        setCurrentIndex(directoryModel->index(lastFolder)); //does also the scrollTo
 }
 
 void AFolderTreeView::onIndexClicked(const QModelIndex &index)

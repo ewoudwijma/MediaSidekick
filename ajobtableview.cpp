@@ -1,5 +1,5 @@
-#include "alogitemdelegate.h"
-#include "alogtableview.h"
+#include "ajobitemdelegate.h"
+#include "ajobtableview.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -23,16 +23,16 @@ static const int fileIndex = 3;
 static const int logIndex = 5;
 static const int allIndex = 6;
 
-ALogTableView::ALogTableView(QWidget *parent) : QTableView(parent)
+AJobTableView::AJobTableView(QWidget *parent) : QTableView(parent)
 {
-    logItemModel = new QStandardItemModel(this);
+    jobItemModel = new QStandardItemModel(this);
     QStringList labels;
     labels << "ID"<<"Timestamp"<<"Folder"<<"File"<<"Action"<<"Log"<<"All";
-    logItemModel->setHorizontalHeaderLabels(labels);
+    jobItemModel->setHorizontalHeaderLabels(labels);
 
-    setModel(logItemModel);
+    setModel(jobItemModel);
 
-//    ALogItemDelegate *logItemDelegate = new ALogItemDelegate(this);
+//    AJobItemDelegate *logItemDelegate = new AJobItemDelegate(this);
 //    setItemDelegate(logItemDelegate);
 
     horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
@@ -51,9 +51,9 @@ ALogTableView::ALogTableView(QWidget *parent) : QTableView(parent)
     verticalHeader()->setSectionResizeMode (QHeaderView::Fixed);
 }
 
-void ALogTableView::onAddEntry(QString folder, QString file, QString action, QString* id)
+void AJobTableView::onAddJob(QString folder, QString file, QString action, QString* id)
 {
-    *id =QString::number(logItemModel->rowCount()).rightJustified(5, '0');
+    *id =QString::number(jobItemModel->rowCount()).rightJustified(5, '0');
 
     QList<QStandardItem *> items;
 
@@ -69,39 +69,39 @@ void ALogTableView::onAddEntry(QString folder, QString file, QString action, QSt
     items.append(new QStandardItem(file));
     items.append(new QStandardItem(action));
 
-    logItemModel->appendRow(items);
+    jobItemModel->appendRow(items);
 
     sortByColumn(idIndex, Qt::DescendingOrder);
 }
 
-void ALogTableView::onAddLogToEntry(QString id, QString log)
+void AJobTableView::onAddLogToJob(QString id, QString log)
 {
-    for (int row = 0; row < logItemModel->rowCount();row++)
+    for (int row = 0; row < jobItemModel->rowCount();row++)
     {
-        if (logItemModel->index(row, idIndex).data().toString() == id)
+        if (jobItemModel->index(row, idIndex).data().toString() == id)
         {
-            logItemModel->setData(logItemModel->index(row, logIndex), log); //last entry
-            logItemModel->setData(logItemModel->index(row, allIndex), logItemModel->index(row, allIndex).data().toString() + log); //all entries
+            jobItemModel->setData(jobItemModel->index(row, logIndex), log); //last entry
+            jobItemModel->setData(jobItemModel->index(row, allIndex), jobItemModel->index(row, allIndex).data().toString() + log); //all entries
         }
     }
 }
 
-void ALogTableView::mouseMoveEvent(QMouseEvent *event)
+void AJobTableView::mouseMoveEvent(QMouseEvent *event)
 {
     QModelIndex index = indexAt(event->pos());
-//    qDebug()<<"ALogTableView::mouseMoveEvent"<<index.data().toString();
+//    qDebug()<<"AJobTableView::mouseMoveEvent"<<index.data().toString();
 }
 
-void ALogTableView::mousePressEvent(QMouseEvent *event)
+void AJobTableView::mousePressEvent(QMouseEvent *event)
 {
     QModelIndex index = indexAt(event->pos());
-//    qDebug()<<"ALogTableView::mousePressEvent"<<index.data().toString();
+//    qDebug()<<"AJobTableView::mousePressEvent"<<index.data().toString();
 
     if (index.data().toString() != "") //only show if an item is clicked on
     {
         QDialog *dialog = new QDialog(this);
     //    dialog->mapFromGlobal(QCursor::pos());
-        dialog->setWindowTitle("Log details of " + logItemModel->index(index.row(), 1).data().toString());
+        dialog->setWindowTitle("Log details of " + jobItemModel->index(index.row(), 1).data().toString());
 
         QRect savedGeometry = QSettings().value("Geometry").toRect();
         savedGeometry.setX(savedGeometry.x() + savedGeometry.width()/4);
@@ -114,7 +114,7 @@ void ALogTableView::mousePressEvent(QMouseEvent *event)
     //    dialog->resize(QApplication.desktop()->width()/2, parentWidget()->size().height()/2);
         QTextBrowser *textBrowser = new QTextBrowser(dialog);
         textBrowser->setWordWrapMode(QTextOption::NoWrap);
-        textBrowser->setText(logItemModel->index(index.row(), allIndex).data().toString());
+        textBrowser->setText(jobItemModel->index(index.row(), allIndex).data().toString());
 
         QVBoxLayout *m_pDialogLayout = new QVBoxLayout(this);
           m_pDialogLayout->addWidget(textBrowser);

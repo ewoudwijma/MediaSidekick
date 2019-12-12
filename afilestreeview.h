@@ -6,12 +6,17 @@
 #include <QTreeView>
 #include <QUrl>
 
+#include "afilessortfilterproxymodel.h"
+
 class AFilesTreeView: public QTreeView
 {
     Q_OBJECT
 public:
     AFilesTreeView(QWidget *parent);
+    QFileSystemModel *fileModel;
+    AFilesSortFilterProxyModel *filesProxyModel;
 
+    void setType(QString type);
 private slots:
     void this_customContextMenuRequested(const QPoint &point);
     void onTrim();
@@ -21,13 +26,13 @@ private slots:
     void onFileRename();
 
     void onIndexActivated(QModelIndex index);
-    void onDirectoryLoaded(const QString &path);
+    void onModelLoaded(const QString &path);
     void onSuperview();
 private:
     void loadModel(QUrl folderUrl);
-    QFileSystemModel *fileModel;
     QMenu *fileContextMenu;
 
+    QModelIndex recursiveFiles(QAbstractItemModel *fileModel, QModelIndex parentIndex, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QModelIndex));
 public slots:
     void onClipIndexClicked(QModelIndex index);
     void onFolderIndexClicked(QModelIndex index);
@@ -37,7 +42,7 @@ signals:
     void fileDelete(QString fileName);
     void clipsDelete(QString fileName);
     void fileRename();
-    void trim(QString fileName);
+    void trimF(QString fileName);
     void getPropertyValue(QString fileName, QString key, QString *value);
 
 };

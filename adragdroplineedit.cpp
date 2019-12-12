@@ -13,7 +13,7 @@ ADragDropLineEdit::ADragDropLineEdit(QWidget *parent)
 
 void ADragDropLineEdit::dragEnterEvent(QDragEnterEvent *e)
 {
-    qDebug()<<"FDragDropLineEdit::dragEnterEvent"<<e->pos();
+//    qDebug()<<"FDragDropLineEdit::dragEnterEvent"<<e->pos();
     if(e->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")){
         e->acceptProposedAction();
     }
@@ -34,7 +34,7 @@ void ADragDropLineEdit::dropEvent(QDropEvent *e)
         //implement move
         QListView *qlv = qobject_cast<QListView *>(e->source());
 
-        qDebug()<<"FDragDropLineEdit::dropEvent"<<e->pos()<<e->source()<<data[0].toString()<<qlv;
+//        qDebug()<<"FDragDropLineEdit::dropEvent"<<e->pos()<<e->source()<<data[0].toString()<<qlv;
 
         if (qlv != nullptr)
         {

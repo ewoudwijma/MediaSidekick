@@ -20,9 +20,6 @@ class ATimeline : public QWidget
 public:
     explicit ATimeline(QWidget *parent = nullptr);
 
-    int originalDuration;
-    int transitiontimeDuration;
-//    void calculateTransitiontimeDuration(QAbstractItemModel *itemModel);
 private:
     QAction *actionPlay;
     QAction *actionPause;
@@ -52,7 +49,6 @@ private:
 public slots:
     void onDurationChanged(int duration);
     void onClipsChangedToTimeline(QAbstractItemModel *itemModel);
-    void onFileIndexClicked(QModelIndex index);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onTimelineWidgetsChanged(int transitiontime, QString transitionType, AClipsTableView *clipsTableView);
 

@@ -4,7 +4,9 @@
 #include <QMap>
 #include <QWidget>
 
-typedef struct {
+typedef struct
+{
+    QString AV;
     int row;
     int in;
     int out;
@@ -45,14 +47,16 @@ public:
     void clearInOuts();
 //    void removeInOutPoint(int in, int out);
     bool readOnly;
-    void setInOutPoint(int row, int in, int out);
-    void progressToRow(int position, int *prevRow, int *nextRow, int *relativePosition);
-    void rowToPosition(int row, int* relativePosition);
-    ClipInOutStruct getInOutPoint(int row);
+    QString audioOrVideo;
+    bool setInOutPoint(QString AV, int row, int in, int out);
+    void progressToRow(QString AV, int position, int *prevRow, int *nextRow, int *relativePosition);
+    void rowToPosition(QString AV, int row, int* relativePosition);
+    ClipInOutStruct getInOutPoint(QString AV, int row);
+    void setAudioOrVideo(QString AV);
 signals:
     void seeked(int);
-    void scrubberInChanged(int row, int in);
-    void scrubberOutChanged(int row, int out);
+    void scrubberInChanged(QString AV, int row, int in);
+    void scrubberOutChanged(QString AV, int row, int out);
 
 public slots:
     bool onSeek(int value);
@@ -74,7 +78,8 @@ private:
 //    QList<int> m_in_list;
 //    QList<int> m_out_list;
 //    QMap<int, ClipInOutStruct> m_in_out_map;
-    QList<ClipInOutStruct> m_in_out_list;
+    QList<ClipInOutStruct> video_in_out_list;
+    QList<ClipInOutStruct> audio_in_out_list;
     enum controls m_activeControl;
     QPixmap m_pixmap;
     int m_timecodeWidth;

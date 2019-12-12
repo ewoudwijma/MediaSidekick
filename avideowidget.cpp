@@ -56,8 +56,8 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
 //    m_scrubber->setMinimumSize(200,200);
 //        parentLayout->insertWidget(-1, m_scrubber);
     m_scrubber->setEnabled(true);
-    m_scrubber->setScale(10000);
     m_scrubber->readOnly = false;
+    m_scrubber->setScale(10000);
     m_scrubber->onSeek(0);
 
     connect(actionPlay, SIGNAL(triggered()), this, SLOT(togglePlayPaused()));
@@ -105,17 +105,20 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
                               "</ul>"));
     actionFastForward->setToolTip(actionRewind->toolTip());
 
-    actionUpdateIn->setToolTip(tr("<p><b>Update in- and out- point</b></p>"
-                                  "<p><i>Change the in- or outpoint of the current clip to the current position on the timeline</i></p>"
+    actionUpdateIn->setToolTip(tr("<p><b>Set in- and out- point</b></p>"
+                                  "<p><i>Set the inpoint of a new clip or change the in- or outpoint of the current clip to the current position on the timeline</i></p>"
                                   "<ul>"
+                                  "<li>Change: inpoint before outpoint of last selected clip or outpoint after inpoint of last selected clip</li>"
+                                  "<li>Set: No last selected clip or inpoint after outpoint of last selected clip and outpoint before inpoint of last selected clip</li>"
                                   "<li>Shortcut: ctrl-i and ctrl-o</li>"
                                   "</ul>"));
     actionUpdateOut->setToolTip(actionUpdateIn->toolTip());
 
     actionMute->setToolTip(tr("<p><b>Mute or unmute</b></p>"
-                              "<p><i>Mute or unmute sound</i></p>"
+                              "<p><i>Mute or unmute sound (toggle)</i></p>"
                               "<ul>"
-                              "<li>Shortcut: ctrl-i and ctrl-o</li>"
+                              "<li>Video files will be muted if selected. Audio files will be unmuted if selected</li>"
+                              "<li>Shortcut mute toggle: ctrl-m</li>"
                               "</ul>"));
 
 
@@ -268,7 +271,6 @@ void AVideoWidget::onFolderIndexClicked(QModelIndex index)
     selectedFolderName = QSettings().value("LastFolder").toString();
 //    qDebug()<<"AVideoWidget::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
     m_player->stop();
-    m_player->setMuted(true);
     m_scrubber->clearInOuts();
 }
 
@@ -283,6 +285,12 @@ void AVideoWidget::onFileIndexClicked(QModelIndex index)
     m_player->pause();
     m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
     m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
+//    m_player->setMuted(!selectedFileName.contains(".mp3"));
+
+    if (selectedFileName.contains(".mp3"))
+        m_player->setVolume(100);
+    else
+        m_player->setVolume(videoVolume);
 }
 
 void AVideoWidget::onClipIndexClicked(QModelIndex index)
@@ -298,10 +306,10 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
 
     qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
 
-    if (QUrl(folderFileName) != m_player->media().canonicalUrl())
+    if (QUrl(folderFileName) != m_player->media().canonicalUrl()) //another media file
     {
-//        QString *fpsPointer = new QString();
-//        emit getPropertyValue(selectedFileName, "VideoFrameRate", fpsPointer);
+//        QString *frameratePointer = new QString();
+//        emit getPropertyValue(selectedFileName, "VideoFrameRate", frameratePointer);
 //        fpsRounded = int( qRound(index.model()->index(index.row(),fpsIndex).data().toDouble() / 5) * 5);
 
 //        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
@@ -316,6 +324,11 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
 //        m_player->setMuted(oldMuted);
         m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
         m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
+
+        if (selectedFileName.contains(".mp3"))
+            m_player->setVolume(100);
+        else
+            m_player->setVolume(videoVolume);
     }
 
 //    qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.column()<<m_player->position();
@@ -334,6 +347,11 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
 {
     isLoading = true;
     m_scrubber->clearInOuts();
+
+    if (selectedFileName.toLower().contains(".mp3"))
+        m_scrubber->setAudioOrVideo("A");
+    else
+        m_scrubber->setAudioOrVideo("V");
 
     AClipsSortFilterProxyModel *clipsitemModel = qobject_cast<AClipsSortFilterProxyModel *>(itemModel);
 //    qDebug()<<"AVideoWidget::onClipsChangedToVideo"<<itemModel<<clipsitemModel;
@@ -356,7 +374,13 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
 
 //            qDebug()<<"AVideoWidget::onClipsChangedToVideo"<<inTime<<outTime<<folderFileName<<m_player->media().canonicalUrl();
 
-            m_scrubber->setInOutPoint(clipCounter, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
+            QString AV;
+            if (fileName.toLower().contains(".mp3"))
+                AV = "A";
+            else
+                AV = "V";
+
+            m_scrubber->setInOutPoint(AV, clipCounter, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
         }
     }
     isLoading = false;
@@ -396,7 +420,7 @@ void AVideoWidget::onPlayerPositionChanged(int progress)
        int *prevRow = new int();
        int *nextRow = new int();
        int *relativeProgress = new int();
-       m_scrubber->progressToRow(progress, prevRow, nextRow, relativeProgress);
+       m_scrubber->progressToRow("V", progress, prevRow, nextRow, relativeProgress);
 //       qDebug()<<"AVideoWidget::onPlayerPositionChanged"<<progress<<*prevRow<<*nextRow<<*relativeProgress<<AGlobal().msec_to_frames(progress);
        if (*prevRow == *nextRow)
             lastHighlightedRow = *prevRow;
@@ -422,7 +446,7 @@ void AVideoWidget::onTimelinePositionChanged(int progress, int row, int relative
 
 void AVideoWidget::onSpinnerPositionChanged(int frames)
 {
-    qDebug()<<"AVideoWidget::onSpinnerPositionChanged"<<frames;
+//    qDebug()<<"AVideoWidget::onSpinnerPositionChanged"<<frames;
     isTimelinePlaymode = false;
 
 //    m_player->pause();
@@ -513,7 +537,7 @@ void AVideoWidget::skipNext()
     int *prevRow = new int();
     int *nextRow = new int();
     int *relativeProgress = new int();
-    m_scrubber->progressToRow(int(m_player->position()), prevRow, nextRow, relativeProgress);
+    m_scrubber->progressToRow("V", int(m_player->position()), prevRow, nextRow, relativeProgress);
 
     if (*nextRow == -1)
         *nextRow = lastHighlightedRow;
@@ -521,9 +545,9 @@ void AVideoWidget::skipNext()
     int *relativeProgressl = new int();
 
     if (*prevRow == *nextRow)
-        m_scrubber->rowToPosition(*nextRow+1, relativeProgressl);
+        m_scrubber->rowToPosition("V", *nextRow+1, relativeProgressl);
     else
-        m_scrubber->rowToPosition(*nextRow, relativeProgressl);
+        m_scrubber->rowToPosition("V", *nextRow, relativeProgressl);
 
 //    qDebug()<<"AVideoWidget::skipNext"<<m_player->position()<<*nextRow<<*relativeProgress<<*relativeProgressl;
 
@@ -542,7 +566,7 @@ void AVideoWidget::skipPrevious()
     int *prevRow = new int();
     int *nextRow = new int();
     int *relativeProgress = new int();
-    m_scrubber->progressToRow(m_player->position(), prevRow, nextRow, relativeProgress);
+    m_scrubber->progressToRow("V", m_player->position(), prevRow, nextRow, relativeProgress);
 
     if (*prevRow == -1)
         *prevRow = lastHighlightedRow;
@@ -550,9 +574,9 @@ void AVideoWidget::skipPrevious()
     int *relativeProgressl = new int();
 
     if (*prevRow == *nextRow)
-        m_scrubber->rowToPosition(*prevRow-1, relativeProgressl);
+        m_scrubber->rowToPosition("V", *prevRow-1, relativeProgressl);
     else
-        m_scrubber->rowToPosition(*prevRow, relativeProgressl);
+        m_scrubber->rowToPosition("V", *prevRow, relativeProgressl);
 
 //    qDebug()<<"AVideoWidget::skipPrevious"<<m_player->position()<<*prevRow<<*relativeProgress<<*relativeProgressl;
 
@@ -574,6 +598,14 @@ void AVideoWidget::onStop()
 void AVideoWidget::onMute()
 {
     m_player->setMuted(!m_player->isMuted());
+}
+
+void AVideoWidget::setVideoVolume(int volume)
+{
+    videoVolume = volume;
+
+    if (!selectedFileName.toLower().contains(".mp3"))
+        m_player->setVolume(volume);
 }
 
 void AVideoWidget::onSpeedChanged(QString speed)
@@ -608,23 +640,23 @@ void AVideoWidget::onScrubberSeeked(int mseconds)
     m_player->setPosition(mseconds);
 }
 
-void AVideoWidget::onScrubberInChanged(int row, int in)
+void AVideoWidget::onScrubberInChanged(QString AV, int row, int in)
 {
     if (!isLoading)
     {
         isTimelinePlaymode = false;
 //        qDebug()<<"AVideoWidget::onScrubberInChanged"<<row<<in;
-        emit scrubberInChanged(row, in);
+        emit scrubberInChanged(AV, row, in);
     }
 }
 
-void AVideoWidget::onScrubberOutChanged(int row, int out)
+void AVideoWidget::onScrubberOutChanged(QString AV, int row, int out)
 {
     if (!isLoading)
     {
         isTimelinePlaymode = false;
 //        qDebug()<<"AVideoWidget::onScrubberOutChanged"<<row<<out;
-        emit scrubberOutChanged(row, out);
+        emit scrubberOutChanged(AV, row, out);
     }
 }
 
@@ -640,14 +672,27 @@ void AVideoWidget::onUpdateIn(int frames)
     else
         frames = AGlobal().msec_to_frames( int(m_player->position()));
 
-    qDebug()<<"AVideoWidget::onUpdateIn"<<frames<<m_player->position()<<lastHighlightedRow;
+    QString AV;
+
+    if (selectedFileName.toLower().contains(".mp3"))
+            AV = "A";
+    else
+            AV = "V";
+
+    bool pointSet = false;
     if (lastHighlightedRow != -1)
     {
-        ClipInOutStruct inOut = m_scrubber->getInOutPoint(lastHighlightedRow);
+        ClipInOutStruct inOut = m_scrubber->getInOutPoint(AV, lastHighlightedRow);
 
-        m_scrubber->setInOutPoint(lastHighlightedRow, AGlobal().frames_to_msec(frames),  inOut.out);
-//        onScrubberInChanged(lastHighlightedRow, m_player->position());
+        pointSet = m_scrubber->setInOutPoint(inOut.AV, lastHighlightedRow, AGlobal().frames_to_msec(frames),  inOut.out);
     }
+//    else
+//        pointSet = m_scrubber->setInOutPoint(AV, lastHighlightedRow, AGlobal().frames_to_msec(frames), AGlobal().frames_to_msec(frames) + 3000);
+
+    qDebug()<<"AVideoWidget::onUpdateIn"<<selectedFileName<<frames<<m_player->position()<<lastHighlightedRow<<pointSet;
+
+    if (!pointSet)
+        emit createNewEdit(frames);
 }
 
 void AVideoWidget::onUpdateOut(int frames)
@@ -664,10 +709,9 @@ void AVideoWidget::onUpdateOut(int frames)
     qDebug()<<"AVideoWidget::onUpdateOut"<<frames<<m_player->position()<<lastHighlightedRow;
     if (lastHighlightedRow != -1)
     {
-        ClipInOutStruct inOut = m_scrubber->getInOutPoint(lastHighlightedRow);
+        ClipInOutStruct inOut = m_scrubber->getInOutPoint("V", lastHighlightedRow);
 
-        m_scrubber->setInOutPoint(lastHighlightedRow, inOut.in, AGlobal().frames_to_msec(frames));
-//        onScrubberOutChanged(lastHighlightedRow, m_player->position());
+        m_scrubber->setInOutPoint(inOut.AV, lastHighlightedRow, inOut.in, AGlobal().frames_to_msec(frames));
     }
 }
 

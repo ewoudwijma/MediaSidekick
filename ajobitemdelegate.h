@@ -1,16 +1,16 @@
-#ifndef ALOGITEMDELEGATE_H
-#define ALOGITEMDELEGATE_H
+#ifndef AJobItemDelegate_H
+#define AJobItemDelegate_H
 
 #include <QStyledItemDelegate>
 
 
 
-class ALogItemDelegate: public QStyledItemDelegate
+class AJobItemDelegate: public QStyledItemDelegate
 {
     Q_OBJECT
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
-    ALogItemDelegate(QObject *parent = nullptr);
+    AJobItemDelegate(QObject *parent = nullptr);
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
     QSize sizeHint(const QStyleOptionViewItem &option,
@@ -23,4 +23,4 @@ public:
 
 };
 
-#endif // ALOGITEMDELEGATE_H
+#endif // AJobItemDelegate_H

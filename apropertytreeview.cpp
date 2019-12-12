@@ -114,7 +114,7 @@ void APropertyTreeView::setCellStyle(QStringList fileNames)
 
 }
 
-void APropertyTreeView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
+void APropertyTreeView::onFileIndexClicked(QModelIndex , QModelIndexList selectedIndices)//index
 {
     QStringList selectedFileNames;
     for (int i=0;i<selectedIndices.count();i++)
@@ -154,7 +154,7 @@ void APropertyTreeView::loadModel(QString folderName)
     QMap<QString, QString> parameters;
 
     QString *processId = new QString();
-    emit addLogEntry(folderName, "All", "Property load", processId);
+    emit addJob(folderName, "All", "Property load", processId);
     parameters["processId"] = *processId;
 
     isLoading = true;
@@ -162,7 +162,7 @@ void APropertyTreeView::loadModel(QString folderName)
                                    , [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
         APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
-        emit propertyTreeView->addLogToEntry(parameters["processId"], result);
+        emit propertyTreeView->addToJob(parameters["processId"], result);
     }
                                    , [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList result)
      {
@@ -189,13 +189,13 @@ void APropertyTreeView::loadModel(QString folderName)
 
         for (int resultIndex=0;resultIndex<result.count();resultIndex++)
         {
-//            emit propertyTreeView->addLogToEntry(parameters["processId"], result[resultIndex]);
+//            emit propertyTreeView->addToJob(parameters["processId"], result[resultIndex]);
             int indexOf = result[resultIndex].indexOf("======== "); //next file
             if (indexOf > -1)//next file found
             {
                 folderFileName = result[resultIndex].mid(indexOf+9);
                 folderFile = QUrl(folderFileName);
-                emit propertyTreeView->addLogToEntry(parameters["processId"], "Processing " + folderFileName + "\n");
+                emit propertyTreeView->addToJob(parameters["processId"], "Processing " + folderFileName + "\n");
             }
             else
             {
@@ -253,7 +253,7 @@ void APropertyTreeView::loadModel(QString folderName)
         QStringList labels;
         labels << "Property" << "Type" << "Diff";
 
-        emit propertyTreeView->addLogToEntry(parameters["processId"], "add all files as labels\n");
+        emit propertyTreeView->addToJob(parameters["processId"], "add all files as labels\n");
 
         while (iFile.hasNext()) //add all files as labels
         {
@@ -266,7 +266,7 @@ void APropertyTreeView::loadModel(QString folderName)
         }
         propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(labels);
 
-        emit propertyTreeView->addLogToEntry(parameters["processId"], "add all properties\n");
+        emit propertyTreeView->addToJob(parameters["processId"], "add all properties\n");
 
         QMapIterator<QString, QStandardItem *> iLabel(labelMap);
         while (iLabel.hasNext()) //all labels
@@ -315,7 +315,7 @@ void APropertyTreeView::loadModel(QString folderName)
                 iLabel.value()->appendRow(sublevelItems);
         } // all labels
 
-        emit propertyTreeView->addLogToEntry(parameters["processId"], "Update suggested names\n");
+        emit propertyTreeView->addToJob(parameters["processId"], "Update suggested names\n");
 
         for (int col = 1; col < propertyTreeView->model()->columnCount(); ++col)
         {
@@ -329,7 +329,7 @@ void APropertyTreeView::loadModel(QString folderName)
               }
         }
 
-        emit propertyTreeView->addLogToEntry(parameters["processId"], "Setfilter, expand and set diff values\n");
+        emit propertyTreeView->addToJob(parameters["processId"], "Setfilter, expand and set diff values\n");
 
         propertyTreeView->propertyProxyModel->setFilterRegExp(QRegExp(";1", Qt::CaseInsensitive,
                                                     QRegExp::FixedString));
@@ -341,7 +341,7 @@ void APropertyTreeView::loadModel(QString folderName)
         propertyTreeView->setCellStyle(QStringList()); //to set diff values
         propertyTreeView->isLoading = false;
         emit propertyTreeView->propertiesLoaded();
-        emit propertyTreeView->addLogToEntry(parameters["processId"], "Completed");
+        emit propertyTreeView->addToJob(parameters["processId"], "Completed");
 
     });
 } //loadmodel
@@ -671,7 +671,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
 //                ui->statusBar->showMessage("Update metadata for " + directory.toString() + "//" + fileName + "...");
 
                 QString *processId = new QString();
-                emit addLogEntry(*directoryString, fileName, "Update properties", processId);
+                emit addJob(*directoryString, fileName, "Update properties", processId);
 
                 QMap<QString, QString> parameters;
                 parameters["processId"] = *processId;
@@ -681,7 +681,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                 processManager->startProcess(code, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
                 {
                     APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
-                    emit propertyTreeView->addLogToEntry(parameters["processId"], result.join("\n"));
+                    emit propertyTreeView->addToJob(parameters["processId"], result.join("\n"));
                 });
             }
         }

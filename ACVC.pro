@@ -32,11 +32,12 @@ SOURCES += \
         aclipstableview.cpp \
         adragdroplineedit.cpp \
         aexport.cpp \
+        afilessortfilterproxymodel.cpp \
         afilestreeview.cpp \
         afoldertreeview.cpp \
         aglobal.cpp \
-        alogitemdelegate.cpp \
-        alogtableview.cpp \
+        ajobitemdelegate.cpp \
+        ajobtableview.cpp \
         aprocessmanager.cpp \
         apropertyitemdelegate.cpp \
         apropertysortfilterproxymodel.cpp \
@@ -61,11 +62,12 @@ HEADERS += \
         aclipstableview.h \
         adragdroplineedit.h \
         aexport.h \
+        afilessortfilterproxymodel.h \
         afilestreeview.h \
         afoldertreeview.h \
         aglobal.h \
-        alogitemdelegate.h \
-        alogtableview.h \
+        ajobitemdelegate.h \
+        ajobtableview.h \
         aprocessmanager.h \
         apropertyitemdelegate.h \
         apropertysortfilterproxymodel.h \

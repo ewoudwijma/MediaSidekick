@@ -13,29 +13,27 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 {
     fileModel = new QFileSystemModel();
 
-    QStringList filters;
-    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts"<<"shotcut*.mlt"<<"Premiere*.xml";
-    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
-    fileModel->setNameFilters(filters);
+//    QStringList filters;
+////    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts"<<"shotcut*.mlt"<<"Premiere*.xml";
+//    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS"<<"shotcut*.mlt"<<"Premiere*.xml"<<"*.mp3";
+//    fileModel->setNameFilters(filters);
     fileModel->setNameFilterDisables(false);
 
-    setModel(fileModel);
+    filesProxyModel = new AFilesSortFilterProxyModel(this);
+    filesProxyModel->setSourceModel(fileModel);
+    setModel(filesProxyModel);
+
+//    setModel(fileModel);
     setColumnWidth(0,columnWidth(0) * 4);
     expandAll();
     show();
     header()->setSectionResizeMode(QHeaderView::ResizeToContents);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
 
-    connect( this, &QTreeView::clicked, this, &AFilesTreeView::onIndexClicked);
-    connect( this, &QTreeView::activated, this, &AFilesTreeView::onIndexActivated);
+    connect(this, &QTreeView::clicked, this, &AFilesTreeView::onIndexClicked);
+    connect(this, &QTreeView::activated, this, &AFilesTreeView::onIndexActivated);
 
-    connect(fileModel, &QFileSystemModel::directoryLoaded, this, &AFilesTreeView::onDirectoryLoaded);
-
-//    QString lastFolder = QSettings().value("LastFolder").toString();
-//    if (lastFolder != ""  && lastFolder.length()>3) //not the root folder
-//    {
-//        loadModel(QSettings().value("LastFolder").toString());
-//    }
+//    connect(fileModel, &QFileSystemModel::directoryLoaded, this, &AFilesTreeView::onModelLoaded);
 
     //https://code-examples.net/en/q/152b89b
     fileContextMenu = new QMenu(this);
@@ -60,17 +58,50 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu->addAction(new QAction("Delete clips",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onClipsDelete);
 
-//    fileContextMenu->addAction(new QAction("Superview",fileContextMenu));
-//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onSuperview);
+    fileContextMenu->addAction(new QAction("Superview",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onSuperview);
 
     fileContextMenu->addSeparator();
 }
 
+void AFilesTreeView::setType(QString type)
+{
+    QString regExp = type;
+    filesProxyModel->setFilterRegExp(QRegExp(regExp, Qt::CaseInsensitive,
+                                                QRegExp::FixedString));
+    filesProxyModel->setFilterKeyColumn(-1);
+
+    QStringList filters;
+    if (type == "Video")
+    {
+        filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
+        fileModel->setNameFilters(filters);
+    }
+    else if (type == "Audio")
+    {
+        filters << "*.mp3";
+        fileModel->setNameFilters(filters);
+    }
+    else if (type == "Export")
+    {
+        filters <<"Lossless*.*"<<"Encode*.*"<<"shotcut*.*"<<"Premiere*.*";
+        fileModel->setNameFilters(filters);
+    }
+}
+
 void AFilesTreeView::onIndexClicked(QModelIndex index)
 {
-    QFileInfo fileInfo = fileModel->fileInfo(index);
+//    QModelIndex fileModelIndex = fileModel->index(index.data(index.parent()).toString());
+//    QModelIndex fileModelIndex = fileModel->index(index.parent().data().toString());
+
+    QModelIndex fileModelIndex = filesProxyModel->mapToSource(index);
+
+    QFileInfo fileInfo = fileModel->fileInfo(fileModelIndex);
     QString filePath = fileInfo.absolutePath() + "/";
 
+//    qDebug()<<"AFilesTreeView::onIndexClicked"<<index.parent().data().toString()<<index.data().toString()<<fileInfo<<filePath;
+
+    QSettings().setValue("LastFile", index.data().toString());
     QSettings().setValue("LastFileFolder", filePath);
     QSettings().sync();
 
@@ -94,22 +125,35 @@ void AFilesTreeView::onIndexActivated(QModelIndex index)
 void AFilesTreeView::loadModel(QUrl folderUrl)
 {
     fileModel->setRootPath(folderUrl.toString());
-    int indexOf = folderUrl.toString().lastIndexOf("/");
-    QString folderName = folderUrl.toString().left(indexOf);
+//    int indexOf = folderUrl.toString().lastIndexOf("/");
+//    QString folderName = folderUrl.toString().left(indexOf);
+//    qDebug()<<"AFilesTreeView::loadModel"<<folderUrl.toString()<<filesProxyModel->filterRegExp().pattern();
 //    indexOf = folderName.lastIndexOf("/");
 //    folderName = folderName.left(indexOf);
 
-//    qDebug()<<"AFilesTreeView::loadModel"<<folderUrl<<indexOf<<folderName;
-    setRootIndex(fileModel->index(folderName));
+//    QMap<QString, QString> parameters;
+//    parameters["folderName"] = folderName;
+
+//    recursiveFiles(filesProxyModel, QModelIndex(), parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QModelIndex index )
+//    {
+//        AFilesTreeView *filesTreeView = qobject_cast<AFilesTreeView *>(parent);
+
+//        qDebug()<<"recursiveFiles"<<filesTreeView<<parameters["folderName"]<<index.data().toString();
+//        if (parameters["folderName"].contains(index.data().toString()))
+//        {
+//            qDebug()<<"setRootIndex"<<parameters["folderName"];
+//            filesTreeView->setRootIndex(index);
+//        }
+//    });
+
+    setRootIndex(filesProxyModel->mapFromSource(fileModel->index(folderUrl.toString())));
 }
 
 void AFilesTreeView::this_customContextMenuRequested(const QPoint &point)
 {
     QModelIndex index = indexAt(point);
-//    qDebug()<<"onFileRightClickMenu"<<point;
-        if (index.isValid() ) {
-            fileContextMenu->exec(viewport()->mapToGlobal(point));
-        }
+    if (index.isValid() )
+        fileContextMenu->exec(viewport()->mapToGlobal(point));
 }
 
 void AFilesTreeView::onTrim()
@@ -123,7 +167,9 @@ void AFilesTreeView::onTrim()
             QString fileName = indexList[i].data().toString();
             if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
             {
-                emit trim(fileName);
+                qDebug()<<"AFilesTreeView::onTrim"<<fileName;
+
+                emit trimF(fileName);
                 somethingTrimmed = true;
             }
 //            qDebug()<<"indexList[i].data()"<<indexList[i].row()<<indexList[i].column()<<indexList[i].data();
@@ -391,8 +437,23 @@ void AFilesTreeView::onClipIndexClicked(QModelIndex index)
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
     QModelIndex modelIndex = fileModel->index(folderName + fileName, 0);
     qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index.data().toString()<<fileName<<modelIndex.data().toString();
-    setCurrentIndex(modelIndex); //does also the scrollTo
+    setCurrentIndex(filesProxyModel->mapFromSource(modelIndex)); //does also the scrollTo
 }
+
+QModelIndex AFilesTreeView::recursiveFiles(QAbstractItemModel *fileModel, QModelIndex parentIndex, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString> , QModelIndex))
+{
+    QModelIndex fileIndex = QModelIndex();
+    for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
+    {
+        QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
+
+        processOutput(this, parameters, childIndex);
+
+        fileIndex = recursiveFiles(fileModel, childIndex, parameters, processOutput);
+    }
+    return fileIndex;
+}
+
 
 QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIndex)
 {
@@ -410,30 +471,29 @@ QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIn
     return fileIndex;
 }
 
-void AFilesTreeView::onDirectoryLoaded(const QString &path)
+void AFilesTreeView::onModelLoaded(const QString &)//path
 {
-//    qDebug()<<"AFilesTreeView::onDirectoryLoaded"<<path<<fileModel->rowCount()<<model()->rowCount();
+    if (filesProxyModel->filterRegExp().pattern() == "Video")
+        qDebug()<<"AFilesTreeView::onModelLoaded"<<filesProxyModel->filterRegExp().pattern();
+    return;
+
     QModelIndex fileIndex = QModelIndex();
-//    for (int row=0; row<fileModel->rowCount();row++)
-//    {
+
+    QString lastFile = QSettings().value("LastFile").toString();
+    if (lastFile != "" ) //not the root folder
+    {
+        QString lastFileFolder = QSettings().value("LastFileFolder").toString();
+        fileIndex = fileModel->index(lastFileFolder + lastFile, 0);
+    }
+    else
+    {
         QModelIndex parentIndex = rootIndex();
-
-//        qDebug()<<"AFilesTreeView::onDirectoryLoaded"<<parentIndex.data().toString()<<fileModel->index(row, 1).data().toString()<<fileModel->rowCount(parentIndex);
         fileIndex = recursiveFirstFile(fileModel, parentIndex);
-
-//        if (fileModel->index(row, 0).data().toString().toLower().contains(".mp4") && fileIndex == QModelIndex())
-//            fileIndex = fileModel->index(row, 0);
-//        for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
-//        {
-//            QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
-//            if (childIndex.data().toString().toLower().contains(".mp4") && fileIndex == QModelIndex())
-//                fileIndex = childIndex;
-//        }
-//    }
+    }
 
     if (fileIndex != QModelIndex())
     {
-        onIndexClicked(fileIndex);
-        setCurrentIndex(fileIndex);
+        onIndexClicked(filesProxyModel->mapFromSource(fileIndex));
+        setCurrentIndex(filesProxyModel->mapFromSource(fileIndex));
     }
 }

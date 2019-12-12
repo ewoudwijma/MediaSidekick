@@ -9,12 +9,12 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.0.3");
+    a.setApplicationVersion("0.1.0");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
 
-    if (QSettings().value("framerate").toInt() == 0)
+    if (QSettings().value("frameRate").toInt() == 0)
     {
         QSettings().setValue("frameRate", 25);
         QSettings().sync();

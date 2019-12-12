@@ -24,12 +24,12 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QTabWidget" name="filesTtabWidget">
+       <widget class="QTabWidget" name="filesTabWidget">
         <property name="tabPosition">
          <enum>QTabWidget::South</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_folder">
          <attribute name="title">
@@ -47,7 +47,52 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <widget class="AFilesTreeView" name="filesTreeView"/>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QLabel" name="folderIconLabel">
+              <property name="text">
+               <string>FolderIcon</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="folderLabel">
+              <property name="text">
+               <string>Folder</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Video</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="AFilesTreeView" name="videoFilesTreeView"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Audio</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="AFilesTreeView" name="audioFilestreeView"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Export</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="AFilesTreeView" name="exportFilesTreeView"/>
           </item>
          </layout>
         </widget>
@@ -73,7 +118,7 @@
           <enum>QTabWidget::South</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="tab_clips">
           <attribute name="title">
@@ -84,13 +129,6 @@
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
-               <item>
-                <widget class="QPushButton" name="newClipButton">
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
                <item>
                 <widget class="QPushButton" name="resetSortButton">
                  <property name="text">
@@ -140,14 +178,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QListView" name="tagFilter1ListView">
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>28</height>
-                  </size>
-                 </property>
-                </widget>
+                <widget class="QListView" name="tagFilter1ListView"/>
                </item>
                <item>
                 <widget class="QLabel" name="label">
@@ -157,14 +188,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QListView" name="tagFilter2ListView">
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>28</height>
-                  </size>
-                 </property>
-                </widget>
+                <widget class="QListView" name="tagFilter2ListView"/>
                </item>
                <item>
                 <widget class="QCheckBox" name="fileOnlyCheckBox">
@@ -181,31 +205,17 @@
                 </widget>
                </item>
                <item>
+                <widget class="QComboBox" name="clipsSizeComboBox"/>
+               </item>
+               <item>
+                <widget class="QComboBox" name="clipsFramerateComboBox"/>
+               </item>
+               <item>
                 <widget class="QLabel" name="label_3">
                  <property name="text">
-                  <string>Framerate</string>
+                  <string>fps</string>
                  </property>
                 </widget>
-               </item>
-               <item>
-                <widget class="QSpinBox" name="frameRateSpinBox">
-                 <property name="maximum">
-                  <number>120</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="horizontalSpacer">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
                </item>
               </layout>
              </item>
@@ -296,13 +306,37 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="tabLog">
+         <widget class="QWidget" name="tabJobs">
           <attribute name="title">
-           <string>Log</string>
+           <string>Jobs</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
-            <widget class="ALogTableView" name="logTableView"/>
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <item>
+              <widget class="QPushButton" name="clearJobsButton">
+               <property name="text">
+                <string>Clear</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="AJobTableView" name="logTableView"/>
            </item>
           </layout>
          </widget>
@@ -474,68 +508,73 @@
               </item>
              </widget>
             </item>
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QLabel" name="label_5">
               <property name="text">
                <string>Size</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="2" column="1">
              <widget class="QComboBox" name="exportSizeComboBox">
               <property name="currentIndex">
-               <number>4</number>
+               <number>0</number>
               </property>
               <item>
                <property name="text">
-                <string>240p</string>
+                <string>240p (320 x 240)</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>360p</string>
+                <string>360p (480 x 360)</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>480p</string>
+                <string>480p (640 x 480)</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>720p</string>
+                <string>720p (1280 x 720)</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>1K</string>
+                <string>Source</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>2.7K</string>
+                <string>1K (1920 x 1080)</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>4K</string>
+                <string>2.7K (2880 x 1620)</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>8K</string>
+                <string>4K (3840 x 2160)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>8K (7680 x 4320)</string>
                </property>
               </item>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="3" column="0">
              <widget class="QLabel" name="label_7">
               <property name="text">
                <string>Framerate</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
+            <item row="3" column="1">
              <widget class="QComboBox" name="exportFramerateComboBox">
               <property name="currentIndex">
                <number>0</number>
@@ -563,6 +602,11 @@
               <item>
                <property name="text">
                 <string>25</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Source</string>
                </property>
               </item>
               <item>
@@ -597,58 +641,81 @@
               </item>
              </widget>
             </item>
-            <item row="5" column="0">
+            <item row="6" column="0">
              <widget class="QLabel" name="label_2">
               <property name="text">
-               <string>Audio</string>
+               <string>Video audio</string>
               </property>
              </widget>
             </item>
-            <item row="5" column="1">
-             <widget class="QCheckBox" name="exportAudioCheckBox">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="0">
+            <item row="8" column="0">
              <widget class="QPushButton" name="exportButton">
               <property name="text">
                <string>Export</string>
               </property>
              </widget>
             </item>
-            <item row="7" column="1">
-             <widget class="QProgressBar" name="progressBar">
-              <property name="value">
-               <number>24</number>
-              </property>
-             </widget>
-            </item>
-            <item row="8" column="1">
-             <widget class="QLabel" name="spinnerLabel">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="0">
+            <item row="7" column="0">
              <widget class="QPushButton" name="watermarkButton">
               <property name="enabled">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
               <property name="text">
                <string>Watermark</string>
               </property>
              </widget>
             </item>
-            <item row="6" column="1">
+            <item row="7" column="1">
              <widget class="QLabel" name="watermarkLabel">
               <property name="enabled">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
               <property name="text">
                <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLabel" name="targetRemarkLabel">
+              <property name="text">
+               <string>targetRemark</string>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_6">
+              <item>
+               <widget class="QProgressBar" name="progressBar">
+                <property name="value">
+                 <number>24</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="spinnerLabel">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="6" column="1">
+             <widget class="QSlider" name="exportVideoAudioSlider">
+              <property name="maximum">
+               <number>100</number>
+              </property>
+              <property name="singleStep">
+               <number>10</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="tickPosition">
+               <enum>QSlider::TicksBelow</enum>
+              </property>
+              <property name="tickInterval">
+               <number>10</number>
               </property>
              </widget>
             </item>
@@ -701,11 +768,14 @@
     </property>
     <addaction name="actionHelp"/>
     <addaction name="actionCheck_for_updates"/>
-    <addaction name="actionDonate"/>
-    <addaction name="actionDebug_mode"/>
+    <addaction name="separator"/>
     <addaction name="actionAbout"/>
     <addaction name="actionAbout_Qt"/>
+    <addaction name="separator"/>
+    <addaction name="actionDonate"/>
+    <addaction name="actionDebug_mode"/>
     <addaction name="actionGithub_ACVC_Issues"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -718,7 +788,6 @@
     <property name="title">
      <string>&amp;Clips</string>
     </property>
-    <addaction name="actionNew"/>
     <addaction name="separator"/>
     <addaction name="action0_stars"/>
     <addaction name="action1_star"/>
@@ -729,7 +798,6 @@
     <addaction name="actionAlike"/>
     <addaction name="separator"/>
     <addaction name="separator"/>
-    <addaction name="actionAdd_tag"/>
    </widget>
    <widget class="QMenu" name="menuPlayer">
     <property name="title">
@@ -743,6 +811,8 @@
     <addaction name="separator"/>
     <addaction name="actionIn"/>
     <addaction name="actionOut"/>
+    <addaction name="separator"/>
+    <addaction name="actionMute"/>
    </widget>
    <widget class="QMenu" name="menuExport">
     <property name="title">
@@ -764,6 +834,21 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionSave"/>
+   <addaction name="actionQuit"/>
+   <addaction name="separator"/>
+   <addaction name="actionWhite_theme"/>
+   <addaction name="actionBlack_theme"/>
+   <addaction name="separator"/>
+   <addaction name="action0_stars"/>
+   <addaction name="action1_star"/>
+   <addaction name="action2_stars"/>
+   <addaction name="action3_stars"/>
+   <addaction name="action4_stars"/>
+   <addaction name="action5_stars"/>
+   <addaction name="actionAlike"/>
+   <addaction name="separator"/>
+   <addaction name="actionExport"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionQuit">
@@ -809,17 +894,6 @@
     <string>About &amp;Qt</string>
    </property>
   </action>
-  <action name="actionNew">
-   <property name="text">
-    <string>&amp;New</string>
-   </property>
-   <property name="toolTip">
-    <string>New</string>
-   </property>
-   <property name="shortcut">
-    <string>Ins</string>
-   </property>
-  </action>
   <action name="actionAlike">
    <property name="text">
     <string>A&amp;like</string>
@@ -833,7 +907,7 @@
   </action>
   <action name="action1_star">
    <property name="text">
-    <string>&amp;1 star</string>
+    <string>&amp;1*</string>
    </property>
    <property name="toolTip">
     <string>1 star</string>
@@ -844,7 +918,7 @@
   </action>
   <action name="action2_stars">
    <property name="text">
-    <string>&amp;2 stars</string>
+    <string>&amp;2**</string>
    </property>
    <property name="toolTip">
     <string>2 stars</string>
@@ -855,7 +929,7 @@
   </action>
   <action name="action3_stars">
    <property name="text">
-    <string>&amp;3 stars</string>
+    <string>&amp;3***</string>
    </property>
    <property name="toolTip">
     <string>3 stars</string>
@@ -866,7 +940,7 @@
   </action>
   <action name="action4_stars">
    <property name="text">
-    <string>&amp;4 stars</string>
+    <string>&amp;4****</string>
    </property>
    <property name="toolTip">
     <string>4 stars</string>
@@ -877,7 +951,7 @@
   </action>
   <action name="action5_stars">
    <property name="text">
-    <string>&amp;5 stars</string>
+    <string>&amp;5*****</string>
    </property>
    <property name="toolTip">
     <string>5 stars</string>
@@ -888,7 +962,7 @@
   </action>
   <action name="action0_stars">
    <property name="text">
-    <string>&amp;0 stars</string>
+    <string>&amp;0*</string>
    </property>
    <property name="toolTip">
     <string>0 stars</string>
@@ -953,14 +1027,6 @@
     <string>Ctrl+Up</string>
    </property>
   </action>
-  <action name="actionAdd_tag">
-   <property name="text">
-    <string>Add tag</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
-  </action>
   <action name="actionExport">
    <property name="text">
     <string>&amp;Export</string>
@@ -994,6 +1060,10 @@
    </property>
   </action>
   <action name="actionSave">
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/acvc.ico</normaloff>:/acvc.ico</iconset>
+   </property>
    <property name="text">
     <string>Save</string>
    </property>
@@ -1009,6 +1079,14 @@
   <action name="actionGithub_ACVC_Issues">
    <property name="text">
     <string>Github ACVC Issues</string>
+   </property>
+  </action>
+  <action name="actionMute">
+   <property name="text">
+    <string>&amp;Mute toggle</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
    </property>
   </action>
  </widget>
@@ -1052,11 +1130,6 @@
    <header>stimespinbox.h</header>
   </customwidget>
   <customwidget>
-   <class>ALogTableView</class>
-   <extends>QTableView</extends>
-   <header>alogtableview.h</header>
-  </customwidget>
-  <customwidget>
    <class>QGraphWidget</class>
    <extends>QGraphicsView</extends>
    <header>qgraphwidget.h</header>
@@ -1077,7 +1150,14 @@
    <extends>QTableView</extends>
    <header>aclipstableview.h</header>
   </customwidget>
+  <customwidget>
+   <class>AJobTableView</class>
+   <extends>QTableView</extends>
+   <header>ajobtableview.h</header>
+  </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="images.qrc"/>
+ </resources>
  <connections/>
 </ui>

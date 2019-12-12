@@ -24,6 +24,8 @@ public:
 //    int fpsRounded;
     int m_position;
     STimeSpinBox* m_positionSpinner;
+    void setVideoVolume(int volume);
+
 private:
     QMediaPlayer *m_player;
 
@@ -59,6 +61,8 @@ private:
 
     bool isLoading;
 
+    int videoVolume;
+
 public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index);
@@ -75,26 +79,27 @@ public slots:
     void onUpdateIn(int frames = -1);
     void onUpdateOut(int frames = -1);
     void onFileRename();
+    void onMute();
 private slots:
     void onDurationChanged(int duration);
     void onPlayerPositionChanged(int progress);
     void onScrubberSeeked(int mseconds);
 //    void onSpinnerChanged(int mseconds);
     void onPlayerStateChanged(QMediaPlayer::State state);
-    void onScrubberInChanged(int row, int in);
-    void onScrubberOutChanged(int row, int out);
+    void onScrubberInChanged(QString AV, int row, int in);
+    void onScrubberOutChanged(QString AV, int row, int out);
     void onMutedChanged(bool muted);
-    void onMute();
     void onStop();
     void onSpeedChanged(QString speed);
     void onPlaybackRateChanged(qreal rate);
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
 signals:
     void videoPositionChanged(int position, int clipRow, int relativeProgress);
-    void scrubberInChanged(int row, int in);
-    void scrubberOutChanged(int row, int out);
+    void scrubberInChanged(QString AV, int row, int in);
+    void scrubberOutChanged(QString AV, int row, int out);
     void getPropertyValue(QString fileName, QString key, QString *value);
 //    void fpsChanged(int fps);
+    void createNewEdit(int frames);
 
 };
 

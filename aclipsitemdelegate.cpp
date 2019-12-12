@@ -15,7 +15,10 @@
 void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
-    QColor backgroundColor = option.palette.color(QPalette::Base);//index.data(Qt::BackgroundRole).value<QColor>();
+    QColor backgroundColor = index.data(Qt::BackgroundRole).value<QColor>();
+
+//    if (index.column() == inIndex)
+//        qDebug()<<"AClipsItemDelegate::paint"<<index.data().toString()<<option.palette.color(QPalette::Base)<<index.data(Qt::BackgroundRole).value<QColor>();
 
 //    qDebug()<<"AClipsItemDelegate::paint"<<painter<<option.state<<index.data()<<option.palette.background()<<backgroundColor;
 //    if (index.column() == ratingIndex)

@@ -16,6 +16,7 @@ class APropertyTreeView: public QTreeView
 public:
     APropertyTreeView(QWidget *parent=nullptr);
     ~APropertyTreeView();
+    QStandardItemModel *propertyItemModel;
 
 public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
@@ -29,7 +30,6 @@ private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
 private:
-    QStandardItemModel *propertyItemModel;
     APropertySortFilterProxyModel *propertyProxyModel;
     void loadModel(QString folderName);
     AProcessManager *processManager;
@@ -52,8 +52,8 @@ protected:
       void scrollTo (const QModelIndex & index, ScrollHint hint = EnsureVisible) override;
 
 signals:
-      void addLogEntry(QString folder, QString file, QString action, QString* id);
-      void addLogToEntry(QString id, QString log);
+      void addJob(QString folder, QString file, QString action, QString* id);
+      void addToJob(QString id, QString log);
       void propertiesLoaded();
       void fileDelete(QString fileName);
 };

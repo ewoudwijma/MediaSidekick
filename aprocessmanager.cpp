@@ -33,6 +33,7 @@ void AProcessManager::startProcess(QMap<QString, QString> parameters, void (*pro
     parameterQueue->append(parameters);
     processOutputQueue->append(nullptr);
     processResultsQueue->append(processResult);
+    ExecuteProcess();
 }
 
 void AProcessManager::stopAll()

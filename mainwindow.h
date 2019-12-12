@@ -31,7 +31,6 @@ private slots:
     void on_actionQuit_triggered();
     void on_actionAbout_triggered();
     void on_actionAbout_Qt_triggered();
-    void on_newClipButton_clicked();
     void on_propertyFilterLineEdit_textChanged(const QString &arg1);
     void on_propertyDiffCheckBox_stateChanged(int arg1);
     void onClipsFilterChanged();
@@ -45,7 +44,6 @@ private slots:
     void on_actionAlike_triggered();
     void on_actionSave_triggered();
     void on_actionPlay_Pause_triggered();
-    void on_actionNew_triggered();
     void onClipsChangedToVideo(QAbstractItemModel *itemModel);
     void on_transitionTimeSpinBox_valueChanged(int arg1);
     void on_actionIn_triggered();
@@ -54,20 +52,17 @@ private slots:
     void on_actionNext_frame_triggered();
     void on_actionPrevious_in_out_triggered();
     void on_actionNext_in_out_triggered();
-    void on_actionAdd_tag_triggered();
     void onFolderIndexClicked(QAbstractItemModel *itemModel);
     void on_newTagLineEdit_returnPressed();
     void on_exportButton_clicked();
     void on_exportTargetComboBox_currentTextChanged(const QString &arg1);
     void on_exportSizeComboBox_currentTextChanged(const QString &arg1);
-    void on_frameRateSpinBox_valueChanged(int arg1);
     void on_actionExport_triggered();
     void onFileIndexClicked(QModelIndex index);
     void on_alikeCheckBox_clicked(bool checked);
     void on_fileOnlyCheckBox_clicked(bool checked);
     void on_actionDebug_mode_triggered(bool checked);
     void on_resetSortButton_clicked();
-    void onFrameRateChanged(int frameRate);
     void on_locationCheckBox_clicked(bool checked);
     void on_cameraCheckBox_clicked(bool checked);
     void on_transitionComboBox_currentTextChanged(const QString &arg1);
@@ -81,9 +76,8 @@ private slots:
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void on_exportFramerateComboBox_currentTextChanged(const QString &arg1);
     void on_authorCheckBox_clicked(bool checked);
-    void on_exportAudioCheckBox_clicked(bool checked);
     void on_clipsTabWidget_currentChanged(int index);
-    void on_filesTtabWidget_currentChanged(int index);
+    void on_filesTabWidget_currentChanged(int index);
     void on_actionDonate_triggered();
     void on_actionCheck_for_updates_triggered();
     void on_ratingFilterComboBox_currentTextChanged(const QString &arg1);
@@ -91,6 +85,16 @@ private slots:
     void on_watermarkButton_clicked();
 
     void on_actionGithub_ACVC_Issues_triggered();
+
+    void onCreateNewEdit();
+    void on_actionMute_triggered();
+
+    void watermarkFileNameChanged(QString newFileName);
+    void on_clipsFramerateComboBox_currentTextChanged(const QString &arg1);
+
+    void on_exportVideoAudioSlider_valueChanged(int value);
+
+    void on_clearJobsButton_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -107,6 +111,10 @@ private:
 
     QString watermarkFileName = "";
 
+    void allConnects();
+    void allTooltips();
+    void loadSettings();
+    void changeUIProperties();
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);

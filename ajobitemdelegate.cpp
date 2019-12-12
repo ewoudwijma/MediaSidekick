@@ -1,16 +1,16 @@
-#include "alogitemdelegate.h"
+#include "ajobitemdelegate.h"
 #include <QDebug>
 #include <QTextBrowser>
 #include <QPainter>
 #include <QScrollBar>
 
-ALogItemDelegate::ALogItemDelegate(QObject *parent)
+AJobItemDelegate::AJobItemDelegate(QObject *parent)
  : QStyledItemDelegate(parent)
 {
 
 }
 
-void ALogItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+void AJobItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
     if (index.column() == 3)
@@ -41,7 +41,7 @@ void ALogItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
     }
 }
 
-QWidget *ALogItemDelegate::createEditor(QWidget *parent,
+QWidget *AJobItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 
@@ -60,7 +60,7 @@ QWidget *ALogItemDelegate::createEditor(QWidget *parent,
     }
 }
 
-void ALogItemDelegate::setEditorData(QWidget *editor,
+void AJobItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
 //    qDebug()<<"setEditorData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
@@ -83,7 +83,7 @@ void ALogItemDelegate::setEditorData(QWidget *editor,
     }
 }
 
-void ALogItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
+void AJobItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
 //    qDebug()<<"setModelData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
@@ -101,7 +101,7 @@ void ALogItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     }
 }
 
-QSize ALogItemDelegate::sizeHint(const QStyleOptionViewItem &option,
+QSize AJobItemDelegate::sizeHint(const QStyleOptionViewItem &option,
                              const QModelIndex &index) const
 {
     qDebug()<<"sizeHint"<<index.data();

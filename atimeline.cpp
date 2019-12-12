@@ -63,7 +63,6 @@ ATimeline::ATimeline(QWidget *parent) : QWidget(parent)
     toolbar->addWidget(spacer);
 
     transitiontime = 0;
-    transitiontimeDuration = 0;
     transitiontimeLastGood = -1;
 
     QTimer::singleShot(0, this, [this]()->void
@@ -129,115 +128,133 @@ void ATimeline::onDurationChanged(int duration)
 
 void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 {
-    originalDuration = 0;
+    int videoOriginalDuration = 0;
+    int audioOriginalDuration = 0;
+    int videoCountNrOfClips = 0;
+    int audioCountNrOfClips = 0;
+
     QMap<int,int> reorderMap;
     for (int row = 0; row < itemModel->rowCount();row++)
     {
         QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
         QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+        QString fileName = itemModel->index(row,fileIndex).data().toString();
 
         int frameDuration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
 
-        originalDuration += frameDuration;
+        if (!fileName.toLower().contains(".mp3"))
+        {
+            videoOriginalDuration += frameDuration;
+            videoCountNrOfClips++;
+        }
+        else
+        {
+            audioOriginalDuration += frameDuration;
+            audioCountNrOfClips++;
+        }
 
         reorderMap[itemModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
     }
 
-    int timelineDuration = originalDuration - transitiontime * (itemModel->rowCount()-1);
-    transitiontimeDuration = timelineDuration;
+    int maxOriginalDuration = qMax(videoOriginalDuration, audioOriginalDuration);
+    int maxCombinedDuration = qMax(videoOriginalDuration - transitiontime * (videoCountNrOfClips-1), audioOriginalDuration - transitiontime * (audioCountNrOfClips-1));
 
     bool allowed = true;
 
-    timelineDuration = 0;
-    int previousPreviousRow =  -1;
-    int previousRow = -1;
-    int previousOut = 0;
-
     m_scrubber->clearInOuts();
 
-    int countNrOfClips = 0;
-    QMapIterator<int, int> orderIterator(reorderMap);
-    while (orderIterator.hasNext()) //all files
+    QStringList mediaTypeList;
+    mediaTypeList << "A";
+//    if (includeAudio)
+        mediaTypeList << "V";
+    foreach (QString mediaType, mediaTypeList)
     {
-        orderIterator.next();
-        int row = orderIterator.value();
+        int previousPreviousRow =  -1;
+        int previousRow = -1;
+        int previousOut = 0;
 
+        QMapIterator<int, int> orderIterator(reorderMap);
+        while (orderIterator.hasNext()) //all files
         {
-            QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
-            QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
-//                QTime fileDurationTime = QTime::fromString(itemModel->index(row,fileDurationIndex).data().toString(),"HH:mm:ss.zzz");
+            orderIterator.next();
+            int row = orderIterator.value();
 
-            int clipduration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
+            QString fileName = itemModel->index(row,fileIndex).data().toString();
 
-            int inpoint, outpoint;
-
-            if (countNrOfClips == 0) //first
+            if ((fileName.toLower().contains(".mp3") && mediaType == "A") || (!fileName.toLower().contains(".mp3") && mediaType == "V"))
             {
-                inpoint = 0;
-                outpoint = clipduration;
+                QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
+                QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
+    //                QTime fileDurationTime = QTime::fromString(itemModel->index(row,fileDurationIndex).data().toString(),"HH:mm:ss.zzz");
+
+                int clipduration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
+
+                int inpoint, outpoint;
+
+                if (previousRow == -1) //first
+                {
+                    inpoint = 0;
+                    outpoint = clipduration;
+                }
+                else
+                {
+                    inpoint = previousOut - transitiontime;
+                    outpoint = inpoint + clipduration;
+                }
+
+                int porderBeforeLoadIndex = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
+                QString AV;
+
+                if (fileName.toLower().contains(".mp3"))
+                    AV = "A";
+                else
+                {
+                    AV = "V";
+                }
+
+                m_scrubber->setInOutPoint(AV, porderBeforeLoadIndex, AGlobal().frames_to_msec( inpoint), AGlobal().frames_to_msec(outpoint));
+
+                if (previousPreviousRow != -1 && itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt() >= inpoint)
+                {
+                    allowed = false;
+    //                    qDebug()<<"ATimeline::onClipsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
+                }
+
+                previousOut = outpoint;
+                previousPreviousRow = previousRow;
+                previousRow = row;
             }
-            else
-            {
-                inpoint = previousOut - transitiontime;
-                outpoint = inpoint + clipduration;
-            }
-
-            timelineDuration += clipduration;
-
-            int porderBeforeLoadIndex = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
-            m_scrubber->setInOutPoint(porderBeforeLoadIndex,AGlobal().frames_to_msec( inpoint), AGlobal().frames_to_msec(outpoint));
-
-            if (previousPreviousRow != -1 && itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt() >= inpoint)
-            {
-                allowed = false;
-//                    qDebug()<<"ATimeline::onClipsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
-            }
-
-            previousOut = outpoint;
-            previousPreviousRow = previousRow;
-            previousRow = row;
-            countNrOfClips ++;
         }
     }
-    timelineDuration -= transitiontime * (countNrOfClips - 1); //subtrackt all the transitions
-
-//    qDebug()<<"ATimeline::onClipsChangedToTimeline"<<timelineDuration<<transitiontime;
 
     if (!allowed)
     {
         if (transitiontimeLastGood != -1 )
         {
-//            qDebug()<<"timeline error"<<transitiontimeLastGood;
             emit adjustTransitionTime(transitiontimeLastGood);
             return;
         }
-//        else
-//            qDebug()<<"timeline other error"<<transitiontimeLastGood;
     }
     else
     {
-//        qDebug()<<"timeline good"<<transitiontimeLastGood;
         transitiontimeLastGood = transitiontime;
     }
 
-    {
-        m_scrubber->setScale(AGlobal().frames_to_msec(transitiontimeDuration));
-        m_durationLabel->setText(AGlobal().frames_to_time(originalDuration).prepend(" / ") + AGlobal().frames_to_time(transitiontimeDuration).prepend(" -> "));
-    }
+    m_scrubber->setScale(AGlobal().frames_to_msec(maxCombinedDuration));
+
+    if (maxOriginalDuration == maxCombinedDuration)
+        m_durationLabel->setText(AGlobal().frames_to_time(maxOriginalDuration).prepend(" / "));
+    else
+        m_durationLabel->setText(AGlobal().frames_to_time(maxOriginalDuration).prepend(" / ") + AGlobal().frames_to_time(maxCombinedDuration).prepend(" -> "));
 
     emit clipsChangedToTimeline(itemModel);
 }
 
-void ATimeline::onFileIndexClicked(QModelIndex index)
-{
-//    qDebug()<<"ATimeline::onFileIndexClicked"<<index.data().toString();
-}
-
-void ATimeline::onVideoPositionChanged(int progress, int row, int relativeProgress)
+void ATimeline::onVideoPositionChanged(int , int row, int relativeProgress)//progress
 {
 //    qDebug()<<"ATimeline::onVideoPositionChanged"<<progress<<row<<relativeProgress;
     int *relativeProgressl = new int();
-    m_scrubber->rowToPosition(row, relativeProgressl);
+    m_scrubber->rowToPosition("V", row, relativeProgressl);
 //    qDebug()<<"  ATimeline::onVideoPositionChanged"<<progress<<row<<*relativeProgressl;
 
     if (relativeProgress != -1)
@@ -269,7 +286,7 @@ void ATimeline::onScrubberSeeked(int mseconds)
     int *prevRow = new int();
     int *nextRow = new int();
     int *relativeProgress = new int();
-    m_scrubber->progressToRow(mseconds, prevRow, nextRow, relativeProgress);
+    m_scrubber->progressToRow("V", mseconds, prevRow, nextRow, relativeProgress);
 
     qDebug()<<"ATimeline::onScrubberSeeked"<<mseconds<< *prevRow<< *relativeProgress;
 //    if (m_player->state() != QMediaPlayer::PausedState)

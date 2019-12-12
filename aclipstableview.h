@@ -19,7 +19,7 @@ class AClipsTableView: public QTableView
     Q_OBJECT
 public:
     AClipsTableView(QWidget *parent = nullptr);
-    void addClip();
+    void addClip(QString ratingText, bool alike, QAbstractItemModel *tagFilter1Model, QAbstractItemModel *tagFilter2Model);
     void saveModel(QString folderName, QString fileName);
     void toggleAlike();
     void giveStars(int starCount);
@@ -29,6 +29,7 @@ public:
     QStandardItemModel *srtFileItemModel;
     bool checkSaveIfClipsChanged();
     int originalDuration;
+    void selectClips();
 
 private:
     QString selectedFolderName;
@@ -38,7 +39,6 @@ private:
     QStandardItemModel *read(QString folderName, QString fileName);
     QMenu *clipContextMenu;
     int position;
-    void selectClips();
     void onTagsChanged(const QModelIndex &parent, int first, int last);
     int clipCounter;
     int fileCounter;
@@ -48,12 +48,12 @@ private:
 public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void onScrubberInChanged(int row, int in);
-    void onScrubberOutChanged(int row, int out);
+    void onScrubberInChanged(QString AV, int row, int in);
+    void onScrubberOutChanged(QString AV, int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
     void onClipsDelete(QString fileName);
-    void onTrim(QString fileName);
+    void onTrimF(QString fileName);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
     void onReloadClips();
@@ -74,8 +74,8 @@ signals:
     void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
     void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void addLogEntry(QString folder, QString file, QString action, QString *id);
-    void addLogToEntry(QString id, QString log);
+    void addJobsEntry(QString folder, QString file, QString action, QString *id);
+    void addToJob(QString id, QString log);
     void getPropertyValue(QString fileName, QString key, QString *value);
     void reloadProperties(QString fileName);
     void updateIn(int frames);
@@ -83,7 +83,7 @@ signals:
     void frameRateChanged(int frameRate);
     void propertiesLoaded();
     void propertyUpdate(QString selectedFolderName, QString fileName, QString targetFileName);
-    void trim(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage);
+    void trimC(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage);
     void reloadAll(bool includingSRT);
 
 };
