@@ -192,7 +192,7 @@ void AClipsTableView::selectClips()
     doNotUpdate = false;
 }
 
-void AClipsTableView::addClip(QString ratingText, bool alike, QAbstractItemModel *tagFilter1Model, QAbstractItemModel *tagFilter2Model)
+void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFilter1Model, QAbstractItemModel *tagFilter2Model)
 {
     if (selectedFileName == "")
     {
@@ -278,19 +278,7 @@ void AClipsTableView::addClip(QString ratingText, bool alike, QAbstractItemModel
     QList<QStandardItem *> items;
 
     QStandardItem *starItem = new QStandardItem;
-    QVariant starVar;
-    if (ratingText.contains("*****"))
-        starVar = QVariant::fromValue(AStarRating(5));
-    else if (ratingText.contains("****"))
-        starVar = QVariant::fromValue(AStarRating(4));
-    else if (ratingText.contains("***"))
-        starVar = QVariant::fromValue(AStarRating(3));
-    else if (ratingText.contains("**"))
-        starVar = QVariant::fromValue(AStarRating(2));
-    else if (ratingText.contains("*"))
-        starVar = QVariant::fromValue(AStarRating(1));
-    else
-        starVar = QVariant::fromValue(AStarRating(0));
+    QVariant starVar = QVariant::fromValue(AStarRating(rating));
     starItem->setData(starVar, Qt::EditRole);
 
     if (rowToAppendBefore == -1) //add at the end
@@ -343,7 +331,7 @@ void AClipsTableView::addClip(QString ratingText, bool alike, QAbstractItemModel
             tagList.append(tag);
     }
 
-    qDebug()<<"addClip"<<alike<<ratingText;
+    qDebug()<<"addClip"<<alike<<rating;
 
     items.append(new QStandardItem("yes"));
     items.append(new QStandardItem(selectedFolderName));
@@ -758,7 +746,7 @@ void AClipsTableView::onScrubberInChanged(QString AV, int row, int in)
             {
                 QTime outTime = QTime::fromString(clipsItemModel->index(i,outIndex).data().toString(),"HH:mm:ss.zzz");
     //            qDebug()<<"AClipsTableView::onScrubberInChanged"<<i<< in<<newInTime.msecsSinceStartOfDay();
-                doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
+                doNotUpdate = true; //avoid onsetin trigger which fires also scrubberchanged
                 clipsItemModel->item(i, inIndex)->setData(newInTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
                 clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
                 clipsItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
@@ -782,7 +770,7 @@ void AClipsTableView::onScrubberOutChanged(QString AV, int row, int out)
             {
                 QTime inTime = QTime::fromString(clipsItemModel->index(i,inIndex).data().toString(),"HH:mm:ss.zzz");
     //            qDebug()<<"AClipsTableView::onScrubberOutChanged"<<i<< out<<newOutTime.msecsSinceStartOfDay()<<QSettings().value("frameRate");
-                doNotUpdate = true; //avoid onupdatein trigger which fires also scrubberchanged
+                doNotUpdate = true; //avoid onsetin trigger which fires also scrubberchanged
                 clipsItemModel->item(i, changedIndex)->setData("yes",Qt::EditRole);
                 clipsItemModel->item(i, outIndex)->setData(newOutTime.toString("HH:mm:ss.zzz"),Qt::EditRole);
                 clipsItemModel->item(i, durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::EditRole);
@@ -808,13 +796,13 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
             {
                 doNotUpdate = true;
                 clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(time.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                emit updateIn(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
+                emit setIn(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
             }
             else if (topLeft.column() == outIndex)
             {
                 doNotUpdate = true;
                 clipsItemModel->item(topLeft.row(), durationIndex)->setData(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                emit updateOut(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
+                emit setOut(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
             }
             else if (topLeft.column() == durationIndex)
             {
@@ -829,12 +817,12 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
                 if (newIn != inTime.msecsSinceStartOfDay())
                 {
                     clipsItemModel->item(topLeft.row(), inIndex)->setData(QTime::fromMSecsSinceStartOfDay(newIn).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                    emit updateIn(AGlobal().msec_to_frames(newIn));
+                    emit setIn(AGlobal().msec_to_frames(newIn));
                 }
                 if (newOut != outTime.msecsSinceStartOfDay())
                 {
                     clipsItemModel->item(topLeft.row(), outIndex)->setData(QTime::fromMSecsSinceStartOfDay(newOut).toString("HH:mm:ss.zzz"),Qt::DisplayRole);
-                    emit updateOut(AGlobal().msec_to_frames(newOut));
+                    emit setOut(AGlobal().msec_to_frames(newOut));
                 }
             }
             if (doNotUpdate)
@@ -1000,7 +988,7 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
     return srtItemModel;
 } //read
 
-void AClipsTableView::scanDir(QDir dir)
+void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 {
     if (!continueLoading)
         return;
@@ -1011,14 +999,12 @@ void AClipsTableView::scanDir(QDir dir)
     for (int i=0; i<dirList.size(); ++i)
     {
         QString newPath = QString("%1/%2").arg(dir.absolutePath()).arg(dirList.at(i));
-        scanDir(QDir(newPath));
+        scanDir(QDir(newPath), extensionList);
     }
 
-    QStringList filters;
 //    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts";
-    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS"<<"*.mp3";
 
-    dir.setNameFilters(filters);
+    dir.setNameFilters(extensionList);
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks);
 
 //    qDebug() << "AClipsTableView::scanDir" << dir.path();
@@ -1090,7 +1076,10 @@ void AClipsTableView::loadModel(QString folderName)
     continueLoading = true;
     clipsItemModel->removeRows(0, clipsItemModel->rowCount());
     srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
-    scanDir(QDir(folderName));
+
+    scanDir(QDir(folderName), QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS");
+    scanDir(QDir(folderName), QStringList() << "*.mp3");
+
 //    qDebug() << "AClipsTableView::loadModel done" << folderName;
 }
 
@@ -1208,19 +1197,7 @@ void AClipsTableView::onClipsFilterChanged(QComboBox *ratingFilterComboBox, QChe
     if (fileOnlyCheckBox->isChecked())
         fileName = selectedFileName;
 
-    QString starCount;
-    if (ratingFilterComboBox->currentText() == ".....")
-        starCount = "0";
-    else if (ratingFilterComboBox->currentText() == "*....")
-        starCount = "1";
-    else if (ratingFilterComboBox->currentText() == "**...")
-        starCount = "2";
-    else if (ratingFilterComboBox->currentText() == "***..")
-        starCount = "3";
-    else if (ratingFilterComboBox->currentText() == "****.")
-        starCount = "4";
-    else if (ratingFilterComboBox->currentText() == "*****")
-        starCount = "5";
+    QString starCount = QString::number(ratingFilterComboBox->currentIndex());
 
     //    qDebug()<<"AClipsTableView::onClipsFilterChanged"<<starEditorFilterWidget->starRating().starCount()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount()<<regExp;
 
@@ -1247,5 +1224,3 @@ void AClipsTableView::toggleAlike()
     clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), alikeIndex), !clipsProxyModel->index(currentIndex().row(), alikeIndex).data().toBool());
     clipsProxyModel->setData(clipsProxyModel->index(currentIndex().row(), changedIndex), "yes");
 }
-
-

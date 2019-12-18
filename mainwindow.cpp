@@ -24,6 +24,8 @@
 
 #include <QToolTip>
 
+#include <QCloseEvent>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -71,8 +73,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    if (ui->clipsTableView->checkSaveIfClipsChanged())
-        on_actionSave_triggered();
 
 //    qDebug()<<"Destructor"<<geometry();
 
@@ -80,6 +80,45 @@ MainWindow::~MainWindow()
     QSettings().sync();
 
     delete ui;
+}
+
+void MainWindow::on_actionQuit_triggered()
+{
+    if (checkExit())
+        qApp->quit();
+}
+
+void MainWindow::closeEvent (QCloseEvent *event)
+{
+    if (checkExit())
+        event->accept();
+    else
+        event->ignore();
+}
+
+bool MainWindow::checkExit()
+{
+    bool exitYes = false;
+
+    qDebug()<<"MainWindow::checkExit"<<ui->progressBar->value();
+
+    if (ui->progressBar->value() > 0 && ui->progressBar->value() < 100)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Quit", tr("Export in progress, are you sure you want to quit?"), QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes)
+            exitYes = true;
+    }
+    else
+        exitYes = true;
+
+    if (exitYes)
+    {
+        if (ui->clipsTableView->checkSaveIfClipsChanged())
+            on_actionSave_triggered();
+    }
+
+    return exitYes;
 }
 
 void MainWindow::changeUIProperties()
@@ -130,6 +169,27 @@ void MainWindow::changeUIProperties()
     ui->videoFilesTreeView->setType("Video");
     ui->audioFilestreeView->setType("Audio");
     ui->exportFilesTreeView->setType("Export");
+
+//    AStarRating starRating = qvariant_cast<AStarRating>(3);
+////    starRating.
+//    QPainter *painter = new QPainter();
+
+////    painter->fillRect(QRect(10,10,10,10), qApp->palette.highlight());
+
+//    starRating.paint(painter, QRect(10,10,10,10), qApp->palette(),
+//                     AStarRating::EditMode::ReadOnly);
+
+//    ui->ratingFilterComboBox->setMinimumWidth(100);
+//    ui->ratingFilterComboBox->setMinimumHeight(100);
+    for (int i=20; i<=5; i++)
+    {
+        QPixmap pixmap(":/RatingW" + QString::number(i) + ".png");
+
+        ui->ratingFilterComboBox->setItemIcon(i, QIcon(pixmap));
+        ui->ratingFilterComboBox->setItemText(i,"");
+    }
+
+
 }
 
 void MainWindow::allConnects()
@@ -233,8 +293,8 @@ void MainWindow::allConnects()
 
     connect(ui->clipsTableView, &AClipsTableView::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
 
-    connect(ui->clipsTableView, &AClipsTableView::updateIn, ui->videoWidget, &AVideoWidget::onUpdateIn);
-    connect(ui->clipsTableView, &AClipsTableView::updateOut, ui->videoWidget, &AVideoWidget::onUpdateOut);
+    connect(ui->clipsTableView, &AClipsTableView::setIn, ui->videoWidget, &AVideoWidget::onSetIn);
+    connect(ui->clipsTableView, &AClipsTableView::setOut, ui->videoWidget, &AVideoWidget::onSetOut);
 
 //    connect(ui->clipsTableView, &AClipsTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
 
@@ -385,7 +445,7 @@ void MainWindow::loadSettings()
     ui->filesTabWidget->setCurrentIndex(QSettings().value("filesTabIndex").toInt());
     ui->clipsTabWidget->setCurrentIndex(QSettings().value("clipTabIndex").toInt());
 
-    ui->ratingFilterComboBox->setCurrentText(QSettings().value("ratingFilterComboBox").toString());
+    ui->ratingFilterComboBox->setCurrentIndex(QSettings().value("ratingFilterComboBox").toInt());
 
     ui->transitionTimeSpinBox->setValue(QSettings().value("transitionTime").toInt());
     ui->transitionComboBox->setCurrentText(QSettings().value("transitionType").toString());
@@ -412,7 +472,7 @@ void MainWindow::loadSettings()
 //    qDebug()<<"Set framerate"<<lframeRate;
     ui->clipsFramerateComboBox->setCurrentText(QString::number(lframeRate));
 
-    if (QSettings().value("exportVideoAudioSlider").toInt() == 0)
+    if (QSettings().value("exportVideoAudioSlider") == "")
         ui->exportVideoAudioSlider->setValue(20);
     else
         ui->exportVideoAudioSlider->setValue(QSettings().value("exportVideoAudioSlider").toInt());
@@ -570,6 +630,17 @@ void MainWindow::allTooltips()
     ui->cameraCheckBox->setToolTip(ui->locationCheckBox->toolTip());
     ui->authorCheckBox->setToolTip(ui->locationCheckBox->toolTip());
 
+    //timeline
+    ui->transitionDial->setToolTip(tr("<p><b>Transitions</b></p>"
+                                      "<p><i>Sets the transition time and type for the exported video</i></p>"
+                                      "<ul>"
+                                      "<li>No transitions: set the time to 0</li>"
+                                      "<li>Transtion type: curently only Cross Dissolve supported</li>"
+                                      "<li>Remark: Lossless and encode do not support transitions yet, the transition time is however subtracted from the exported video</li>"
+                                      "</ul>"));
+    ui->transitionComboBox->setToolTip( ui->transitionDial->toolTip());
+    ui->transitionTimeSpinBox->setToolTip( ui->transitionDial->toolTip());
+
     //export
     ui->exportTargetComboBox->setToolTip(tr("<p><b>Export target</b></p>"
                                  "<p><i>Determines what will be exported</i></p>"
@@ -604,6 +675,15 @@ void MainWindow::allTooltips()
                                               "<li>Remark: This only applies to the videos. Audio files are always played at 100%</li>"
                                               "<li>Remark: Volume adjustments are also audible in ACVC when playing video files</li>"
                                               "</ul>"));
+
+    ui->watermarkLabel->setToolTip(tr("<p><b>Watermark</b></p>"
+                                      "<p><i>Adds a watermark / logo on the bottom right of the exported video</i></p>"
+                                      "<ul>"
+                                      "<li>Button: If no watermark then browse for an image. If a watermark is already selected, clicking the button will remove the watermark</li>"
+                                      "<li>Remark: No watermark on lossless encoding</li>"
+                                      "</ul>"));
+
+    ui->watermarkButton->setToolTip(ui->watermarkLabel->toolTip());
 
     //log
     ui->logTableView->setToolTip(tr("<p><b>Log items</b></p>"
@@ -718,11 +798,6 @@ void MainWindow::on_actionWhite_theme_triggered()
     ui->clipsTableView->update();
 }
 
-void MainWindow::on_actionQuit_triggered()
-{
-    qApp->quit();
-}
-
 void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, tr("About ACVC"),
@@ -752,7 +827,7 @@ void MainWindow::on_actionAbout_Qt_triggered()
 
 void MainWindow::onCreateNewEdit()
 {
-    ui->clipsTableView->addClip(ui->ratingFilterComboBox->currentText(), ui->alikeCheckBox->checkState() == Qt::Checked, ui->tagFilter1ListView->model(), ui->tagFilter2ListView->model());
+    ui->clipsTableView->addClip(ui->ratingFilterComboBox->currentIndex(), ui->alikeCheckBox->checkState() == Qt::Checked, ui->tagFilter1ListView->model(), ui->tagFilter2ListView->model());
 }
 
 void MainWindow::on_propertyFilterLineEdit_textChanged(const QString &)//arg1
@@ -795,6 +870,8 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 
 //    ui->fileOnlyCheckBox->setCheckState(Qt::Unchecked);
 //    on_fileOnlyCheckBox_clicked(false); //save in QSettings
+
+    ui->timelineWidget->transitiontimeLastGood = -1;
 
     onClipsFilterChanged();
     emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
@@ -910,7 +987,7 @@ void MainWindow::on_actionSave_triggered()
         {
             QString folderName = ui->clipsTableView->srtFileItemModel->index(row, 0).data().toString();
             QString fileName = ui->clipsTableView->srtFileItemModel->index(row, 1).data().toString();
-            qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->clipsTableView->srtFileItemModel->rowCount()<<row<<folderName<<fileName;
+//            qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->clipsTableView->srtFileItemModel->rowCount()<<row<<folderName<<fileName;
             ui->clipsTableView->saveModel(folderName, fileName);
         }
     }
@@ -926,14 +1003,14 @@ void MainWindow::on_actionPlay_Pause_triggered()
 
 void MainWindow::on_actionIn_triggered()
 {
-    qDebug()<<"MainWindow::on_updateInButton_clicked"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
-    ui->videoWidget->onUpdateIn();
+//    qDebug()<<"MainWindow::on_actionIn_triggered"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
+    ui->videoWidget->onSetIn();
 }
 
 void MainWindow::on_actionOut_triggered()
 {
-    qDebug()<<"MainWindow::on_updateOutButton_clicked"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
-    ui->videoWidget->onUpdateOut();
+    qDebug()<<"MainWindow::on_actionOut_triggered"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
+    ui->videoWidget->onSetOut();
 }
 
 void MainWindow::on_actionPrevious_frame_triggered()
@@ -978,8 +1055,8 @@ void MainWindow::on_newTagLineEdit_returnPressed()
 void MainWindow::on_exportButton_clicked()
 {
     int transitionTime = 0;
-    if (ui->transitionComboBox->currentText() != "No transition")
-        transitionTime = ui->transitionTimeSpinBox->value();
+//    if (ui->transitionComboBox->currentText() != "No transition")
+    transitionTime = ui->transitionTimeSpinBox->value();
 //    qDebug()<<"MainWindow::on_exportButton_clicked";
     ui->exportWidget->exportClips(ui->clipsTableView->clipsProxyModel, ui->exportTargetComboBox->currentText(), ui->exportSizeComboBox->currentText(), ui->exportFramerateComboBox->currentText(), transitionTime, ui->progressBar, ui->exportVideoAudioSlider, ui->spinnerLabel, watermarkFileName, ui->exportButton, ui->clipsFramerateComboBox, ui->clipsSizeComboBox, ui->statusBar);
 
@@ -1017,11 +1094,6 @@ void MainWindow::on_exportTargetComboBox_currentTextChanged(const QString &arg1)
     ui->watermarkLabel->setEnabled(arg1 != "Lossless");
     ui->transitionComboBox->setEnabled(arg1 != "Lossless" && arg1 != "Encode");
 
-    ui->targetRemarkLabel->setText(arg1);
-    if (arg1 == "Encodexx")
-    {
-        ui->targetRemarkLabel->setText("");
-    }
 }
 
 void MainWindow::on_exportSizeComboBox_currentTextChanged(const QString &arg1)
@@ -1158,7 +1230,7 @@ void MainWindow::on_transitionComboBox_currentTextChanged(const QString &arg1)
 {
     if (QSettings().value("transitionType") != arg1)
     {
-        qDebug()<<"MainWindow::on_transitionComboBox_currentTextChanged"<<arg1;
+//        qDebug()<<"MainWindow::on_transitionComboBox_currentTextChanged"<<arg1;
         QSettings().setValue("transitionType", arg1);
         QSettings().sync();
         emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
@@ -1176,7 +1248,7 @@ void MainWindow::onClipsChangedToTimeline(QAbstractItemModel *) //itemModel
 
         transitionValueChangedBy = "SpinBox";
         ui->transitionDial->setValue( int(result ));
-        transitionValueChangedBy = "";
+//        transitionValueChangedBy = "";
 
 //        qDebug()<<"MainWindow::onClipsChangedToTimeline transition after"<<int(result);
     }
@@ -1193,11 +1265,10 @@ void MainWindow::on_transitionDial_valueChanged(int value)
             result = 1 / qSin(M_PI * value / 100);
         result = ( value);
 
-        qDebug()<<"MainWindow::on_transitionDial_valueChanged"<<value<<result;
+//        qDebug()<<"MainWindow::on_transitionDial_valueChanged"<<value<<result;
 
-        transitionValueChangedBy = "Dial";
         ui->transitionTimeSpinBox->setValue(value);
-        transitionValueChangedBy = "";
+//        transitionValueChangedBy = "";
     }
 }
 
@@ -1215,12 +1286,21 @@ void MainWindow::on_transitionTimeSpinBox_valueChanged(int arg1)
 
 void MainWindow::onAdjustTransitionTime(int transitionTime)
 {
-    qDebug()<<"MainWindow::onAdjustTransitionTime"<<transitionTime;
+//    qDebug()<<"MainWindow::onAdjustTransitionTime"<<transitionTime;
 
-    transitionValueChangedBy = "SpinBox";
-    ui->transitionTimeSpinBox->setValue(transitionTime);
-    transitionValueChangedBy = "";
+    if (transitionValueChangedBy != "SpinBox")
+    {
+//        transitionValueChangedBy = "Timeline";
+        ui->transitionTimeSpinBox->setValue(transitionTime);
+//        transitionValueChangedBy = "";
+    }
 }
+
+void MainWindow::on_transitionDial_sliderMoved(int position)
+{
+    transitionValueChangedBy = "Dial";
+}
+
 
 void MainWindow::on_positionDial_valueChanged(int value)
 {
@@ -1232,20 +1312,43 @@ void MainWindow::on_positionDial_valueChanged(int value)
 //        if (positiondialOldValue == 0 && value == 99)
 //            positiondialOldValue = 100;
 
-        int delta = (value - positiondialOldValue + 100)%100;
+        int delta = (value - positiondialOldValue + 100) % 100;
 
         if (delta > 50)
-            delta -=100;
+            delta -= 100;
 
-        delta *= ui->incrementSlider->value()+1;
+        if (delta < 0)
+            delta = -1;
+        if (delta > 0)
+            delta = 1;
 
-//        qDebug()<<"MainWindow::on_positionDial_valueChanged"<<positiondialOldValue<<value<<delta;
+//        qDebug()<<"incrementSlider"<<delta<<ui->incrementSlider->value()<<AGlobal().msec_to_frames(ui->videoWidget->playerDuration) * ui->incrementSlider->value() / 200.0 + 1;
+        delta *= (AGlobal().msec_to_frames(ui->videoWidget->playerDuration) * ui->incrementSlider->value() / 200.0 / 100.0 + 1);
 
-        positionValueChangedBy = "Dial";
-        ui->videoWidget->m_positionSpinner->setValue(ui->videoWidget->m_positionSpinner->value() + delta);
-        positionValueChangedBy = "";
+//        qDebug()<<"MainWindow::on_positionDial_valueChanged"<<positiondialOldValue<<value<<delta<< ui->videoWidget->m_positionSpinner->value()<<ui->videoWidget->playerDuration;
+
+        if (ui->videoWidget->m_positionSpinner->value() + delta <= AGlobal().msec_to_frames(ui->videoWidget->playerDuration))
+            ui->videoWidget->m_positionSpinner->setValue(ui->videoWidget->m_positionSpinner->value() + delta);
+//        positionValueChangedBy = "";
     }
     positiondialOldValue = value;
+}
+
+void MainWindow::on_positionDial_sliderMoved(int position)
+{
+//    qDebug()<<"MainWindow::on_positionDial_sliderMoved"<<position;
+    positionValueChangedBy = "Dial";
+}
+
+void MainWindow::onVideoPositionChanged(int progress, int , int )//row, relativeProgress
+{
+    if (positionValueChangedBy != "Dial")
+    {
+//        qDebug()<<"MainWindow::onVideoPositionChanged"<<progress<<positionValueChangedBy;
+        ui->positionDial->setValue(AGlobal().msec_to_frames(progress)%100);
+//        positionValueChangedBy = "";
+    }
+    positionValueChangedBy = "SpinBox";
 }
 
 void MainWindow::showUpgradePrompt()
@@ -1359,9 +1462,38 @@ void MainWindow::onPropertiesLoaded()
 
     bool foundCurrentClipsFramerate = false;
 
-    for(int col = 3; col < ui->propertyTreeView->propertyItemModel->columnCount(); col++)
+//    for (int col = 3; col < ui->propertyTreeView->propertyItemModel->columnCount(); col++)
+//    {
+//        QString fileName = ui->propertyTreeView->propertyItemModel->headerData(col, Qt::Horizontal).toString();
+
+//        if (!fileName.toLower().contains(".mp3") && !fileName.toLower().contains("lossless") && !fileName.toLower().contains("encode") && !fileName.toLower().contains("shotcut") && !fileName.toLower().contains("premiere"))
+//        {
+//            QString *frameratePointer = new QString();
+//            ui->propertyTreeView->onGetPropertyValue(fileName, "VideoFrameRate", frameratePointer);
+
+//            int fpsSuggested = qRound((*frameratePointer).toDouble());
+
+//            if (ui->clipsFramerateComboBox->findText(QString::number(fpsSuggested)) < 0)
+//            {
+//                ui->clipsFramerateComboBox->addItem(QString::number(fpsSuggested));
+//            }
+
+//            if (QString::number(fpsSuggested) == QSettings().value("frameRate"))
+//                foundCurrentClipsFramerate = true;
+
+//            QString *widthValue = new QString();
+//            QString *heightValue = new QString();
+//            ui->propertyTreeView->onGetPropertyValue(fileName, "ImageWidth", widthValue);
+//            ui->propertyTreeView->onGetPropertyValue(fileName, "ImageHeight", heightValue);
+//            QString size = *widthValue + " x " + *heightValue;
+//            if (ui->clipsSizeComboBox->findText(size) < 0)
+//                ui->clipsSizeComboBox->addItem(size);
+//        }
+//    }
+
+    for (int row = 0; row < ui->clipsTableView->clipsItemModel->rowCount(); row++)
     {
-        QString fileName = ui->propertyTreeView->propertyItemModel->headerData(col, Qt::Horizontal).toString();
+        QString fileName = ui->clipsTableView->clipsItemModel->index(row, fileIndex).data().toString();
 
         if (!fileName.toLower().contains(".mp3") && !fileName.toLower().contains("lossless") && !fileName.toLower().contains("encode") && !fileName.toLower().contains("shotcut") && !fileName.toLower().contains("premiere"))
         {
@@ -1387,6 +1519,7 @@ void MainWindow::onPropertiesLoaded()
                 ui->clipsSizeComboBox->addItem(size);
         }
     }
+
     ui->clipsFramerateComboBox->blockSignals(false);
 
 //    qDebug()<<"MainWindow::onPropertiesLoaded"<<foundCurrentClipsFramerate<<QSettings().value("frameRate")<<ui->clipsFramerateComboBox->currentText();
@@ -1400,13 +1533,6 @@ void MainWindow::onPropertiesLoaded()
     }
 
 //    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
-}
-
-void MainWindow::onVideoPositionChanged(int progress, int , int )//row, relativeProgress
-{
-    positionValueChangedBy = "SpinBox";
-    ui->positionDial->setValue(AGlobal().msec_to_frames(progress)%100);
-    positionValueChangedBy = "";
 }
 
 void MainWindow::on_clipsTabWidget_currentChanged(int index)
@@ -1437,11 +1563,11 @@ void MainWindow::on_actionCheck_for_updates_triggered()
     showUpgradePrompt();
 }
 
-void MainWindow::on_ratingFilterComboBox_currentTextChanged(const QString &arg1)
+void MainWindow::on_ratingFilterComboBox_currentIndexChanged(int index)
 {
-    if (QSettings().value("ratingFilterComboBox").toString() != arg1)
+    if (QSettings().value("ratingFilterComboBox").toInt() != index)
     {
-        QSettings().setValue("ratingFilterComboBox", arg1);
+        QSettings().setValue("ratingFilterComboBox", index);
         QSettings().sync();
     }
 
@@ -1450,16 +1576,16 @@ void MainWindow::on_ratingFilterComboBox_currentTextChanged(const QString &arg1)
 
 void MainWindow::on_actionHelp_triggered()
 {
-//    QDesktopServices::openUrl(QUrl("http://bit.ly/ACVCFeatures"));
+    QDesktopServices::openUrl(QUrl("http://bit.ly/ACVCFeatures"));
 
-    QMessageBox::about(this, tr("About ACVC"),
-            tr("<p><h1>ACVC process flow</b></p>"
-               "<p>Version  %1</p>"
-               "<ul>"
-               "<li>Select a folder: %2</li>"
-               "<li>Create clips: %3 clips created</li>"
-               "</ul>"
-               ).arg(qApp->applicationVersion(), ui->folderLabel->text(), QString::number(ui->clipsTableView->clipsItemModel->rowCount())));
+//    QMessageBox::about(this, tr("About ACVC"),
+//            tr("<p><h1>ACVC process flow</b></p>"
+//               "<p>Version  %1</p>"
+//               "<ul>"
+//               "<li>Select a folder: %2</li>"
+//               "<li>Create clips: %3 clips created</li>"
+//               "</ul>"
+//               ).arg(qApp->applicationVersion(), ui->folderLabel->text(), QString::number(ui->clipsTableView->clipsItemModel->rowCount())));
 
 }
 
@@ -1529,7 +1655,7 @@ void MainWindow::on_exportVideoAudioSlider_valueChanged(int value)
 {
 //    qDebug()<<"MainWindow::on_exportVideoAudioSlider_valueChanged"<<value;
 
-    ui->videoWidget->setVideoVolume(value);
+    ui->videoWidget->setSourceVideoVolume(value);
 
     if (QSettings().value("exportVideoAudioSlider").toInt() != value)
     {

@@ -19,6 +19,7 @@ class ATimeline : public QWidget
     Q_OBJECT
 public:
     explicit ATimeline(QWidget *parent = nullptr);
+    int transitiontimeLastGood;
 
 private:
     QAction *actionPlay;
@@ -43,7 +44,6 @@ private:
 
     int transitiontime;
 
-    int transitiontimeLastGood;
 //    Qt::CheckState transitionChecked;
 
 public slots:

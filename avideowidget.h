@@ -24,7 +24,8 @@ public:
 //    int fpsRounded;
     int m_position;
     STimeSpinBox* m_positionSpinner;
-    void setVideoVolume(int volume);
+    void setSourceVideoVolume(int volume);
+    int playerDuration;
 
 private:
     QMediaPlayer *m_player;
@@ -36,8 +37,8 @@ private:
     QAction *actionRewind;
     QAction *actionFastForward;
     QAction *actionVolume;
-    QAction *actionUpdateIn;
-    QAction *actionUpdateOut;
+    QAction *actionSetIn;
+    QAction *actionSetOut;
     QAction *actionStop;
     QAction *actionMute;
     QComboBox *speedComboBox;
@@ -61,7 +62,7 @@ private:
 
     bool isLoading;
 
-    int videoVolume;
+    int sourceVideoVolume;
 
 public slots:
     void onFolderIndexClicked(QModelIndex index);
@@ -76,8 +77,8 @@ public slots:
     void skipNext();
     void skipPrevious();
     void onSpinnerPositionChanged(int frames);
-    void onUpdateIn(int frames = -1);
-    void onUpdateOut(int frames = -1);
+    void onSetIn(int frames = -1);
+    void onSetOut(int frames = -1);
     void onFileRename();
     void onMute();
 private slots:

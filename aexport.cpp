@@ -56,6 +56,8 @@ void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QStri
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
         emit exportWidget->addToJob(parameters["processId"], result);
+
+        exportWidget->progressBar->setValue(95);
     }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList )//result
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
@@ -99,30 +101,30 @@ void AExport::onReloadAll(bool includingSRT)
     processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList ) //command, result
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
+
         if (parameters["includingSRT"].toInt())
             emit exportWidget->reloadClips();
         emit exportWidget->reloadProperties();
     });
 }
 
-void AExport::losslessVideoAndAudio(bool includingVideo)
+void AExport::losslessVideoAndAudio()
 {
     //create audio and video stream
     QStringList mediaTypeList;
 
+    mediaTypeList << "V";
     if (audioClipsMap.count() > 0)
         mediaTypeList << "A";
-    if (includingVideo)
-        mediaTypeList << "V";
 
     foreach (QString mediaType, mediaTypeList) //prepare video and audio
     {
-        QString fileExtension = "";
-
         QFile vidlistFile(currentDirectory + "\\" + fileNameWithoutExtension + mediaType + ".txt");
         if ( vidlistFile.open(QIODevice::WriteOnly) )
         {
             QTextStream vidlistStream( &vidlistFile );
+
+            bool clipsFound = false;
 
             int iterationCounter = 0;
             QMapIterator<int, int> clipsIterator(clipsMap);
@@ -137,10 +139,10 @@ void AExport::losslessVideoAndAudio(bool includingVideo)
 
                 if ((mediaType == "V" && !fileName.toLower().contains(".mp3")) || (mediaType == "A" && fileName.toLower().contains(".mp3"))) //if video then video files, if audio then audio files
                 {
-                    if (fileExtension == "")
+                    if (mediaType == "V" && videoFileExtension == "")
                     {
                         int lastIndex = fileName.lastIndexOf(".");
-                        fileExtension = fileName.mid(lastIndex);
+                        videoFileExtension = fileName.mid(lastIndex);
                     }
                     vidlistStream << "file '" << timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString() << "'" << endl;
                     if (transitionTimeFrames > 0)
@@ -159,6 +161,8 @@ void AExport::losslessVideoAndAudio(bool includingVideo)
                     vidlistStream << "inpoint " <<  QString::number(inTime.msecsSinceStartOfDay() / 1000.0, 'g', 6) << endl;
                     vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << endl;
 
+                    clipsFound = true;
+
                 }
                 iterationCounter++;
             }
@@ -167,14 +171,25 @@ void AExport::losslessVideoAndAudio(bool includingVideo)
 
             progressBar->setRange(0, 100);
 
-            if (fileExtension != "") //at least one file found
+            if (clipsFound) //at least one file found
             {
+                QString fileNamePlusExtension;
+                if (mediaType == "V")
+                {
+                    if (audioClipsMap.count() > 0)
+                        fileNamePlusExtension = fileNameWithoutExtension + "V" + videoFileExtension;
+                    else
+                        fileNamePlusExtension = fileNameWithoutExtension + videoFileExtension;
+                }
+                else
+                    fileNamePlusExtension = fileNameWithoutExtension + + "A.mp3";
+
                 QString *processId = new QString();
-                emit addJobsEntry(currentDirectory, fileNameWithoutExtension + mediaType + fileExtension, "FFMpeg lossless " + mediaType, processId);
+                emit addJobsEntry(currentDirectory, fileNamePlusExtension, "FFMpeg lossless " + mediaType, processId);
 
-                QString code = "ffmpeg -f concat -safe 0 -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + mediaType + ".txt\" -c copy -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + mediaType + fileExtension + "\"";
+                QString code = "ffmpeg -f concat -safe 0 -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + mediaType + ".txt\" -c copy -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNamePlusExtension + "\"";
 
-                if (mediaType == "V" && exportVideoAudioValue == 0)
+                if (mediaType == "V" && exportVideoAudioValue == 0) //remove audio
                     code.replace("-c copy -y", " -an -c copy -y");
 
     //            if (frameRate != "")
@@ -184,30 +199,20 @@ void AExport::losslessVideoAndAudio(bool includingVideo)
 
                 QMap<QString, QString> parameters;
                 parameters["processId"] = *processId;
+                parameters["exportFileName"] = fileNamePlusExtension;
+
                 processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
                 {
                     AExport *exportWidget = qobject_cast<AExport *>(parent);
-                    emit exportWidget->addToJob(parameters["processId"], result);
 
-                    if (result.contains("Could not"))
-                    {
-                        foreach (QString resultLine, result.split("\n"))
-                        {
-                            if (resultLine.contains("Could not") && !resultLine.contains("Could not find codec parameters for stream")) //apparently not an issue
-                                exportWidget->processError = resultLine;
-                        }
-                    }
+                    exportWidget->processOutput(parameters, result, 10, 60);
 
                 },  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )//command, result
                 {
                     AExport *exportWidget = qobject_cast<AExport *>(parent);
 
-                    exportWidget->progressBar->setValue(exportWidget->progressBar->maximum());
+                    exportWidget->processFinished(parameters);
 
-                    if (exportWidget->processError != "")
-                        emit exportWidget->addToJob(parameters["processId"], exportWidget->processError);
-                    else
-                        emit exportWidget->addToJob(parameters["processId"], "Completed");
 
                 });
             } //if fileExtension
@@ -220,106 +225,207 @@ void AExport::losslessVideoAndAudio(bool includingVideo)
 
 void AExport::encodeVideoClips()
 {
-    QString filterComplexString = "";
-    QString filterComplexString2 = "";
-    int resultDurationMSec = 0;
+    QString mediaClipString = "";
+    QString videoConcatString = "";
+    QString audioConcatString = "";
+    QString sep = "";
+//    int resultDurationMSec = 0;
 
     progressBar->setRange(0, 100);
 
-    int iterationCounter = 0;
-    QMapIterator<int, int> clipsIterator(videoClipsMap);
-    while (clipsIterator.hasNext()) //all files
+    //create audio and video stream
+    QStringList mediaTypeList;
+    mediaTypeList << "V";
+    if (audioClipsMap.count() > 0)
+        mediaTypeList << "A";
+
+    int streamCounter = 0;
+
+    foreach (QString mediaType, mediaTypeList) //prepare video and audio
     {
-        clipsIterator.next();
-        int row = clipsIterator.value();
+        QMap<int,int> audioOrVideoClipsMap;
 
-        QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
-        QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
-        QString folderName = timelineModel->index(row, folderIndex).data().toString();
-        QString fileName = timelineModel->index(row, fileIndex).data().toString();
-        QString tags = timelineModel->index(row, tagIndex).data().toString();
+        if (mediaType == "A")
+            audioOrVideoClipsMap = audioClipsMap;
+        else
+            audioOrVideoClipsMap = videoClipsMap;
 
-        if (!fileName.toLower().contains(".mp3"))
+        bool videoClipAdded = false;
+        bool audioClipAdded = false;
+
+        int iterationCounter = 0;
+        QMapIterator<int, int> clipsIterator(audioOrVideoClipsMap);
+        while (clipsIterator.hasNext()) //all files
         {
+            clipsIterator.next();
+            int row = clipsIterator.value();
+
+            QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
+            QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
+            QString folderName = timelineModel->index(row, folderIndex).data().toString();
+            QString fileName = timelineModel->index(row, fileIndex).data().toString();
+            QString tags = timelineModel->index(row, tagIndex).data().toString();
+
             if (transitionTimeFrames > 0)
             {
                 if (iterationCounter != 0)
                 {
                     inTime = inTime.addMSecs(AGlobal().frames_to_msec((transitionTimeFrames/2))); //subtract half of the transitionframes
                 }
-                if (iterationCounter != videoClipsMap.count()-1)
+                if (iterationCounter != audioOrVideoClipsMap.count()-1)
                 {
                     outTime = outTime.addMSecs(- AGlobal().frames_to_msec(qRound(transitionTimeFrames/2.0))); //subtract half of the transitionframes
                 }
             }
 
-            int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
-            resultDurationMSec += duration;
+//            int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+//            resultDurationMSec += duration;
 
 //            qDebug()<<row<<timelineModel->index(row, inIndex).data().toString()<<timelineModel->index(row, outIndex).data().toString();
 
             double inSeconds = inTime.msecsSinceStartOfDay() / 1000.0;
             double outSeconds = outTime.msecsSinceStartOfDay() / 1000.0;
-            int videoFileCounter = videoFilesMap[folderName + fileName].counter;
+            int fileCounter = filesMap[folderName + fileName].counter;
 
-            QString newfcs = "[" + QString::number(videoFileCounter) + ":v]trim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",setpts=PTS-STARTPTS,scale=" + videoWidth + "x" + videoHeight + ",setdar=16/9[v" + QString::number(row) + "];";
-
-            if (tags.toLower().contains("backwards"))
-                newfcs.replace("setdar=16/9", "setdar=16/9, reverse");
-            //https://stackoverflow.com/questions/42257354/concat-a-video-with-itself-but-in-reverse-using-ffmpeg
-            if (tags.toLower().contains("slowmotion"))
-                newfcs.replace("setpts=PTS-STARTPTS", "setpts=2.0*PTS");
-            if (tags.toLower().contains("fastmotion"))
-                newfcs.replace("setpts=PTS-STARTPTS", "setpts=0.5*PTS");
-
-            filterComplexString += newfcs;
-
-            filterComplexString2 += "[v" + QString::number(row) + "]";
-
-            if (exportVideoAudioValue > 0)
+            if (mediaType == "V")
             {
-                filterComplexString += "[" + QString::number(videoFileCounter) + ":a]atrim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",asetpts=PTS-STARTPTS[a" + QString::number(row) + "];";
-                filterComplexString2 += "[a" + QString::number(row) + "]";
+                QString newfcs = sep + "[" + QString::number(fileCounter) + ":v]trim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",setpts=PTS-STARTPTS,scale=" + videoWidth + "x" + videoHeight + "[v" + QString::number(row) + "]";
+
+                if (tags.toLower().contains("backwards"))
+                    newfcs.replace("setpts=PTS-STARTPTS", "setpts=PTS-STARTPTS, reverse");
+                //https://stackoverflow.com/questions/42257354/concat-a-video-with-itself-but-in-reverse-using-ffmpeg
+                if (tags.toLower().contains("slowmotion"))
+                    newfcs.replace("setpts=PTS-STARTPTS", "setpts=2.0*PTS");
+                if (tags.toLower().contains("fastmotion"))
+                    newfcs.replace("setpts=PTS-STARTPTS", "setpts=0.5*PTS");
+
+                mediaClipString += newfcs;
+
+                sep = ";";
+
+                if (!videoClipAdded)
+                    videoConcatString += sep;
+
+                videoConcatString += "[v" + QString::number(row) + "]";
+
+                videoClipAdded = true;
+
+                if (exportVideoAudioValue > 0)
+                {
+                    mediaClipString += sep + "[" + QString::number(fileCounter) + ":a]";
+
+                    if (exportVideoAudioValue < 100)
+                        mediaClipString += "volume=" + QString::number(exportVideoAudioValue / 100.0) + ",";
+
+                    mediaClipString += "aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,atrim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",asetpts=PTS-STARTPTS[a" + QString::number(row) + "]";
+
+                    if (!audioClipAdded)
+                        audioConcatString += sep;
+
+                    audioConcatString += "[a" + QString::number(row) + "]";
+
+                    audioClipAdded = true;
+                }
+
+            }
+            else
+            {
+                mediaClipString += sep + "[" + QString::number(fileCounter) + ":a]";
+
+                mediaClipString += "atrim=" + QString::number(inSeconds, 'g', 6) + ":" + QString::number(outSeconds, 'g', 6) + ",asetpts=PTS-STARTPTS[a" + QString::number(row) + "]";
+
+                sep = ";";
+
+                if (!audioClipAdded)
+                    audioConcatString += sep;
+
+                audioConcatString += "[a" + QString::number(row) + "]";
+
+                audioClipAdded = true;
+
             }
 
 //                QString targetFileName = fileNameWithoutExtension + "-" + QString::number(row) + ".mp4";
 //                onTrim(timelineModel->index(i, folderIndex).data().toString(),  timelineModel->index(i, fileIndex).data().toString(), targetFileName, inTime, outTime, 10*i/(timelineModel->rowCount())); //not -1 to avoid divby0
-        }
-        iterationCounter++;
-    }
+            iterationCounter++;
+        } //while
 
-    QString videoFilesString = "";
-    QMapIterator<QString, FileStruct> videoFilesIterator(videoFilesMap);
-    while (videoFilesIterator.hasNext()) //all files
+        if (videoClipAdded)
+            videoConcatString += " concat=n=" + QString::number(iterationCounter) + ":v=1:a=0[video" + QString::number(streamCounter) + "]";
+        if (audioClipAdded)
+            audioConcatString += " concat=n=" + QString::number(iterationCounter) + ":v=0:a=1[audio" + QString::number(streamCounter) + "]";
+
+        streamCounter++;
+
+    } //foreach mediatype
+
+    QString filesString = "";
+
+    for (int i = 0; i < filesMap.count(); i++)
     {
-        videoFilesIterator.next();
-        videoFilesString = videoFilesString + " -i \"" + videoFilesIterator.value().folderName + videoFilesIterator.value().fileName + "\"";
+        QMapIterator<QString, FileStruct> videoFilesIterator(filesMap);
+        while (videoFilesIterator.hasNext()) //all files
+        {
+            videoFilesIterator.next();
+
+            if (videoFilesIterator.value().counter == i)
+                filesString = filesString + " -i \"" + videoFilesIterator.value().folderName + videoFilesIterator.value().fileName + "\"";
+        }
     }
 
-    QString code = "ffmpeg " + videoFilesString;
+    QString code = "ffmpeg " + filesString;
 
     if (watermarkFileName != "")
     {
         code += " -i \"" + watermarkFileName + "\"";
-        filterComplexString += "[" + QString::number(videoFilesMap.count()) + ":v]scale=" + QString::number(videoWidth.toInt()/10) + "x" + QString::number(videoHeight.toInt()/10) + ",setdar=16/9[wtm];";
+        mediaClipString += sep + "[" + QString::number(filesMap.count()) + ":v]scale=" + QString::number(videoWidth.toInt()/10) + "x" + QString::number(videoHeight.toInt()/10) + "[wtm]";
     }
 
-    code += " -filter_complex \"" + filterComplexString + " " + filterComplexString2 + " concat=n=" + QString::number(videoClipsMap.count()) + ":v=1";
+    code += " -filter_complex \"" + mediaClipString + " " + videoConcatString + audioConcatString;
 
-    if (exportVideoAudioValue > 0)
-        code += ":a=1";
+    //.\ffmpeg  -i "D:/Video/2019-09-02 Fipre/2000-01-19 00-00-00 +53632ms.MP4" -i "D:/Video/2019-09-02 Fipre/Blindfold.mp3" -i "D:/Video/2019-09-02 Fipre/Child in Time (2016 Remaster).mp3" -i "C:/Users/ewoud/OneDrive/Documents/ACVC project/ACVC/acvclogo.png" -filter_complex "[0:v]trim=1.56:4.36,setpts=PTS-STARTPTS,scale=640x480[v0][0:a]volume=0.18,atrim=1.56:4.36,asetpts=PTS-STARTPTS[a0];[0:v]trim=6.8:9.44,setpts=PTS-STARTPTS,scale=640x480[v1][0:a]volume=0.18,atrim=6.8:9.44,asetpts=PTS-STARTPTS[a1];[0:v]trim=14.44:15.64,setpts=PTS-STARTPTS,scale=640x480[v2][0:a]volume=0.18,atrim=14.44:15.64,asetpts=PTS-STARTPTS[a2];[0:v]trim=19.84:22.48,setpts=PTS-STARTPTS,scale=640x480[v3][0:a]volume=0.18,atrim=19.84:22.48,asetpts=PTS-STARTPTS[a3];[0:v]trim=25.72:28.52,setpts=PTS-STARTPTS,scale=640x480[v4][0:a]volume=0.18,atrim=25.72:28.52,asetpts=PTS-STARTPTS[a4];[1:a]atrim=85.92:87.2,asetpts=PTS-STARTPTS[a5];[2:a]atrim=120.24:122.88,asetpts=PTS-STARTPTS[a6];[2:a]atrim=236.24:238.88,asetpts=PTS-STARTPTS[a7];[2:a]atrim=401.92:404.56,asetpts=PTS-STARTPTS[a8];[2:a]atrim=467.76:470.56,asetpts=PTS-STARTPTS[a9];[3:v]scale=64x48[wtm] ;[v0][v1][v2][v3][v4] concat=n=5:v=1:a=0[video0];[a0][a1][a2][a3][a4] concat=n=5:v=0:a=1[audio0];[a5][a6][a7][a8][a9] concat=n=5:v=0:a=1[audio1];[audio0][audio1]amerge=inputs=2[audio];[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]" -map "[video]" -map "[audio]" -r 25  -y "D:\Video\2019-09-02 Fipre\\Encode480p@25.mp4"
+    //.\ffmpeg  -i "D:/Video/Bras_DVR/04-Devilette.mp3" -i "D:/Video/Bras_DVR/PICT0203.AVI" -i "D:/Video/Bras_DVR/PICT0206.AVI" -i "D:/Video/Bras_DVR/PICT0208.AVI" -i "D:/Video/Bras_DVR/PICT0209.AVI" -i "D:/Video/Bras_DVR/PICT0216.AVI" -i "C:/Users/ewoud/OneDrive/Documents/ACVC project/ACVC/acvclogo.png" -filter_complex "[1:v]trim=48.84:65.747,setpts=PTS-STARTPTS,scale=640x480[v1];[1:a]volume=0.18,atrim=48.84:65.747,asetpts=PTS-STARTPTS[a1];[1:v]trim=128.293:147.147,setpts=PTS-STARTPTS,scale=640x480[v2];[1:a]volume=0.18,atrim=128.293:147.147,asetpts=PTS-STARTPTS[a2];[2:v]trim=145.213:169.267,setpts=PTS-STARTPTS,scale=640x480[v3];[2:a]volume=0.18,atrim=145.213:169.267,asetpts=PTS-STARTPTS[a3];[3:v]trim=13.133:27.347,setpts=PTS-STARTPTS,scale=640x480[v4];[3:a]volume=0.18,atrim=13.133:27.347,asetpts=PTS-STARTPTS[a4];[3:v]trim=139.373:175.907,setpts=PTS-STARTPTS,scale=640x480[v5];[3:a]volume=0.18,atrim=139.373:175.907,asetpts=PTS-STARTPTS[a5];[4:v]trim=5.413:25.347,setpts=PTS-STARTPTS,scale=640x480[v6];[4:a]volume=0.18,atrim=5.413:25.347,asetpts=PTS-STARTPTS[a6];[5:v]trim=60.433:121.467,setpts=PTS-STARTPTS,scale=640x480[v7];[5:a]volume=0.18,atrim=60.433:121.467,asetpts=PTS-STARTPTS[a7];[0:a]atrim=100.7:252.533,asetpts=PTS-STARTPTS[a0];[6:v]scale=64x48[wtm] ;[v1][v2][v3][v4][v5][v6][v7] concat=n=7:v=1:a=0[video0];[a1][a2][a3][a4][a5][a6][a7] concat=n=7:v=0:a=1[audio0];[a0] concat=n=1:v=0:a=1[audio1];[audio0][audio1]amerge=inputs=2[audio];[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]" -map "[video]" -map "[audio]" -r 30  -y "D:\Video\Bras_DVR\\Encode480@30.mp4"
+    //.\ffmpeg  -i "D:/Video/Bras_DVR/04-Devilette.mp3" -i "D:/Video/Bras_DVR/PICT0203.AVI" -i "D:/Video/Bras_DVR/PICT0206.AVI" -i "D:/Video/Bras_DVR/PICT0208.AVI" -i "D:/Video/Bras_DVR/PICT0209.AVI" -i "D:/Video/Bras_DVR/PICT0216.AVI" -i "C:/Users/ewoud/OneDrive/Documents/ACVC project/ACVC/acvclogo.png"
+    // -filter_complex "[1:v]trim=48.84:65.747,setpts=PTS-STARTPTS,scale=640x480[v2];[1:a]volume=0.18,atrim=48.84:65.747,asetpts=PTS-STARTPTS[a2]
+    // ;[1:v]trim=128.293:147.147,setpts=PTS-STARTPTS,scale=640x480[v3];[1:a]volume=0.18,atrim=128.293:147.147,asetpts=PTS-STARTPTS[a3]
+    // ;[2:v]trim=145.213:169.267,setpts=PTS-STARTPTS,scale=640x480[v4];[2:a]volume=0.18,atrim=145.213:169.267,asetpts=PTS-STARTPTS[a4]
+    // ;[3:v]trim=13.133:27.347,setpts=PTS-STARTPTS,scale=640x480[v5];[3:a]volume=0.18,atrim=13.133:27.347,asetpts=PTS-STARTPTS[a5]
+    // ;[3:v]trim=139.373:175.907,setpts=PTS-STARTPTS,scale=640x480[v6];[3:a]volume=0.18,atrim=139.373:175.907,asetpts=PTS-STARTPTS[a6]
+    // ;[4:v]trim=5.413:25.347,setpts=PTS-STARTPTS,scale=640x480[v7];[4:a]volume=0.18,atrim=5.413:25.347,asetpts=PTS-STARTPTS[a7]
+    // ;[5:v]trim=60.433:121.467,setpts=PTS-STARTPTS,scale=640x480[v8];[5:a]volume=0.18,atrim=60.433:121.467,asetpts=PTS-STARTPTS[a8]
+    // ;[0:a]atrim=100.7:186.267,asetpts=PTS-STARTPTS[a0]
+    // ;[0:a]atrim=259.166:327.5,asetpts=PTS-STARTPTS[a1]
+    // ;[6:v]scale=64x48[wtm]
+    // ;[v2][v3][v4][v5][v6][v7][v8] concat=n=7:v=1:a=0[video0]
+    // ;[a2][a3][a4][a5][a6][a7][a8] concat=n=7:v=0:a=1[audio0];[a0][a1] concat=n=2:v=0:a=1[audio1]
+    // ;[audio0][audio1]amerge=inputs=2[audio]
+    // ;[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]" -map "[video]" -map "[audio]" -r 30  -y "D:\Video\Bras_DVR\\Encode480@30.mp4"
 
-    code += "[out]";
+
+
+    if (audioClipsMap.count() > 0 && exportVideoAudioValue > 0)
+    {
+        code += sep + "[audio0][audio1]amerge=inputs=2[audio]";
+    }
 
     if (watermarkFileName != "")
-        code += ";[out][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[out2]\" -map \"[out2]\"";
+        code += sep + "[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]\" -map \"[video]\"";
     else
-        code += "\" -map \"[out]\"";
+        code += "\" -map \"[video0]\"";
+
+    if (audioClipsMap.count() > 0 && exportVideoAudioValue > 0)
+        code += " -map \"[audio]\"";
+    else if (audioClipsMap.count() == 0 && exportVideoAudioValue > 0)
+        code += " -map \"[audio0]\"";
+    else if (audioClipsMap.count() > 0 && exportVideoAudioValue == 0)
+        code += " -map \"[audio1]\"";
 
     if (frameRate != "")
         code += " -r " + frameRate;
 
-    code +=  "  -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + "V.mp4\"";
+    videoFileExtension = ".mp4";
+
+    code +=  "  -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + videoFileExtension + "\"";
 
 //        qDebug()<<"filter_complex"<<code;
 
@@ -329,46 +435,26 @@ void AExport::encodeVideoClips()
 
     QString *processId = new QString();
 
-    emit addJobsEntry(currentDirectory, fileNameWithoutExtension + ".mp4", "FFMPeg Encode V", processId);
+    emit addJobsEntry(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMPeg Encode", processId);
     QMap<QString, QString> parameters;
     parameters["processId"] = *processId;
     emit addToJob(parameters["processId"], code + "\n");
 
-    parameters["currentDirectory"] = currentDirectory;
-    parameters["resultDurationMSec"] = QString::number(resultDurationMSec);
     parameters["fileNameWithoutExtension"] = fileNameWithoutExtension;
+    parameters["exportFileName"] = fileNameWithoutExtension + videoFileExtension;
+
     processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
+        exportWidget->processOutput(parameters, result, 10, 80);
 
-        emit exportWidget->addToJob(parameters["processId"], result);
-
-        if (result.contains("Cannot")) //find a matching stream
-        {
-            foreach (QString resultLine, result.split("\n"))
-            {
-                if (resultLine.contains("Cannot"))
-                    exportWidget->processError = resultLine;
-            }
-        }
-
-        int timeIndex = result.indexOf("time=");
-        if (timeIndex > 0)
-        {
-            QString timeString = result.mid(timeIndex + 5, 11) + "0";
-            QTime time = QTime::fromString(timeString,"HH:mm:ss.zzz");
-            exportWidget->progressBar->setValue(10 + 90*time.msecsSinceStartOfDay()/parameters["resultDurationMSec"].toInt());
-        }
-
-        emit exportWidget->addToJob(parameters["processId"], result);
     },  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
 
-        exportWidget->progressBar->setValue(exportWidget->progressBar->maximum());
-        exportWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+        exportWidget->processFinished(parameters);
 
-        QDir dir(parameters["currentDirectory"]);
+        QDir dir(exportWidget->currentDirectory);
         dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
         foreach( QString dirItem, dir.entryList() )
         {
@@ -376,18 +462,70 @@ void AExport::encodeVideoClips()
                 dir.remove( dirItem );
         }
 
-        emit exportWidget->addToJob(parameters["processId"], "completed");
     });
 
 } //encodeVideoClips
+
+void AExport::processOutput(QMap<QString, QString> parameters, QString result, int percentageStart, int percentageDelta)
+{
+    if (!result.contains("Non-monotonous DTS in output stream")) //only warning, sort out later
+        emit addToJob(parameters["processId"], result);
+
+    foreach (QString resultLine, result.split("\n"))
+    {
+        if (resultLine.contains("Could not")  || resultLine.contains("Invalid"))
+            processError = resultLine;
+    }
+
+    int timeIndex = result.indexOf("time=");
+    if (timeIndex > 0)
+    {
+        QString timeString = result.mid(timeIndex + 5, 11) + "0";
+        QTime time = QTime::fromString(timeString,"HH:mm:ss.zzz");
+        progressBar->setValue(percentageStart + percentageDelta * time.msecsSinceStartOfDay() / AGlobal().frames_to_msec(maxCombinedDuration));
+    }
+}
+
+void AExport::processFinished(QMap<QString, QString> parameters)
+{
+    //check successful
+    QString errorMessage = "";
+
+    QFile file(currentDirectory + parameters["exportFileName"]);
+    if (file.exists())
+    {
+        if (file.size() < 100)
+            errorMessage = "File " + parameters["exportFileName"] + " " + QString::number(file.size()) + " bytes";
+        else
+            errorMessage = "OK";
+    }
+    else
+        errorMessage = "File " + parameters["exportFileName"] + " not exported";
+
+    if (errorMessage != "OK")
+    {
+        if (processError != "")
+        {
+            emit addToJob(parameters["processId"], errorMessage + "\n");
+            emit addToJob(parameters["processId"], processError);
+        }
+        else
+            emit addToJob(parameters["processId"], errorMessage);
+    }
+    else
+    {
+        emit addToJob(parameters["processId"], "Completed");
+        processError = "";
+    }
+}
 
 void AExport::muxVideoAndAudio()
 {
     QString *processId = new QString();
 
-    emit addJobsEntry(currentDirectory, fileNameWithoutExtension + ".mp4", "FFMpeg mux", processId);
+    emit addJobsEntry(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMpeg mux", processId);
 
-    QString code = "ffmpeg -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + "V.mp4\"";
+    QString code = "ffmpeg -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + "V" + videoFileExtension + "\"";
 
     if (audioClipsMap.count() > 0)
     {
@@ -403,39 +541,23 @@ void AExport::muxVideoAndAudio()
     else
         code += " -filter:a \"volume=" + QString::number(exportVideoAudioValue / 100.0) + "\"";
 
-    code += " -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + ".mp4\"";
+    code += " -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + videoFileExtension + "\"";
 
     emit addToJob(*processId, code + "\n");
 
     QMap<QString, QString> parameters;
     parameters["processId"] = *processId;
+    parameters["exportFileName"] = fileNameWithoutExtension + videoFileExtension;
 
     processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
-        emit exportWidget->addToJob(parameters["processId"], result);
-
-        if (result.contains("Could not"))
-        {
-            foreach (QString resultLine, result.split("\n"))
-            {
-                if (resultLine.contains("Could not")  && !resultLine.contains("Could not find codec parameters for stream")) //apparently not an issue
-                    exportWidget->processError = resultLine;
-            }
-        }
+        exportWidget->processOutput(parameters, result, 70, 20);
 
     },  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )//command, result
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
-
-        exportWidget->progressBar->setValue(exportWidget->progressBar->maximum());
-        exportWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
-
-        if (exportWidget->processError != "")
-            emit exportWidget->addToJob(parameters["processId"], exportWidget->processError);
-        else
-            emit exportWidget->addToJob(parameters["processId"], "Completed");
-
+        exportWidget->processFinished(parameters);
     });
 
 } //muxVideoAndAudio
@@ -444,12 +566,11 @@ void AExport::removeTemporaryFiles()
 {
     //remove temp files
     QMap<QString, QString> parameters;
-    parameters["currentDirectory"] = currentDirectory;
-    processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList ) //, command, result
+    processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> , QStringList ) //, command, parameters, result
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
 
-        QDir dir(parameters["currentDirectory"]);
+        QDir dir(exportWidget->currentDirectory);
         dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
         foreach( QString dirItem, dir.entryList() )
         {
@@ -460,12 +581,129 @@ void AExport::removeTemporaryFiles()
 
 }
 
-void AExport::addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType)
+void AExport::addPremiereTrack(QString mediaType, QMap<int,int> clipsMap, QMap<QString, FileStruct> filesMap)
+{
+    for (int trackNr= 0; trackNr < 2; trackNr++) //even and odd tracks
+    {
+        int maxChannelNr;
+        if (mediaType == "video")
+            maxChannelNr = 1;
+        else
+            maxChannelNr = 1; //apparently no need to add 2 channels for stereo...
+
+        for (int channelTrackNr = 1; channelTrackNr <= maxChannelNr; channelTrackNr++)
+        {
+
+            if (mediaType == "video")
+                s("    <track>");
+            else
+                s("    <track currentExplodedTrackIndex=\"%1\" totalExplodedTrackCount=\"%2\" premiereTrackType=\"%3\">", QString::number(channelTrackNr - 1), QString::number(maxChannelNr), "Stereo");
+
+            int totalFrames = 0;
+
+            int iterationCounter = 0;
+
+            QMapIterator<int, int> clipsIterator(clipsMap);
+            while (clipsIterator.hasNext()) //all audio or video clips
+            {
+                clipsIterator.next();
+                int row = clipsIterator.value();
+
+                QString folderName = timelineModel->index(row, folderIndex).data().toString();
+                QString fileName = timelineModel->index(row, fileIndex).data().toString();
+                QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
+                QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
+
+                int inFrames = qRound(inTime.msecsSinceStartOfDay() * frameRate.toInt() / 1000.0);
+                int outFrames = qRound(outTime.msecsSinceStartOfDay() * frameRate.toInt() / 1000.0);
+
+                QString clipFrameRate = "";
+                QString clipAudioChannels = "";
+
+                QString *frameRatePointer = new QString();
+                emit getPropertyValue(fileName, "VideoFrameRate", frameRatePointer);
+                if (*frameRatePointer != "")
+                    clipFrameRate = *frameRatePointer;
+                else
+                    clipFrameRate = frameRate;
+
+                QString *audioChannelsPointer = new QString();
+                emit getPropertyValue(fileName, "AudioChannels", audioChannelsPointer);
+                if (*audioChannelsPointer != "")
+                    clipAudioChannels = *audioChannelsPointer;
+                else
+                {
+                    if (clipsMap == audioClipsMap)
+                        clipAudioChannels = "2";  //assume stereo for audiofiles
+                    else
+                        clipAudioChannels = "1";  //assume mono for videofiles
+                }
+
+                //                qDebug()<<"props"<<fileName<<mediaType<<clipFrameRate<<clipAudioChannels<<*audioChannelsPointer;
+
+                if (mediaType == "audio" && clipsMap == audioClipsMap)
+                {
+                    if (iterationCounter%2 == trackNr) //even or odd tracks
+                    {
+                        if (audioClipsMap.first() == row) //fade in
+                        {
+                            addPremiereTransitionItem(0, clipFrameRate.toInt(), clipFrameRate, mediaType, "start");
+                        }
+                    }
+                }
+
+                if (trackNr == 1 && iterationCounter%2 == 1 && transitionTimeFrames > 0) //track 2 and not first clip (never is)
+                {
+                    addPremiereTransitionItem(totalFrames, totalFrames + transitionTimeFrames, clipFrameRate, mediaType, "start");
+                }
+
+                int deltaFrames = outFrames - inFrames + 1 - transitionTimeFrames;
+                if (iterationCounter%2 == trackNr) //even or odd tracks
+                {
+                    addPremiereClipitem(QString::number(row), folderName, fileName, totalFrames, totalFrames + deltaFrames + transitionTimeFrames, inFrames, outFrames + 1, clipFrameRate, mediaType, &filesMap, channelTrackNr, clipAudioChannels);
+                }
+
+                totalFrames += deltaFrames;
+
+                if (trackNr == 1 && iterationCounter%2 == 1 && iterationCounter != clipsMap.count()-1 && transitionTimeFrames > 0) //track 2 and not last clip
+                {
+                    addPremiereTransitionItem(totalFrames, totalFrames + transitionTimeFrames, clipFrameRate, mediaType, "end");
+                }
+
+                if (mediaType == "audio" && clipsMap == audioClipsMap)
+                {
+                    if (iterationCounter%2 == trackNr) //even or odd tracks
+                    {
+                        if (audioClipsMap.last() == row) //fade out
+                        {
+                            addPremiereTransitionItem(maxAudioDuration - clipFrameRate.toInt(), maxAudioDuration, clipFrameRate, mediaType, "end");
+                        }
+                    }
+                }
+
+    //            emit addToJob(*processId, QString("  Producer%1 %2 %3\n"));
+
+                iterationCounter++;
+            } // clipsiterator
+
+            if (mediaType == "audio")
+            {
+                s("     <outputchannelindex>%1</outputchannelindex>", QString::number(channelTrackNr));
+            }
+
+            s("    </track>");
+        } //for (int channelTrackNr=0; channelTrackNr<maxChannelNr; channelTrackNr++) //even and odd tracks
+
+    } //for (int trackNr=0; trackNr<2; trackNr++) //even and odd tracks
+
+} //addPremiereTrack
+
+void AExport::addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd)
 {
     s("     <transitionitem>");
     s("      <start>%1</start>", QString::number(startFrames));
     s("      <end>%1</end>", QString::number(endFrames));
-    s("      <alignment>start-black</alignment>");
+    s("      <alignment>%1-black</alignment>", startOrEnd);
 //                        s("      <cutPointTicks>0</cutPointTicks>");
     s("      <rate>");
     s("       <timebase>%1</timebase>", frameRate);
@@ -503,11 +741,20 @@ void AExport::addPremiereTransitionItem(int startFrames, int endFrames, QString 
     }
     s("     </transitionitem>");
 
-}
+} //addPremiereTransitionItem
 
-void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap)
+void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels)
 {
-    s("     <clipitem>");
+    if (mediaType == "video")
+        s("     <clipitem>");
+    else
+    {
+        if (clipAudioChannels == "2")
+            s("     <clipitem premiereChannelType=\"%1\">", "stereo");
+        else
+            s("     <clipitem premiereChannelType=\"%1\">", "mono");
+    }
+
     s("      <masterclipid>masterclip-%1</masterclipid>", clipId);
     s("      <name>%1</name>", fileName);
 //            s("      <enabled>TRUE</enabled>");
@@ -545,7 +792,7 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
             s("       <timecode>");
             s("           <rate>");
             s("               <timebase>%1</timebase>", frameRate);
-            s("               <ntsc>TRUE</ntsc>");
+//            s("               <ntsc>TRUE</ntsc>");
             s("           </rate>");
             s("           <string>00;00;00;00</string>");
             s("           <frame>0</frame>");
@@ -572,7 +819,7 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
 //                                s("          <depth>16</depth>");
 ////                                s("          <samplerate>44100</samplerate>");
 //                                s("         </samplecharacteristics>");
-//                                s("         <channelcount>2</channelcount>");
+            s("         <channelcount>2</channelcount>");
             s("        </audio>");
         }
         s("       </media>");
@@ -621,7 +868,8 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
         {
             QImage myImage;
             myImage.load(watermarkFileName);
-            qDebug()<<""<<myImage.height()<<videoHeight<<QString::number(videoHeight.toDouble() / myImage.height() * 10);
+//            qDebug()<<"Basic Motion"<<myImage.height()<<myImage.width()<<videoHeight<<videoWidth<<QString::number(videoHeight.toDouble() / myImage.height() * 10)<<QString::number(videoWidth.toDouble() / myImage.width())<<QString::number(videoHeight.toDouble() / myImage.height());
+//            qDebug()<<"Basic Motion"<<myImage.width()<<videoWidth<<QString::number(videoHeight.toDouble() / myImage.height() * 10)<<QString::number(videoWidth.toDouble() / myImage.width());
 
             s("      <filter>");
             s("          <effect>");
@@ -642,16 +890,16 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
             s("                  <parameterid>center</parameterid>");
             s("                  <name>Center</name>");
             s("                  <value>");
-            s("                      <horiz>1</horiz>");
-            s("                      <vert>1</vert>");
+            s("                      <horiz>%1</horiz>", QString::number(videoWidth.toDouble() / myImage.width() * 1.7)); //don't know why 1.7 and 1.4 but looks ok...
+            s("                      <vert>%1</vert>", QString::number(videoHeight.toDouble() / myImage.height() * 1.4));
             s("                  </value>");
             s("              </parameter>");
             s("              <parameter authoringApp=\"PremierePro\">");
             s("                  <parameterid>centerOffset</parameterid>");
             s("                  <name>Anchor Point</name>");
             s("                  <value>");
-            s("                      <horiz>0.9</horiz>");
-            s("                      <vert>0.5</vert>");
+            s("                      <horiz>%1</horiz>", QString::number(0));//0.9
+            s("                      <vert>%1</vert>", QString::number(0));//0.5
             s("                  </value>");
             s("              </parameter>");
 
@@ -670,7 +918,7 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
     {
         s("      <sourcetrack>");
         s("       <mediatype>audio</mediatype>");
-//                            s("       <trackindex>%1</trackindex>", QString::number(trackNr));
+        s("       <trackindex>%1</trackindex>", QString::number(channelTrackNr));
         s("      </sourcetrack>");
 
         if (AVType == "V"  && exportVideoAudioValue > 0 && exportVideoAudioValue < 100)
@@ -695,7 +943,7 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
         }
     }
     s("     </clipitem>");
-}
+} //addPremiereClipItem
 
 void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, QLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *pstatusBar)
 {
@@ -742,8 +990,9 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         }
     }
 
-//    int maxOriginalDuration = qMax(videoOriginalDuration, audioOriginalDuration);
-    int maxCombinedDuration = qMax(videoOriginalDuration - ptransitionTimeFrames * (videoCountNrOfClips-1), audioOriginalDuration - ptransitionTimeFrames * (audioCountNrOfClips-1));
+    maxAudioDuration = audioOriginalDuration - ptransitionTimeFrames * (audioCountNrOfClips-1);
+    maxVideoDuration = videoOriginalDuration - ptransitionTimeFrames * (videoCountNrOfClips-1);
+    maxCombinedDuration = qMax(maxVideoDuration, maxAudioDuration);
 
     currentDirectory = QSettings().value("LastFolder").toString();
 
@@ -752,7 +1001,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     QTime transitionQTime = QTime::fromMSecsSinceStartOfDay(transitionTimeMSecs);
 
     progressBar = p_progressBar;
-    progressBar->setRange(0, timelineModel->rowCount());
+    progressBar->setRange(0, 100);
     progressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
 
     statusBar = pstatusBar;
@@ -761,7 +1010,11 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     exportButton->setEnabled(false);
 
     watermarkFileName = pwatermarkFileName;
-    exportVideoAudioValue = exportVideoAudioSlider->value();
+
+//    if (ptarget == "Lossless" && exportVideoAudioSlider->value() < 100)
+//        exportVideoAudioValue = 0;
+//    else
+        exportVideoAudioValue = exportVideoAudioSlider->value();
 
     if (pframeRate == "Source")
         frameRate = clipsFramerateComboBox->currentText();
@@ -770,62 +1023,69 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
     target = ptarget;
 
+    int indexOf = clipsSizeComboBox->currentText().indexOf(" x ");
+    QString sourceWidth = clipsSizeComboBox->currentText().mid(0,indexOf);
+    QString sourceHeight = clipsSizeComboBox->currentText().mid(indexOf + 3);
+
+
     QString targetSize;
     if (ptargetSize.contains("240p")) //3:4
     {
         targetSize = "240p";
-        videoWidth = "320"; //352 of 427?
+//        videoWidth = "320"; //352 of 427?
         videoHeight = "240";
     }
     else if (ptargetSize.contains("360p")) //3:4
     {
         targetSize = "360p";
-        videoWidth = "480"; //640
+//        videoWidth = "480"; //640
         videoHeight = "360";
     }
     else if (ptargetSize.contains("480p"))
     {
         targetSize = "480p";
-        videoWidth = "640"; //853 or 858
+//        videoWidth = "640"; //853 or 858
         videoHeight = "480";
     }
     else if (ptargetSize.contains("720p"))//9:16
     {
         targetSize = "720p";
-        videoWidth = "1280";
+//        videoWidth = "1280";
         videoHeight = "720";
     }
     else if (ptargetSize.contains("Source")) //9:16
     {
-        int indexOf = clipsSizeComboBox->currentText().indexOf(" x ");
-        videoWidth = clipsSizeComboBox->currentText().mid(0,indexOf);
-        videoHeight = clipsSizeComboBox->currentText().mid(indexOf + 3);
+//        videoWidth = sourceWidth;
+        videoHeight = sourceHeight;
         targetSize = videoHeight;
     }
     else if (ptargetSize.contains("1K")) //9:16
     {
         targetSize = "1K";
-        videoWidth = "1920";
+//        videoWidth = "1920";
         videoHeight = "1080";
     }
     else if (ptargetSize.contains("2.7K"))//9:16
     {
         targetSize = "2.7K";
-        videoWidth = "2880";
         videoHeight = "1620";
+//        videoWidth = QString::number(videoHeight.toDouble() * sourceWidth.toDouble() / sourceHeight.toDouble());
     }
     else if (ptargetSize.contains("4K"))//9:16
     {
         targetSize = "4K";
-        videoWidth = "3840";
+//        videoWidth = "3840";
         videoHeight = "2160";
     }
     else if (ptargetSize.contains("8K"))//9:16
     {
         targetSize = "8K";
-        videoWidth = "7680";
+//        videoWidth = "7680";
         videoHeight = "4320";
     }
+
+    videoWidth = QString::number(int(videoHeight.toDouble() * sourceWidth.toDouble() / sourceHeight.toDouble())); //maintain aspect ratio
+
 //    qDebug()<<"targetSize and framerate"<<ptargetSize<<targetSize<<videoWidth<<videoHeight<<pframeRate<<frameRate;
 
     if (videoWidth == "" || videoHeight == "" || frameRate == "")
@@ -840,6 +1100,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         fileNameWithoutExtension += targetSize;
         fileNameWithoutExtension += "@" + frameRate;
     }
+    videoFileExtension = ""; //assigned later
 
     bool includingSRT = false;
     if (includingSRT)
@@ -880,16 +1141,17 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         }
     }
 
-//    filesMap.clear();
+    filesMap.clear();
     audioFilesMap.clear();
     videoFilesMap.clear();
-    for (int i=0; i<timelineModel->rowCount();i++)
+    for (int row = 0; row < timelineModel->rowCount(); row++)
     {
-        QString folderName = timelineModel->index(i,folderIndex).data().toString();
-        QString fileName = timelineModel->index(i,fileIndex).data().toString();
-//        filesMap[folderName + fileName].folderName = folderName;
-//        filesMap[folderName + fileName].fileName = fileName;
-//        filesMap[folderName + fileName].counter = filesMap.count() - 1;
+        QString folderName = timelineModel->index(row,folderIndex).data().toString();
+        QString fileName = timelineModel->index(row,fileIndex).data().toString();
+        filesMap[folderName + fileName].folderName = folderName;
+        filesMap[folderName + fileName].fileName = fileName;
+        filesMap[folderName + fileName].counter = filesMap.count() - 1;
+        filesMap[folderName + fileName].definitionGenerated = false;
 
         if (fileName.toLower().contains(".mp3"))
         {
@@ -919,13 +1181,22 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     //https://intofpv.com/t-using-free-command-line-sorcery-to-fake-superview
     //https://github.com/Niek/superview
 
+    QDir dir(currentDirectory);
+    dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
+    foreach( QString dirItem, dir.entryList() )
+    {
+        if (dirItem.contains(fileNameWithoutExtension))
+            dir.remove( dirItem );
+    }
+
     if (target == "Lossless") //Lossless FFMpeg
     {
-        losslessVideoAndAudio(true);
+        losslessVideoAndAudio();
 
-        muxVideoAndAudio();
+        if (audioClipsMap.count() > 0)
+            muxVideoAndAudio();
 
-        onPropertyUpdate(currentDirectory, videoFilesMap.first().fileName, fileNameWithoutExtension + ".mp4");
+        onPropertyUpdate(currentDirectory, videoFilesMap.first().fileName, fileNameWithoutExtension + videoFileExtension);
 
         removeTemporaryFiles();
 
@@ -936,13 +1207,9 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     {
         encodeVideoClips();
 
-        losslessVideoAndAudio(false);
+        onPropertyUpdate(currentDirectory, videoFilesMap.first().fileName, fileNameWithoutExtension + videoFileExtension);
 
-        muxVideoAndAudio();
-
-        onPropertyUpdate(currentDirectory, videoFilesMap.first().fileName, fileNameWithoutExtension + ".mp4");
-
-        removeTemporaryFiles();
+//        removeTemporaryFiles();
 
         onReloadAll(includingSRT);
     }
@@ -966,37 +1233,6 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         s("  <profile description=\"automatic\" width=\"%1\" height=\"%2\" progressive=\"1\" sample_aspect_num=\"1\" sample_aspect_den=\"1\" display_aspect_num=\"%1\" display_aspect_den=\"%2\" frame_rate_num=\"%3\" frame_rate_den=\"1\"/>", videoWidth, videoHeight, frameRate);
 
         emit addToJob(*processId, "Producers\n");
-
-//        QMapIterator<QString, FileStruct> videoFilesIterator(audioFilesMap);
-//        while (videoFilesIterator.hasNext()) //all files
-//        {
-//            videoFilesIterator.next();
-
-//            QString *durationPointer = new QString();
-//            emit getPropertyValue(videoFilesIterator.value().fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
-//            *durationPointer = QString(*durationPointer).replace(" (approx)", "");
-//            QTime durationTime = QTime::fromString(*durationPointer,"h:mm:ss");
-//            if (durationTime == QTime())
-//            {
-//                QString durationString = *durationPointer;
-//                durationString = durationString.left(durationString.length() - 2); //remove " -s"
-//                durationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
-//            }
-
-//            if (durationTime.msecsSinceStartOfDay() == 0)
-//                durationTime = QTime::fromMSecsSinceStartOfDay(24 * 60 * 60 * 1000 - 1);
-
-
-//            qDebug()<<"Duration"<<*durationPointer<<durationTime;
-
-//            s("  <producer id=\"producer%1\" title=\"Anonymous Submission\" in=\"00:00:00.000\" out=\"%2\">", QString::number(videoFilesIterator.value().counter), durationTime.toString("hh:mm:ss.zzz"));
-//            s("    <property name=\"length\">%1</property>", durationTime.toString("hh:mm:ss.zzz"));
-//            s("    <property name=\"resource\">%1</property>", videoFilesIterator.key());
-//            s("  </producer>");
-
-//            emit addToJob(*processId, QString("  Producer%1 %2 %3\n").arg( QString::number(videoFilesIterator.value().counter), durationTime.toString("hh:mm:ss.zzz"), videoFilesIterator.key()));
-
-//        }
 
         QMapIterator<int, int> clipsIterator(clipsMap);
         while (clipsIterator.hasNext()) //all files
@@ -1081,10 +1317,9 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
             QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
-//            int fileCounter = filesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()].counter;
 
             s("    <entry producer=\"producer%1\" in=\"%2\" out=\"%3\"/>"
-              , QString::number(row)//QString::number(videoFileCounter)
+              , QString::number(row)
               , inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz"));
             emit addToJob(*processId, QString("  Producer%1 %2 %3\n").arg( QString::number(row), inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz")));
         }
@@ -1101,21 +1336,14 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         foreach (QString mediaType, mediaTypeList) //prepare video and audio
         {
             QMap<int,int> audioOrVideoClipsMap;
-//            QMap<QString, FileStruct> audioOrVideoFilesMap;
 
             if (mediaType == "A")
-            {
-//                audioOrVideoFilesMap = audioFilesMap;
                 audioOrVideoClipsMap = audioClipsMap;
-            }
             else
-            {
-//                audioOrVideoFilesMap = videoFilesMap;
                 audioOrVideoClipsMap = videoClipsMap;
-            }
 
             emit addToJob(*processId, "Transitions\n");
-    //        int producerCounter = 0;
+
             //transitions
             if (transitionTimeMSecs > 0)
             {
@@ -1132,7 +1360,6 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
                     QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                     QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
-    //                    QString producerNr = QString::number(audioOrVideoFilesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()].counter);
                     QString producerNr = QString::number(row);
 
                     if (iterationCounter > 0 && iterationCounter < audioOrVideoClipsMap.count()) //not first and not last
@@ -1174,18 +1401,15 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
             s("  <playlist id=\"playlist%1\">", mediaType);
 
             QMap<int,int> audioOrVideoClipsMap;
-            QMap<QString, FileStruct> audioOrVideoFilesMap;
 
             if (mediaType == "A")
             {
-                audioOrVideoFilesMap = audioFilesMap;
                 audioOrVideoClipsMap = audioClipsMap;
                 s("    <property name=\"shotcut:audio\">1</property>");
                 s("    <property name=\"shotcut:name\">A1</property>");
             }
             else
             {
-                audioOrVideoFilesMap = videoFilesMap;
                 audioOrVideoClipsMap = videoClipsMap;
                 s("    <property name=\"shotcut:video\">1</property>");
                 s("    <property name=\"shotcut:name\">V1</property>");
@@ -1204,7 +1428,6 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
                 QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
 
-//                QString producerNr = QString::number(audioOrVideoFilesMap[timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString()].counter);
                 QString producerNr = QString::number(row);
 
                 if (transitionTimeFrames > 0)
@@ -1318,7 +1541,6 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         QString *processId = new QString();
         emit addJobsEntry(currentDirectory, fileNameWithoutExtension, "file export", processId);
 
-
         QString fileName = fileNameWithoutExtension + ".xml";
         QFile fileWrite(currentDirectory + "//" + fileName);
         fileWrite.open(QIODevice::WriteOnly);
@@ -1344,12 +1566,24 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         QStringList mediaTypeList;
         mediaTypeList << "video";
-        if (exportVideoAudioValue > 0)
+        if (exportVideoAudioValue > 0 || audioClipsMap.count() > 0)
             mediaTypeList << "audio";
 
         foreach (QString mediaType, mediaTypeList) //for video and audio of video stream
         {
+//            QMap<int,int> audioOrVideoClipsMap;
+
+//            if (mediaType == "audio")
+//                audioOrVideoClipsMap = audioClipsMap;
+//            else
+//                audioOrVideoClipsMap = videoClipsMap;
+
+
             s("   <%1>", mediaType);
+
+            if (mediaType == "audio")
+                s("    <numOutputChannels>%1</numOutputChannels>", "1");
+
             s("    <format>");
             s("     <samplecharacteristics>");
             if (mediaType == "video")
@@ -1359,7 +1593,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
             }
             else //audio
             {
-                s("      <depth>16</depth>");
+//                s("      <depth>16</depth>");
 //                s("      <samplerate>44100</samplerate>");
             }
             s("     </samplecharacteristics>");
@@ -1367,128 +1601,15 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
             emit addToJob(*processId, "Timeline\n");
 
-            for (int trackNr=0; trackNr<2; trackNr++) //even and odd tracks
+            if (mediaType == "video" || (mediaType == "audio" && exportVideoAudioValue > 0))
             {
-                s("    <track>");
-
-                int totalFrames = 0;
-
-                int iterationCounter = 0;
-
-                QMapIterator<int, int> clipsIterator(videoClipsMap);
-                while (clipsIterator.hasNext()) //all videos
-                {
-                    clipsIterator.next();
-                    int row = clipsIterator.value();
-
-                    QString folderName = timelineModel->index(row, folderIndex).data().toString();
-                    QString fileName = timelineModel->index(row, fileIndex).data().toString();
-                    QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
-                    QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
-
-                    int inFrames = qRound(inTime.msecsSinceStartOfDay() * frameRate.toInt() / 1000.0);
-                    int outFrames = qRound(outTime.msecsSinceStartOfDay() * frameRate.toInt() / 1000.0);
-
-                    QString *frameRatePointer = new QString();
-                    emit getPropertyValue(fileName, "VideoFrameRate", frameRatePointer);
-
-                    if (trackNr == 1 && iterationCounter%2 == 1 && transitionTimeFrames > 0) //track 2 and not first clip (never is)
-                    {
-                        addPremiereTransitionItem(totalFrames, totalFrames + transitionTimeFrames, *frameRatePointer, mediaType);
-                    }
-
-                    int deltaFrames = outFrames - inFrames + 1 - transitionTimeFrames;
-                    if (iterationCounter%2 == trackNr) //even or odd tracks
-                    {
-                        addPremiereClipitem(QString::number(row), folderName, fileName, totalFrames, totalFrames + deltaFrames + transitionTimeFrames, inFrames, outFrames + 1, *frameRatePointer, mediaType, &videoFilesMap);
-                    }
-                    totalFrames += deltaFrames;
-
-                    if (trackNr == 1 && iterationCounter%2 == 1 && iterationCounter != videoClipsMap.count()-1 && transitionTimeFrames > 0) //track 2 and not last clip
-                    {
-                        addPremiereTransitionItem(totalFrames, totalFrames + transitionTimeFrames, *frameRatePointer, mediaType);
-                    }
-
-                    emit addToJob(*processId, QString("  Producer%1 %2 %3\n"));
-
-                    iterationCounter++;
-                } // clipsiterator
-
-                s("    </track>");
-
-            } //for (int trackNr=0; trackNr<2; trackNr++) //even and odd tracks
+                addPremiereTrack(mediaType, videoClipsMap, videoFilesMap);
+            }
 
             if (mediaType == "audio" && audioClipsMap.count() > 0) //add audio track if exists
             {
-                for (int trackNr=0; trackNr<2; trackNr++) //even and odd tracks
-                {
-                    s("    <track>");
-
-                    int totalFrames = 0;
-
-                    int iterationCounter = 0;
-
-                    QMapIterator<int, int> clipsIterator(audioClipsMap);
-                    while (clipsIterator.hasNext()) //all audios
-                    {
-                        clipsIterator.next();
-                        int row = clipsIterator.value();
-
-                        QString folderName = timelineModel->index(row, folderIndex).data().toString();
-                        QString fileName = timelineModel->index(row, fileIndex).data().toString();
-                        QTime inTime = QTime::fromString(timelineModel->index(row, inIndex).data().toString(),"HH:mm:ss.zzz");
-                        QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
-
-                        int inFrames = qRound(inTime.msecsSinceStartOfDay() * frameRate.toInt() / 1000.0);
-                        int outFrames = qRound(outTime.msecsSinceStartOfDay() * frameRate.toInt() / 1000.0);
-
-//                        QString *frameRatePointer = new QString();
-//                        emit getPropertyValue(fileName, "VideoFrameRate", frameRatePointer);
-
-                        if (iterationCounter%2 == trackNr) //even or odd tracks
-                        {
-                            if (audioClipsMap.first() == row) //fade in
-                            {
-                                addPremiereTransitionItem(0, frameRate.toInt(), frameRate, mediaType);
-                            }
-                        }
-
-                        if (trackNr == 1 && iterationCounter%2 == 1 && transitionTimeFrames > 0) //track 2 and not first clip (never is)
-                        {
-                            addPremiereTransitionItem(totalFrames, totalFrames + transitionTimeFrames, frameRate, mediaType);
-                        }
-
-                        int deltaFrames = outFrames - inFrames + 1 - transitionTimeFrames;
-                        if (iterationCounter%2 == trackNr) //even or odd tracks
-                        {
-                            addPremiereClipitem(QString::number(row), folderName, fileName, totalFrames, totalFrames + deltaFrames + transitionTimeFrames, inFrames, outFrames + 1, frameRate, mediaType, &audioFilesMap);
-                        }
-                        totalFrames += deltaFrames;
-
-                        if (trackNr == 1 && iterationCounter%2 == 1 && iterationCounter != audioClipsMap.count()-1 && transitionTimeFrames > 0) //track 2 and not last clip
-                        {
-                            addPremiereTransitionItem(totalFrames, totalFrames + transitionTimeFrames, frameRate, mediaType);
-                        }
-
-                        if (iterationCounter%2 == trackNr) //even or odd tracks
-                        {
-                            if (audioClipsMap.last() == row) //fade in
-                            {
-                                int audioFrames = audioOriginalDuration - ptransitionTimeFrames * (audioCountNrOfClips-1);
-
-                                addPremiereTransitionItem(audioFrames - frameRate.toInt(), audioFrames, frameRate, mediaType);
-                            }
-                        }
-
-                        emit addToJob(*processId, QString("  Producer%1 %2 %3\n"));
-
-                        iterationCounter++;
-                    } // clipsiterator
-
-                    s("    </track>");
-
-                } //for (int trackNr=0; trackNr<2; trackNr++) //even and odd tracks
-            } //if audio (audio track)
+                addPremiereTrack(mediaType, audioClipsMap, audioFilesMap);
+            }
 
             if (mediaType == "video" && watermarkFileName != "") //add audio track if exists
             {
@@ -1498,7 +1619,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
                 QString WMFolderName = watermarkFileName.left(indexOf + 1);
                 QString WMFileName = watermarkFileName.mid(indexOf + 1);
 
-                addPremiereClipitem("WM", WMFolderName, WMFileName, 0, maxCombinedDuration, -1, -1, frameRate, mediaType, &videoFilesMap);
+                addPremiereClipitem("WM", WMFolderName, WMFileName, 0, maxCombinedDuration, -1, -1, frameRate, mediaType, &videoFilesMap, 1, "");
 
                 s("    </track>");
             }
@@ -1540,10 +1661,10 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         }
         exportWidget->exportButton->setEnabled(true);
 
-        QTimer::singleShot(3000, exportWidget, [exportWidget]()->void
-        {
-                               exportWidget->progressBar->setValue(0);
-        });
+//        QTimer::singleShot(1000, exportWidget, [exportWidget]()->void
+//        {
+//                               exportWidget->progressBar->setValue(0);
+//        });
     });
 }
 

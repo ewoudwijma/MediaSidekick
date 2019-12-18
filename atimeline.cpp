@@ -171,6 +171,7 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
     {
         int previousPreviousRow =  -1;
         int previousRow = -1;
+        int previousPreviousOut = 0;
         int previousOut = 0;
 
         QMapIterator<int, int> orderIterator(reorderMap);
@@ -214,12 +215,13 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 
                 m_scrubber->setInOutPoint(AV, porderBeforeLoadIndex, AGlobal().frames_to_msec( inpoint), AGlobal().frames_to_msec(outpoint));
 
-                if (previousPreviousRow != -1 && itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt() >= inpoint)
+                if (previousPreviousOut != 0 && previousPreviousOut >= inpoint)
                 {
                     allowed = false;
     //                    qDebug()<<"ATimeline::onClipsChangedToTimeline transitiontime. out/in overlap"<<row<<itemModel->index(previousPreviousRow, tagIndex + 3).data().toInt()<<inpoint;
                 }
 
+                previousPreviousOut = previousOut;
                 previousOut = outpoint;
                 previousPreviousRow = previousRow;
                 previousRow = row;
@@ -268,10 +270,10 @@ void ATimeline::onVideoPositionChanged(int , int row, int relativeProgress)//pro
 
 void ATimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitionType, AClipsTableView *clipsTableView)
 {
-    if (transitionType != "No transition")
+//    if (transitionType != "No transition")
         transitiontime = p_transitiontime;
-    else
-        transitiontime = 0;
+//    else
+//        transitiontime = 0;
 
 //    qDebug()<<"ATimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<clipsTableView->model()->rowCount();
 

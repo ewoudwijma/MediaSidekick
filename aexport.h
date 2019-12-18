@@ -55,21 +55,31 @@ private:
     int transitionTimeFrames;
     QString currentDirectory ;
 //    QMap<QString, FileStruct> filesMap;
+    QMap<QString, FileStruct> filesMap;
     QMap<QString, FileStruct> videoFilesMap;
     QMap<QString, FileStruct> audioFilesMap;
     QString watermarkFileName;
     int exportVideoAudioValue;
     QString frameRate;
     QString fileNameWithoutExtension;
+    QString videoFileExtension;
     QString videoWidth;
     QString videoHeight;
     QString target;
 
     void muxVideoAndAudio();
-    void losslessVideoAndAudio(bool includingVideo);
+    void losslessVideoAndAudio();
     void removeTemporaryFiles();
-    void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType);
-    void addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap);
+
+    void addPremiereTrack(QString mediaType, QMap<int,int> clipsMap, QMap<QString, FileStruct> filesMap);
+    void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
+    void addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels);
+
+    int maxVideoDuration;
+    int maxAudioDuration;
+    int maxCombinedDuration;
+    void processFinished(QMap<QString, QString> parameters);
+    void processOutput(QMap<QString, QString> parameters, QString result, int percentageStart, int percentageDelta);
 signals:
     void addJobsEntry(QString folder, QString file, QString action, QString *id);
     void addToJob(QString function, QString log);

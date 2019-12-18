@@ -4,5 +4,17 @@
         <file>acvclogo.png</file>
         <file>acvc.ico</file>
         <file>Spinner.gif</file>
+        <file>Rating0.png</file>
+        <file>Rating1.png</file>
+        <file>Rating2.png</file>
+        <file>Rating3.png</file>
+        <file>Rating4.png</file>
+        <file>Rating5.png</file>
+        <file>RatingW0.png</file>
+        <file>RatingW1.png</file>
+        <file>RatingW2.png</file>
+        <file>RatingW3.png</file>
+        <file>RatingW4.png</file>
+        <file>RatingW5.png</file>
     </qresource>
 </RCC>

@@ -75,7 +75,7 @@ void AProcessManager::processOutput()
 //    qDebug() << process->readAllStandardError();  // read error channel
 }
 
-void AProcessManager::processFinished(int exitCode , QProcess::ExitStatus exitStatus)
+void AProcessManager::processFinished(int  , QProcess::ExitStatus )//exitCode, exitStatus
 {
     QStringList processOutputStringList = processOutputString.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
 

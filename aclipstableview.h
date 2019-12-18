@@ -19,7 +19,7 @@ class AClipsTableView: public QTableView
     Q_OBJECT
 public:
     AClipsTableView(QWidget *parent = nullptr);
-    void addClip(QString ratingText, bool alike, QAbstractItemModel *tagFilter1Model, QAbstractItemModel *tagFilter2Model);
+    void addClip(int rating, bool alike, QAbstractItemModel *tagFilter1Model, QAbstractItemModel *tagFilter2Model);
     void saveModel(QString folderName, QString fileName);
     void toggleAlike();
     void giveStars(int starCount);
@@ -35,7 +35,7 @@ private:
     QString selectedFolderName;
     QString selectedFileName;
     void loadModel(QString folderName);
-    void scanDir(QDir dir);
+    void scanDir(QDir dir, QStringList extensionList);
     QStandardItemModel *read(QString folderName, QString fileName);
     QMenu *clipContextMenu;
     int position;
@@ -78,8 +78,8 @@ signals:
     void addToJob(QString id, QString log);
     void getPropertyValue(QString fileName, QString key, QString *value);
     void reloadProperties(QString fileName);
-    void updateIn(int frames);
-    void updateOut(int frames);
+    void setIn(int frames);
+    void setOut(int frames);
     void frameRateChanged(int frameRate);
     void propertiesLoaded();
     void propertyUpdate(QString selectedFolderName, QString fileName, QString targetFileName);

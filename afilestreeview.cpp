@@ -13,10 +13,6 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 {
     fileModel = new QFileSystemModel();
 
-//    QStringList filters;
-////    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts"<<"shotcut*.mlt"<<"Premiere*.xml";
-//    filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS"<<"shotcut*.mlt"<<"Premiere*.xml"<<"*.mp3";
-//    fileModel->setNameFilters(filters);
     fileModel->setNameFilterDisables(false);
 
     filesProxyModel = new AFilesSortFilterProxyModel(this);
@@ -71,20 +67,26 @@ void AFilesTreeView::setType(QString type)
                                                 QRegExp::FixedString));
     filesProxyModel->setFilterKeyColumn(-1);
 
-    QStringList filters;
-    if (type == "Video")
+    QStringList exportMethods = QStringList() << "Lossless" << "Encode" << "shotcut" << "Premiere";
+    QStringList videoExtensions = QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
+    QStringList exportExtensions = QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS" << "*.mlt" << "*.xml" << "*.mp3";
+    QStringList audioExtensions = QStringList() << "*.mp3";
+
+    if (type == "Video") //exclude lossless done in sortfilterproxymodel
     {
-        filters << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
-        fileModel->setNameFilters(filters);
+        fileModel->setNameFilters(videoExtensions);
     }
     else if (type == "Audio")
     {
-        filters << "*.mp3";
-        fileModel->setNameFilters(filters);
+        fileModel->setNameFilters(audioExtensions);
     }
     else if (type == "Export")
     {
-        filters <<"Lossless*.*"<<"Encode*.*"<<"shotcut*.*"<<"Premiere*.*";
+        QStringList filters;
+        foreach (QString exportMethod, exportMethods)
+            foreach (QString extension, exportExtensions)
+                filters <<exportMethod + extension;
+//        filters <<"Lossless*.*"<<"Encode*.*"<<"shotcut*.*"<<"Premiere*.*";
         fileModel->setNameFilters(filters);
     }
 }
@@ -432,11 +434,11 @@ void AFilesTreeView::onFolderIndexClicked(QModelIndex )//index
 
 void AFilesTreeView::onClipIndexClicked(QModelIndex index)
 {
-    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index;
+//    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index;
     QString folderName = index.model()->index(index.row(),folderIndex).data().toString();
     QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
     QModelIndex modelIndex = fileModel->index(folderName + fileName, 0);
-    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index.data().toString()<<fileName<<modelIndex.data().toString();
+//    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index.data().toString()<<fileName<<modelIndex.data().toString();
     setCurrentIndex(filesProxyModel->mapFromSource(modelIndex)); //does also the scrollTo
 }
 

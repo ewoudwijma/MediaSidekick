@@ -26,6 +26,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void closeEvent(QCloseEvent *event);
 private slots:
     void on_actionBlack_theme_triggered();
     void on_actionQuit_triggered();
@@ -80,7 +81,6 @@ private slots:
     void on_filesTabWidget_currentChanged(int index);
     void on_actionDonate_triggered();
     void on_actionCheck_for_updates_triggered();
-    void on_ratingFilterComboBox_currentTextChanged(const QString &arg1);
     void on_actionHelp_triggered();
     void on_watermarkButton_clicked();
 
@@ -95,6 +95,12 @@ private slots:
     void on_exportVideoAudioSlider_valueChanged(int value);
 
     void on_clearJobsButton_clicked();
+
+    void on_positionDial_sliderMoved(int position);
+
+    void on_transitionDial_sliderMoved(int position);
+
+    void on_ratingFilterComboBox_currentIndexChanged(int index);
 
 private:
     Ui::MainWindow *ui;
@@ -115,6 +121,7 @@ private:
     void allTooltips();
     void loadSettings();
     void changeUIProperties();
+    bool checkExit();
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
