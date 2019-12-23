@@ -127,27 +127,6 @@ void AFilesTreeView::onIndexActivated(QModelIndex index)
 void AFilesTreeView::loadModel(QUrl folderUrl)
 {
     fileModel->setRootPath(folderUrl.toString());
-//    int indexOf = folderUrl.toString().lastIndexOf("/");
-//    QString folderName = folderUrl.toString().left(indexOf);
-//    qDebug()<<"AFilesTreeView::loadModel"<<folderUrl.toString()<<filesProxyModel->filterRegExp().pattern();
-//    indexOf = folderName.lastIndexOf("/");
-//    folderName = folderName.left(indexOf);
-
-//    QMap<QString, QString> parameters;
-//    parameters["folderName"] = folderName;
-
-//    recursiveFiles(filesProxyModel, QModelIndex(), parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QModelIndex index )
-//    {
-//        AFilesTreeView *filesTreeView = qobject_cast<AFilesTreeView *>(parent);
-
-//        qDebug()<<"recursiveFiles"<<filesTreeView<<parameters["folderName"]<<index.data().toString();
-//        if (parameters["folderName"].contains(index.data().toString()))
-//        {
-//            qDebug()<<"setRootIndex"<<parameters["folderName"];
-//            filesTreeView->setRootIndex(index);
-//        }
-//    });
-
     setRootIndex(filesProxyModel->mapFromSource(fileModel->index(folderUrl.toString())));
 }
 
@@ -180,7 +159,6 @@ void AFilesTreeView::onTrim()
 
     if (!somethingTrimmed)
             QMessageBox::information(this, "Trim", "Nothing to do");
-
 }
 
 void AFilesTreeView::onFileRename()
@@ -429,6 +407,7 @@ void AFilesTreeView::onFolderIndexClicked(QModelIndex )//index
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
 //    qDebug()<<"AFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
+    setCurrentIndex(QModelIndex());
     loadModel(lastFolder);
 }
 
@@ -477,7 +456,10 @@ void AFilesTreeView::onModelLoaded(const QString &)//path
 {
     if (filesProxyModel->filterRegExp().pattern() == "Video")
         qDebug()<<"AFilesTreeView::onModelLoaded"<<filesProxyModel->filterRegExp().pattern();
-    return;
+
+    setCurrentIndex(QModelIndex());
+
+    return; //tbd: find out why not enabled
 
     QModelIndex fileIndex = QModelIndex();
 

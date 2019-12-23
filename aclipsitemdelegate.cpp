@@ -7,7 +7,7 @@
 #include <QCheckBox>
 #include <QDebug>
 #include <QEvent>
-#include <QListView>
+#include <atagslistview.h>
 #include <QPainter>
 #include <QStandardItemModel>
 #include <QTime>
@@ -80,30 +80,11 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     }
     else if (index.column() == tagIndex)
     {
-        QListView* listView = new QListView();
-        listView->setFlow(QListView::LeftToRight);
-        listView->setWrapping(true);
-        listView->setDragDropMode(QListView::DragDrop);
-        listView->setDefaultDropAction(Qt::MoveAction);
-        listView->setSpacing(4);
-        listView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::AnyKeyPressed| QAbstractItemView::EditKeyPressed | QAbstractItemView::DoubleClicked);
-        QStandardItemModel *listModel = new QStandardItemModel();
-//        listModel->supportedDropActions();
-        listView->setModel(listModel);
+        ATagsListView* listView = new ATagsListView();
 
         QVariant variant = index.data(Qt::EditRole);
-        QStringList tagList = variant.toString().split(";", QString::SkipEmptyParts);
 
-//        if (tagList.count() != 1 || tagList.first() != "")
-        for (int i=0; i < tagList.count();i++)
-        {
-//            qDebug()<<"paint"<<stringList[i];
-            QList<QStandardItem *> items;
-            QStandardItem *item = new QStandardItem(tagList[i].toLower());
-            item->setBackground(QBrush(Qt::red));
-            items.append(item);
-            listModel->appendRow(items);
-        }
+        listView->stringToModel(variant.toString());
 
         listView->setGeometry(option.rect);
         if(option.state & QStyle::State_Selected)
@@ -156,16 +137,7 @@ QWidget *AClipsItemDelegate::createEditor(QWidget *parent,
     }
     else if (index.column() == tagIndex)
     {
-        QListView* listView = new QListView(parent);
-        listView->setFlow(QListView::LeftToRight);
-        listView->setWrapping(true);
-        listView->setDragDropMode(QListView::DragDrop);
-        listView->setDefaultDropAction(Qt::MoveAction);
-        listView->setSpacing(4);
-        listView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::AnyKeyPressed| QAbstractItemView::EditKeyPressed | QAbstractItemView::DoubleClicked);
-        QStandardItemModel *listModel = new QStandardItemModel(parent);
-        listView->setModel(listModel);
-
+        ATagsListView* listView = new ATagsListView(parent);
         return listView;
     }
     else if (index.data().canConvert<AStarRating>())
@@ -185,6 +157,7 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
 {
     if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
+        qDebug()<<"AClipsItemDelegate::setEditorData"<<index.row()<<index.column()<<index.data();
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
         QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
         spinBox->setValue(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
@@ -196,24 +169,11 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
     }
     else if (index.column() == tagIndex)
     {
-        QListView* listView = qobject_cast<QListView*>(editor);
+        ATagsListView* listView = qobject_cast<ATagsListView*>(editor);
         Q_ASSERT(listView);
-        QStandardItemModel *listModel = qobject_cast<QStandardItemModel*>(listView->model());
 
         QVariant variant = index.data(Qt::EditRole);
-        QStringList tagList = variant.toString().split(";", QString::SkipEmptyParts);
-//        if (tagList.count() != 1 || tagList.first() != "")
-        for (int i=0; i < tagList.count();i++)
-        {
-//            qDebug()<<"setEditorData"<<stringList[i];
-            QList<QStandardItem *> items;
-            QStandardItem *item = new QStandardItem(tagList[i].toLower());
-            item->setBackground(QBrush(Qt::red));
-            items.append(item);
-            listModel->appendRow(items);
-        }
-
-//        qDebug()<<"setEditorData"<<listModel->rowCount();
+        listView->stringToModel(variant.toString());
     }
     else if (index.data().canConvert<AStarRating>())
     {
@@ -229,11 +189,12 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
 void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
+    qDebug()<<"setModelData"<<editor<<model<<index.data();
     model->setData(model->index(index.row(), changedIndex), "yes");
     if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
-//        qDebug()<<"AClipsItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
+        qDebug()<<"AClipsItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
         QTime time = QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }
@@ -244,18 +205,9 @@ void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
     }
     else if (index.column() == tagIndex)
     {
-        QListView* listView = qobject_cast<QListView*>(editor);
-        QStandardItemModel *listModel = qobject_cast<QStandardItemModel*>(listView->model());
+        ATagsListView* listView = qobject_cast<ATagsListView*>(editor);
 
-        QString string = "";
-        QString sep = "";
-        for (int i=0; i < listModel->rowCount();i++)
-        {
-            string += sep + listModel->index(i,0).data().toString();
-            sep = ";";
-        }
-
-        model->setData(index, string);
+        model->setData(index, listView->modelToString());
     }
     else if (index.data().canConvert<AStarRating>())
     {
@@ -265,7 +217,6 @@ void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
     }
     else
     {
-//        qDebug()<<"setModelData"<<editor<<model<<index.data();
         QStyledItemDelegate::setModelData(editor, model, index);
     }
 }

@@ -1,5 +1,5 @@
 #include "adragdroplineedit.h"
-#include "atagslistview.h"
+#include "QListView"
 
 #include <QKeyEvent>
 #include <QMimeData>
@@ -21,8 +21,6 @@ void ADragDropLineEdit::dragEnterEvent(QDragEnterEvent *e)
 
 void ADragDropLineEdit::dropEvent(QDropEvent *e)
 {
-
-
     QByteArray encoded = e->mimeData()->data("application/x-qabstractitemmodeldatalist");
     QDataStream strm(&encoded, QIODevice::ReadOnly);
     while(!strm.atEnd()){

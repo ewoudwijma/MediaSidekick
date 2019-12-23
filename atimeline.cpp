@@ -157,7 +157,19 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
     }
 
     int maxOriginalDuration = qMax(videoOriginalDuration, audioOriginalDuration);
-    int maxCombinedDuration = qMax(videoOriginalDuration - transitiontime * (videoCountNrOfClips-1), audioOriginalDuration - transitiontime * (audioCountNrOfClips-1));
+//    int maxCombinedDuration = qMax(videoOriginalDuration - transitiontime * (videoCountNrOfClips-1), audioOriginalDuration - transitiontime * (audioCountNrOfClips-1));
+
+    if (audioCountNrOfClips == 0)
+        maxAudioDuration = 0;
+    else
+        maxAudioDuration = audioOriginalDuration - transitiontime * (audioCountNrOfClips-1);
+
+    if (videoCountNrOfClips == 0)
+        maxVideoDuration = 0;
+    else
+        maxVideoDuration = videoOriginalDuration - transitiontime * (videoCountNrOfClips-1);
+
+    maxCombinedDuration = qMax(maxVideoDuration, maxAudioDuration);
 
     bool allowed = true;
 

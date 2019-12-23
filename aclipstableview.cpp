@@ -58,7 +58,7 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
 
     verticalHeader()->setSectionResizeMode (QHeaderView::Fixed);
 
-//    setEditTriggers(QAbstractItemView::AnyKeyPressed | QAbstractItemView::SelectedClicked);
+    setEditTriggers(QAbstractItemView::AnyKeyPressed | QAbstractItemView::SelectedClicked);
 //    setEditTriggers(QAbstractItemView::DoubleClicked
 //                                | QAbstractItemView::SelectedClicked);
 //    setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -84,6 +84,8 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
     srtFileItemModel = new QStandardItemModel(this);
 
     doNotUpdate = false;
+
+    nrOfDeletedItems = 0;
 }
 
 void AClipsTableView::onIndexClicked(QModelIndex index)
@@ -163,7 +165,7 @@ void AClipsTableView::selectClips()
 
     doNotUpdate = true; //to avoid datachanged trigger
 //    int firstRow = -1;
-    for (int row=0; row < model()->rowCount(); row++)
+    for (int row = 0; row < model()->rowCount(); row++)
     {
         QModelIndex clipsFileIndex = model()->index(row, fileIndex);
 //        QModelIndex clipsInIndex = model()->index(row, inIndex);
@@ -177,12 +179,13 @@ void AClipsTableView::selectClips()
             backgroundColor = qApp->palette().color(QPalette::AlternateBase);
 //            emit clipAdded(clipInIndex);
         }
-        else {
+        else
+        {
             backgroundColor = qApp->palette().color(QPalette::Base);
         }
 //        qDebug()<<"selectClips"<<selectedFileName<<clipsFileIndex.data()<<backgroundColor;
 
-        for (int col=0;col<model()->columnCount();col++)
+        for (int col = 0; col < model()->columnCount(); col++)
         {
             QModelIndex index = model()->index(row, col);
             model()->setData(index, backgroundColor, Qt::BackgroundRole);
@@ -209,7 +212,7 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
     int fileRow = -1;
     int maxOrderAtLoad = 0;
     int maxOrderAfterMoving = 0;
-    for (int row=0; row<clipsItemModel->rowCount();row++)
+    for (int row = 0; row < clipsItemModel->rowCount(); row++)
     {
         QString fileName = clipsItemModel->index(row, fileIndex).data().toString();
         QTime inTime = QTime::fromString(clipsItemModel->index(row,inIndex).data().toString(), "HH:mm:ss.zzz");
@@ -241,7 +244,19 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
 
         }
 
-        if (fileName > selectedFileName && fileRow == -1)
+        QString fileNameAudioVideoPrefix;
+        if (fileName.toLower().contains(".mp3"))
+            fileNameAudioVideoPrefix = "ZZZ";
+        else
+            fileNameAudioVideoPrefix = "AAA";
+
+        QString selectedFileNameAudioVideoPrefix;
+        if (selectedFileName.toLower().contains(".mp3"))
+            selectedFileNameAudioVideoPrefix = "ZZZ";
+        else
+            selectedFileNameAudioVideoPrefix = "AAA";
+
+        if (fileNameAudioVideoPrefix + fileName > selectedFileNameAudioVideoPrefix + selectedFileName && fileRow == -1)
             fileRow = row;
 
         if (selectedFileName == fileName && newInTime.msecsTo(inTime) > 0 && rowToAppendBefore == -1)
@@ -264,7 +279,7 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
 
     if (rowToAppendBefore != -1) //move all rows after rowToAppendBefore
     {
-        for (int row=rowToAppendBefore; row<clipsItemModel->rowCount();row++)
+        for (int row = rowToAppendBefore; row < clipsItemModel->rowCount(); row++)
         {
                 clipsItemModel->setData(clipsItemModel->index(row, orderBeforeLoadIndex), clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt()+1);
                 clipsItemModel->setData(clipsItemModel->index(row, orderAtLoadIndex), clipsItemModel->index(row, orderAtLoadIndex).data().toInt()+10);
@@ -419,12 +434,7 @@ void AClipsTableView::onTrimF(QString pfileName)
     qDebug()<<"AClipsTableView::onTrim"<< pfileName;
     if (checkSaveIfClipsChanged())
     {
-        onSectionMoved(-1,-1,-1); //to reorder the items
-
-        for (int row =0; row < srtFileItemModel->rowCount();row++)
-        {
-            saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
-        }
+        saveModels();
     }
 
 //    qDebug()<<"AClipsTableView::onTrim saved"<< pfileName;
@@ -536,28 +546,11 @@ void AClipsTableView::onTrimF(QString pfileName)
 
                 file.close();
             }
-//            clipsItemModel->setData(clipsItemModel->index(row, hintIndex), "copied");
-//            clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
         }
     } //for each clip of file
 
-    //save copied, auto save because trim is done anyway
-//    onSectionMoved(-1,-1,-1); //to reorder the items
-//    for (int row =0; row < srtFileItemModel->rowCount();row++)
-//    {
-//        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
-//    }
-
     qDebug()<<"AClipsTableView::onTrimF"<<"ReloadAll";
     emit reloadAll(true);
-
-//    QMap<QString, QString> parameters;
-//    processManager->startProcess(parameters, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
-//    {
-//        AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
-//        clipsTableView->onFolderIndexClicked(QModelIndex()); //reload stuff
-//        emit clipsTableView->reloadProperties(""); //triggers property load
-//    });
 
 } //onTrim
 
@@ -602,39 +595,39 @@ void AClipsTableView::onPropertiesLoaded()
 
 //    qDebug()<<"AClipsTableView::onPropertiesLoaded"<<fpsSuggested<<clipsFramerateExistsInClips;
 
-    if (!clipsFramerateExistsInClips && fpsMap.count() > 0 && false)
-    {
-        QMessageBox messageBox;
-//        messageBox.setParent(this); //then messagebox disappears
+//    if (!clipsFramerateExistsInClips && fpsMap.count() > 0 && false)
+//    {
+//        QMessageBox messageBox;
+////        messageBox.setParent(this); //then messagebox disappears
 
-        QMapIterator<int, QString> fpsIterator(fpsMap);
-        QList<int> fpsList;
-        while (fpsIterator.hasNext()) //all files in reverse order
-        {
-            fpsIterator.next();
-            fpsList<<fpsIterator.key();
-            messageBox.addButton(fpsIterator.value(), QMessageBox::ActionRole);
-        }
+//        QMapIterator<int, QString> fpsIterator(fpsMap);
+//        QList<int> fpsList;
+//        while (fpsIterator.hasNext()) //all files in reverse order
+//        {
+//            fpsIterator.next();
+//            fpsList<<fpsIterator.key();
+//            messageBox.addButton(fpsIterator.value(), QMessageBox::ActionRole);
+//        }
 
-        messageBox.addButton(QMessageBox::No);
+//        messageBox.addButton(QMessageBox::No);
 
-        messageBox.setWindowTitle( "Loading clips");
-        messageBox.setText("There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to one of below founded frame rates ?");
-        int result = messageBox.exec();
+//        messageBox.setWindowTitle( "Loading clips");
+//        messageBox.setText("There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to one of below founded frame rates ?");
+//        int result = messageBox.exec();
 
-//                   QMessageBox::StandardButton reply;
+////                   QMessageBox::StandardButton reply;
 
-//         reply = QMessageBox::question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
-//                                       QMessageBox::Yes|QMessageBox::No);
-//         reply = messageBox.question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
-//                             QMessageBox::Yes|QMessageBox::No);
+////         reply = QMessageBox::question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
+////                                       QMessageBox::Yes|QMessageBox::No);
+////         reply = messageBox.question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
+////                             QMessageBox::Yes|QMessageBox::No);
 
-        if (result != QMessageBox::No)
-        {
-            emit frameRateChanged(fpsList[result]);
-//            QSettings().setValue("frameRate",fpsSuggested);
-        }
-    }
+//        if (result != QMessageBox::No)
+//        {
+//            emit frameRateChanged(fpsList[result]);
+////            QSettings().setValue("frameRate",fpsSuggested);
+//        }
+//    }
     emit propertiesLoaded();
 }
 
@@ -665,6 +658,7 @@ void AClipsTableView::onClipDelete()
             if (clipsItemModel->index(row, orderAtLoadIndex).data().toInt() == rowIterator.value())
             {
                 clipsItemModel->takeRow(row);
+                nrOfDeletedItems++;
             }
         }
     }
@@ -681,13 +675,6 @@ void AClipsTableView::onClipDelete()
         else
             clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes"); //set to yes to make sure delete is saved!
     }
-
-//    //auto save because clip is gone
-//    onSectionMoved(-1,-1,-1); //to reorder the items
-//    for (int row =0; row < srtFileItemModel->rowCount();row++)
-//    {
-//        saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
-//    }
 
     emit clipsChangedToVideo(model());
     emit clipsChangedToTimeline(clipsProxyModel);
@@ -783,6 +770,7 @@ void AClipsTableView::onScrubberOutChanged(QString AV, int row, int out)
 
 void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelIndex &) //bottomRight
 {
+//    qDebug()<<"AClipsTableView::onDataChanged"<<topLeft.column()<<topLeft.row()<<bottomRight.column()<<bottomRight.row()<<doNotUpdate;
     if (!doNotUpdate)
     {
         if (topLeft.column() == inIndex || topLeft.column() == outIndex || topLeft.column() == durationIndex)
@@ -832,6 +820,7 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
             }
         }
     }
+//    qDebug()<<"AClipsTableView::onDataChanged done"<<topLeft.column();
 }
 
 QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
@@ -977,7 +966,10 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
             items.append(starItem);
             items.append(alikeItem);
             items.append(new QStandardItem(hint));
-            items.append(new QStandardItem(tags));
+            QStandardItem *tagItem = new QStandardItem(tags);
+//            tagItem->setFlags(Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsSelectable);
+//            tagItem->setFlags(tagItem->flags() &~Qt::ItemIsEditable);
+            items.append(tagItem);
             srtItemModel->appendRow(items);
 //                QLineEdit *edit = new QLineEdit(this);
             clipCounter++;
@@ -1059,16 +1051,13 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 
 void AClipsTableView::loadModel(QString folderName)
 {
-//    qDebug() << "AClipsTableView::loadModel" << folderName;
+    qDebug() << "AClipsTableView::loadModel" << folderName;
     if (checkSaveIfClipsChanged())
     {
-        onSectionMoved(-1,-1,-1); //to reorder the items
-
-        for (int row =0; row < srtFileItemModel->rowCount();row++)
-        {
-            saveModel(srtFileItemModel->index(row, 0).data().toString(), srtFileItemModel->index(row, 1).data().toString());
-        }
+        saveModels();
     }
+
+    qDebug() << "AClipsTableView::loadModel check done" << folderName;
 
     clipCounter = 1;
     fileCounter = 0;
@@ -1091,16 +1080,36 @@ bool AClipsTableView::checkSaveIfClipsChanged()
         if (clipsItemModel->index(row, changedIndex).data().toString() == "yes")
             changeCount++;
     }
-    if (changeCount>0)
+
+    if (changeCount > 0 || nrOfDeletedItems > 0)
     {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "There are " + QString::number(changeCount) + " clips with changes", "Do you want to save these changes ?",
+        reply = QMessageBox::question(this, "Check changes", tr("There are %1 clips with changes and %2 clips deleted. Do you want to save these changes?").arg(QString::number(changeCount), QString::number(nrOfDeletedItems)),
                                       QMessageBox::Yes|QMessageBox::No);
+
+        qDebug() << "AClipsTableView::checkSaveIfClipsChanged answer" ;
 
         if (reply == QMessageBox::Yes)
             return true;
     }
     return false;
+}
+
+void AClipsTableView::saveModels()
+{
+    qDebug() << "AClipsTableView::saveModels" << srtFileItemModel->rowCount();
+
+    onSectionMoved(-1,-1,-1); //to reorder the items
+
+    for (int row = 0; row < srtFileItemModel->rowCount(); row++) //go through all srt files
+     {
+         QString folderName = srtFileItemModel->index(row, 0).data().toString();
+         QString fileName = srtFileItemModel->index(row, 1).data().toString();
+//            qDebug()<<"MainWindow::on_actionSave_triggered"<<ui->clipsTableView->srtFileItemModel->rowCount()<<row<<folderName<<fileName;
+         saveModel(folderName, fileName);
+     }
+
+    nrOfDeletedItems = 0;
 }
 
 void AClipsTableView::saveModel(QString folderName, QString fileName)

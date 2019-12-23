@@ -4,6 +4,8 @@
 #include "aclipssortfilterproxymodel.h"
 #include "mainwindow.h"
 
+#include "aglobal.h"
+
 #include <QProgressBar>
 #include <QTextStream>
 #include <QWidget>
@@ -14,13 +16,6 @@
 #include <QSlider>
 
 #include <QStatusBar>
-
-typedef struct {
-    QString folderName;
-    QString fileName;
-    int counter;
-    bool definitionGenerated;
-} FileStruct;
 
 class AExport: public QWidget
 {
@@ -87,6 +82,8 @@ signals:
 
     void reloadClips();
     void reloadProperties();
+
+    void exportCompleted(QString error);
 
 public slots:
     void onPropertyUpdate(QString folderName, QString fileNameSource, QString fileNameTarget);

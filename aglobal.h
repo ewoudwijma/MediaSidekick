@@ -21,6 +21,13 @@ static const int tagIndex = 14;
 
 //static const int frameRate = 25;
 
+typedef struct {
+    QString folderName;
+    QString fileName;
+    int counter;
+    bool definitionGenerated;
+} FileStruct;
+
 class AGlobal
 {
 public:

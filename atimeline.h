@@ -21,6 +21,10 @@ public:
     explicit ATimeline(QWidget *parent = nullptr);
     int transitiontimeLastGood;
 
+    int maxAudioDuration;
+    int maxVideoDuration;
+    int maxCombinedDuration;
+
 private:
     QAction *actionPlay;
     QAction *actionPause;

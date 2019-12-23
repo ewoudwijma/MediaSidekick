@@ -14,9 +14,20 @@
 #include <QStandardItemModel>
 #include <QComboBox>
 
+#include <QMediaPlayer>
+
 namespace Ui {
 class MainWindow;
 }
+
+typedef struct {
+    QString context;
+    QWidget *widget;
+    QString widgetName;
+    QString helpText;
+    QTabWidget *tabWidget;
+    int tabIndex;
+} AContextSensitiveHelpRequest;
 
 class MainWindow : public QMainWindow
 {
@@ -34,7 +45,7 @@ private slots:
     void on_actionAbout_Qt_triggered();
     void on_propertyFilterLineEdit_textChanged(const QString &arg1);
     void on_propertyDiffCheckBox_stateChanged(int arg1);
-    void onClipsFilterChanged();
+    void onClipsFilterChanged(bool fromFilters);
     void on_actionWhite_theme_triggered();
     void on_action5_stars_triggered();
     void on_action4_stars_triggered();
@@ -75,6 +86,7 @@ private slots:
     void onAdjustTransitionTime(int transitionTime);
     void onPropertiesLoaded();
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
+    void onDurationChanged(int duration);
     void on_exportFramerateComboBox_currentTextChanged(const QString &arg1);
     void on_authorCheckBox_clicked(bool checked);
     void on_clipsTabWidget_currentChanged(int index);
@@ -102,13 +114,45 @@ private slots:
 
     void on_ratingFilterComboBox_currentIndexChanged(int index);
 
+    void on_skipBackwardButton_clicked();
+
+    void on_seekBackwardButton_clicked();
+
+    void on_playButton_clicked();
+
+    void on_seekForwardButton_clicked();
+
+    void on_skipForwardButton_clicked();
+
+    void on_stopButton_clicked();
+
+    void on_muteButton_clicked();
+
+    void on_setInButton_clicked();
+
+    void on_setOutButton_clicked();
+
+    void on_speedComboBox_currentTextChanged(const QString &arg1);
+    void onExportCompleted(QString error);
+
+    void on_actionContext_Sensitive_Help_changed();
+
+    void on_actionTooltips_changed();
+
+    void on_actionRepeat_context_sensible_help_triggered();
+
+    void onPlayerStateChanged(QMediaPlayer::State state);
+    void onMutedChanged(bool muted);
+    void onPlaybackRateChanged(qreal rate);
+
+    void onTagFilter1ListViewChanged();
+    void onTagFilter2ListViewChanged();
 private:
     Ui::MainWindow *ui;
-    QStandardItemModel *tagFilter1Model;
-    QStandardItemModel *tagFilter2Model;
+//    QStandardItemModel *tagFilter1Model;
+//    QStandardItemModel *tagFilter2Model;
 
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
-    void onTagFiltersChanged();
     QWidget *graphWidget1, *graphWidget2;
     QString transitionValueChangedBy;
     QString positionValueChangedBy;
@@ -122,11 +166,21 @@ private:
     void loadSettings();
     void changeUIProperties();
     bool checkExit();
+
+    void createContextSensitiveHelp(QString eventName, QString arg1 = "");
+    void showContextSensitiveHelp(int index);
+
+    QList<AContextSensitiveHelpRequest> requestList;
+    int currentRequestNumber;
+
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
     void timelineWidgetsChanged(int transitionTime, QString transitionType, AClipsTableView *clipsTableView);
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
 };
 
 #endif // MAINWINDOW_H

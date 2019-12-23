@@ -16,7 +16,7 @@
 #include <QDesktopWidget>
 
 static const int idIndex = 0;
-static const int timestampIndex = 1;
+//static const int timestampIndex = 1;
 static const int folderIndex = 2;
 static const int fileIndex = 3;
 //static const int actionIndex = 4;
@@ -41,7 +41,7 @@ AJobTableView::AJobTableView(QWidget *parent) : QTableView(parent)
     horizontalHeader()->setStretchLastSection( true );
     setColumnWidth(idIndex, 1);
     setColumnWidth(folderIndex,int(columnWidth(folderIndex) * 1.5));
-    setColumnWidth(fileIndex,int(columnWidth(fileIndex) * 3));
+    setColumnWidth(fileIndex,int(columnWidth(fileIndex) * 1.5));
 
     setColumnHidden(idIndex, true);
     setColumnHidden(allIndex, true);

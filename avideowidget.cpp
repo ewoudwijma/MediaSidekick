@@ -8,7 +8,6 @@
 #include <QSettings>
 #include <QTime>
 #include <QTimer>
-#include <QToolBar>
 
 #include <QStyle>
 
@@ -29,8 +28,6 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
 
     parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
 //    qDebug()<<"cast"<<parentLayout<<parent<<layout();
-
-    setupActions(this);
 
     m_player = new QMediaPlayer(this);
 //    auto pal = palette();
@@ -60,16 +57,6 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
     m_scrubber->setScale(10000);
     m_scrubber->onSeek(0);
 
-    connect(actionPlay, SIGNAL(triggered()), this, SLOT(togglePlayPaused()));
-//    connect(actionPause, SIGNAL(triggered()), this, SLOT(pause()));
-    connect(actionFastForward, SIGNAL(triggered()), this, SLOT(fastForward()));
-    connect(actionRewind, SIGNAL(triggered()), this, SLOT(rewind()));
-    connect(actionSkipNext, SIGNAL(triggered()), this, SLOT(skipNext()));
-    connect(actionSkipPrevious, SIGNAL(triggered()), this, SLOT(skipPrevious()));
-    connect(actionSetIn, SIGNAL(triggered()), this, SLOT(onSetIn()));
-    connect(actionSetOut, SIGNAL(triggered()), this, SLOT(onSetOut()));
-    connect(actionStop, &QAction::triggered, this, &AVideoWidget::onStop);
-    connect(actionMute, &QAction::triggered, this, &AVideoWidget::onMute);
     connect(m_scrubber, &SScrubBar::seeked, this, &AVideoWidget::onScrubberSeeked);
     connect(m_scrubber, &SScrubBar::scrubberInChanged, this, &AVideoWidget::onScrubberInChanged);
     connect(m_scrubber, &SScrubBar::scrubberOutChanged, this, &AVideoWidget::onScrubberOutChanged);
@@ -82,200 +69,29 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
                               "<li>Drag middle of clip: Change in and out point, duration unchanged</li>"
                               "<li>Drag outside of clip: Change position</li>"
                               "</ul>"));
-    actionPlay->setToolTip(tr("<p><b>Play or pause</b></p>"
-                              "<p><i>Play or pause the video</i></p>"
-                              "<ul>"
-                              "<li>Shortcut: Space</li>"
-                              "</ul>"));
-    actionStop->setToolTip(tr("<p><b>Stop the video</b></p>"
-                                "<p><i>Stop the video</i></p>"
-                                ));
-
-    actionSkipNext->setToolTip(tr("<p><b>Go to next or previous clip</b></p>"
-                              "<p><i>Go to next or previous clip</i></p>"
-                              "<ul>"
-                              "<li>Shortcut: ctrl-up and ctrl-down</li>"
-                              "</ul>"));
-    actionSkipPrevious->setToolTip(actionSkipNext->toolTip());
-
-    actionRewind->setToolTip(tr("<p><b>Go to next or previous frame</b></p>"
-                              "<p><i>Go to next or previous frame</i></p>"
-                              "<ul>"
-                              "<li>Shortcut: ctrl-left and ctrl-right</li>"
-                              "</ul>"));
-    actionFastForward->setToolTip(actionRewind->toolTip());
-
-    actionSetIn->setToolTip(tr("<p><b>Set in- and out- point</b></p>"
-                                  "<p><i>Set the inpoint of a new clip or change the in- or outpoint of the current clip to the current position on the timeline</i></p>"
-                                  "<ul>"
-                                  "<li>Change: inpoint before outpoint of last selected clip or outpoint after inpoint of last selected clip</li>"
-                                  "<li>Set: No last selected clip or inpoint after outpoint of last selected clip and outpoint before inpoint of last selected clip</li>"
-                                  "<li>Shortcut: ctrl-i and ctrl-o</li>"
-                                  "</ul>"));
-    actionSetOut->setToolTip(actionSetIn->toolTip());
-
-    actionMute->setToolTip(tr("<p><b>Mute or unmute</b></p>"
-                              "<p><i>Mute or unmute sound (toggle)</i></p>"
-                              "<ul>"
-                              "<li>Video files will be muted if selected. Audio files will be unmuted if selected</li>"
-                              "<li>Shortcut mute toggle: ctrl-m</li>"
-                              "</ul>"));
-
-
-    toolbar = new QToolBar(tr("Transport Controls"), this);
-    int s = style()->pixelMetric(QStyle::PM_SmallIconSize);
-    toolbar->setIconSize(QSize(s, s));
-    toolbar->setContentsMargins(0, 0, 0, 0);
-//    toolbar->setToolButtonStyle(Qt::ToolButtonStyle);
-
-
-    QWidget *spacer = new QWidget(this);
-    spacer->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
-    m_positionSpinner = new STimeSpinBox(this);
-    m_positionSpinner->setToolTip(tr("Current position"));
-//    m_positionSpinner->setEnabled(false);
-    m_positionSpinner->setKeyboardTracking(false);
-    m_positionSpinner->setFixedWidth(120);
-
-
-    m_durationLabel = new QLabel(this);
-    m_durationLabel->setToolTip(tr("Total Duration"));
-    m_durationLabel->setText(" / 00:00:00:00");
-    m_durationLabel->setFixedWidth(m_positionSpinner->width());
-//    m_inPointLabel = new QLabel(this);
-//    m_inPointLabel->setText("--:--:--:--");
-//    m_inPointLabel->setToolTip(tr("In Point"));
-//    m_inPointLabel->setFixedWidth(m_inPointLabel->width());
-//    m_selectedLabel = new QLabel(this);
-//    m_selectedLabel->setText("--:--:--:--");
-//    m_selectedLabel->setToolTip(tr("Selected Duration"));
-//    m_selectedLabel->setFixedWidth(m_selectedLabel->width());
-    toolbar->addWidget(m_positionSpinner);
-    toolbar->addWidget(m_durationLabel);
-//    toolbar->addWidget(spacer);
-    toolbar->addAction(actionSkipPrevious);
-    toolbar->addAction(actionRewind);
-    toolbar->addAction(actionPlay);
-    toolbar->addAction(actionFastForward);
-    toolbar->addAction(actionSkipNext);
-    toolbar->addAction(actionStop);
-    toolbar->addAction(actionMute);
-    toolbar->addWidget(new QLabel(" Add:", this));
-
-    toolbar->addAction(actionSetIn);
-    toolbar->addAction(actionSetOut);
-
-    toolbar->addWidget(new QLabel(" Speed:", this));
-
-//    toolbar->setStyleSheet(
-//                "QToolButton#actionPlay { background:red }"
-//                "QToolButton#actionMute { background:blue }");
-
-//    if (QSettings().value("theme").toString() == "Black")
-        toolbar->setStyleSheet("QToolButton:!hover {background-color:lightgrey }");//QToolBar {background: rgb(30, 30, 30)}
-
-    speedComboBox = new QComboBox(this);
-    speedComboBox->addItem("-2x");
-    speedComboBox->addItem("-1x");
-    speedComboBox->addItem("1 fps");
-    speedComboBox->addItem("2 fps");
-    speedComboBox->addItem("4 fps");
-    speedComboBox->addItem("8 fps");
-    speedComboBox->addItem("16 fps");
-    speedComboBox->addItem("1x");
-    speedComboBox->addItem("2x");
-    speedComboBox->addItem("4x");
-    speedComboBox->addItem("8x");
-    speedComboBox->addItem("16x");
-
-    speedComboBox->setCurrentText("1x");
-    toolbar->addWidget(speedComboBox);
-
-    connect(speedComboBox, &QComboBox::currentTextChanged, this, &AVideoWidget::onSpeedChanged);
-
-    speedComboBox->setToolTip(tr("<p><b>Speed</b></p>"
-                                 "<p><i>Change the play speed of the video</i></p>"
-                                 "<ul>"
-                                 "<li>Supported speeds are depending on the codec</li>"
-                                 "</ul>"));
-
-    spacer = new QWidget(this);
-    spacer->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
-//    toolbar->addWidget(spacer);
-
-    connect(m_positionSpinner, SIGNAL(valueChanged(int)), this, SLOT(onSpinnerPositionChanged(int))); //using other syntax not working...
 
     isTimelinePlaymode = false;
     isLoading = false;
 
     lastHighlightedRow = -1;
 
+//    this->layout()->addWidget(m_scrubber);
+
+    selectedFileName = "";
+
     QTimer::singleShot(0, this, [this]()->void
     {
-         parentLayout->insertWidget(-1, m_scrubber);
-         parentLayout->insertWidget(-1, toolbar);
+                           parentLayout->insertWidget(1, m_scrubber);
     });
 }
 
-void AVideoWidget::setupActions(QWidget* widget)
-{
-    actionPlay = new QAction(widget);
-    actionPlay->setObjectName(QString::fromUtf8("actionPlay"));
-    QPixmap pix = style()->standardIcon(QStyle::SP_MediaPlay).pixmap(QSize(32,32));
-    actionPlay->setIcon(pix);
-    actionPlay->setDisabled(true);
-    actionPause = new QAction(widget);
-    actionPause->setObjectName(QString::fromUtf8("actionPause"));
-    actionPause->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-    actionPause->setDisabled(true);
-    actionSkipNext = new QAction(widget);
-    actionSkipNext->setObjectName(QString::fromUtf8("actionSkipNext"));
-    actionSkipNext->setIcon(style()->standardIcon(QStyle::SP_MediaSkipForward));
-    actionSkipNext->setDisabled(true);
-    actionSkipPrevious = new QAction(widget);
-    actionSkipPrevious->setObjectName(QString::fromUtf8("actionSkipPrevious"));
-    actionSkipPrevious->setIcon(style()->standardIcon(QStyle::SP_MediaSkipBackward));
-    actionSkipPrevious->setDisabled(true);
-    actionRewind = new QAction(widget);
-    actionRewind->setObjectName(QString::fromUtf8("actionRewind"));
-    actionRewind->setIcon(style()->standardIcon(QStyle::SP_MediaSeekBackward));
-    actionRewind->setDisabled(true);
-    actionFastForward = new QAction(widget);
-    actionFastForward->setObjectName(QString::fromUtf8("actionFastForward"));
-    actionFastForward->setIcon(style()->standardIcon(QStyle::SP_MediaSeekForward));
-    actionFastForward->setDisabled(true);
-    actionVolume = new QAction(widget);
-    actionVolume->setObjectName(QString::fromUtf8("actionVolume"));
-    actionVolume->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
-
-    actionStop = new QAction(widget);
-    actionStop->setObjectName(QString::fromUtf8("actionStop"));
-    actionStop->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-    actionStop->setDisabled(true);
-
-    actionMute = new QAction(widget);
-    actionMute->setObjectName(QString::fromUtf8("actionMute"));
-    actionMute->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
-    actionMute->setDisabled(true);
-
-    actionSetIn = new QAction(widget);
-    actionSetIn->setObjectName(QString::fromUtf8("actionSetIn"));
-    actionSetIn->setIcon(style()->standardIcon(QStyle::SP_ArrowLeft));
-    actionSetIn->setDisabled(true);
-//    retranslateUi(widget);
-    actionSetOut = new QAction(widget);
-    actionSetOut->setObjectName(QString::fromUtf8("actionSetOut"));
-    actionSetOut->setIcon(style()->standardIcon(QStyle::SP_ArrowRight));
-    actionSetOut->setDisabled(true);
-    QMetaObject::connectSlotsByName(widget);
-}
-
-void AVideoWidget::onFolderIndexClicked(QModelIndex index)
+void AVideoWidget::onFolderIndexClicked(QModelIndex )//index
 {
     selectedFolderName = QSettings().value("LastFolder").toString();
 //    qDebug()<<"AVideoWidget::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
     m_player->stop();
     m_scrubber->clearInOuts();
+    selectedFileName = "";
 }
 
 void AVideoWidget::onFileIndexClicked(QModelIndex index)
@@ -324,7 +140,7 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
         m_player->setMedia(QUrl(folderFileName));
 
         m_player->play();
-        if (oldState == QMediaPlayer::PausedState)
+        if (oldState != QMediaPlayer::PlayingState)
             m_player->pause();
 
 //        m_player->setMuted(oldMuted);
@@ -394,33 +210,22 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
 
 void AVideoWidget::onDurationChanged(int duration)
 {
+    qDebug()<<"AVideoWidget::onDurationChanged" << duration<<AGlobal().msec_rounded_to_fps(duration)<<AGlobal().msec_to_time(duration);
+
     if (duration > 0)
     {
         playerDuration = duration;
         m_scrubber->setScale(AGlobal().msec_rounded_to_fps(duration));
-        m_durationLabel->setText(AGlobal().msec_to_time(duration).prepend(" / "));
-//        qDebug()<<"AVideoWidget::onDurationChanged" << duration<<AGlobal().msec_rounded_to_fps(duration)<<AGlobal().msec_to_time(duration);
 
         m_isSeekable = true;
-
-        actionPlay->setEnabled(true);
-        actionSkipPrevious->setEnabled(m_isSeekable);
-        actionSkipNext->setEnabled(m_isSeekable);
-        actionRewind->setEnabled(m_isSeekable);
-        actionFastForward->setEnabled(m_isSeekable);
-        actionSetIn->setEnabled(m_isSeekable);
-        actionSetOut->setEnabled(m_isSeekable);
-        actionMute->setEnabled(true);
-        actionStop->setEnabled(true);
     }
+
+    emit durationChanged(duration);
 }
 
 void AVideoWidget::onPlayerPositionChanged(int progress)
 {
    m_scrubber->onSeek(AGlobal().msec_rounded_to_fps(progress));
-   m_positionSpinner->blockSignals(true); //do not fire valuechanged signal
-   m_positionSpinner->setValue(AGlobal().msec_to_frames(progress));
-   m_positionSpinner->blockSignals(false);
 
    if (!isTimelinePlaymode)
    {
@@ -440,15 +245,6 @@ void AVideoWidget::onTimelinePositionChanged(int progress, int row, int relative
 {
     qDebug()<<"AVideoWidget::onTimelinePositionChanged"<<progress<<row<<relativeProgress<<AGlobal().msec_to_frames(progress);
     isTimelinePlaymode = true;
-//    int *relativeProgressl = new int();
-//    m_scrubber->rowToPosition(row, relativeProgressl);
-
-//    if (*relativeProgressl != -1)
-//    {
-//        m_scrubber->onSeek(AGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
-//        m_positionSpinner->setValue(AGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
-//    }
-
 }
 
 void AVideoWidget::onSpinnerPositionChanged(int frames)
@@ -458,14 +254,6 @@ void AVideoWidget::onSpinnerPositionChanged(int frames)
 
 //    m_player->pause();
     m_player->setPosition(AGlobal().frames_to_msec(frames));
-//    int *relativeProgressl = new int();
-//    m_scrubber->rowToPosition(row, relativeProgressl);
-
-//    if (*relativeProgressl != -1)
-//    {
-//        m_scrubber->onSeek(AGlobal().msec_rounded_to_fps(relativeProgress + *relativeProgressl));
-//        m_positionSpinner->setValue(AGlobal().msec_to_frames(relativeProgress + *relativeProgressl));
-//    }
 }
 
 void AVideoWidget::onReleaseMedia(QString fileName)
@@ -490,16 +278,10 @@ void AVideoWidget::onFileRename()
 
 void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 {
-//    qDebug()<<"AVideoWidget::onPlayerStateChanged"<<state;
-    if (state == QMediaPlayer::PlayingState)
-        actionPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-    if (state == QMediaPlayer::PausedState)
-        actionPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    if (state == QMediaPlayer::StoppedState)
-        actionPlay->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    emit playerStateChanged(state);
 }
 
-void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
+void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus )//status
 {
 //    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status;
 
@@ -560,12 +342,8 @@ void AVideoWidget::skipNext()
 
     if (*relativeProgressl != -1)
     {
-//        m_scrubber->onSeek(AGlobal().msec_rounded_to_fps(*relativeProgressl));
-//        m_positionSpinner->setValue(AGlobal().msec_to_frames(*relativeProgressl));
         m_player->setPosition(*relativeProgressl);
     }
-
-//    emit videoPositionChanged(AGlobal().msec_rounded_to_fps(progress), *row+1, *relativeProgressl);
 }
 
 void AVideoWidget::skipPrevious()
@@ -589,8 +367,6 @@ void AVideoWidget::skipPrevious()
 
     if (*relativeProgressl != -1)
     {
-//        m_scrubber->onSeek(AGlobal().msec_rounded_to_fps(*relativeProgressl));
-//        m_positionSpinner->setValue(AGlobal().msec_to_frames(*relativeProgressl));
         m_player->setPosition(*relativeProgressl);
     }
 }
@@ -615,26 +391,19 @@ void AVideoWidget::setSourceVideoVolume(int volume)
         m_player->setVolume(volume);
 }
 
-void AVideoWidget::onSpeedChanged(QString speed)
+void AVideoWidget::setPlaybackRate(qreal rate)
 {
-    double playbackRate = speed.left(speed.lastIndexOf("x")).toDouble();
-    if (speed.indexOf(" fps")  > 0)
-        playbackRate = speed.left(speed.lastIndexOf(" fps")).toDouble() / QSettings().value("frameRate").toInt();
-//    qDebug()<<"AVideoWidget::onSpeedChanged"<<speed<<playbackRate<<speed.lastIndexOf("x")<<speed.left(speed.lastIndexOf("x"));
-    m_player->setPlaybackRate(playbackRate);
+    m_player->setPlaybackRate(rate);
 }
 
 void AVideoWidget::onPlaybackRateChanged(qreal rate)
 {
-    speedComboBox->setCurrentText(QString::number(rate) + "x");
+    emit playbackRateChanged(rate);
 }
 
 void AVideoWidget::onMutedChanged(bool muted)
 {
-//    qDebug()<<"AVideoWidget::onMutedChanged"<<muted;
-    actionMute->setIcon(style()->standardIcon(muted
-            ? QStyle::SP_MediaVolumeMuted
-            : QStyle::SP_MediaVolume));
+    emit mutedChanged(muted);
 }
 
 void AVideoWidget::onScrubberSeeked(int mseconds)

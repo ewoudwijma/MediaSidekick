@@ -31,6 +31,9 @@ public:
     int originalDuration;
     void selectClips();
 
+    void saveModels();
+    int nrOfDeletedItems;
+
 private:
     QString selectedFolderName;
     QString selectedFileName;

@@ -994,6 +994,12 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     maxVideoDuration = videoOriginalDuration - ptransitionTimeFrames * (videoCountNrOfClips-1);
     maxCombinedDuration = qMax(maxVideoDuration, maxAudioDuration);
 
+    if (maxVideoDuration == 0)
+    {
+        QMessageBox::information(this, "Export", "No video clips");
+        return;
+    }
+
     currentDirectory = QSettings().value("LastFolder").toString();
 
     transitionTimeFrames = ptransitionTimeFrames;
@@ -1661,10 +1667,8 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         }
         exportWidget->exportButton->setEnabled(true);
 
-//        QTimer::singleShot(1000, exportWidget, [exportWidget]()->void
-//        {
-//                               exportWidget->progressBar->setValue(0);
-//        });
+        emit exportWidget->exportCompleted(exportWidget->processError);
+
     });
 }
 

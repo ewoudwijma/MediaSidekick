@@ -11,7 +11,6 @@
 #include <QLabel>
 #include <QMediaPlayer>
 #include <QModelIndex>
-#include <QToolBar>
 #include <QVBoxLayout>
 
 
@@ -23,39 +22,24 @@ public:
     AVideoWidget(QWidget *parent = nullptr);
 //    int fpsRounded;
     int m_position;
-    STimeSpinBox* m_positionSpinner;
     void setSourceVideoVolume(int volume);
     int playerDuration;
+    QAction *actionSetIn;
+
+    void setPlaybackRate(qreal rate);
+    QString selectedFileName;
 
 private:
     QMediaPlayer *m_player;
 
-    QAction *actionPlay;
-    QAction *actionPause;
-    QAction *actionSkipNext;
-    QAction *actionSkipPrevious;
-    QAction *actionRewind;
-    QAction *actionFastForward;
-    QAction *actionVolume;
-    QAction *actionSetIn;
-    QAction *actionSetOut;
-    QAction *actionStop;
-    QAction *actionMute;
-    QComboBox *speedComboBox;
-
     QVBoxLayout *parentLayout;
     SScrubBar* m_scrubber;
-    QLabel *m_durationLabel;
-    QToolBar* toolbar;
     int m_previousIn;
     int m_previousOut;
     int m_duration;
     bool m_isSeekable;
 
-    void setupActions(QWidget *widget);
-
     QString selectedFolderName;
-    QString selectedFileName;
 
     bool isTimelinePlaymode;
     int lastHighlightedRow;
@@ -81,6 +65,8 @@ public slots:
     void onSetOut(int frames = -1);
     void onFileRename();
     void onMute();
+    void onStop();
+
 private slots:
     void onDurationChanged(int duration);
     void onPlayerPositionChanged(int progress);
@@ -90,17 +76,20 @@ private slots:
     void onScrubberInChanged(QString AV, int row, int in);
     void onScrubberOutChanged(QString AV, int row, int out);
     void onMutedChanged(bool muted);
-    void onStop();
-    void onSpeedChanged(QString speed);
     void onPlaybackRateChanged(qreal rate);
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
 signals:
     void videoPositionChanged(int position, int clipRow, int relativeProgress);
+    void durationChanged(int duration);
     void scrubberInChanged(QString AV, int row, int in);
     void scrubberOutChanged(QString AV, int row, int out);
     void getPropertyValue(QString fileName, QString key, QString *value);
 //    void fpsChanged(int fps);
     void createNewEdit(int frames);
+
+    void playerStateChanged(QMediaPlayer::State state);
+    void mutedChanged(bool muted);
+    void playbackRateChanged(qreal rate);
 
 };
 

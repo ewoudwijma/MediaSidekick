@@ -23,7 +23,7 @@ AFolderTreeView::AFolderTreeView(QWidget *parent) : QTreeView(parent)
     directoryModel->setRootPath("");
 
     QString lastFolder = QSettings().value("LastFolder").toString();
-    if (lastFolder != ""  && lastFolder.length()>4) //not the root folder
+    if (lastFolder != ""  && lastFolder.length() > 4) //not the root folder
         setCurrentIndex(directoryModel->index(lastFolder)); //does also the scrollTo
 }
 

@@ -9,15 +9,16 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.1.0");
+    a.setApplicationVersion("0.1.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
 
     if (QSettings().value("frameRate").toInt() == 0)
     {
-        QSettings().setValue("frameRate", 25);
+        QSettings().setValue("frameRate", "25");
         QSettings().sync();
+        qDebug()<<"frameRate"<<QSettings().value("frameRate")<<QSettings().value("frameRate").toInt();
     }
 
     QPixmap pixmap(":/acvc.ico");

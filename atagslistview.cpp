@@ -21,6 +21,14 @@ ATagsListView::ATagsListView(QWidget *parent) : QListView(parent)
     setVerticalScrollMode(ScrollPerPixel);
 //    setMaximumSize(100, size().height());
     connect(this, &ATagsListView::doubleClicked, this, &ATagsListView::onDoubleClicked);
+
+    setDragDropMode(QListView::DragDrop);
+    setDefaultDropAction(Qt::MoveAction);
+    setSpacing(4);
+    setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    connect(tagsItemModel, &QStandardItemModel::dataChanged,  this, &ATagsListView::onTagChanged);
+    connect(tagsItemModel, &QStandardItemModel::rowsRemoved,  this, &ATagsListView::onTagChanged); //datachanged not signalled when removing
 }
 
 void ATagsListView::onFolderIndexClicked(QAbstractItemModel *model)
@@ -59,16 +67,31 @@ void ATagsListView::loadModel(QAbstractItemModel *editItemModel)
     tagsItemModel->removeRows(0, tagsItemModel->rowCount());
     for (int i = 0; i < editItemModel->rowCount(); i++)
     {
-        QStringList tagList = editItemModel->index(i,tagIndex).data().toString().split(";", QString::SkipEmptyParts);
-//        if (tagList.count()==1 && tagList[0] == "")
-//            tagList.clear();
-
-        for (int j=0; j < tagList.count(); j++)
-        {
-            addTag(tagList[j].toLower());
-        }
+        stringToModel(editItemModel->index(i,tagIndex).data().toString());
     }
 //    qDebug() << "ATagsListView::loadModel done" << editItemModel->rowCount();
+}
+
+void ATagsListView::stringToModel(QString string)
+{
+    QStringList tagList = string.split(";", QString::SkipEmptyParts);
+
+    for (int j=0; j < tagList.count(); j++)//tbd: add as method of tagslistview
+    {
+        addTag(tagList[j].toLower());
+    }
+}
+
+QString ATagsListView::modelToString()
+{
+    QString string = "";
+    QString sep = "";
+    for (int i=0; i < tagsItemModel->rowCount();i++)
+    {
+        string += sep + tagsItemModel->index(i,0).data().toString();
+        sep = ";";
+    }
+    return string;
 }
 
 void ATagsListView::onDoubleClicked(const QModelIndex &index)
@@ -76,4 +99,9 @@ void ATagsListView::onDoubleClicked(const QModelIndex &index)
     qDebug()<<"ATagsListView::onDoubleClicked";
     tagsItemModel->takeRow(index.row());
     //tbd: move to addtagfield
+}
+
+void ATagsListView::onTagChanged()
+{
+    emit tagChanged(modelToString());
 }

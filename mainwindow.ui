@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1190</width>
-    <height>702</height>
+    <width>2305</width>
+    <height>791</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -111,6 +111,113 @@
             <layout class="QHBoxLayout" name="horizontalLayout_4"/>
            </widget>
           </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_9">
+            <item>
+             <widget class="STimeSpinBox" name="positionSpinBox"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="durationLabel">
+              <property name="text">
+               <string>/ 00:00:00:00</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="skipBackwardButton">
+              <property name="text">
+               <string>|&lt;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="seekBackwardButton">
+              <property name="text">
+               <string>&lt;&lt;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="playButton">
+              <property name="text">
+               <string>&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="seekForwardButton">
+              <property name="text">
+               <string>&gt;&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="skipForwardButton">
+              <property name="text">
+               <string>&gt;|</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="stopButton">
+              <property name="text">
+               <string>[]</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="muteButton">
+              <property name="text">
+               <string>X</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_12">
+              <property name="text">
+               <string>add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="setInButton">
+              <property name="text">
+               <string>{</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="setOutButton">
+              <property name="text">
+               <string>}</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>speed</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="speedComboBox"/>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
          </layout>
         </widget>
         <widget class="QTabWidget" name="clipsTabWidget">
@@ -129,6 +236,20 @@
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
+               <item>
+                <widget class="QLabel" name="clipRowsCounterLabel">
+                 <property name="text">
+                  <string>1 / 1</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="fileOnlyCheckBox">
+                 <property name="text">
+                  <string>File only</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QPushButton" name="resetSortButton">
                  <property name="text">
@@ -178,7 +299,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QListView" name="tagFilter1ListView"/>
+                <widget class="ATagsListView" name="tagFilter1ListView"/>
                </item>
                <item>
                 <widget class="QLabel" name="label">
@@ -188,21 +309,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QListView" name="tagFilter2ListView"/>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="fileOnlyCheckBox">
-                 <property name="text">
-                  <string>File only</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="clipRowsCounterLabel">
-                 <property name="text">
-                  <string>1 / 1</string>
-                 </property>
-                </widget>
+                <widget class="ATagsListView" name="tagFilter2ListView"/>
                </item>
                <item>
                 <widget class="QComboBox" name="clipsSizeComboBox"/>
@@ -739,8 +846,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1190</width>
-     <height>17</height>
+     <width>2305</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -759,6 +866,10 @@
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
     <addaction name="actionAbout_Qt"/>
+    <addaction name="separator"/>
+    <addaction name="actionTooltips"/>
+    <addaction name="actionContext_Sensitive_Help"/>
+    <addaction name="actionRepeat_context_sensible_help"/>
     <addaction name="separator"/>
     <addaction name="actionDonate"/>
     <addaction name="actionDebug_mode"/>
@@ -835,6 +946,8 @@
    <addaction name="action4_stars"/>
    <addaction name="action5_stars"/>
    <addaction name="actionAlike"/>
+   <addaction name="separator"/>
+   <addaction name="actionRepeat_context_sensible_help"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionQuit">
@@ -1097,6 +1210,33 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="actionTooltips">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Tooltips</string>
+   </property>
+  </action>
+  <action name="actionContext_Sensitive_Help">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Context sensitive help</string>
+   </property>
+  </action>
+  <action name="actionRepeat_context_sensible_help">
+   <property name="text">
+    <string>Next context sensible help message</string>
+   </property>
+   <property name="toolTip">
+    <string>Next context sensible help message</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
  </widget>
