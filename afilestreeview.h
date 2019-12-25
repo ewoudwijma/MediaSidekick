@@ -28,6 +28,8 @@ private slots:
     void onIndexActivated(QModelIndex index);
     void onModelLoaded(const QString &path);
     void onSuperview();
+    void onOpenInExplorer();
+    void onOpenDefaultApplication();
 private:
     void loadModel(QUrl folderUrl);
     QMenu *fileContextMenu;

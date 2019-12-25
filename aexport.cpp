@@ -57,7 +57,7 @@ void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QStri
         AExport *exportWidget = qobject_cast<AExport *>(parent);
         emit exportWidget->addToJob(parameters["processId"], result);
 
-        exportWidget->progressBar->setValue(95);
+//        exportWidget->progressBar->setValue(95);
     }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList )//result
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
@@ -67,7 +67,7 @@ void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QStri
 
 void AExport::onTrimC(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage)
 {
-    qDebug()<<"AExport::onTrimC"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage<<progressBar;
+//    qDebug()<<"AExport::onTrimC"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage;
     int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
     QMap<QString, QString> parameters;
@@ -87,8 +87,8 @@ void AExport::onTrimC(QString folderName, QString fileNameSource, QString fileNa
         AExport *exportWidget = qobject_cast<AExport *>(parent);
         emit exportWidget->addToJob(parameters["processId"], "Completed");
 //        qDebug()<<"AExport::onTrim"<<exportWidget->progressBar<<(exportWidget->progressBar != nullptr);
-        if (exportWidget->progressBar != nullptr)
-            exportWidget->progressBar->setValue(parameters["percentage"].toInt());
+//        if (exportWidget->progressBar != nullptr)
+//            exportWidget->progressBar->setValue(parameters["percentage"].toInt());
     });
 
 }
@@ -104,6 +104,7 @@ void AExport::onReloadAll(bool includingSRT)
 
         if (parameters["includingSRT"].toInt())
             emit exportWidget->reloadClips();
+//        qDebug()<<"AExport::onReloadAll processdone";
         emit exportWidget->reloadProperties();
     });
 }
@@ -1672,3 +1673,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     });
 }
 
+void AExport::stopAllProcesses()
+{
+    processManager->stopAll();
+}

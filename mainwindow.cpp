@@ -26,6 +26,8 @@
 
 #include <QCloseEvent>
 
+#include <QWinTaskbarProgress>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -58,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
                            ui->folderTreeView->onIndexClicked(QModelIndex()); //initial load
 
-                           qDebug()<<"contextSensitiveHelpOn"<<QSettings().value("contextSensitiveHelpOn");
+//                           qDebug()<<"contextSensitiveHelpOn"<<QSettings().value("contextSensitiveHelpOn");
                            if (QSettings().value("contextSensitiveHelpOn").toString() == "")
                                ui->actionContext_Sensitive_Help->setChecked(true);
                            else
@@ -101,7 +103,7 @@ bool MainWindow::checkExit()
 {
     bool exitYes = false;
 
-    qDebug()<<"MainWindow::checkExit"<<ui->progressBar->value();
+//    qDebug()<<"MainWindow::checkExit"<<ui->progressBar->value();
 
     if (ui->progressBar->value() > 0 && ui->progressBar->value() < 100)
     {
@@ -145,6 +147,10 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::changeUIProperties()
 {
+    taskbarButton = new QWinTaskbarButton(this);
+    taskbarButton->setWindow(windowHandle());
+//       taskbarButton->setOverlayIcon(QIcon(":/loading.png"));
+
     //added designer settings
     ui->propertyDiffCheckBox->setCheckState(Qt::PartiallyChecked);
 
@@ -253,6 +259,8 @@ void MainWindow::changeUIProperties()
 
     ui->speedComboBox->setCurrentText("1x");
 
+    ui->cancelButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
+    ui->cancelButton->setEnabled(false);
 }
 
 void MainWindow::allConnects()
@@ -536,6 +544,10 @@ void MainWindow::allTooltips()
                                       "<li>Warning: For movie files with more than 100 clips and if more than 100 files with clips are loaded, a warning will be given with the option to skip or cancel.</li>"
                                       "</ul>"));
 
+    ui->folderButton->setToolTip(tr("<p><b>Selected folder</b></p>"
+                                    "<p><i>Click here to open the folder</i></p>"
+                                    ));
+
     ui->videoFilesTreeView->setToolTip(tr("<p><b>File</b></p>"
                                      "<p><i>Files within the selected folder</i></p>"
                                      "<ul>"
@@ -750,7 +762,7 @@ void MainWindow::allTooltips()
     ui->exportTargetComboBox->setToolTip(tr("<p><b>Export target</b></p>"
                                  "<p><i>Determines what will be exported</i></p>"
                                  "<ul>"
-                                              "<li>Lossless: FFMpeg generated video file. Very fast!!! If codec, size and framerate of clips is not the same the result might not play correctly</li>"
+                                              "<li>Lossless: FFMpeg generated video file. Very fast! If codec, size and framerate of clips is not the same the result might not play correctly</li>"
                                             "<ul>"
                                                          "<li>Excluded: transitions (duration preserved by cut in the middle), watermark, audio fade in/out</li>"
                                             "</ul>"
@@ -789,6 +801,10 @@ void MainWindow::allTooltips()
                                       "</ul>"));
 
     ui->watermarkButton->setToolTip(ui->watermarkLabel->toolTip());
+
+    ui->cancelButton->setToolTip(tr("<p><b>Cancel export</b></p>"
+                                    "<p><i>Current export will be aborted</i></p>"
+                                    ));
 
     //log
     ui->logTableView->setToolTip(tr("<p><b>Log items</b></p>"
@@ -958,15 +974,22 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 {
 //    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount();
 
+    ui->spinnerLabel->setMinimumWidth(ui->spinnerLabel->height()*2);
+    QMovie *movie = new QMovie(":/Spinner.gif");
+    movie->setScaledSize(QSize(ui->spinnerLabel->height()*2,ui->spinnerLabel->height()*2));
+    movie->start();
+
+    ui->spinnerLabel->setMovie(movie);
+
+
     ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
 
     ui->filesTabWidget->setCurrentIndex(1); //go to files tab
 
-    ui->folderIconLabel->setPixmap(style()->standardIcon(QStyle::SP_DirIcon).pixmap(QSize(ui->folderIconLabel->size().height(),ui->folderIconLabel->size().height())));
-    ui->folderIconLabel->setMaximumWidth(ui->folderIconLabel->size().height());
-
     QString folderName = ui->folderTreeView->directoryModel->fileInfo(ui->folderTreeView->currentIndex()).absoluteFilePath();
-    ui->folderLabel->setText(folderName);
+
+    ui->folderButton->setText(folderName);
+    ui->folderButton->setIcon(style()->standardIcon(QStyle::SP_DirIcon).pixmap(QSize(ui->folderButton->size().height(),ui->folderButton->size().height())));
 
     ui->timelineWidget->transitiontimeLastGood = -1;
 
@@ -988,7 +1011,7 @@ void MainWindow::showContextSensitiveHelp(int index)
 
     QString text = QStringLiteral("<div style=\"background-color: magenta\"><p>▲%1</p><p><i>%2</i></p></div>").arg(requestList[index].context + ": " + widgetNamePlus, requestList[index].helpText);//
 
-    qDebug()<<"MainWindow::showContextSensitiveHelp"<<requestList[index].context<<requestList[index].helpText.mid(0,80);
+//    qDebug()<<"MainWindow::showContextSensitiveHelp"<<requestList[index].context<<requestList[index].helpText.mid(0,80);
     QToolTip::showText( requestList[index].widget->mapToGlobal( QPoint( requestList[index].widget->width() / 2, requestList[index].widget->height() ) ), text); //, this, QRect(),10000
 
 //    if (index + 1 < requestList.count())
@@ -1014,7 +1037,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     requestList.clear();
     currentRequestNumber = 0;
 
-    qDebug()<<"MainWindow::createContextSensitiveHelp"<<context<<arg1<<ui->videoFilesTreeView->currentIndex().data();
+//    qDebug()<<"MainWindow::createContextSensitiveHelp"<<context<<arg1<<ui->videoFilesTreeView->currentIndex().data();
     QString name = qgetenv("USER");
     if (name.isEmpty())
         name = qgetenv("USERNAME");
@@ -1043,7 +1066,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
                                 "<li>For a specific event, more then one help message can be shown, this is shown in the title bar as (x of y)</li>"
                                 "<li>Show next message: Press the ? in the toolbar repeatedly</li>"
                                 "<li>Switch off: Menu / Help / Context sensitive help</li>"
-                                "</ul>").arg(name), nullptr, -1});
+                                "</ul>"), nullptr, -1});
         }
 
         if (context == "Folder selected")
@@ -1116,7 +1139,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
             }
 
         }
-        qDebug()<<"MainWindow::createContextSensitiveHelp done"<<context;
+//        qDebug()<<"MainWindow::createContextSensitiveHelp done"<<context;
     }
     else if (context == "Export started") //to do use target as arg1
     {
@@ -1333,6 +1356,7 @@ void MainWindow::on_newTagLineEdit_returnPressed()
 
 void MainWindow::on_exportButton_clicked()
 {
+    ui->cancelButton->setEnabled(true);
     createContextSensitiveHelp("Export started");
 
     int transitionTime = 0;
@@ -1363,6 +1387,23 @@ void MainWindow::on_exportButton_clicked()
 void MainWindow::onExportCompleted(QString error)
 {
     createContextSensitiveHelp("Export completed", error);
+
+    QWinTaskbarProgress *progress = taskbarButton->progress();
+
+    if (error == "")
+        progress->setVisible(false);
+    else
+    {
+        progress->stop();
+
+        QTimer::singleShot(5000, this, [progress]()->void //timer needed to show first message
+        {
+                               progress->resume();
+                               progress->setVisible(false);
+        });
+
+    }
+    ui->cancelButton->setEnabled(false);
 }
 
 void MainWindow::on_exportTargetComboBox_currentTextChanged(const QString &arg1)
@@ -1784,6 +1825,7 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 
 void MainWindow::onPropertiesLoaded()
 {
+//    qDebug()<<"MainWindow::onPropertiesLoaded";
     emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox, ui->locationCheckBox, ui->cameraCheckBox, ui->authorCheckBox);
 
     ui->clipsFramerateComboBox->blockSignals(true); // do not fire on_clipsFramerateComboBox_currentTextChanged
@@ -1872,6 +1914,13 @@ void MainWindow::onPropertiesLoaded()
     }
 
 //    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
+
+    if (ui->spinnerLabel->movie() != nullptr)
+    {
+        ui->spinnerLabel->movie()->stop();
+        ui->spinnerLabel->clear();
+    }
+
 } //onPropertiesLoaded
 
 void MainWindow::on_clipsTabWidget_currentChanged(int index)
@@ -2065,7 +2114,7 @@ void MainWindow::on_speedComboBox_currentTextChanged(const QString &arg1)
 
 void MainWindow::on_actionContext_Sensitive_Help_changed()
 {
-    qDebug()<<"MainWindow::on_actionContext_Sensitive_Help_changed"<<QSettings().value("contextSensitiveHelpOn").toBool()<<ui->actionContext_Sensitive_Help->isChecked();
+//    qDebug()<<"MainWindow::on_actionContext_Sensitive_Help_changed"<<QSettings().value("contextSensitiveHelpOn").toBool()<<ui->actionContext_Sensitive_Help->isChecked();
     if (QSettings().value("contextSensitiveHelpOn").toBool() != ui->actionContext_Sensitive_Help->isChecked())
     {
         QSettings().setValue("contextSensitiveHelpOn", ui->actionContext_Sensitive_Help->isChecked());
@@ -2080,7 +2129,7 @@ void MainWindow::on_actionContext_Sensitive_Help_changed()
 
 void MainWindow::on_actionTooltips_changed()
 {
-    qDebug()<<"MainWindow::on_actionTooltips_changed"<<ui->actionTooltips->isChecked();
+//    qDebug()<<"MainWindow::on_actionTooltips_changed"<<ui->actionTooltips->isChecked();
 
     if (QSettings().value("tooltipsOn").toBool() != ui->actionTooltips->isChecked())
     {
@@ -2102,4 +2151,32 @@ void MainWindow::on_actionRepeat_context_sensible_help_triggered()
                                 currentRequestNumber = 0;
         });
     }
+}
+
+void MainWindow::on_folderButton_clicked()
+{
+    QString folderName = ui->folderTreeView->directoryModel->fileInfo(ui->folderTreeView->currentIndex()).absoluteFilePath();
+    QDesktopServices::openUrl( QUrl::fromLocalFile( folderName ) );
+}
+
+void MainWindow::on_progressBar_valueChanged(int value)
+{
+    QWinTaskbarProgress *progress = taskbarButton->progress();
+    progress->setVisible(true);
+    progress->setValue(value);
+}
+
+void MainWindow::on_cancelButton_clicked()
+{
+    ui->exportWidget->stopAllProcesses();
+    ui->exportButton->setEnabled(true);
+
+    if (ui->spinnerLabel->movie() != nullptr)
+    {
+        ui->spinnerLabel->movie()->stop();
+        ui->spinnerLabel->clear();
+    }
+
+    ui->progressBar->setValue(0);
+    ui->cancelButton->setEnabled(false);
 }

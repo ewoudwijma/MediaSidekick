@@ -29,7 +29,7 @@
          <enum>QTabWidget::South</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_folder">
          <attribute name="title">
@@ -47,22 +47,11 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QLabel" name="folderIconLabel">
-              <property name="text">
-               <string>FolderIcon</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="folderLabel">
-              <property name="text">
-               <string>Folder</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QPushButton" name="folderButton">
+            <property name="text">
+             <string>folderButton</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_9">
@@ -807,6 +796,13 @@
               </item>
               <item>
                <widget class="QLabel" name="spinnerLabel">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="cancelButton">
                 <property name="text">
                  <string/>
                 </property>

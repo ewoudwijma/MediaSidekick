@@ -342,7 +342,6 @@ void APropertyTreeView::loadModel(QString folderName)
         propertyTreeView->isLoading = false;
         emit propertyTreeView->propertiesLoaded();
         emit propertyTreeView->addToJob(parameters["processId"], "Completed");
-
     });
 } //loadmodel
 

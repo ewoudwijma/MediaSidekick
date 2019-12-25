@@ -16,6 +16,8 @@
 
 #include <QMediaPlayer>
 
+#include <QWinTaskbarButton>
+
 namespace Ui {
 class MainWindow;
 }
@@ -147,6 +149,12 @@ private slots:
 
     void onTagFilter1ListViewChanged();
     void onTagFilter2ListViewChanged();
+    void on_folderButton_clicked();
+
+    void on_progressBar_valueChanged(int value);
+
+    void on_cancelButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 //    QStandardItemModel *tagFilter1Model;
@@ -172,6 +180,8 @@ private:
 
     QList<AContextSensitiveHelpRequest> requestList;
     int currentRequestNumber;
+
+    QWinTaskbarButton *taskbarButton;
 
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);

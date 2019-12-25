@@ -28,6 +28,7 @@ void AProcessManager::startProcess(QString code, QMap<QString, QString> paramete
 
 void AProcessManager::startProcess(QMap<QString, QString> parameters, void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))
 {
+//    qDebug()<<"startProcess"<<processResult;
     processQueue->append("");
 //    allDoneProcess = pallDoneProcess;
     parameterQueue->append(parameters);
@@ -38,11 +39,17 @@ void AProcessManager::startProcess(QMap<QString, QString> parameters, void (*pro
 
 void AProcessManager::stopAll()
 {
+//    qDebug()<<"stopAll";
+    processQueue->clear();
+    parameterQueue->clear();
+    processOutputQueue->clear();
+    processResultsQueue->clear();
     process->kill();
 }
 
 void AProcessManager::ExecuteProcess()
 {
+//    qDebug()<<"ExecuteProcess";
     //https://stackoverflow.com/questions/4713140/how-can-i-use-a-queue-with-qprocess
    if (!processQueue->isEmpty() && process->state() == QProcess::NotRunning)
     {
@@ -66,33 +73,42 @@ void AProcessManager::processOutput()
 {
     QString text = process->readAllStandardOutput();
     processOutputString += text;
-    void (*processOutput)(QWidget *, QMap<QString, QString>, QString) = processOutputQueue->first();
-    QMap<QString, QString> parameters = parameterQueue->first();
 
-    if (processOutput != nullptr)
-        processOutput(parentWidget(), parameters, text);
-//    qDebug() << "processOutput" << text;  // read normal output
-//    qDebug() << process->readAllStandardError();  // read error channel
+    if (processOutputQueue->count() > 0 && parameterQueue->count() > 0)
+    {
+        void (*processOutput)(QWidget *, QMap<QString, QString>, QString) = processOutputQueue->first();
+        QMap<QString, QString> parameters = parameterQueue->first();
+
+//        qDebug()<<"processOutput"<<text.count(), processOutput;
+
+        if (processOutput != nullptr)
+            processOutput(parentWidget(), parameters, text);
+    //    qDebug() << "processOutput" << text;  // read normal output
+    //    qDebug() << process->readAllStandardError();  // read error channel
+    }
 }
 
 void AProcessManager::processFinished(int  , QProcess::ExitStatus )//exitCode, exitStatus
 {
+//    qDebug()<<"processFinished";
     QStringList processOutputStringList = processOutputString.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
 
-    processOutputQueue->takeFirst(); //remove it
-    void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList) = processResultsQueue->takeFirst();
-    QMap<QString, QString> parameters = parameterQueue->takeFirst();
-
-    if (processResult != nullptr)
+    if (processOutputQueue->count() > 0 && processResultsQueue->count() > 0)
     {
-//        qDebug()<<"processFinished"<<exitCode<<exitStatus<<process->program()<<process->arguments()<<processResult;
-        QString command = process->program();
-        for (int i=0; i<process->arguments().count();i++)
-        {
-            command += " " + process->arguments()[i];
-        }
-        processResult(parentWidget(), command, parameters, processOutputStringList);
-    }
-    ExecuteProcess();
-}
+        processOutputQueue->takeFirst(); //remove it
+        void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList) = processResultsQueue->takeFirst();
+        QMap<QString, QString> parameters = parameterQueue->takeFirst();
 
+        if (processResult != nullptr)
+        {
+    //        qDebug()<<"processFinished"<<exitCode<<exitStatus<<process->program()<<process->arguments()<<processResult;
+            QString command = process->program();
+            for (int i=0; i<process->arguments().count();i++)
+            {
+                command += " " + process->arguments()[i];
+            }
+            processResult(parentWidget(), command, parameters, processOutputStringList);
+        }
+        ExecuteProcess();
+    }
+}

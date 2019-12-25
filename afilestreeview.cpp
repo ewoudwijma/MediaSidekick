@@ -1,13 +1,17 @@
 #include "afilestreeview.h"
 
+#include <QDesktopServices>
 #include <QHeaderView>
 #include <QMenu>
 #include <QMessageBox>
+#include <QProcess>
 #include <QSettings>
 
 #include <QDebug>
 
 #include "aglobal.h"
+
+#include "fileapi.h"
 
 AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 {
@@ -48,14 +52,24 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileRename);
 
-    fileContextMenu->addAction(new QAction("Delete file(s)",fileContextMenu));
+    fileContextMenu->addSeparator();
+
+    fileContextMenu->addAction(new QAction("Delete file",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileDelete);
 
     fileContextMenu->addAction(new QAction("Delete clips",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onClipsDelete);
 
-    fileContextMenu->addAction(new QAction("Superview",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onSuperview);
+//    fileContextMenu->addAction(new QAction("Superview",fileContextMenu));
+//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onSuperview);
+
+    fileContextMenu->addSeparator();
+
+    fileContextMenu->addAction(new QAction("Open in explorer",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onOpenInExplorer);
+
+    fileContextMenu->addAction(new QAction("Open in default application",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onOpenDefaultApplication);
 
     fileContextMenu->addSeparator();
 }
@@ -400,7 +414,76 @@ void AFilesTreeView::onSuperview()
            }
        }
        srtOutputFile2.close();
+}
 
+void AFilesTreeView::onOpenInExplorer()
+{
+    QStringList fileNameList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            fileNameList << indexList[i].data().toString();
+        }
+    }
+
+    if (fileNameList.count()>0)
+    {
+        QString folderName = QSettings().value("LastFolder").toString();
+
+        for (int i=0; i< fileNameList.count();i++)
+        {
+            QString fileName = fileNameList[i];
+
+            //http://lynxline.com/show-in-finder-show-in-explorer/
+            //https://stackoverflow.com/questions/3490336/how-to-reveal-in-finder-or-show-in-explorer-with-qt
+
+            //#ifdef Q_WS_MAC
+            //    QStringList args;
+            //    args << "-e";
+            //    args << "tell application \"Finder\"";
+            //    args << "-e";
+            //    args << "activate";
+            //    args << "-e";
+            //    args << "select POSIX file \""+filePath+"\"";
+            //    args << "-e";
+            //    args << "end tell";
+            //    QProcess::startDetached("osascript", args);
+            //#endif
+
+            //#ifdef Q_WS_WIN
+                QStringList args;
+                args << "/select," << QDir::toNativeSeparators(folderName + fileName);
+                QProcess::startDetached("explorer", args);
+            //#endif
+        }
+    }
+}
+
+void AFilesTreeView::onOpenDefaultApplication()
+{
+    QStringList fileNameList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            fileNameList << indexList[i].data().toString();
+        }
+    }
+
+    if (fileNameList.count()>0)
+    {
+        QString folderName = QSettings().value("LastFolder").toString();
+
+        for (int i=0; i< fileNameList.count();i++)
+        {
+            QString fileName = fileNameList[i];
+
+            QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName) );
+        }
+    }
 }
 
 void AFilesTreeView::onFolderIndexClicked(QModelIndex )//index

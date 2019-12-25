@@ -45,6 +45,8 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
     setColumnWidth(ratingIndex,int(columnWidth(ratingIndex) / 1.5));
     setColumnWidth(alikeIndex,columnWidth(alikeIndex) / 2);
 
+    setColumnWidth(inIndex,120);
+
     setColumnHidden(folderIndex, true);
     setColumnHidden(fileIndex, true);
     setColumnHidden(hintIndex, true);

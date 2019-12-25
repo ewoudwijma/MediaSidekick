@@ -24,6 +24,7 @@ public:
     explicit AExport(QWidget *parent = nullptr);
 
     void exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, QLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *statusBar);
+    void stopAllProcesses();
 private:
 //    MainWindow *mainWindow;
     AProcessManager *processManager;

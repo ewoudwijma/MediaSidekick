@@ -35,6 +35,8 @@ ATimeline::ATimeline(QWidget *parent) : QWidget(parent)
     spacer->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
     m_positionSpinner = new STimeSpinBox(this);
     m_positionSpinner->setToolTip(tr("Current position"));
+    m_positionSpinner->setFixedWidth(120);
+
 //    m_positionSpinner->setEnabled(false);
     m_positionSpinner->setKeyboardTracking(false);
     m_durationLabel = new QLabel(this);
