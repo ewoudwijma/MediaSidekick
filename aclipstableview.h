@@ -77,9 +77,9 @@ signals:
     void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
     void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void addJobsEntry(QString folder, QString file, QString action, QString *id);
+    void addJob(QString folder, QString file, QString action, QString *id);
     void addToJob(QString id, QString log);
-    void getPropertyValue(QString fileName, QString key, QString *value);
+    void getPropertyValue(QString fileName, QString key, QVariant *value);
     void reloadProperties(QString fileName);
     void setIn(int frames);
     void setOut(int frames);

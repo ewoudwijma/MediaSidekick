@@ -8,11 +8,11 @@
 
 #include <QMessageBox>
 
-#include <QMovie>
-
 #include <QTimer>
 
 #include <qmath.h>
+
+#include <QApplication>
 
 AExport::AExport(QWidget *parent) : QWidget(parent)
 {
@@ -38,18 +38,28 @@ void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QStri
     QString *processId = new QString();
     QMap<QString, QString> parameters;
 
-    emit addJobsEntry(folderName, fileNameTarget, "Property update", processId);
+    emit addJob(folderName, fileNameTarget, "Property update", processId);
     QString attributeString = "";
     QStringList texts;
     texts << "CreateDate" << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model" << "Director" << "Producer"  << "Publisher";
     for (int iText = 0; iText < texts.count(); iText++)
     {
-        QString *value = new QString();
-        emit getPropertyValue(fileNameSource, texts[iText], value);
-        attributeString += " -" + texts[iText] + "=\"" + *value + "\"";
+        QVariant *propertyName = new QVariant();
+        emit getPropertyValue(fileNameSource, texts[iText], propertyName);
+        attributeString += " -" + texts[iText] + "=\"" + propertyName->toString() + "\"";
     }
 
-    QString command = "exiftool" + attributeString + " -overwrite_original \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
+    QString targetFileName = folderName + fileNameTarget;
+#ifdef Q_OS_WIN
+    targetFileName = targetFileName.replace("/", "\\");
+#endif
+
+    QString exiftool = "exiftool";
+#ifndef Q_OS_WIN
+    exiftool = "/usr/local/bin/" + exiftool;
+#endif
+
+    QString command = exiftool + attributeString + " -overwrite_original \"" + targetFileName + "\"";
     emit addToJob(*processId, command + "\n");
     parameters["processId"] = *processId;
     processManager->startProcess(command, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
@@ -73,10 +83,19 @@ void AExport::onTrimC(QString folderName, QString fileNameSource, QString fileNa
     QMap<QString, QString> parameters;
 
     QString *processId = new QString();
-    emit addJobsEntry(folderName, fileNameTarget, "Trim", processId);
+    emit addJob(folderName, fileNameTarget, "Trim", processId);
     parameters["processId"] = *processId;
 
-    QString code = "ffmpeg -y -i \"" + QString(folderName + "//" + fileNameSource).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
+    QString sourceFileName = folderName + fileNameSource;
+    QString targetFileName = folderName + fileNameTarget;
+
+#ifdef Q_OS_WIN
+    sourceFileName = sourceFileName.replace("/", "\\");
+    targetFileName = targetFileName.replace("/", "\\");
+#endif
+
+//    QString code = "ffmpeg -y -i \"" + QString(folderName + "//" + fileNameSource).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
+    QString code = "ffmpeg -y -i \"" + sourceFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + targetFileName + "\"";
 
     emit addToJob(parameters["processId"], code + "\n");
 
@@ -120,7 +139,8 @@ void AExport::losslessVideoAndAudio()
 
     foreach (QString mediaType, mediaTypeList) //prepare video and audio
     {
-        QFile vidlistFile(currentDirectory + "\\" + fileNameWithoutExtension + mediaType + ".txt");
+        QFile vidlistFile(currentDirectory + fileNameWithoutExtension + mediaType + ".txt");
+        qDebug()<<"opening vidlistfile"<<vidlistFile;
         if ( vidlistFile.open(QIODevice::WriteOnly) )
         {
             QTextStream vidlistStream( &vidlistFile );
@@ -186,9 +206,17 @@ void AExport::losslessVideoAndAudio()
                     fileNamePlusExtension = fileNameWithoutExtension + + "A.mp3";
 
                 QString *processId = new QString();
-                emit addJobsEntry(currentDirectory, fileNamePlusExtension, "FFMpeg lossless " + mediaType, processId);
+                emit addJob(currentDirectory, fileNamePlusExtension, "FFMpeg lossless " + mediaType, processId);
 
-                QString code = "ffmpeg -f concat -safe 0 -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + mediaType + ".txt\" -c copy -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNamePlusExtension + "\"";
+                QString sourceFileName = currentDirectory + fileNameWithoutExtension + mediaType + ".txt";
+                QString targetFileName = currentDirectory + fileNamePlusExtension;
+
+#ifdef Q_OS_WIN
+                sourceFileName = sourceFileName.replace("/", "\\");
+                targetFileName = targetFileName.replace("/", "\\");
+#endif
+
+                QString code = "ffmpeg -f concat -safe 0 -i \"" + sourceFileName + "\" -c copy -y \"" + targetFileName + "\"";
 
                 if (mediaType == "V" && exportVideoAudioValue == 0) //remove audio
                     code.replace("-c copy -y", " -an -c copy -y");
@@ -219,6 +247,10 @@ void AExport::losslessVideoAndAudio()
             } //if fileExtension
 
         } //if vidlist
+        else
+        {
+            qDebug()<<"vidlistFile.error"<<vidlistFile.error()<< vidlistFile.errorString();
+        }
 
     } //for each
 
@@ -426,7 +458,13 @@ void AExport::encodeVideoClips()
 
     videoFileExtension = ".mp4";
 
-    code +=  "  -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + videoFileExtension + "\"";
+    QString targetFileName = currentDirectory +  fileNameWithoutExtension + videoFileExtension;
+
+#ifdef Q_OS_WIN
+    targetFileName = targetFileName.replace("/", "\\");
+#endif
+
+    code +=  "  -y \"" + targetFileName + "\"";
 
 //        qDebug()<<"filter_complex"<<code;
 
@@ -436,7 +474,7 @@ void AExport::encodeVideoClips()
 
     QString *processId = new QString();
 
-    emit addJobsEntry(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMPeg Encode", processId);
+    emit addJob(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMPeg Encode", processId);
     QMap<QString, QString> parameters;
     parameters["processId"] = *processId;
     emit addToJob(parameters["processId"], code + "\n");
@@ -524,13 +562,25 @@ void AExport::muxVideoAndAudio()
 {
     QString *processId = new QString();
 
-    emit addJobsEntry(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMpeg mux", processId);
+    emit addJob(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMpeg mux", processId);
 
-    QString code = "ffmpeg -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + "V" + videoFileExtension + "\"";
+    QString targetFileName = currentDirectory +  fileNameWithoutExtension + "V" + videoFileExtension;
+
+#ifdef Q_OS_WIN
+    targetFileName = targetFileName.replace("/", "\\");
+#endif
+
+    QString code = "ffmpeg -i \"" + targetFileName + "\"";
 
     if (audioClipsMap.count() > 0)
     {
-        code += " -i \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + "A.mp3\"";
+        QString targetFileName = currentDirectory +  fileNameWithoutExtension +  + "A.mp3";
+
+    #ifdef Q_OS_WIN
+        targetFileName = targetFileName.replace("/", "\\");
+    #endif
+
+        code += " -i \"" + targetFileName + "\"";
 
         if (exportVideoAudioValue == 0)
             code += " -c copy -map 0:v -map 1:a";
@@ -542,7 +592,13 @@ void AExport::muxVideoAndAudio()
     else
         code += " -filter:a \"volume=" + QString::number(exportVideoAudioValue / 100.0) + "\"";
 
-    code += " -y \"" + QString(currentDirectory).replace("/", "\\") + "\\" + fileNameWithoutExtension + videoFileExtension + "\"";
+    targetFileName = currentDirectory +  fileNameWithoutExtension + videoFileExtension;
+
+#ifdef Q_OS_WIN
+    targetFileName = targetFileName.replace("/", "\\");
+#endif
+
+    code += " -y \"" + targetFileName + "\"";
 
     emit addToJob(*processId, code + "\n");
 
@@ -621,17 +677,17 @@ void AExport::addPremiereTrack(QString mediaType, QMap<int,int> clipsMap, QMap<Q
                 QString clipFrameRate = "";
                 QString clipAudioChannels = "";
 
-                QString *frameRatePointer = new QString();
+                QVariant *frameRatePointer = new QVariant();
                 emit getPropertyValue(fileName, "VideoFrameRate", frameRatePointer);
-                if (*frameRatePointer != "")
-                    clipFrameRate = *frameRatePointer;
+                if (frameRatePointer->toString() != "")
+                    clipFrameRate = frameRatePointer->toString();
                 else
                     clipFrameRate = frameRate;
 
-                QString *audioChannelsPointer = new QString();
+                QVariant *audioChannelsPointer = new QVariant();
                 emit getPropertyValue(fileName, "AudioChannels", audioChannelsPointer);
-                if (*audioChannelsPointer != "")
-                    clipAudioChannels = *audioChannelsPointer;
+                if (audioChannelsPointer->toString() != "")
+                    clipAudioChannels = audioChannelsPointer->toString();
                 else
                 {
                     if (clipsMap == audioClipsMap)
@@ -837,15 +893,15 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
     {
         if (AVType == "V")
         {
-            QString *widthPointer = new QString();
+            QVariant *widthPointer = new QVariant();
             emit getPropertyValue(fileName, "ImageWidth", widthPointer);
-            QString *heightPointer = new QString();
+            QVariant *heightPointer = new QVariant();
             emit getPropertyValue(fileName, "ImageHeight", heightPointer);
 
-            if (*heightPointer != videoHeight || *widthPointer != videoWidth)
+            if (heightPointer->toString() != videoHeight || widthPointer->toString() != videoWidth)
             {
-                double heightRatio = 100.0 * videoHeight.toInt() / (*heightPointer).toInt();
-                double widthRatio = 100.0 * videoWidth.toInt() / (*widthPointer).toInt();
+                double heightRatio = 100.0 * videoHeight.toInt() / (heightPointer)->toInt();
+                double widthRatio = 100.0 * videoWidth.toInt() / (widthPointer)->toInt();
                 s("      <filter>");
                 s("       <effect>");
                 s("        <name>Basic Motion</name>");
@@ -946,7 +1002,7 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
     s("     </clipitem>");
 } //addPremiereClipItem
 
-void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, QLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *pstatusBar)
+void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, ASpinnerLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *pstatusBar)
 {
     if (ptimelineModel->rowCount()==0)
     {
@@ -1097,7 +1153,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
     if (videoWidth == "" || videoHeight == "" || frameRate == "")
     {
-        QMessageBox::information(this, "Export", QString("One of the following values is not known. Videowidth %1 VideoHeight %2 framerate %3").arg(videoWidth, videoHeight, frameRate));
+        QMessageBox::information(this, "Export", QString("One of the following values is not known. Videowidth %1 VideoHeight %2 Framerate %3").arg(videoWidth, videoHeight, frameRate));
         return;
     }
 
@@ -1112,7 +1168,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     bool includingSRT = false;
     if (includingSRT)
     {
-        QFile srtOutputFile(currentDirectory + "\\" + fileNameWithoutExtension + ".srt");
+        QFile srtOutputFile(currentDirectory + fileNameWithoutExtension + ".srt");
         if (srtOutputFile.open(QIODevice::WriteOnly) )
         {
             QTextStream srtStream( &srtOutputFile );
@@ -1177,12 +1233,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     }
 
     spinnerLabel = pSpinnerLabel;
-    spinnerLabel->setMinimumWidth(spinnerLabel->height()*2);
-    QMovie *movie = new QMovie(":/Spinner.gif");
-    movie->setScaledSize(QSize(spinnerLabel->height()*2,spinnerLabel->height()*2));
-    movie->start();
-
-    spinnerLabel->setMovie(movie);
+    spinnerLabel->start();
 
     //superview
     //https://intofpv.com/t-using-free-command-line-sorcery-to-fake-superview
@@ -1205,7 +1256,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         onPropertyUpdate(currentDirectory, videoFilesMap.first().fileName, fileNameWithoutExtension + videoFileExtension);
 
-        removeTemporaryFiles();
+//        removeTemporaryFiles();
 
         onReloadAll(includingSRT);
 
@@ -1223,10 +1274,10 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     else if (target == "Shotcut")
     {
         QString *processId = new QString();
-        emit addJobsEntry(currentDirectory, fileNameWithoutExtension, "file export", processId);
+        emit addJob(currentDirectory, fileNameWithoutExtension, "file export", processId);
 
         QString fileName = fileNameWithoutExtension + ".mlt";
-        QFile fileWrite(currentDirectory + "//" + fileName);
+        QFile fileWrite(currentDirectory + fileName);
         fileWrite.open(QIODevice::WriteOnly);
 
 //        QTextStream stream(&fileWrite);
@@ -1253,13 +1304,13 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
             QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
             int clipDuration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
-            QString *durationPointer = new QString();
+            QVariant *durationPointer = new QVariant();
             emit getPropertyValue(fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
-            *durationPointer = QString(*durationPointer).replace(" (approx)", "");
-            QTime durationTime = QTime::fromString(*durationPointer,"h:mm:ss");
+            *durationPointer = durationPointer->toString().replace(" (approx)", "");
+            QTime durationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
             if (durationTime == QTime())
             {
-                QString durationString = *durationPointer;
+                QString durationString = durationPointer->toString();
                 durationString = durationString.left(durationString.length() - 2); //remove " -s"
                 durationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
             }
@@ -1546,10 +1597,10 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     else if (target == "Premiere")
     {
         QString *processId = new QString();
-        emit addJobsEntry(currentDirectory, fileNameWithoutExtension, "file export", processId);
+        emit addJob(currentDirectory, fileNameWithoutExtension, "file export", processId);
 
         QString fileName = fileNameWithoutExtension + ".xml";
-        QFile fileWrite(currentDirectory + "//" + fileName);
+        QFile fileWrite(currentDirectory + fileName);
         fileWrite.open(QIODevice::WriteOnly);
 
         stream.setDevice(&fileWrite);
@@ -1661,11 +1712,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         else
             exportWidget->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
 
-        if (exportWidget->spinnerLabel->movie() != nullptr)
-        {
-            exportWidget->spinnerLabel->movie()->stop();
-            exportWidget->spinnerLabel->clear();
-        }
+        exportWidget->spinnerLabel->stop();
         exportWidget->exportButton->setEnabled(true);
 
         emit exportWidget->exportCompleted(exportWidget->processError);

@@ -3,8 +3,6 @@
 
 #include <QStyledItemDelegate>
 
-
-
 class AJobItemDelegate: public QStyledItemDelegate
 {
     Q_OBJECT

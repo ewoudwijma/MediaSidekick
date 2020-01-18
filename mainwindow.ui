@@ -29,7 +29,7 @@
          <enum>QTabWidget::South</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_folder">
          <attribute name="title">
@@ -358,9 +358,19 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QLineEdit" name="propertyFilterLineEdit">
+              <widget class="QLineEdit" name="filterColumnsLineEdit">
+               <property name="text">
+                <string/>
+               </property>
                <property name="placeholderText">
-                <string>filter</string>
+                <string>filter files</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="propertyEditorPushButton">
+               <property name="text">
+                <string>Editor</string>
                </property>
               </widget>
              </item>
@@ -375,25 +385,35 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="locationCheckBox">
+              <widget class="QPushButton" name="refreshButton">
                <property name="text">
-                <string>Location</string>
+                <string>Refresh</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QLineEdit" name="propertyFilterLineEdit">
+               <property name="placeholderText">
+                <string>filter properties</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="cameraCheckBox">
-               <property name="text">
-                <string>Camera</string>
+              <spacer name="horizontalSpacer_3">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
                </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="authorCheckBox">
-               <property name="text">
-                <string>Author</string>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
                </property>
-              </widget>
+              </spacer>
              </item>
             </layout>
            </item>
@@ -791,13 +811,6 @@
                <widget class="QProgressBar" name="progressBar">
                 <property name="value">
                  <number>24</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="spinnerLabel">
-                <property name="text">
-                 <string/>
                 </property>
                </widget>
               </item>
@@ -1239,6 +1252,11 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
+   <class>APropertyTreeView</class>
+   <extends>QTreeView</extends>
+   <header>apropertytreeview.h</header>
+  </customwidget>
+  <customwidget>
    <class>AVideoWidget</class>
    <extends>QWidget</extends>
    <header>avideowidget.h</header>
@@ -1253,11 +1271,6 @@
    <class>AFilesTreeView</class>
    <extends>QTreeView</extends>
    <header>afilestreeview.h</header>
-  </customwidget>
-  <customwidget>
-   <class>APropertyTreeView</class>
-   <extends>QTreeView</extends>
-   <header>apropertytreeview.h</header>
   </customwidget>
   <customwidget>
    <class>ATagsListView</class>

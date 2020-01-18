@@ -45,8 +45,6 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
     setColumnWidth(ratingIndex,int(columnWidth(ratingIndex) / 1.5));
     setColumnWidth(alikeIndex,columnWidth(alikeIndex) / 2);
 
-    setColumnWidth(inIndex,120);
-
     setColumnHidden(folderIndex, true);
     setColumnHidden(fileIndex, true);
     setColumnHidden(hintIndex, true);
@@ -60,7 +58,7 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
 
     verticalHeader()->setSectionResizeMode (QHeaderView::Fixed);
 
-    setEditTriggers(QAbstractItemView::AnyKeyPressed | QAbstractItemView::SelectedClicked);
+    setEditTriggers(QAbstractItemView::AnyKeyPressed | QAbstractItemView::SelectedClicked | QAbstractItemView::DoubleClicked);
 //    setEditTriggers(QAbstractItemView::DoubleClicked
 //                                | QAbstractItemView::SelectedClicked);
 //    setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -317,16 +315,16 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
         items.append(new QStandardItem(QString::number(orderAFterMovingIndexx.data().toInt()-1)));
     }
 
-    QString *frameratePointer = new QString();
+    QVariant  *frameratePointer = new QVariant();
     emit getPropertyValue(selectedFileName, "VideoFrameRate", frameratePointer);
 
-    QString *durationPointer = new QString();
+    QVariant *durationPointer = new QVariant();
     emit getPropertyValue(selectedFileName, "Duration", durationPointer);
-    *durationPointer = QString(*durationPointer).replace(" (approx)", "");
-    QTime fileDurationTime = QTime::fromString(*durationPointer,"h:mm:ss");
+    *durationPointer = durationPointer->toString().replace(" (approx)", "");
+    QTime fileDurationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
     if (fileDurationTime == QTime())
     {
-        QString durationString = *durationPointer;
+        QString durationString = durationPointer->toString();
         durationString = durationString.left(durationString.length() - 2); //remove " s"
         fileDurationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
     }
@@ -353,7 +351,7 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
     items.append(new QStandardItem("yes"));
     items.append(new QStandardItem(selectedFolderName));
     items.append(new QStandardItem(selectedFileName));
-    items.append(new QStandardItem(*frameratePointer));
+    items.append(new QStandardItem(frameratePointer->toString()));
     items.append(new QStandardItem(fileDurationTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newInTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newOutTime.toString("HH:mm:ss.zzz")));
@@ -475,7 +473,7 @@ void AClipsTableView::onTrimF(QString pfileName)
 //            QMap<QString, QString> parameters;
 
 //            QString *processId = new QString();
-//            emit addJobsEntry(selectedFolderName, targetFileName, "Trim", processId);
+//            emit addJob(selectedFolderName, targetFileName, "Trim", processId);
 //            emit addToJob(*processId, code);
 //            parameters["processId"] = *processId;
 
@@ -494,7 +492,7 @@ void AClipsTableView::onTrimF(QString pfileName)
             qDebug()<<"AClipsTableView::onTrim before propertyUpdate"<< selectedFolderName<<fileName<<targetFileName;
             emit propertyUpdate(selectedFolderName, fileName, targetFileName);
 
-//            emit addJobsEntry(selectedFolderName, targetFileName, "Property update", processId);
+//            emit addJob(selectedFolderName, targetFileName, "Property update", processId);
 
 //            QString attributeString = "";
 //            QStringList texts;
@@ -564,27 +562,27 @@ void AClipsTableView::onPropertiesLoaded()
     QMap<int, QString> fpsMap;
     for (int row=0; row<clipsItemModel->rowCount();row++)
     {
-        QString *frameratePointer = new QString();
+        QVariant *frameratePointer = new QVariant();
         emit getPropertyValue(clipsItemModel->index(row, fileIndex).data().toString(), "VideoFrameRate", frameratePointer);
 //        qDebug()<<"AClipsTableView::onPropertiesLoaded"<<*frameratePointer<<(*frameratePointer).toDouble();
         clipsItemModel->setData(clipsItemModel->index(row, fpsIndex), *frameratePointer);
 
-        if (qRound((*frameratePointer).toDouble()) == QSettings().value("frameRate").toInt())
+        if (qRound(frameratePointer->toDouble()) == QSettings().value("frameRate").toInt())
             clipsFramerateExistsInClips = true;
         else
         {
             int fpsSuggested = -1;
-            fpsSuggested = qRound((*frameratePointer).toDouble());
+            fpsSuggested = qRound(frameratePointer->toDouble());
             fpsMap[fpsSuggested] = QString::number(fpsSuggested);
         }
 
-        QString *durationPointer = new QString();
+        QVariant *durationPointer = new QVariant();
         emit getPropertyValue(clipsItemModel->index(row, fileIndex).data().toString(), "Duration", durationPointer);
-        *durationPointer = QString(*durationPointer).replace(" (approx)", "");
-        QTime fileDurationTime = QTime::fromString(*durationPointer,"h:mm:ss");
+        *durationPointer = durationPointer->toString().replace(" (approx)", "");
+        QTime fileDurationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
         if (fileDurationTime == QTime())
         {
-            QString durationString = *durationPointer;
+            QString durationString = durationPointer->toString();
             durationString = durationString.left(durationString.length() - 2); //remove " s"
             fileDurationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
         }
@@ -1053,13 +1051,13 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 
 void AClipsTableView::loadModel(QString folderName)
 {
-    qDebug() << "AClipsTableView::loadModel" << folderName;
+//    qDebug() << "AClipsTableView::loadModel" << folderName;
     if (checkSaveIfClipsChanged())
     {
         saveModels();
     }
 
-    qDebug() << "AClipsTableView::loadModel check done" << folderName;
+//    qDebug() << "AClipsTableView::loadModel check done" << folderName;
 
     clipCounter = 1;
     fileCounter = 0;
@@ -1068,8 +1066,8 @@ void AClipsTableView::loadModel(QString folderName)
     clipsItemModel->removeRows(0, clipsItemModel->rowCount());
     srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
 
-    scanDir(QDir(folderName), QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS");
-    scanDir(QDir(folderName), QStringList() << "*.mp3");
+    scanDir(QDir(folderName), QStringList() << "*.MP4"<<"*.AVI"<<"*.WMV"<<"*.MTS");
+    scanDir(QDir(folderName), QStringList() << "*.mp3"<<"*.JPG");
 
 //    qDebug() << "AClipsTableView::loadModel done" << folderName;
 }
@@ -1210,14 +1208,11 @@ void AClipsTableView::onClipsFilterChanged(QComboBox *ratingFilterComboBox, QChe
 
     QString starCount = QString::number(ratingFilterComboBox->currentIndex());
 
-    //    qDebug()<<"AClipsTableView::onClipsFilterChanged"<<starEditorFilterWidget->starRating().starCount()<<tagFilter1ListView->model()->rowCount()<<tagFilter2ListView->model()->rowCount()<<regExp;
 
     QString regExp = starCount + "|" + alikeVariant.toString() + "|" + string1 + "|" + string2 + "|" + fileName;
     clipsProxyModel->setFilterRegExp(QRegExp(regExp, Qt::CaseInsensitive,
                                                 QRegExp::FixedString));
     clipsProxyModel->setFilterKeyColumn(-1);
-
-//    qDebug()<<"AClipsTableView::onClipsFilterChanged"<<starEditorFilterWidget->starRating().starCount();
 
     emit clipsChangedToVideo(model());
     emit clipsChangedToTimeline(clipsProxyModel);

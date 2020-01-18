@@ -41,11 +41,13 @@ public slots:
 
 signals:
     void indexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void fileDelete(QString fileName);
+    void releaseMedia(QString fileName);
     void clipsDelete(QString fileName);
-    void fileRename();
+    void removeFile(QString fileName);
+    void reloadClips();
+    void reloadProperties();
     void trimF(QString fileName);
-    void getPropertyValue(QString fileName, QString key, QString *value);
+    void getPropertyValue(QString fileName, QString key, QVariant *value);
 
 };
 

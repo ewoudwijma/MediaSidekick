@@ -19,7 +19,13 @@ static const int alikeIndex = 12;
 static const int hintIndex = 13;
 static const int tagIndex = 14;
 
-//static const int frameRate = 25;
+static const int propertyIndex = 0;
+static const int minimumIndex = 1;
+static const int deltaIndex = 2;
+static const int maximumIndex = 3;
+static const int typeIndex = 4;
+static const int diffIndex = 5;
+static const int firstFileColumnIndex = 6;
 
 typedef struct {
     QString folderName;
@@ -38,6 +44,10 @@ public:
     int msec_rounded_to_fps(int msec);
     QString msec_to_time(int msec);
     int frames_to_msec(int frames);
+    QString secondsToString(qint64 seconds);
+    QString secondsToCSV(qint64 seconds);
+    QString csvToString(QString csv);
+    qint64 csvToSeconds(QString csv);
 };
 
 #endif // AGLOBAL_H

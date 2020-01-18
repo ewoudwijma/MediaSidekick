@@ -9,11 +9,14 @@ AProcessManager::AProcessManager(QWidget *parent) : QWidget(parent)
     connect (process, SIGNAL(readyReadStandardOutput()), this, SLOT(processOutput()));  // connect process signals with your code
     connect (process, SIGNAL(readyReadStandardError()), this, SLOT(processOutput()));  // same here
     connect (process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(processFinished(int, QProcess::ExitStatus)));  // same here
+    connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error)
+    {
+        qDebug() << "error enum val = " << error << process->errorString() << endl;
+    });
     processQueue = new QStringList();
     parameterQueue = new QList<QMap<QString, QString>>();
     processOutputQueue = new QList<void (*)(QWidget *, QMap<QString, QString>, QString)>;
     processResultsQueue = new QList<void (*)(QWidget *, QString, QMap<QString, QString>, QStringList)>;
-
 }
 
 void AProcessManager::startProcess(QString code, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QString), void (*processResult)(QWidget *, QString, QMap<QString, QString>, QStringList))

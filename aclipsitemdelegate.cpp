@@ -17,12 +17,6 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 {
     QColor backgroundColor = index.data(Qt::BackgroundRole).value<QColor>();
 
-//    if (index.column() == inIndex)
-//        qDebug()<<"AClipsItemDelegate::paint"<<index.data().toString()<<option.palette.color(QPalette::Base)<<index.data(Qt::BackgroundRole).value<QColor>();
-
-//    qDebug()<<"AClipsItemDelegate::paint"<<painter<<option.state<<index.data()<<option.palette.background()<<backgroundColor;
-//    if (index.column() == ratingIndex)
-//        qDebug()<<"backgroundColor"<<index.data().toString()<<backgroundColor<<QColor();
     QPalette optionPalette = option.palette;
     if(option.state & QStyle::State_Selected)
         optionPalette.setColor(QPalette::Base, optionPalette.color(QPalette::Highlight));
@@ -32,24 +26,16 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     if (!index.isValid())
         return;
 
+    QWidget *widget = nullptr;
+
     if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *spinBox = new STimeSpinBox();
         QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
         spinBox->setValue(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
 
-        spinBox->setGeometry(option.rect);
+        widget = spinBox;
 
-        if(option.state & QStyle::State_Selected)
-        {
-            painter->fillRect(option.rect, option.palette.highlight());
-        }
-        spinBox->setAutoFillBackground(true);
-        spinBox->setPalette(optionPalette);
-
-        QPixmap map = spinBox->grab();
-        painter->drawPixmap(option.rect.x(), option.rect.y(), map);
-//        QStyledItemDelegate::paint(painter, option, index);
     }
     else if (index.column() == alikeIndex)
     {
@@ -58,25 +44,8 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 //        checkBox->setText("xx");
         QPalette checkBoxPalette = checkBox->palette( );
 
-        checkBox->setGeometry(option.rect);
-        if(option.state & QStyle::State_Selected)
-        {
-            painter->fillRect(option.rect, option.palette.highlight());
-//            checkBoxPalette.setColor( QPalette::Active, QPalette::Background, option.palette.highlight().color() );
-            checkBox->setStyleSheet("background-color: " + option.palette.highlight().color().name());
-        }
-        else if (backgroundColor != QColor())
-        {
-//            checkBoxPalette.setColor( QPalette::Active, QPalette::Background, backgroundColor );
-            checkBox->setStyleSheet("background-color: " + backgroundColor.name());
-        }
-        else
-            checkBox->setStyleSheet("background-color: " + option.palette.base().color().name());
-        checkBox->setAutoFillBackground(true);
-        checkBox->setPalette(checkBoxPalette);
+        widget = checkBox;
 
-        QPixmap map = checkBox->grab();
-        painter->drawPixmap(option.rect.x(), option.rect.y(), map);
     }
     else if (index.column() == tagIndex)
     {
@@ -86,15 +55,8 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 
         listView->stringToModel(variant.toString());
 
-        listView->setGeometry(option.rect);
-        if(option.state & QStyle::State_Selected)
-        {
-            painter->fillRect(option.rect, option.palette.highlight());
-        }
-        listView->setAutoFillBackground(true);
-        listView->setPalette(optionPalette);
-        QPixmap map = listView->grab();
-        painter->drawPixmap(option.rect.x(), option.rect.y(), map);
+        widget = listView;
+
     }
     else if (index.data().canConvert<AStarRating>())
     {
@@ -112,7 +74,38 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
     {
         QStyledItemDelegate::paint(painter, option, index);
     }
-}
+
+    if (widget != nullptr)
+    {
+        QColor backgroundColor = index.data(Qt::BackgroundRole).value<QColor>();
+        QPalette optionPalette = option.palette;
+        if(option.state & QStyle::State_Selected)
+            optionPalette.setColor(QPalette::Base, optionPalette.color(QPalette::Highlight));
+        else if (backgroundColor != QColor())
+            optionPalette.setColor(QPalette::Base, backgroundColor);
+
+        widget->setGeometry(option.rect);
+
+        if (option.state & QStyle::State_Selected)
+        {
+            painter->fillRect(option.rect, option.palette.highlight());
+            widget->setStyleSheet("background-color: " + option.palette.highlight().color().name());
+        }
+        else if (backgroundColor != QColor())
+        {
+            widget->setStyleSheet("background-color: " + backgroundColor.name());
+        }
+        else
+            widget->setStyleSheet("background-color: " + option.palette.base().color().name());
+
+        widget->setAutoFillBackground(true);
+        widget->setPalette(optionPalette);
+
+        QPixmap map = widget->grab();
+        painter->drawPixmap(option.rect.x(), option.rect.y(), map);
+    }
+
+} //paint
 
 QWidget *AClipsItemDelegate::createEditor(QWidget *parent,
                                     const QStyleOptionViewItem &option,

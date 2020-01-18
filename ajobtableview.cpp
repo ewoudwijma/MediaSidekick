@@ -74,7 +74,7 @@ void AJobTableView::onAddJob(QString folder, QString file, QString action, QStri
     sortByColumn(idIndex, Qt::DescendingOrder);
 }
 
-void AJobTableView::onAddLogToJob(QString id, QString log)
+void AJobTableView::onAddToJob(QString id, QString log)
 {
     for (int row = 0; row < jobItemModel->rowCount();row++)
     {
@@ -88,7 +88,7 @@ void AJobTableView::onAddLogToJob(QString id, QString log)
 
 void AJobTableView::mouseMoveEvent(QMouseEvent *event)
 {
-    QModelIndex index = indexAt(event->pos());
+//    QModelIndex index = indexAt(event->pos());
 //    qDebug()<<"AJobTableView::mouseMoveEvent"<<index.data().toString();
 }
 
@@ -100,8 +100,7 @@ void AJobTableView::mousePressEvent(QMouseEvent *event)
     if (index.data().toString() != "") //only show if an item is clicked on
     {
         QDialog *dialog = new QDialog(this);
-    //    dialog->mapFromGlobal(QCursor::pos());
-        dialog->setWindowTitle("Log details of " + jobItemModel->index(index.row(), 1).data().toString());
+        dialog->setWindowTitle("Log details of " + jobItemModel->index(index.row(), 1).data().toString() + " "  + jobItemModel->index(index.row(), 2).data().toString() + " "  + jobItemModel->index(index.row(), 3).data().toString() + " "  + jobItemModel->index(index.row(), 4).data().toString());
 
         QRect savedGeometry = QSettings().value("Geometry").toRect();
         savedGeometry.setX(savedGeometry.x() + savedGeometry.width()/4);
@@ -110,16 +109,15 @@ void AJobTableView::mousePressEvent(QMouseEvent *event)
         savedGeometry.setHeight(savedGeometry.height()/2);
         dialog->setGeometry(savedGeometry);
 
-    //    QApplication;
-    //    dialog->resize(QApplication.desktop()->width()/2, parentWidget()->size().height()/2);
         QTextBrowser *textBrowser = new QTextBrowser(dialog);
         textBrowser->setWordWrapMode(QTextOption::NoWrap);
         textBrowser->setText(jobItemModel->index(index.row(), allIndex).data().toString());
 
         QVBoxLayout *m_pDialogLayout = new QVBoxLayout(this);
-          m_pDialogLayout->addWidget(textBrowser);
 
-         dialog->setLayout(m_pDialogLayout);
+        m_pDialogLayout->addWidget(textBrowser);
+
+        dialog->setLayout(m_pDialogLayout);
 
         dialog->show();
     }

@@ -23,6 +23,7 @@ public:
                       const QModelIndex &index) const override;
 
 private slots:
+    void commitAndCloseEditor();
 //    void buttonPressed();
 //    void cellEntered(const QModelIndex &index);
 

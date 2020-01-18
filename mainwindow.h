@@ -16,7 +16,11 @@
 
 #include <QMediaPlayer>
 
-#include <QWinTaskbarButton>
+#ifdef Q_OS_WIN
+    #include <QWinTaskbarButton>
+#endif
+
+#include "apropertyeditordialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -77,8 +81,6 @@ private slots:
     void on_fileOnlyCheckBox_clicked(bool checked);
     void on_actionDebug_mode_triggered(bool checked);
     void on_resetSortButton_clicked();
-    void on_locationCheckBox_clicked(bool checked);
-    void on_cameraCheckBox_clicked(bool checked);
     void on_transitionComboBox_currentTextChanged(const QString &arg1);
     void onClipsChangedToTimeline(QAbstractItemModel *itemModel);
     void on_transitionDial_valueChanged(int value);
@@ -90,7 +92,6 @@ private slots:
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onDurationChanged(int duration);
     void on_exportFramerateComboBox_currentTextChanged(const QString &arg1);
-    void on_authorCheckBox_clicked(bool checked);
     void on_clipsTabWidget_currentChanged(int index);
     void on_filesTabWidget_currentChanged(int index);
     void on_actionDonate_triggered();
@@ -155,10 +156,14 @@ private slots:
 
     void on_cancelButton_clicked();
 
+    void on_propertyEditorPushButton_clicked();
+
+    void on_filterColumnsLineEdit_textChanged(const QString &arg1);
+
+    void on_refreshButton_clicked();
+
 private:
     Ui::MainWindow *ui;
-//    QStandardItemModel *tagFilter1Model;
-//    QStandardItemModel *tagFilter2Model;
 
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
     QWidget *graphWidget1, *graphWidget2;
@@ -181,16 +186,23 @@ private:
     QList<AContextSensitiveHelpRequest> requestList;
     int currentRequestNumber;
 
+#ifdef Q_OS_WIN
     QWinTaskbarButton *taskbarButton;
+#endif
+
+    APropertyEditorDialog *propertyEditorDialog;
 
 signals:
-    void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox, QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *authorCheckBox);
+    void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
     void giveStars(int starCount);
     void timelineWidgetsChanged(int transitionTime, QString transitionType, AClipsTableView *clipsTableView);
+    void propertiesLoaded();
+//    void reloadProperties(QString fileName);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
+    ASpinnerLabel *spinnerLabel;
 };
 
 #endif // MAINWINDOW_H

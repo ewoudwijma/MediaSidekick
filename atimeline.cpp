@@ -130,6 +130,7 @@ void ATimeline::onDurationChanged(int duration)
 
 void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 {
+//    qDebug()<<"ATimeline::onClipsChangedToTimeline"<<itemModel->rowCount();
     int videoOriginalDuration = 0;
     int audioOriginalDuration = 0;
     int videoCountNrOfClips = 0;

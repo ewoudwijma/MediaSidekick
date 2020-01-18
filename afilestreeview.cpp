@@ -11,7 +11,9 @@
 
 #include "aglobal.h"
 
-#include "fileapi.h"
+//#include "fileapi.h"
+
+#include <QApplication>
 
 AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 {
@@ -37,6 +39,7 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
 
     //https://code-examples.net/en/q/152b89b
     fileContextMenu = new QMenu(this);
+
 //    setfileContextMenuPolicy(Qt::ActionsfileContextMenu);
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &AFilesTreeView::customContextMenuRequested, this, &AFilesTreeView::this_customContextMenuRequested);
@@ -49,10 +52,12 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu->actions().last()->setToolTip("tip");
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onTrim);
 
-    fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileRename);
+//    fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
+//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileRename);
 
-    fileContextMenu->addSeparator();
+    QAction *sepAction = new QAction(this);
+    sepAction->setSeparator(true);
+    fileContextMenu->addAction(sepAction);
 
     fileContextMenu->addAction(new QAction("Delete file",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileDelete);
@@ -82,9 +87,9 @@ void AFilesTreeView::setType(QString type)
     filesProxyModel->setFilterKeyColumn(-1);
 
     QStringList exportMethods = QStringList() << "Lossless" << "Encode" << "shotcut" << "Premiere";
-    QStringList videoExtensions = QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS";
+    QStringList videoExtensions = QStringList() << "*.MP4"<<"*.AVI"<<"*.WMV"<<"*.MTS";
     QStringList exportExtensions = QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS" << "*.mlt" << "*.xml" << "*.mp3";
-    QStringList audioExtensions = QStringList() << "*.mp3";
+    QStringList audioExtensions = QStringList() << "*.mp3"<<"*.JPG";
 
     if (type == "Video") //exclude lossless done in sortfilterproxymodel
     {
@@ -189,13 +194,13 @@ void AFilesTreeView::onFileRename()
             QString fileName = indexList[i].data().toString();
             if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
             {
-                QString *suggestedName = new QString();
+                QVariant *suggestedName = new QVariant();
                 emit getPropertyValue(fileName, "SuggestedName", suggestedName);
 
-                if (*suggestedName != "")
+                if (suggestedName->toString() != "")
                 {
                     fileNameList << fileName;
-                    newFileNameList << *suggestedName;
+                    newFileNameList << suggestedName->toString();
                 }
                 else
                     noSuggestedList << fileName;
@@ -217,7 +222,7 @@ void AFilesTreeView::onFileRename()
              for (int i=0; i< fileNameList.count();i++)
              {
     //             QString fileName = fileNameList[i];
-                 emit fileDelete(fileNameList[i]); //to stop the video (tbd:but not to remove the clips!!!)
+                 emit releaseMedia(fileNameList[i]); //to stop the video (tbd:but not to remove the clips!!!)
                  QFile file(folderName + fileNameList[i]);
                  QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
                  qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
@@ -236,7 +241,8 @@ void AFilesTreeView::onFileRename()
                         file->rename(folderName + newFileNameList[i] + ".txt");
                  }
              }
-             emit fileRename();
+             emit reloadClips();
+             emit reloadProperties();
          }
     }
     else
@@ -276,7 +282,9 @@ void AFilesTreeView::onFileDelete()
              for (int i=0; i< fileNameList.count();i++)
              {
                  QString fileName = fileNameList[i];
-                 emit fileDelete(fileName);
+                 emit releaseMedia(fileName);
+                 emit clipsDelete(fileName);
+                 emit removeFile(fileName);
                  QFile file(folderName + fileName);
                  if (file.exists())
                     file.remove();
@@ -428,7 +436,7 @@ void AFilesTreeView::onOpenInExplorer()
         }
     }
 
-    if (fileNameList.count()>0)
+    if (fileNameList.count() > 0)
     {
         QString folderName = QSettings().value("LastFolder").toString();
 
@@ -439,24 +447,24 @@ void AFilesTreeView::onOpenInExplorer()
             //http://lynxline.com/show-in-finder-show-in-explorer/
             //https://stackoverflow.com/questions/3490336/how-to-reveal-in-finder-or-show-in-explorer-with-qt
 
-            //#ifdef Q_WS_MAC
-            //    QStringList args;
-            //    args << "-e";
-            //    args << "tell application \"Finder\"";
-            //    args << "-e";
-            //    args << "activate";
-            //    args << "-e";
-            //    args << "select POSIX file \""+filePath+"\"";
-            //    args << "-e";
-            //    args << "end tell";
-            //    QProcess::startDetached("osascript", args);
-            //#endif
+            #ifdef Q_OS_MAC
+                QStringList args;
+                args << "-e";
+                args << "tell application \"Finder\"";
+                args << "-e";
+                args << "activate";
+                args << "-e";
+                args << "select POSIX file \""+folderName + fileName+"\"";
+                args << "-e";
+                args << "end tell";
+                QProcess::startDetached("osascript", args);
+            #endif
 
-            //#ifdef Q_WS_WIN
+            #ifdef Q_OS_WIN
                 QStringList args;
                 args << "/select," << QDir::toNativeSeparators(folderName + fileName);
                 QProcess::startDetached("explorer", args);
-            //#endif
+            #endif
         }
     }
 }

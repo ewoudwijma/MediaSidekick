@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>amapviewer.qml</file>
+        <file>amarker.qml</file>
+        <file>marker.png</file>
+    </qresource>
+</RCC>

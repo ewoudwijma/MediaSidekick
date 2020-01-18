@@ -1755,7 +1755,7 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 
 void MainWindow::onPropertiesLoaded()
 {
-    qDebug()<<"MainWindow::onPropertiesLoaded";
+//    qDebug()<<"MainWindow::onPropertiesLoaded";
     emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox);
 
     ui->clipsFramerateComboBox->blockSignals(true); // do not fire on_clipsFramerateComboBox_currentTextChanged

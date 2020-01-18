@@ -63,7 +63,7 @@ public slots:
     void onSpinnerPositionChanged(int frames);
     void onSetIn(int frames = -1);
     void onSetOut(int frames = -1);
-    void onFileRename();
+//    void onFileRename();
     void onMute();
     void onStop();
 
@@ -78,12 +78,14 @@ private slots:
     void onMutedChanged(bool muted);
     void onPlaybackRateChanged(qreal rate);
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
+    void onMetaDataAvailableChanged(bool available);
+    void onMetaDataChanged();
 signals:
     void videoPositionChanged(int position, int clipRow, int relativeProgress);
     void durationChanged(int duration);
     void scrubberInChanged(QString AV, int row, int in);
     void scrubberOutChanged(QString AV, int row, int out);
-    void getPropertyValue(QString fileName, QString key, QString *value);
+    void getPropertyValue(QString fileName, QString key, QVariant *value);
 //    void fpsChanged(int fps);
     void createNewEdit(int frames);
 

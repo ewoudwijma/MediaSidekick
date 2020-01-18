@@ -5,11 +5,14 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QFileSystemModel>
+#include <QMediaMetaData>
 #include <QSettings>
 #include <QTime>
 #include <QTimer>
 
 #include <QStyle>
+
+#include <QMediaMetaData>
 
 //http://digital-thinking.de/cv-opengl-and-qt-video-as-a-texture/
 //https://stackoverflow.com/questions/26229633/use-of-qabstractvideosurface
@@ -45,6 +48,8 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
     connect(m_player, &QMediaPlayer::mediaStatusChanged, this, &AVideoWidget::onMediaStatusChanged);
     connect(m_player, &QMediaPlayer::mutedChanged, this, &AVideoWidget::onMutedChanged);
     connect(m_player, &QMediaPlayer::playbackRateChanged, this, &AVideoWidget::onPlaybackRateChanged);
+    connect(m_player, QOverload<>::of(&QMediaPlayer::metaDataChanged), this, &AVideoWidget::onMetaDataChanged);
+    connect(m_player, &QMediaPlayer::metaDataAvailableChanged, this, &AVideoWidget::onMetaDataAvailableChanged);
 
     m_scrubber = new SScrubBar(this);
 //    m_scrubber->setFocusPolicy(Qt::NoFocus);
@@ -210,7 +215,7 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
 
 void AVideoWidget::onDurationChanged(int duration)
 {
-    qDebug()<<"AVideoWidget::onDurationChanged" << duration<<AGlobal().msec_rounded_to_fps(duration)<<AGlobal().msec_to_time(duration);
+//    qDebug()<<"AVideoWidget::onDurationChanged" << duration<<AGlobal().msec_rounded_to_fps(duration)<<AGlobal().msec_to_time(duration);
 
     if (duration > 0)
     {
@@ -266,29 +271,64 @@ void AVideoWidget::onReleaseMedia(QString fileName)
     }
 }
 
-void AVideoWidget::onFileRename()
-{
-    qDebug()<<"AVideoWidget::onFileRename";
-//    if (fileName == selectedFileName)
-    {
-        m_player->stop();
-        m_player->setMedia(QMediaContent());
-    }
-}
+//void AVideoWidget::onFileRename()
+//{
+//    qDebug()<<"AVideoWidget::onFileRename";
+////    if (fileName == selectedFileName)
+//    {
+//        m_player->stop();
+//        m_player->setMedia(QMediaContent());
+//    }
+//}
 
 void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 {
     emit playerStateChanged(state);
 }
 
-void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus )//status
+void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-//    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status;
+    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {
 //        m_player->setPosition(0);
 //    }
+
+    if (status == QMediaPlayer::LoadedMedia)
+        qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status;
+}
+
+void AVideoWidget::onMetaDataChanged()
+{
+    qDebug()<<"AVideoWidget::onMetaDataChanged"<<m_player->metaData(QMediaMetaData::MediaType).toString();
+
+    QStringList metadatalist = m_player->availableMetaData();
+
+       // Get the size of the list
+       int list_size = metadatalist.size();
+
+       //qDebug() << player->isMetaDataAvailable() << list_size;
+
+       // Define variables to store metadata key and value
+       QString metadata_key;
+       QVariant var_data;
+
+       for (int indx = 0; indx < list_size; indx++)
+       {
+         // Get the key from the list
+         metadata_key = metadatalist.at(indx);
+
+         // Get the value for the key
+         var_data = m_player->metaData(metadata_key);
+
+        qDebug() << metadata_key << var_data.toString();
+       }
+}
+
+void AVideoWidget::onMetaDataAvailableChanged(bool available)
+{
+    qDebug()<<"AVideoWidget::onMetaDataAvailableChanged"<<available<<m_player->metaData(QMediaMetaData::MediaType).toString();
 }
 
 void AVideoWidget::togglePlayPaused()
@@ -301,6 +341,8 @@ void AVideoWidget::togglePlayPaused()
         m_player->pause();
     else
         m_player->stop();
+
+    onMetaDataChanged();
 }
 
 void AVideoWidget::fastForward()

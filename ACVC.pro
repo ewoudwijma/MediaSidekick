@@ -5,7 +5,15 @@
 #-------------------------------------------------
 
 QT       += core gui
-QT += multimedia multimediawidgets winextras
+QT += multimedia multimediawidgets location quickwidgets network
+
+#QT += quick qml network positioning location
+
+win32:
+{
+    QT += winextras
+}
+
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -35,13 +43,16 @@ SOURCES += \
         afilessortfilterproxymodel.cpp \
         afilestreeview.cpp \
         afoldertreeview.cpp \
+        ageocoding.cpp \
         aglobal.cpp \
         ajobitemdelegate.cpp \
         ajobtableview.cpp \
         aprocessmanager.cpp \
+        apropertyeditordialog.cpp \
         apropertyitemdelegate.cpp \
         apropertysortfilterproxymodel.cpp \
         apropertytreeview.cpp \
+        aspinnerlabel.cpp \
         astareditor.cpp \
         astarrating.cpp \
         atagslistview.cpp \
@@ -65,13 +76,16 @@ HEADERS += \
         afilessortfilterproxymodel.h \
         afilestreeview.h \
         afoldertreeview.h \
+        ageocoding.h \
         aglobal.h \
         ajobitemdelegate.h \
         ajobtableview.h \
         aprocessmanager.h \
+        apropertyeditordialog.h \
         apropertyitemdelegate.h \
         apropertysortfilterproxymodel.h \
         apropertytreeview.h \
+        aspinnerlabel.h \
         astareditor.h \
         astarrating.h \
         atagslistview.h \
@@ -85,7 +99,8 @@ HEADERS += \
         stimespinbox.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+        propertyeditordialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -93,7 +108,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 win32:RC_ICONS += acvc.ico
+unix:ICON = acvc.icns
 
 RESOURCES += \
-    images.qrc
+    images.qrc \
+    qml.qrc
+
+DISTFILES +=
 

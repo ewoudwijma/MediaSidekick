@@ -51,7 +51,8 @@ bool ATagsListView::addTag(QString tagString)
     {
         QList<QStandardItem *> items;
         QStandardItem *item = new QStandardItem(tagString);
-        item->setBackground(QBrush(Qt::red));
+        item->setBackground(QBrush(Qt::darkGray));
+        item->setForeground(QBrush(Qt::white));
 //                item->setFont(QFont(font().family(), 8 * devicePixelRatio()));
         items.append(item);
         items.append(new QStandardItem("I")); //nr of occurrences

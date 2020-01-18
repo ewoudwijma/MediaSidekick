@@ -11,7 +11,8 @@
 #include <QWidget>
 #include <QXmlStreamWriter>
 
-#include <QLabel>
+#include "aspinnerlabel.h"
+
 #include <QPushButton>
 #include <QSlider>
 
@@ -23,7 +24,7 @@ class AExport: public QWidget
 public:
     explicit AExport(QWidget *parent = nullptr);
 
-    void exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, QLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *statusBar);
+    void exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, ASpinnerLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *statusBar);
     void stopAllProcesses();
 private:
 //    MainWindow *mainWindow;
@@ -38,7 +39,7 @@ private:
 
     QString processError = "";
 
-    QLabel *spinnerLabel;
+    ASpinnerLabel *spinnerLabel;
 
     void encodeVideoClips();
 
@@ -77,9 +78,9 @@ private:
     void processFinished(QMap<QString, QString> parameters);
     void processOutput(QMap<QString, QString> parameters, QString result, int percentageStart, int percentageDelta);
 signals:
-    void addJobsEntry(QString folder, QString file, QString action, QString *id);
+    void addJob(QString folder, QString file, QString action, QString *id);
     void addToJob(QString function, QString log);
-    void getPropertyValue(QString fileName, QString key, QString *value);
+    void getPropertyValue(QString fileName, QString key, QVariant *value);
 
     void reloadClips();
     void reloadProperties();

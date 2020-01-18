@@ -13,7 +13,7 @@ public:
 
 public slots:
     void onAddJob(QString folder, QString file, QString action, QString* id);
-    void onAddLogToJob(QString id, QString log);
+    void onAddToJob(QString id, QString log);
     void mouseMoveEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
 

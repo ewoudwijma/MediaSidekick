@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.1.1");
+    a.setApplicationVersion("0.2.0");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -54,5 +54,6 @@ int main(int argc, char *argv[])
 //<p><a href="https://ffmpeg.zeranoe.com/builds/">FFMpeg</a> (extract, move to c:\ffmpeg\, add \bin in environment variabe)</p>
 
 //<p><a href="https://www.sno.phy.queensu.ca/~phil/exiftool/">Exiftool</a> (download zip, remove -k, move to c:\ffmpeg\bin)</p>
+//https://exiftool.org/
 
 //https://stackoverflow.com/questions/46455360/workaround-for-qt-installer-framework-not-overwriting-existing-installation
