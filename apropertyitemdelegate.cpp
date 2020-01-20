@@ -297,6 +297,7 @@ void APropertyItemDelegate::setEditorData(QWidget *editor,
 void APropertyItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
+//    qDebug()<<"setModelData" << index.row()<<index.column()<< index.data().toString() << index.model()->index(index.row(), typeIndex,index.parent()).data().toString();
     if (index.model()->index(index.row(), typeIndex, index.parent()).data().toString() == "QDateTime" && index.column() >= minimumIndex && index.column() != deltaIndex && index.column() != typeIndex)
     {
         QDateTimeEdit* dtEditor = qobject_cast<QDateTimeEdit*>(editor);
@@ -326,7 +327,6 @@ void APropertyItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     }
     else if (index.data().canConvert<AStarRating>())
     {
-        qDebug()<<"setModelData" << index.row()<<index.column()<< index.data().toString() << index.model()->index(index.row(), typeIndex,index.parent()).data().toString();
 
         AStarEditor *starEditor = qobject_cast<AStarEditor *>(editor);
 //        qDebug()<<"setModelData"<<index.row()<<index.column()<<index.data()<<starEditor->starRating().starCount();

@@ -351,6 +351,20 @@ void APropertyTreeView::loadModel(QString folderName)
         propertyMap["SuggestedName"] = topLevelItems["Status"];
         propertyMap["Status"] = topLevelItems["Status"];
 
+        propertyMap["Author"] = topLevelItems["Artists"];
+        propertyMap["Creator"] = topLevelItems["Artists"];
+        propertyMap["XPAuthor"] = topLevelItems["Artists"];
+
+        propertyMap["LastKeywordIPTC"] = topLevelItems["Keywords"];
+        propertyMap["LastKeywordXMP"] = topLevelItems["Keywords"];
+        propertyMap["Subject"] = topLevelItems["Keywords"];
+        propertyMap["XPKeywords"] = topLevelItems["Keywords"];
+        propertyMap["Comment"] = topLevelItems["Keywords"];
+        propertyMap["Category"] = topLevelItems["Keywords"];
+
+        propertyMap["RatingPercent"] = topLevelItems["Ratings"];
+        propertyMap["SharedUserRating"] = topLevelItems["Ratings"];
+
         QMapIterator<QString, QString> fileIterator(fileMap);
         QStringList headerLabels = QStringList() << "Property" << "Minimum" << "Delta" << "Maximum" << "Type" << "Diff";
 
@@ -420,15 +434,14 @@ void APropertyTreeView::loadModel(QString folderName)
                 sublevelItems.append(new QStandardItem( "QGeoCoordinate" ));
             else if (propertyName == "Keywords" || propertyName == "Category" || propertyName == "LastKeywordXMP" || propertyName == "LastKeywordIPTC" || propertyName == "XPKeywords" || propertyName == "Comment" || propertyName == "Subject")
                 sublevelItems.append(new QStandardItem( "ATags" ));
-
             else if (propertyName == "Rating" || propertyName == "RatingPercent" || propertyName == "SharedUserRating")
-            {
                 sublevelItems.append(new QStandardItem( "ARating" ));
-            }
             else if (propertyName == "Make" || propertyName == "Model" || propertyName == "Artist")
                 sublevelItems.append(new QStandardItem( "QComboBox" ));
             else
                 sublevelItems.append(new QStandardItem( "QString" ));
+            //not needed for derived artists as comboboxes not needed
+
             sublevelItems.append(new QStandardItem( "false" )); //diff
 
             bool valueFound = false; //in case label is added by a non media file
@@ -509,16 +522,16 @@ void APropertyTreeView::setupModel()
 //    qDebug()<<"APropertyTreeView::setupModel"<<model()<<propertyItemModel<<propertyProxyModel<<model()->rowCount()<<propertyItemModel->rowCount()<<propertyProxyModel->rowCount()<<isLoading;
 
     //set all parents to non editable
-    for (int parentRow = 0; parentRow< propertyItemModel->rowCount(); parentRow++)
+    for (int parentRow = 0; parentRow< propertyProxyModel->rowCount(); parentRow++)
     {
-        QModelIndex toplevelPropertyIndex = propertyItemModel->index(parentRow, propertyIndex);
-        QModelIndex toplevelPropertyProxyIndex = propertyProxyModel->mapFromSource(toplevelPropertyIndex);
+        QModelIndex toplevelPropertyIndex = propertyProxyModel->index(parentRow, propertyIndex);
+//        QModelIndex toplevelPropertyProxyIndex = toplevelPropertyIndex;// propertyProxyModel->mapFromSource(toplevelPropertyIndex);
 
         //set toplevels not editable
-        for (int column = 0; column < propertyItemModel->columnCount(); column++)
+        for (int column = 0; column < propertyProxyModel->columnCount(); column++)
         {
-            QModelIndex toplevelColumnindex = propertyItemModel->index(parentRow, column);
-            propertyItemModel->itemFromIndex(toplevelColumnindex)->setEditable(false);
+            QModelIndex toplevelColumnindex = propertyProxyModel->index(parentRow, column);
+            propertyItemModel->itemFromIndex(propertyProxyModel->mapToSource(toplevelColumnindex))->setEditable(false);
 
             //set frozen columns hidden
             if (column >= minimumIndex)
@@ -530,53 +543,44 @@ void APropertyTreeView::setupModel()
             }
         }
 
-        if (editMode)
+        if (toplevelPropertyIndex.data().toString() == "Video" || toplevelPropertyIndex.data().toString() == "Audio" || toplevelPropertyIndex.data().toString() == "Media" || toplevelPropertyIndex.data().toString() == "File"  || toplevelPropertyIndex.data().toString() == "Date" || toplevelPropertyIndex.data().toString() == "Other")
         {
-            if (toplevelPropertyProxyIndex.data().toString() == "Video" || toplevelPropertyProxyIndex.data().toString() == "Audio" || toplevelPropertyProxyIndex.data().toString() == "Media" || toplevelPropertyProxyIndex.data().toString() == "File"  || toplevelPropertyProxyIndex.data().toString() == "Date" || toplevelPropertyProxyIndex.data().toString() == "Other")
-            {
-//                qDebug()<<"sethidden"<<topLevelPropertyIndex.data().toString();
-                frozenTableView->setRowHidden(parentRow, QModelIndex(), true);
-                setRowHidden(parentRow, QModelIndex(), true);
-            }
+            frozenTableView->setRowHidden(parentRow, QModelIndex(), editMode);
+            setRowHidden(parentRow, QModelIndex(), editMode);
         }
-        if (!editMode)
+        if (toplevelPropertyIndex.data().toString() == "Status")
         {
-            if (toplevelPropertyProxyIndex.data().toString() == "Status")
-            {
-//                qDebug()<<"sethidden"<<topLevelPropertyIndex.data().toString();
-                frozenTableView->setRowHidden(parentRow, QModelIndex(), true);
-                setRowHidden(parentRow, QModelIndex(), true);
-            }
+            frozenTableView->setRowHidden(parentRow, QModelIndex(), !editMode);
+            setRowHidden(parentRow, QModelIndex(), !editMode);
         }
 
-        for (int childRow = 0; childRow <propertyItemModel->rowCount(toplevelPropertyIndex); childRow++)
+        for (int childRow = 0; childRow <propertyProxyModel->rowCount(toplevelPropertyIndex); childRow++)
         {
-            QModelIndex sublevelPropertyIndex = propertyItemModel->index(childRow, propertyIndex, toplevelPropertyIndex);
+            QModelIndex sublevelPropertyIndex = propertyProxyModel->index(childRow, propertyIndex, toplevelPropertyIndex);
 
             //Hide directory in edit mode
-
-            if (editMode )
+            if (sublevelPropertyIndex.data().toString() == "Directory")
             {
-                if (sublevelPropertyIndex.data().toString() == "Directory")
-                {
-                    frozenTableView->setRowHidden(childRow, toplevelPropertyProxyIndex, true);
-                    setRowHidden(childRow, toplevelPropertyProxyIndex, true);
-                }
+                frozenTableView->setRowHidden(childRow, toplevelPropertyIndex, editMode);
+                setRowHidden(childRow, toplevelPropertyIndex, editMode);
             }
 
             //set fields editable
             for (int column = firstFileColumnIndex; column < model()->columnCount(); column++)
             {
-                QModelIndex sublevelIndex = propertyItemModel->index(childRow, column, toplevelPropertyIndex);
+                QModelIndex sublevelIndex = propertyProxyModel->index(childRow, column, toplevelPropertyIndex);
 
 //                qDebug()<<"set editable"<<sublevelIndex.data().toString()<<editMode<<isLoading;
-                propertyItemModel->itemFromIndex(sublevelIndex)->setEditable(editMode);
+                if (toplevelPropertyIndex.data().toString() == "General" || toplevelPropertyIndex.data().toString() == "Location" || toplevelPropertyIndex.data().toString() == "Camera" || toplevelPropertyIndex.data().toString() == "Labels")
+                    propertyItemModel->itemFromIndex(propertyProxyModel->mapToSource(sublevelIndex))->setEditable(editMode);
+                else
+                    propertyItemModel->itemFromIndex(propertyProxyModel->mapToSource(sublevelIndex))->setEditable(false);
             }
         }
     }
 
     //update values
-    for (int column = 0; column < propertyItemModel->columnCount(); column++)
+    for (int column = 0; column < propertyProxyModel->columnCount(); column++)
     {
         if (column >= typeIndex)
         {
@@ -850,7 +854,8 @@ void APropertyTreeView::updateSuggestedNames(int column)
                 text += "[" + QString::number(valueList[0].toDouble(), 'f', 6);
             if (valueList.count() > 1 && valueList[1].toDouble() != 0)
                 text += "," + QString::number(valueList[1].toDouble(), 'f', 6);
-            text += "]";
+            if (valueList.count() > 0)
+                text += "]";
             if (valueList.count() > 2 && valueList[2].toInt() != 0)
                 text += "@" + valueList[2] + "m";
 
@@ -956,9 +961,9 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                     onSetPropertyValue(fileName, "Status", "Changed");
                 }
 
+//                qDebug()<<"onPropertyChanged colorChanged"<<propertyName<<proxyIndex.data(Qt::BackgroundRole)<<brush;
                 if (proxyIndex.data(Qt::BackgroundRole) != brush)
                 {
-//                    qDebug()<<"onPropertyChanged colorChanged"<<propertyName;
                     colorChanged = "yes";
                     propertyProxyModel->setData(proxyIndex, brush , Qt::BackgroundRole); //orange causes recursive call
                 }
@@ -988,6 +993,10 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                 if (propertyName == "Rating")
                 {
                     onSetPropertyValue(fileName, "RatingPercent", index.data());
+                }
+                if (propertyName == "GeoCoordinate")
+                {
+                    emit redrawMap();
                 }
             }
             else if (index.column() >= minimumIndex && index.column() <= maximumIndex) //updating Minimum delta Maximum
@@ -1060,17 +1069,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                     QString deltaString;
                     QGeoCoordinate maximumCoordinate;
 
-                    double latitude = 0;
-                    double longitude = 0;
-                    int altitude = 0;
-                    QStringList valueList = minimumValue.data().toString().split(";");
-                    if (valueList.count() > 0 && valueList[0].toDouble() != 0)
-                        latitude = valueList[0].toDouble();
-                    if (valueList.count() > 1 && valueList[1].toDouble() != 0)
-                        longitude = valueList[1].toDouble();
-                    if (valueList.count() > 2 && valueList[2].toInt() != 0)
-                        altitude = valueList[2].toInt();
-                    minimumCoordinate = QGeoCoordinate(latitude, longitude, altitude);
+                    minimumCoordinate = AGlobal().csvToGeoCoordinate(minimumValue.data().toString());
 
                     deltaString = deltaValue.data().toString();
 
@@ -1078,7 +1077,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
 
                     int distance = 0;
                     int bearing = 0;
-                    altitude = 0;
+                    int altitude = 0;
                     if (index.column() == deltaIndex || index.column() == minimumIndex) //updating delta and minimum, set Maximum
                     {
                         QStringList valueList = deltaString.split(";");
@@ -1094,17 +1093,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                     }
                     else //updating Maximum, set delta
                     {
-                        double latitude = 0;
-                        double longitude = 0;
-                        int altitude = 0;
-                        QStringList valueList = maximumValue.data().toString().split(";");
-                        if (valueList.count() > 0 && valueList[0].toDouble() != 0)
-                            latitude = valueList[0].toDouble();
-                        if (valueList.count() > 1 && valueList[1].toDouble() != 0)
-                            longitude = valueList[1].toDouble();
-                        if (valueList.count() > 2 && valueList[2].toInt() != 0)
-                            altitude = valueList[2].toInt();
-                        maximumCoordinate = QGeoCoordinate(latitude, longitude, altitude);
+                        minimumCoordinate = AGlobal().csvToGeoCoordinate(maximumValue.data().toString());
 
 //                        toCoordinate = QGeoCoordinate(toValue.data().toString().split(";")[0].toDouble(), toValue.data().toString().split(";")[1].toDouble(), toValue.data().toString().split(";")[2].toInt());
                         distance = minimumCoordinate.distanceTo(maximumCoordinate);
@@ -1118,7 +1107,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
 
                     maximumCoordinate = minimumCoordinate;
 
-                    qDebug()<<"delta geo"<<nrOfNonHiddenColumns<<deltaString<<distance<<bearing<<altitude;
+//                    qDebug()<<"delta geo"<<nrOfNonHiddenColumns<<deltaString<<distance<<bearing<<altitude;
 
 //                    if (deltaString != "")
                     {
@@ -1141,7 +1130,6 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                     }
 
                     valueChangedBy = "";
-
                 }
                 else if (typeName == "QComboBox" && valueChangedBy != "MinimumDeltaMaximum")
                 {
@@ -1240,30 +1228,31 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
                     valueString = "\"" + proxyIndex.data().toDateTime().toString("yyyy-MM-dd HH:mm:ss") + "\"";
                 else if (propertyName == "GeoCoordinate")
                 {
-                    QStringList geoValues = proxyIndex.data().toString().split(";");
+//                    QStringList geoValues = proxyIndex.data().toString().split(";");
+
+                    QGeoCoordinate geoCoordinate = AGlobal().csvToGeoCoordinate(proxyIndex.data().toString());
 
                     propertyNames << "GPSLatitude";
-                    values << geoValues[0];
+                    values << QString::number(geoCoordinate.latitude());
 
                     propertyNames << "GPSLatitudeRef";
-                    if (geoValues[0].left(1) == "-")
+                    if (geoCoordinate.latitude() < 0)
                         values << "\"South\"";
                     else
                         values << "\"North\"";
 
                     propertyNames << "GPSLongitude";
-                    values << geoValues[1];
+                    values << QString::number(geoCoordinate.longitude());
 
                     propertyNames << "GPSLongitudeRef";
-                    if (geoValues[1].left(1) == "-")
+                    if (geoCoordinate.longitude() < 0)
                         values << "\"West\"";
                     else
                         values << "\"East\"";
 
                     propertyName = "GPSAltitude";
-                    valueString = geoValues[2];
-//                        qDebug()<<"GPSAltitude"<<proxyIndex.data()<<proxyIndex.data().toDouble();
-                    if (geoValues[2].left(1) == "-")
+                    valueString = QString::number(geoCoordinate.altitude());
+                    if (geoCoordinate.altitude() < 0)
                         valueString += " -GPSAltitudeRef=\"Below Sea Level\"";
                     else
                         valueString += " -GPSAltitudeRef=\"Above Sea Level\"";
@@ -1343,12 +1332,19 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
             QStringList propertyNames = parameters["propertyNames"].split(";");
             foreach (QString propertyName, propertyNames)
             {
-//                qDebug()<<"savechanges colorChanged";
+//                qDebug()<<"savechanges colorChanged" <<propertyName;
+
+                QString propName;
+                if (propertyName.contains("GPS"))
+                    propName = "GeoCoordinate";
+                else
+                    propName = propertyName;
+
                 propertyTreeView->colorChanged = "yes";
                 if (!resultJoin.contains("1 image files updated") || resultJoin.contains(propertyName)) //property mentioned in error message
-                    propertyTreeView->onSetPropertyValue(parameters["fileName"], propertyName, QBrush(QColor(255, 140, 0, 50)), Qt::BackgroundRole); //orange
+                    propertyTreeView->onSetPropertyValue(parameters["fileName"], propName, QBrush(QColor(255, 140, 0, 50)), Qt::BackgroundRole); //orange
                 else
-                    propertyTreeView->onSetPropertyValue(parameters["fileName"], propertyName, QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole); //dark green
+                    propertyTreeView->onSetPropertyValue(parameters["fileName"], propName, QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole); //darkgreen
             }
 
 //            qDebug()<<""<<propertyNames.count()<<propertyTreeView->changedIndexesMap.count()<<100.0 / (propertyTreeView->changedIndexesMap.count());
@@ -1387,7 +1383,7 @@ void APropertyTreeView::onRemoveFile(QString fileName)
 void APropertyTreeView::onReloadProperties()
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-    qDebug()<<"APropertyTreeView::onReloadProperties"<<lastFolder;
+//    qDebug()<<"APropertyTreeView::onReloadProperties"<<lastFolder;
     loadModel(lastFolder);
 }
 
@@ -1407,7 +1403,7 @@ void APropertyTreeView::onPropertyColumnFilterChanged(QString filter)
 
 void APropertyTreeView::onSuggestedNameFiltersClicked(QCheckBox *locationCheckBox, QCheckBox *cameraCheckBox, QCheckBox *artistCheckBox)
 {
-    qDebug()<<"APropertyTreeView::onSuggestedNameFiltersClicked"<<locationCheckBox->checkState()<<cameraCheckBox->checkState()<<artistCheckBox->checkState();
+//    qDebug()<<"APropertyTreeView::onSuggestedNameFiltersClicked"<<locationCheckBox->checkState()<<cameraCheckBox->checkState()<<artistCheckBox->checkState();
 
     locationInName = locationCheckBox->checkState() == Qt::Checked;
     cameraInName = cameraCheckBox->checkState() == Qt::Checked;
@@ -1504,7 +1500,7 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
                 if (typeValue.data().toString() == "QComboBox")
                 {
                     if (values.count() > 1)
-                        propertyProxyModel->setData(propertyProxyModel->index(childRow, minimumIndex, parentIndex), "<Multiple>***," + values.join(";"));
+                        propertyProxyModel->setData(propertyProxyModel->index(childRow, minimumIndex, parentIndex), "<Multiple>***;" + values.join(";"));
                     else
                         propertyProxyModel->setData(propertyProxyModel->index(childRow, minimumIndex, parentIndex), values.join(";"));
                 }
@@ -1535,10 +1531,7 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
                 else if (typeValue.data().toString() == "QDateTime")
                     propertyProxyModel->setData(propertyProxyModel->index(childRow, maximumIndex, parentIndex), maxValue);
                 else if (typeValue.data().toString() == "ARating")
-                {
-//                    qDebug()<<"APropertyTreeView::calculateMinimumDeltaMaximum max"<<typeValue.data().toString()<<maxValue;
                     propertyProxyModel->setData(propertyProxyModel->index(childRow, maximumIndex, parentIndex), QVariant::fromValue(AStarRating(maxValue.toInt())));
-                }
             }
             else
                 propertyProxyModel->setData(propertyProxyModel->index(childRow, maximumIndex, parentIndex), "");
@@ -1548,8 +1541,8 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
                 //deltas
                 if (typeValue.data().toString() == "QGeoCoordinate")
                 {
-                    QGeoCoordinate minGeoCoordinate(minValue.split(";")[0].toDouble(), minValue.split(";")[1].toDouble(), minValue.split(";")[2].toInt());
-                    QGeoCoordinate maxGeoCoordinate(maxValue.split(";")[0].toDouble(), maxValue.split(";")[1].toDouble(), maxValue.split(";")[2].toInt());
+                    QGeoCoordinate minGeoCoordinate = AGlobal().csvToGeoCoordinate(minValue);
+                    QGeoCoordinate maxGeoCoordinate = AGlobal().csvToGeoCoordinate(maxValue);
 
                     propertyProxyModel->setData(propertyProxyModel->index(childRow, deltaIndex, parentIndex), QString::number(qRound(minGeoCoordinate.distanceTo(maxGeoCoordinate))) + ";" + QString::number(qRound(minGeoCoordinate.azimuthTo(maxGeoCoordinate))) + ";" + QString::number(maxGeoCoordinate.altitude() - minGeoCoordinate.altitude()));
                 }

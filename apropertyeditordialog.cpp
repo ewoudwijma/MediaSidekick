@@ -127,7 +127,7 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
     //connects
     connect(ui->propertyTreeView, &APropertyTreeView::addJob, this, &APropertyEditorDialog::onAddJob);
     connect(ui->propertyTreeView, &APropertyTreeView::addToJob, this, &APropertyEditorDialog::onAddToJob);
-//    connect(ui->propertyTreeView, &APropertyTreeView::propertiesLoaded, this, &APropertyEditorDialog::onPropertiesLoaded);
+    connect(ui->propertyTreeView, &APropertyTreeView::redrawMap, this, &APropertyEditorDialog::redrawMap);
 
     connect(ui->geocodingWidget, &AGeocoding::finished, this, &APropertyEditorDialog::onGeoCodingFinished);
 
@@ -278,6 +278,7 @@ void APropertyEditorDialog::onPropertiesLoaded()
 
 void APropertyEditorDialog::redrawMap()
 {
+//    qDebug()<<"APropertyEditorDialog::redrawMap";
     QObject *target = qobject_cast<QObject *>(ui->mapQuickWidget->rootObject());
 
     QMetaObject::invokeMethod(target, "clearMapItems", Qt::AutoConnection);
@@ -291,12 +292,11 @@ void APropertyEditorDialog::redrawMap()
             QVariant *coordinate = new QVariant();
             ui->propertyTreeView->onGetPropertyValue(fileName, "GeoCoordinate", coordinate);
 
-            QStringList coordinateList = coordinate->toString().split(";");
+            QGeoCoordinate geoCoordinate = AGlobal().csvToGeoCoordinate(coordinate->toString());
 
-//            qDebug()<<"coordinateString"<<*coordinateString;
+//            qDebug()<<"coordinateString"<<coordinate->toString();
 
-            if (coordinateList.count()>=2)
-                QMetaObject::invokeMethod(target, "addMarker", Qt::AutoConnection, Q_ARG(QVariant, fileName), Q_ARG(QVariant, coordinateList[0].toDouble()), Q_ARG(QVariant, coordinateList[1].toDouble()));
+            QMetaObject::invokeMethod(target, "addMarker", Qt::AutoConnection, Q_ARG(QVariant, fileName), Q_ARG(QVariant, geoCoordinate.latitude()), Q_ARG(QVariant, geoCoordinate.longitude()));
         }
     }
     QMetaObject::invokeMethod(target, "fitViewportToMapItems", Qt::AutoConnection);
@@ -304,6 +304,9 @@ void APropertyEditorDialog::redrawMap()
 
 void APropertyEditorDialog::on_updateButton_clicked()
 {
+    ui->updateProgressBar->setValue(0);
+    ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
+
     redrawMap();
     ui->propertyTreeView->saveChanges(ui->updateProgressBar);
 //    onPropertiesLoaded();
@@ -314,8 +317,9 @@ void APropertyEditorDialog::onGeoCodingFinished(QGeoCoordinate geoCoordinate)
     QObject *target = qobject_cast<QObject *>(ui->mapQuickWidget->rootObject());
 
 //    qDebug()<<"APropertyEditorDialog::onGeoCodingFinished"<<geoCoordinate;
-    ui->propertyTreeView->onSetPropertyValue("From", "GeoCoordinate", QString::number(geoCoordinate.latitude()) + ";" + QString::number(geoCoordinate.longitude()) + ";" + QString::number(geoCoordinate.altitude()));
+    ui->propertyTreeView->onSetPropertyValue("Minimum", "GeoCoordinate", QString::number(geoCoordinate.latitude()) + ";" + QString::number(geoCoordinate.longitude()) + ";" + QString::number(geoCoordinate.altitude()));
     QMetaObject::invokeMethod(target, "center", Qt::AutoConnection, Q_ARG(QVariant, geoCoordinate.latitude()), Q_ARG(QVariant, geoCoordinate.longitude()));
+    redrawMap();
 }
 
 void APropertyEditorDialog::on_renameButton_clicked()
@@ -366,7 +370,7 @@ void APropertyEditorDialog::on_renameButton_clicked()
                  emit releaseMedia(fileNameList[i]); //to stop the video
                  QFile file(folderName + fileNameList[i]);
                  QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
-                 qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
+//                 qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
                  if (file.exists())
                     file.rename(folderName + newFileNameList[i] + extensionString);
 
@@ -383,7 +387,7 @@ void APropertyEditorDialog::on_renameButton_clicked()
                  }
 //                 qDebug()<<"on_renameButton_clicked colorChanged";
                  ui->propertyTreeView->colorChanged = "yes";
-                 ui->propertyTreeView->onSetPropertyValue(fileNameList[i], "SuggestedName", QBrush(Qt::darkGreen) , Qt::BackgroundRole);
+                 ui->propertyTreeView->onSetPropertyValue(fileNameList[i], "SuggestedName", QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole);
 
              }
              emit reloadClips();
@@ -454,7 +458,7 @@ void APropertyEditorDialog::checkAndMatchPicasa()
                       QVariant *rating = new QVariant;
                       ui->propertyTreeView->onGetPropertyValue(fileName, "Rating", rating);
                       AStarRating starRating = qvariant_cast<AStarRating>( *rating);
-                      qDebug()<<"Picasa star"<<starRating.starCount();
+//                      qDebug()<<"Picasa star"<<starRating.starCount();
                       if (starRating.starCount() != 3)
                       {
                         ui->propertyTreeView->onSetPropertyValue(fileName, "Rating", QVariant::fromValue(AStarRating(3)));
@@ -500,5 +504,7 @@ void APropertyEditorDialog::on_refreshButton_clicked()
     ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
     emit reloadProperties();
     ui->updateProgressBar->setValue(0);
+    ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
+
 //    ui->propertyTreeView->isLoading = false;
 }

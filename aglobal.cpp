@@ -154,3 +154,19 @@ qint64 AGlobal::csvToSeconds(QString csv)
     return seconds;
 }
 
+QGeoCoordinate AGlobal::csvToGeoCoordinate(QString csv)
+{
+    double latitude = 0;
+    double longitude = 0;
+    int altitude = 0;
+    QStringList valueList = csv.split(";");
+    if (valueList.count() > 0 && valueList[0].toDouble() != 0)
+        latitude = valueList[0].toDouble();
+    if (valueList.count() > 1 && valueList[1].toDouble() != 0)
+        longitude = valueList[1].toDouble();
+    if (valueList.count() > 2 && valueList[2].toInt() != 0)
+        altitude = valueList[2].toInt();
+
+    return QGeoCoordinate(latitude, longitude, altitude);
+}
+

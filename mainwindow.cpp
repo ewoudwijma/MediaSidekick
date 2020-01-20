@@ -1090,7 +1090,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     else if (context == "File selected" || context == "Clips filter changed" || context == "New Edit")
     {
 
-        qDebug()<<"MainWindow::createContextSensitiveHelp"<<context;
+//        qDebug()<<"MainWindow::createContextSensitiveHelp"<<context;
 
         if (context == "New Edit")
         {
@@ -1111,6 +1111,9 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
             requestList.append({context, ui->setInButton, "In point", tr("<p>Set in point</p>"
                                                             "<p><i>No clips created yet, you can add clips here by setting in and outpoints</i></p>"
                                                             ), ui->clipsTabWidget, 0});
+            requestList.append({context, ui->propertyEditorPushButton, "Properties", tr("<p>Edit properties</p>"
+                                                            "<p><i>Edit the properties of the media files and rename the files</i></p>"
+                                                            ), ui->clipsTabWidget, 1});
         }
         else if (ui->clipsTableView->clipsProxyModel->rowCount() == 0)
             requestList.append({context, ui->ratingFilterComboBox, "Filters", tr("<p>Select filters</p>"
@@ -1755,7 +1758,7 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
 
 void MainWindow::onPropertiesLoaded()
 {
-    qDebug()<<"MainWindow::onPropertiesLoaded";
+//    qDebug()<<"MainWindow::onPropertiesLoaded";
     emit propertyFilterChanged(ui->propertyFilterLineEdit, ui->propertyDiffCheckBox);
 
     ui->clipsFramerateComboBox->blockSignals(true); // do not fire on_clipsFramerateComboBox_currentTextChanged

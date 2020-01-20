@@ -288,7 +288,7 @@ void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 
 void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString();
+//    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {
@@ -301,9 +301,9 @@ void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 
 void AVideoWidget::onMetaDataChanged()
 {
-    qDebug()<<"AVideoWidget::onMetaDataChanged"<<m_player->metaData(QMediaMetaData::MediaType).toString();
 
     QStringList metadatalist = m_player->availableMetaData();
+    qDebug()<<"AVideoWidget::onMetaDataChanged"<<m_player->metaData(QMediaMetaData::MediaType).toString()<<metadatalist.count();
 
        // Get the size of the list
        int list_size = metadatalist.size();
@@ -322,7 +322,7 @@ void AVideoWidget::onMetaDataChanged()
          // Get the value for the key
          var_data = m_player->metaData(metadata_key);
 
-        qDebug() << metadata_key << var_data.toString();
+        qDebug() <<"AVideoWidget::onMetaDataChanged" << metadata_key << var_data.toString();
        }
 }
 

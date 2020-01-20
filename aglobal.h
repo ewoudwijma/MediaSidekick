@@ -1,6 +1,7 @@
 #ifndef AGLOBAL_H
 #define AGLOBAL_H
 
+#include <QGeoCoordinate>
 #include <QString>
 
 static const int orderBeforeLoadIndex = 0;
@@ -48,6 +49,7 @@ public:
     QString secondsToCSV(qint64 seconds);
     QString csvToString(QString csv);
     qint64 csvToSeconds(QString csv);
+    QGeoCoordinate csvToGeoCoordinate(QString csv);
 };
 
 #endif // AGLOBAL_H

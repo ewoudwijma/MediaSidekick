@@ -82,6 +82,7 @@ signals:
       void addToJob(QString id, QString log);
       void propertiesLoaded();
       void releaseMedia(QString fileName);
+      void redrawMap();
 };
 
 #endif // APROPERTYTREEVIEW_H

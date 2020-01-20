@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.2.0");
+    a.setApplicationVersion("0.2.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -45,6 +45,16 @@ int main(int argc, char *argv[])
 //C:\Qt\5.12.6\mingw73_64\bin\qtenv2.bat
 //cd d:\ACVC\build-ACVC-Desktop_Qt_5_12_6_MinGW_64_bit-Release\release
 //c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --quick --no-translations .
+//c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --release --no-translations .
+
+
+//https://stackoverflow.com/questions/30814475/qml-module-not-installed-error-running-qt-app-on-embedded-linux
+
+//C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
+//cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Release\release
+//c:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir C:\Qt\5.13.2\mingw73_64\qml  .
+
+//manually copy C:\Qt\5.13.2\mingw73_64\qml\QtPositioning and C:\Qt\5.13.2\mingw73_64\qml\QtLocation folders!!!!
 
 //http://www.gnu.org/licenses/lgpl-3.0.html
 //https://doc.qt.io/qtinstallerframework/index.html

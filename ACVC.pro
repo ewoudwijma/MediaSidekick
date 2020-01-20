@@ -4,15 +4,21 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-QT += multimedia multimediawidgets location quickwidgets network
+QT += core gui
+QT += multimedia multimediawidgets quickwidgets
 
-#QT += quick qml network positioning location
+QT += qml network quick positioning location
+
 
 win32:
 {
     QT += winextras
 }
+
+# Workaround for QTBUG-38735
+#QT_FOR_CONFIG += location-private
+#qtConfig(geoservices_mapboxgl): QT += sql opengl
+#qtConfig(geoservices_osm): QT += concurrent
 
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
