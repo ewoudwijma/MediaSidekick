@@ -12,15 +12,19 @@ AFolderTreeView::AFolderTreeView(QWidget *parent) : QTreeView(parent)
     directoryModel->setFilter(QDir::Dirs|QDir::Drives|QDir::NoDotAndDotDot|QDir::AllDirs);
 //    directoryModel->setFilter(QDir::AllEntries);
 
+#ifdef Q_OS_MAC
+    directoryModel->setRootPath(QDir::home().homePath());
     setModel(directoryModel);
-//    setRootIndex(directoryModel->index("//localhost"));
+    setRootIndex(directoryModel->index(QDir::home().homePath()));
+#else
+    directoryModel->setRootPath("");
+    setModel(directoryModel);
+#endif
     setColumnWidth(0,columnWidth(0) * 4);
     this->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     connect( this, &QTreeView::clicked, this, &AFolderTreeView::onIndexClicked);
 
-    //loadmodel
-    directoryModel->setRootPath("");
 
     QString lastFolder = QSettings().value("LastFolder").toString();
     if (lastFolder != ""  && lastFolder.length() > 4) //not the root folder

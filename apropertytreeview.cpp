@@ -11,6 +11,7 @@
 #include <QDateTime>
 #include <QGeoCoordinate>
 #include <QTimer>
+#include <QApplication>
 
 APropertyTreeView::APropertyTreeView(QWidget *parent) : QTreeView(parent)
 {
@@ -169,17 +170,20 @@ void APropertyTreeView::loadModel(QString folderName)
     while (propertyItemModel->columnCount() > firstFileColumnIndex) //remove old columns
         propertyItemModel->removeColumn(propertyItemModel->columnCount() - 1);
 
-    QString exiftool = "exiftool";
-#ifndef Q_OS_WIN
-    exiftool = "/usr/local/bin/" + exiftool;
-#endif
-    QString command = exiftool + " -s -c \"%02.6f\" \"" + folderName + "\""; ////
+    QString command = "exiftool -s -c \"%02.6f\" \"" + folderName + "\""; ////
 
     QMap<QString, QString> parameters;
 
     QString *processId = new QString();
     emit addJob(folderName, "All", "Property load", processId);
     emit addToJob(*processId, command + "\n");
+
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/exiftool/" + command;
+#endif
+
     parameters["processId"] = *processId;
 
     processManager->startProcess(command, parameters
@@ -1036,7 +1040,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                         maximumTime = QDateTime::fromString(maximumValue.data().toString(), "yyyy:MM:dd HH:mm:ss");
                         seconds = minimumTime.secsTo(maximumTime);
                         deltaString = AGlobal().secondsToCSV(seconds);
-                        qDebug()<<"secs and days"<<minimumTime<<maximumTime<<minimumTime.secsTo(maximumTime)<<deltaString;
+//                        qDebug()<<"secs and days"<<minimumTime<<maximumTime<<minimumTime.secsTo(maximumTime)<<deltaString;
                         propertyProxyModel->setData(propertyProxyModel->index(proxyIndex.row(), deltaIndex, proxyIndex.parent()), deltaString);
                     }
 
@@ -1101,7 +1105,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                         altitude = maximumCoordinate.altitude() - minimumCoordinate.altitude();
                         deltaString = QString::number(distance) + ";" + QString::number(bearing) + ";" + QString::number(altitude);
 
-                        qDebug()<<"geo delta"<<minimumCoordinate<<maximumCoordinate<<deltaString;
+//                        qDebug()<<"geo delta"<<minimumCoordinate<<maximumCoordinate<<deltaString;
                         propertyProxyModel->setData(propertyProxyModel->index(proxyIndex.row(), deltaIndex, proxyIndex.parent()), deltaString);
                     }
 
@@ -1300,27 +1304,30 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
         parameters["fileName"] = fileName;
         parameters["propertyNames"] = propertyNames.join(";");
 
-        QString exiftool = "exiftool";
-    #ifndef Q_OS_WIN
-        exiftool = "/usr/local/bin/" + exiftool;
-    #endif
-        QString code = exiftool;
+        QString command = "exiftool";
 
 //        qDebug()<<"APropertyTreeView::saveChanges"<<propertyNames.count()<<values.count();
 
         for (int i=0; i<propertyNames.count(); i++)
-            code += " -" + propertyNames[i] + "=" + values[i];
+            command += " -" + propertyNames[i] + "=" + values[i];
 
-        code += " -overwrite_original \"" + directoryName->toString() + "//" + fileName + "\"";
+        command += " -overwrite_original \"" + directoryName->toString() + "//" + fileName + "\"";
 
-//        qDebug()<<"APropertyTreeView::saveChanges"<<code;
+//        qDebug()<<"APropertyTreeView::saveChanges"<<command;
 
-        if (code.contains("exiftool"))
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/exiftool/" + command;
+#endif
+
+
+        if (command.contains("exiftool"))
             onSetPropertyValue(parameters["fileName"], "Status", "Updating metadata");
         else
-            onSetPropertyValue(parameters["fileName"], "Status", code);
+            onSetPropertyValue(parameters["fileName"], "Status", command);
 
-        processManager->startProcess(code, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
+        processManager->startProcess(command, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
         {
             APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
 

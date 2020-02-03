@@ -190,6 +190,7 @@ bool APropertyEditorDialog::checkExit()
     {
         ui->propertyTreeView->isLoading = true; //to avoid updates from mainwindow
         ui->propertyTreeView->propertyItemModel = new QStandardItemModel(); //to avoid updates from mainwindow
+        accept();
     }
 
     return exitYes;

@@ -1,5 +1,5 @@
 #ifndef APROPERTYTREEVIEW_H
-#define PROPERTYTREEVIEW_H
+#define APROPERTYTREEVIEW_H
 
 #include "aprocessmanager.h"
 #include "apropertysortfilterproxymodel.h"

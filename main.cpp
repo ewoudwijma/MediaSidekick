@@ -4,9 +4,69 @@
 
 #include "aglobal.h"
 
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+
+#ifdef Q_OS_WIN
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+////#include <libswscale/swscale.h>
+////#include <libavutil/avutil.h>
+////#include <libavdevice/avdevice.h>
+////#include <libavfilter/avfilter.h>
+////#include <libpostproc/postprocess.h>
+////#include <libswresample/swresample.h>
+}
+#endif
+
 int main(int argc, char *argv[])
 {
+#ifdef false
+
+    AVFormatContext *fmt_ctx = NULL;
+    AVDictionaryEntry *tag = NULL;
+    int ret;
+
+//    if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\Bras_DVR\\Encode2.7K@30.mp4", NULL, NULL)))
+    if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\Bras_DVR\\2020-01-15 00-42-21.AVI", NULL, NULL)))
+        return ret;
+
+    if ((ret = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
+        return ret;
+    }
+
+    AVInputFormat *iformat = fmt_ctx->iformat;
+    qDebug()<<"Input format info"<<iformat->name<<iformat->long_name<<iformat->mime_type<<iformat->codec_tag<<iformat->raw_codec_id;
+
+    AVStream **streams = fmt_ctx->streams;
+    AVStream *stream = streams[0];
+
+    AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
+
+    if (!codec) {
+                qDebug() << "Could not find input codec.";
+    }
+
+    qDebug()<<"stream and codec info"<<stream->codecpar<<codec;
+    qDebug()<<"stream and codec info"<<stream->info<<stream->duration<<stream->avg_frame_rate.num<<stream->nb_frames<<codec->name<<codec->long_name<<codec->type<<codec->id;
+    qDebug()<<"stream and codec info"<<stream->info<<stream->duration<<stream->avg_frame_rate.num<<stream->nb_frames<<stream->codecpar->codec_id<<stream->codecpar->codec_type<<stream->codecpar->format<<stream->codecpar->codec_tag<<stream->codecpar->width<<stream->codecpar->height;
+
+    qDebug()<<"file meta"<<av_dict_count(fmt_ctx->metadata);
+    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+        qDebug()<<tag->key<<tag->value;
+
+    qDebug()<<"Stream meta"<<av_dict_count(stream->metadata);
+    while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+        qDebug()<<"  "<<tag->key<<tag->value;
+
+    avformat_close_input(&fmt_ctx);
+#endif
+
     QApplication a(argc, argv);
+
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
     a.setApplicationVersion("0.2.1");
@@ -50,11 +110,6 @@ int main(int argc, char *argv[])
 
 //https://stackoverflow.com/questions/30814475/qml-module-not-installed-error-running-qt-app-on-embedded-linux
 
-//C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
-//cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Release\release
-//c:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir C:\Qt\5.13.2\mingw73_64\qml  .
-
-//manually copy C:\Qt\5.13.2\mingw73_64\qml\QtPositioning and C:\Qt\5.13.2\mingw73_64\qml\QtLocation folders!!!!
 
 //http://www.gnu.org/licenses/lgpl-3.0.html
 //https://doc.qt.io/qtinstallerframework/index.html
@@ -67,3 +122,124 @@ int main(int argc, char *argv[])
 //https://exiftool.org/
 
 //https://stackoverflow.com/questions/46455360/workaround-for-qt-installer-framework-not-overwriting-existing-installation
+
+//Derperview VCRuntime140_1.dll error: https://aka.ms/vs/16/release/VC_redist.x64.exe
+//https://ffmpeg.zeranoe.com/builds/win64/dev/
+
+//install shotcut
+//https://shotcut.org/notes/windowsdev/
+
+
+/*
+ *
+ * Certificate:
+ *  - https://www.sslforfree.com/
+ *  - cp.ashosting.nl / website beheer / ssl
+ *
+$QTmingwFolder = C:\Qt\5.13.2\mingw73_64
+$QTmingwFolder = C:\Qt\5.14.1\mingw73_64
+
+add to $QTmingwFolder
+
+
+    - make sure bin, include and lib exists
+            storing C:\Users\ewoud\OneDrive\Documents\ACVC project\ACVC support files\additional\Win for the time being
+
+
+
+create deploy folder
+    - Copy contents of D:\ACVC\ffmpeg-20200121-fc6fde2-win64-shared\bin to debug or release folder (avcodec 58)
+
+
+and more... (temp?)
+    - lib_win_x86_64 contents in the main folder
+    - $QTmingwFolder\bin\ contents in the main folder (a lot)
+    - then it works ...
+
+
+Clean install of both QT/Mingw and deploy folder
+
+    - Project ERROR: Unknown module(s) in QT: avwidgets / :-1: error: Unknown module(s) in QT: avwidgets
+        - QtAV: run sdk_deploy.bat from D:\ACVC\QtAV-Qt5.9-VS2017x64-release-6067154 to the mingw folder (copying avcodec 57 to bin, conflict with 58???)
+            - https://github.com/wang-bin/QtAV/wiki/Use-QtAV-In-Your-Projects
+            - https://github.com/wang-bin/QtAV/wiki/Deploy-SDK-Without-Building-QtAV
+            - https://forum.qt.io/topic/106288/linker-problem-with-qtav
+            - https://github.com/wang-bin/QtAV/wiki/Build-QtAV (not needed, except to get lib_win_x86_64 stuff)
+    - D:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug3\debug\ACVC.exe crashed. (skip these steps next time, see next step)
+        - QtAV: Copy D:\ACVC\QtAV-depends-windows-x86+x64\bin and lib to mingw\bin and \lib (some files alreadt exists eg avcodec 57, skip these)
+        - QtAV: Copy D:\ACVC\QtAV-x64-lib\lib_win_x86_64 to mingw\lib (result of compiling C:\Users\ewoud\Downloads\QtAV-master!!!, looks like this should have been added to the release? ask forum!)
+    - Still crashing
+        - QtAV: Copy depends and lib_win_x86_64 stuff (both bin and lib) in deploy\debug (maybe not needed to copy to mingw)
+            - Libs still needed (to do from other folder)
+                LIBS += -LD:\ACVC\QtAV-x64-lib\lib_win_x86_64
+                LIBS += -lQtAVd1 -lQtAVWidgetsd1 # -lQt5AV  -lQt5AVWidgets
+                - https://github.com/wang-bin/QtAV/issues/1193
+                - https://github.com/wang-bin/QtAV/wiki/Build-QtAV
+        - ACVC starts
+    - ACVC exiftool missing
+        - Copy exiftool.exe (and also scripts, ico)
+    - Prepare for installer
+        - deploy in shell (not powershell...)
+        - C:\Qt\5.14.1\mingw73_64\bin\qtenv2.bat
+            - C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
+        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_14_1_MinGW_64_bit-Release\release or cd D:\ACVC\build-ACVC-Desktop_Qt_5_14_1_MinGW_64_bit-Debug
+            - cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug3\debug
+        - C:\Qt\5.14.1\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir C:\Qt\5.14.1\mingw73_64\qml  .
+            - C:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir C:\Qt\5.13.2\mingw73_64\qml  .
+
+        - why all those big files e.g. Qt5Guid.dll, Qt5Qmld.dll, Qt5Quickd.dll (was not there in 0.2.1)
+
+        -manually copy $QTmingwFolder\qml\QtPositioning and $QTmingwFolder\qml\QtLocation folders!!!! (bug, solved in future ming version?)
+
+        - copy all of deploy to installer/data
+    - Qt5OpenGL.dll was not found
+        - copy C:/Qt/5.13.2/mingw73_64/bin/Qt5OpenGLd.dll to deploy... (why not automatic?) -> do this before copy all of deploy
+        - installer/data acvc starts!
+        - run acvcinstaller\run.bat to create ACVCInstallerV0.2.2.exe (510 kb?)
+
+
+OSX Install QTAV
+    - https://github.com/wang-bin/QtAV/wiki/Deploy-SDK-Without-Building-QtAV
+        - Install player to /Applications
+        - run /Applications/player.app/sdk_osx.sh ~/Qt5.5.0/5.5/clang_64/lib to install QtAV libraries to Qt library dir(here assume your Qt is installed in ~/Qt5.5.0) or just run /Applications/player.app/sdk_osx.sh and follow the guide
+        - If you want to use QML module, you have to use QMLPlayer.dmg. It also includes QtAVWidgets module since 1.9.0.
+
+        - Issue: https://github.com/wang-bin/QtAV/issues/1220
+
+Background
+   - https://forum.qt.io/topic/21312/a-video-player-based-on-qt-and-ffmpeg/2
+   - http://dranger.com/ffmpeg/ffmpegtutorial_all.html
+   - https://github.com/leandromoreira/ffmpeg-libav-tutorial#video---what-you-see
+
+   otool -L /Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Debug/ACVC.app/Contents/MacOS/ACVC
+
+   install_name_tool -change /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/libavcodec.58.dylib "@loader_path/libavcodec.58.dylib" ACVC
+
+MACOS 2020-01-31
+    - cp /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/* build
+    - sudo mv ffmpeg ACVC.app/Contents/PlugIns/
+
+MacOS 2020-02-01
+    - QT Creator run/build
+    - macdeployqt
+        - https://doc.qt.io/qt-5/macos-deployment.html
+        - https://blog.inventic.eu/2012/08/how-to-deploy-qt-application-on-macos-2/
+        - https://doc-snapshots.qt.io/qt5-5.11/osx-deployment.html
+        - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Release/
+        - /Users/ewoudwijma/Qt/5.13.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/
+
+    - Get exiftool and ffmpeg files
+        - Get https://exiftool.org/ExifTool-xx.yy.dmg from https://exiftool.org/
+        - Get https://ffmpeg.zeranoe.com/builds/macos64/shared/ffmpeg-latest-macos64-shared.zip
+        - (https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip)
+        - Install dmg / pkg
+        - Script
+            mkdir $acvc_build_path/ACVC.app/Contents/Plugins/exiftool
+            mkdir $acvc_build_path/ACVC.app/Contents/Plugins/ffmpeg
+            cp -r /usr/local/bin/lib $acvc_build_path/ACVC.app/Contents/Plugins/exiftool/
+            cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/Plugins/exiftool/
+            cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/Plugins/ffmpeg/
+     - Make dmg (repeat this step only to create new deployment)
+        - /Users/ewoudwijma/Qt/5.13.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
+
+*/

@@ -25,12 +25,10 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
   , m_duration(0),
     m_isSeekable(false)
 {
-//    qDebug()<<"AVideoWidget::AVideoWidget"<<parent;
-    setMinimumSize(minimumSize().width(), 300);
-//    setMinimumHeight(250);
+    QRect savedGeometry = QSettings().value("Geometry").toRect();
 
-    parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
-//    qDebug()<<"cast"<<parentLayout<<parent<<layout();
+//    qDebug()<<"AVideoWidget::AVideoWidget"<<topLevelWidget()<<topLevelWidget()->size().height()<<savedGeometry.height();
+    setMinimumSize(minimumSize().width(), qMax(100,int(savedGeometry.height() / 5.0)));
 
     m_player = new QMediaPlayer(this);
 //    auto pal = palette();
@@ -56,7 +54,6 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
     m_scrubber->setObjectName("m_scrubber");
     m_scrubber->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 //    m_scrubber->setMinimumSize(200,200);
-//        parentLayout->insertWidget(-1, m_scrubber);
     m_scrubber->setEnabled(true);
     m_scrubber->readOnly = false;
     m_scrubber->setScale(10000);
@@ -80,11 +77,10 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
 
     lastHighlightedRow = -1;
 
-//    this->layout()->addWidget(m_scrubber);
-
     selectedFileName = "";
 
-    QTimer::singleShot(0, this, [this]()->void
+    QVBoxLayout *parentLayout = qobject_cast<QVBoxLayout *>(parent->layout());
+    QTimer::singleShot(0, this, [this, parentLayout]()->void
     {
                            parentLayout->insertWidget(1, m_scrubber);
     });
@@ -103,19 +99,10 @@ void AVideoWidget::onFileIndexClicked(QModelIndex index)
 {
     selectedFolderName = QSettings().value("LastFileFolder").toString();
     selectedFileName = index.model()->index(index.row(), 0, index.parent()).data().toString();
-
 //    qDebug()<<"AVideoWidget::onFileIndexClicked"<<index.column()<<index.data().toString()<<selectedFolderName + selectedFileName<<QSettings().value("frameRate").toInt();
-    m_player->setMedia(QUrl(selectedFolderName + selectedFileName));
-    m_player->play();
-    m_player->pause();
-    m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
-    m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
-//    m_player->setMuted(!selectedFileName.contains(".mp3"));
+    oldState = m_player->state();
 
-    if (selectedFileName.toLower().contains(".mp3") || selectedFileName.toLower().contains("lossless") || selectedFileName.toLower().contains("encode") || selectedFileName.toLower().contains("shotcut") || selectedFileName.toLower().contains("premiere"))
-        m_player->setVolume(100);
-    else
-        m_player->setVolume(sourceVideoVolume);
+    m_player->setMedia(QUrl::fromLocalFile(selectedFolderName + selectedFileName));
 
     lastHighlightedRow = -1;
 }
@@ -131,31 +118,18 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
     if (selectedFileName != fileName)
         selectedFileName = fileName;
 
-//    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl(folderFileName)<<m_player->media().canonicalUrl();
+    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().canonicalUrl();
 
-    if (QUrl(folderFileName) != m_player->media().canonicalUrl()) //another media file
+    if (QUrl::fromLocalFile(folderFileName) != m_player->media().canonicalUrl()) //another media file
     {
 //        QString *frameratePointer = new QString();
 //        emit getPropertyValue(selectedFileName, "VideoFrameRate", frameratePointer);
 //        fpsRounded = int( qRound(index.model()->index(index.row(),fpsIndex).data().toDouble() / 5) * 5);
 
-//        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
-        QMediaPlayer::State oldState = m_player->state();
+        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
+        oldState = m_player->state();
 //        bool oldMuted = m_player->isMuted();
-        m_player->setMedia(QUrl(folderFileName));
-
-        m_player->play();
-        if (oldState != QMediaPlayer::PlayingState)
-            m_player->pause();
-
-//        m_player->setMuted(oldMuted);
-        m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
-        m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
-
-        if (selectedFileName.toLower().contains(".mp3") || selectedFileName.toLower().contains("lossless") || selectedFileName.toLower().contains("encode") || selectedFileName.toLower().contains("shotcut") || selectedFileName.toLower().contains("premiere"))
-            m_player->setVolume(100);
-        else
-            m_player->setVolume(sourceVideoVolume);
+        m_player->setMedia(QUrl::fromLocalFile(folderFileName));
     }
 
 //    qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.column()<<m_player->position();
@@ -265,7 +239,7 @@ void AVideoWidget::onReleaseMedia(QString fileName)
 {
     if (fileName == selectedFileName)
     {
-//        qDebug()<<"AVideoWidget::onReleaseMedia"<<fileName;
+        qDebug()<<"AVideoWidget::onReleaseMedia"<<fileName;
         m_player->stop();
         m_player->setMedia(QMediaContent());
     }
@@ -288,7 +262,7 @@ void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 
 void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-//    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString();
+    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().canonicalUrl()<<m_player->error()<<m_player->errorString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {
@@ -296,7 +270,26 @@ void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 //    }
 
     if (status == QMediaPlayer::LoadedMedia)
-        qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status;
+    {
+//        resize(10,10);
+        m_player->play();
+#ifdef Q_OS_MAC
+        QSize s1 = size();
+        QSize s2 = s1 + QSize(1, 1);
+        resize(s2);// enlarge by one pixel
+        resize(s1);// return to original size
+#endif
+        if (oldState != QMediaPlayer::PlayingState)
+            m_player->pause();
+        m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
+        m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
+    //    m_player->setMuted(!selectedFileName.contains(".mp3"));
+
+        if (selectedFileName.toLower().contains(".mp3") || selectedFileName.toLower().contains("lossless") || selectedFileName.toLower().contains("encode") || selectedFileName.toLower().contains("shotcut") || selectedFileName.toLower().contains("premiere"))
+            m_player->setVolume(100);
+        else
+            m_player->setVolume(sourceVideoVolume);
+    }
 }
 
 void AVideoWidget::onMetaDataChanged()
@@ -336,7 +329,16 @@ void AVideoWidget::togglePlayPaused()
 //    qDebug()<<"AVideoWidget::togglePlayPaused"<<m_player->state();
 
     if (m_player->state() != QMediaPlayer::PlayingState)
+    {
         m_player->play();
+#ifdef Q_OS_MAC
+        //https://stackoverflow.com/questions/38374158/qvideowidget-video-is-cut-off
+        QSize s1 = size();
+        QSize s2 = s1 + QSize(1, 1);
+        resize(s2);// enlarge by one pixel
+        resize(s1);// return to original size
+#endif
+    }
     else if (m_isSeekable)
         m_player->pause();
     else

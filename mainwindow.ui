@@ -93,12 +93,15 @@
         <widget class="QWidget" name="layoutWidget">
          <layout class="QVBoxLayout" name="verticalLayout_player">
           <item>
-           <widget class="AVideoWidget" name="videoWidget" native="true">
-            <property name="styleSheet">
-             <string notr="true">background-color: rgba(0,0,0,0)</string>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_4"/>
-           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_17">
+            <item>
+             <widget class="AVideoWidget" name="videoWidget" native="true">
+              <property name="styleSheet">
+               <string notr="true">background-color: rgba(0,0,0,0)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -473,6 +476,16 @@
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
             <widget class="QGraphWidget" name="graphicsView2"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tabTimeline20">
+          <attribute name="title">
+           <string>Timeline2.0</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_16">
+           <item>
+            <widget class="AMainGraphicsView" name="graphicsView"/>
            </item>
           </layout>
          </widget>
@@ -1313,6 +1326,11 @@
    <class>AJobTableView</class>
    <extends>QTableView</extends>
    <header>ajobtableview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>AMainGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>amaingraphicsview.h</header>
   </customwidget>
  </customwidgets>
  <resources>

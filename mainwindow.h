@@ -162,11 +162,12 @@ private slots:
 
     void on_refreshButton_clicked();
 
+    void onPropertyEditorDialogFinished(int result);
 private:
     Ui::MainWindow *ui;
 
     QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
-    QWidget *graphWidget1, *graphWidget2;
+    QWidget *graphWidget1, *graphWidget2, *graphicsWidget;
     QString transitionValueChangedBy;
     QString positionValueChangedBy;
     QNetworkAccessManager m_network;

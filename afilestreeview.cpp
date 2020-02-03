@@ -11,6 +11,10 @@
 
 #include "aglobal.h"
 
+#ifdef Q_OS_WIN
+#include "awideview.h"
+#endif
+
 //#include "fileapi.h"
 
 #include <QApplication>
@@ -65,8 +69,8 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu->addAction(new QAction("Delete clips",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onClipsDelete);
 
-//    fileContextMenu->addAction(new QAction("Superview",fileContextMenu));
-//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onSuperview);
+    fileContextMenu->addAction(new QAction("Wideview",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onWideview2);
 
     fileContextMenu->addSeparator();
 
@@ -359,70 +363,111 @@ void AFilesTreeView::onClipsDelete()
      fileContextMenu->close();
 }
 
-double derp_it(int tx, int target_width, int src_width)
+void AFilesTreeView::onWideview2()
 {
-    double x = (static_cast<double>(tx) / target_width - 0.5) * 2; //  - 1 -> 1
-    double sx = tx - (target_width - src_width) / 2;
-    double offset = x * x * (x < 0 ? -1 : 1) * ((target_width - src_width) / 2);
-    return sx - offset;
-}
-
-void BuildLookup(int width)
-{
-    // Generate lookup table
-    int targetWidth = width * 4 / 3;
-//    LOOKUP[width] = vector<double>(targetWidth);
-    for (int tx = 0; tx < targetWidth; tx++)
+    QStringList fileNameList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
     {
-        double x = (static_cast<double>(tx) / targetWidth - 0.5) * 2; //  - 1 -> 1
-        double sx = tx - (targetWidth - width) / 2;
-        double offset = x * x * (x < 0 ? -1 : 1) * ((targetWidth - width) / 2);
-//        LOOKUP[width][tx] = derp_it(tx, targetWidth, width)
+        if (indexList[i].column() == 0) //first column
+        {
+            QString fileName = indexList[i].data().toString();
+            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+                fileNameList << fileName;
+        }
     }
+
+    if (fileNameList.count()>0)
+    {
+        QString folderName = QSettings().value("LastFolder").toString();
+
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Wideview" + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to wideview " + fileNameList.join(", ") + "?",
+                                       QMessageBox::Yes|QMessageBox::No);
+
+         if (reply == QMessageBox::Yes)
+         {
+             for (int i=0; i< fileNameList.count();i++)
+             {
+                 QString fileName = fileNameList[i];
+
+#ifdef Q_OS_WIN
+                 Go((folderName + fileName).toUtf8().constData(), (folderName + fileName.left(fileName.lastIndexOf(".")) + "SV.mp4").toUtf8().constData(), 4);
+#endif
+             }
+         }
+    }
+    else
+        QMessageBox::information(this, "Wideview", "Nothing to do");
+
+     fileContextMenu->close();
+
 }
 
-void AFilesTreeView::onSuperview()
-{
-       int target_width = 3500;//int(sys.argv[1])
-       int height = 1520;//int(sys.argv[2])
-       int src_width = 2704;//int(sys.argv[3])
+//double derp_it(int tx, int target_width, int src_width)
+//{
+//    double x = (static_cast<double>(tx) / target_width - 0.5) * 2; //  - 1 -> 1
+//    double sx = tx - (target_width - src_width) / 2;
+//    double offset = x * x * (x < 0 ? -1 : 1) * ((target_width - src_width) / 2);
+//    return sx - offset;
+//}
 
-       QFile srtOutputFile(QSettings().value("LastFileFolder").toString() + "xmap.pgm");
-       if (srtOutputFile.open(QIODevice::WriteOnly) )
-       {
-           QTextStream srtStream( &srtOutputFile );
+//void BuildLookup(int width)
+//{
+//    // Generate lookup table
+//    int targetWidth = width * 4 / 3;
+////    LOOKUP[width] = vector<double>(targetWidth);
+//    for (int tx = 0; tx < targetWidth; tx++)
+//    {
+//        double x = (static_cast<double>(tx) / targetWidth - 0.5) * 2; //  - 1 -> 1
+//        double sx = tx - (targetWidth - width) / 2;
+//        double offset = x * x * (x < 0 ? -1 : 1) * ((targetWidth - width) / 2);
+////        LOOKUP[width][tx] = derp_it(tx, targetWidth, width)
+//    }
+//}
 
-           srtStream << "P2 " + QString::number(target_width) + " " + QString::number(height) + " 65535" << endl;
+//void AFilesTreeView::onWideview()
+//{
+//       int target_width = 3500;//int(sys.argv[1])
+//       int height = 1520;//int(sys.argv[2])
+//       int src_width = 2704;//int(sys.argv[3])
 
-           for (int y = 0; y < height; y++)
-           {
-               for (int x = 0; x < target_width; x++)
-               {
-                   srtStream << QString::number(derp_it(x, target_width, src_width)) + " ";
-               }
-               srtStream << endl;
-           }
-       }
-       srtOutputFile.close();
+//       QFile srtOutputFile(QSettings().value("LastFileFolder").toString() + "xmap.pgm");
+//       if (srtOutputFile.open(QIODevice::WriteOnly) )
+//       {
+//           QTextStream srtStream( &srtOutputFile );
 
-       QFile srtOutputFile2(QSettings().value("LastFileFolder").toString() + "ymap.pgm");
-       if (srtOutputFile2.open(QIODevice::WriteOnly) )
-       {
-           QTextStream srtStream( &srtOutputFile2 );
+//           srtStream << "P2 " + QString::number(target_width) + " " + QString::number(height) + " 65535" << endl;
 
-           srtStream << "P2 " + QString::number(target_width) + " " + QString::number(height) + " 65535" << endl;
+//           for (int y = 0; y < height; y++)
+//           {
+//               for (int x = 0; x < target_width; x++)
+//               {
+//                   srtStream << QString::number(derp_it(x, target_width, src_width)) + " ";
+//               }
+//               srtStream << endl;
+//           }
+//       }
+//       srtOutputFile.close();
 
-           for (int y = 0; y < height; y++)
-           {
-               for (int x = 0; x < target_width; x++)
-               {
-                   srtStream << QString::number(y) + " ";
-               }
-               srtStream << endl;
-           }
-       }
-       srtOutputFile2.close();
-}
+//       QFile srtOutputFile2(QSettings().value("LastFileFolder").toString() + "ymap.pgm");
+//       if (srtOutputFile2.open(QIODevice::WriteOnly) )
+//       {
+//           QTextStream srtStream( &srtOutputFile2 );
+
+//           srtStream << "P2 " + QString::number(target_width) + " " + QString::number(height) + " 65535" << endl;
+
+//           for (int y = 0; y < height; y++)
+//           {
+//               for (int x = 0; x < target_width; x++)
+//               {
+//                   srtStream << QString::number(y) + " ";
+//               }
+//               srtStream << endl;
+//           }
+//       }
+//       srtOutputFile2.close();
+//}
 
 void AFilesTreeView::onOpenInExplorer()
 {

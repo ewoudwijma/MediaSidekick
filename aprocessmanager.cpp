@@ -11,7 +11,7 @@ AProcessManager::AProcessManager(QWidget *parent) : QWidget(parent)
     connect (process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(processFinished(int, QProcess::ExitStatus)));  // same here
     connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error)
     {
-        qDebug() << "error enum val = " << error << process->errorString() << endl;
+        qDebug() << "AProcessManager::AProcessManager" << error << process->errorString();
     });
     processQueue = new QStringList();
     parameterQueue = new QList<QMap<QString, QString>>();

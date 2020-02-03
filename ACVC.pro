@@ -10,10 +10,7 @@ QT += multimedia multimediawidgets quickwidgets
 QT += qml network quick positioning location
 
 
-win32:
-{
-    QT += winextras
-}
+win32: QT += winextras
 
 # Workaround for QTBUG-38735
 #QT_FOR_CONFIG += location-private
@@ -53,6 +50,8 @@ SOURCES += \
         aglobal.cpp \
         ajobitemdelegate.cpp \
         ajobtableview.cpp \
+        amaingraphicsitem.cpp \
+        amaingraphicsview.cpp \
         aprocessmanager.cpp \
         apropertyeditordialog.cpp \
         apropertyitemdelegate.cpp \
@@ -64,6 +63,9 @@ SOURCES += \
         atagslistview.cpp \
         atimeline.cpp \
         avideowidget.cpp \
+        awideview.cpp \
+        awideviewprocess.cpp \
+        awideviewvideo.cpp \
         main.cpp \
         mainwindow.cpp \
         qedge.cpp \
@@ -71,6 +73,10 @@ SOURCES += \
         qnode.cpp \
         sscrubbar.cpp \
         stimespinbox.cpp
+
+win32: SOURCES +=
+win32: SOURCES += 
+win32: SOURCES +=
 
 HEADERS += \
         aclipsitemdelegate.h \
@@ -86,6 +92,8 @@ HEADERS += \
         aglobal.h \
         ajobitemdelegate.h \
         ajobtableview.h \
+        amaingraphicsitem.h \
+        amaingraphicsview.h \
         aprocessmanager.h \
         apropertyeditordialog.h \
         apropertyitemdelegate.h \
@@ -97,12 +105,19 @@ HEADERS += \
         atagslistview.h \
         atimeline.h \
         avideowidget.h \
+        awideview.h \
+        awideviewprocess.h \
+        awideviewvideo.h \
         mainwindow.h \
         qedge.h \
         qgraphwidget.h \
         qnode.h \
         sscrubbar.h \
         stimespinbox.h
+
+win32: HEADERS +=
+win32: HEADERS += 
+win32: HEADERS +=
 
 FORMS += \
         mainwindow.ui \
@@ -120,5 +135,10 @@ RESOURCES += \
     images.qrc \
     qml.qrc
 
-DISTFILES +=
+win32: LIBS += -LD:\ACVC\windows\ffmpeg-20200121-fc6fde2-win64-dev\lib
+win32: LIBS += -lavcodec -lavformat -lavutil -lswscale #-lavdevice -lavfilter -lpostproc -lswresample
+win32: INCLUDEPATH +=D:\ACVC\windows\ffmpeg-20200121-fc6fde2-win64-dev\include
 
+#unix:LIBS += -L/Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin
+#unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample
+#unix:INCLUDEPATH += /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-dev/include

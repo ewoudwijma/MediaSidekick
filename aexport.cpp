@@ -54,13 +54,15 @@ void AExport::onPropertyUpdate(QString folderName, QString fileNameSource, QStri
     targetFileName = targetFileName.replace("/", "\\");
 #endif
 
-    QString exiftool = "exiftool";
-#ifndef Q_OS_WIN
-    exiftool = "/usr/local/bin/" + exiftool;
+    QString command = "exiftool" + attributeString + " -overwrite_original \"" + targetFileName + "\"";
+    emit addToJob(*processId, command + "\n");
+
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/exiftool/" + command;
 #endif
 
-    QString command = exiftool + attributeString + " -overwrite_original \"" + targetFileName + "\"";
-    emit addToJob(*processId, command + "\n");
     parameters["processId"] = *processId;
     processManager->startProcess(command, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
@@ -94,14 +96,20 @@ void AExport::onTrimC(QString folderName, QString fileNameSource, QString fileNa
     targetFileName = targetFileName.replace("/", "\\");
 #endif
 
-//    QString code = "ffmpeg -y -i \"" + QString(folderName + "//" + fileNameSource).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
-    QString code = "ffmpeg -y -i \"" + sourceFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + targetFileName + "\"";
+//    QString command = tool + " -y -i \"" + QString(folderName + "//" + fileNameSource).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
+    QString command = "ffmpeg -y -i \"" + sourceFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + targetFileName + "\"";
 
-    emit addToJob(parameters["processId"], code + "\n");
+    emit addToJob(parameters["processId"], command + "\n");
+
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/ffmpeg/" + command;
+#endif
 
     parameters["percentage"] = QString::number(progressPercentage);
 
-    processManager->startProcess(code, parameters, nullptr,  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )
+    processManager->startProcess(command, parameters, nullptr,  [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList )
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
         emit exportWidget->addToJob(parameters["processId"], "Completed");
@@ -215,22 +223,27 @@ void AExport::losslessVideoAndAudio()
                 sourceFileName = sourceFileName.replace("/", "\\");
                 targetFileName = targetFileName.replace("/", "\\");
 #endif
-
-                QString code = "ffmpeg -f concat -safe 0 -i \"" + sourceFileName + "\" -c copy -y \"" + targetFileName + "\"";
+                QString command = "ffmpeg -f concat -safe 0 -i \"" + sourceFileName + "\" -c copy -y \"" + targetFileName + "\"";
 
                 if (mediaType == "V" && exportVideoAudioValue == 0) //remove audio
-                    code.replace("-c copy -y", " -an -c copy -y");
+                    command.replace("-c copy -y", " -an -c copy -y");
 
     //            if (frameRate != "")
-    //                code.replace("-c copy -y", " -r " + frameRate + " -c copy -y");
+    //                command.replace("-c copy -y", " -r " + frameRate + " -c copy -y");
 
-                emit addToJob(*processId, code + "\n");
+                emit addToJob(*processId, command + "\n");
+
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/ffmpeg/" + command;
+#endif
 
                 QMap<QString, QString> parameters;
                 parameters["processId"] = *processId;
                 parameters["exportFileName"] = fileNamePlusExtension;
 
-                processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
+                processManager->startProcess(command, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
                 {
                     AExport *exportWidget = qobject_cast<AExport *>(parent);
 
@@ -406,15 +419,17 @@ void AExport::encodeVideoClips()
         }
     }
 
-    QString code = "ffmpeg " + filesString;
+    QString command = "ffmpeg " + filesString;
+
+    //tbd: consider Simple fade-in and fade-out for transitions: ffmpeg -i <input> -filter:v "fade=t=in:st=0:d=5,fade=t=out:st=30:d=5" <output>
 
     if (watermarkFileName != "")
     {
-        code += " -i \"" + watermarkFileName + "\"";
+        command += " -i \"" + watermarkFileName + "\"";
         mediaClipString += sep + "[" + QString::number(filesMap.count()) + ":v]scale=" + QString::number(videoWidth.toInt()/10) + "x" + QString::number(videoHeight.toInt()/10) + "[wtm]";
     }
 
-    code += " -filter_complex \"" + mediaClipString + " " + videoConcatString + audioConcatString;
+    command += " -filter_complex \"" + mediaClipString + " " + videoConcatString + audioConcatString;
 
     //.\ffmpeg  -i "D:/Video/2019-09-02 Fipre/2000-01-19 00-00-00 +53632ms.MP4" -i "D:/Video/2019-09-02 Fipre/Blindfold.mp3" -i "D:/Video/2019-09-02 Fipre/Child in Time (2016 Remaster).mp3" -i "C:/Users/ewoud/OneDrive/Documents/ACVC project/ACVC/acvclogo.png" -filter_complex "[0:v]trim=1.56:4.36,setpts=PTS-STARTPTS,scale=640x480[v0][0:a]volume=0.18,atrim=1.56:4.36,asetpts=PTS-STARTPTS[a0];[0:v]trim=6.8:9.44,setpts=PTS-STARTPTS,scale=640x480[v1][0:a]volume=0.18,atrim=6.8:9.44,asetpts=PTS-STARTPTS[a1];[0:v]trim=14.44:15.64,setpts=PTS-STARTPTS,scale=640x480[v2][0:a]volume=0.18,atrim=14.44:15.64,asetpts=PTS-STARTPTS[a2];[0:v]trim=19.84:22.48,setpts=PTS-STARTPTS,scale=640x480[v3][0:a]volume=0.18,atrim=19.84:22.48,asetpts=PTS-STARTPTS[a3];[0:v]trim=25.72:28.52,setpts=PTS-STARTPTS,scale=640x480[v4][0:a]volume=0.18,atrim=25.72:28.52,asetpts=PTS-STARTPTS[a4];[1:a]atrim=85.92:87.2,asetpts=PTS-STARTPTS[a5];[2:a]atrim=120.24:122.88,asetpts=PTS-STARTPTS[a6];[2:a]atrim=236.24:238.88,asetpts=PTS-STARTPTS[a7];[2:a]atrim=401.92:404.56,asetpts=PTS-STARTPTS[a8];[2:a]atrim=467.76:470.56,asetpts=PTS-STARTPTS[a9];[3:v]scale=64x48[wtm] ;[v0][v1][v2][v3][v4] concat=n=5:v=1:a=0[video0];[a0][a1][a2][a3][a4] concat=n=5:v=0:a=1[audio0];[a5][a6][a7][a8][a9] concat=n=5:v=0:a=1[audio1];[audio0][audio1]amerge=inputs=2[audio];[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]" -map "[video]" -map "[audio]" -r 25  -y "D:\Video\2019-09-02 Fipre\\Encode480p@25.mp4"
     //.\ffmpeg  -i "D:/Video/Bras_DVR/04-Devilette.mp3" -i "D:/Video/Bras_DVR/PICT0203.AVI" -i "D:/Video/Bras_DVR/PICT0206.AVI" -i "D:/Video/Bras_DVR/PICT0208.AVI" -i "D:/Video/Bras_DVR/PICT0209.AVI" -i "D:/Video/Bras_DVR/PICT0216.AVI" -i "C:/Users/ewoud/OneDrive/Documents/ACVC project/ACVC/acvclogo.png" -filter_complex "[1:v]trim=48.84:65.747,setpts=PTS-STARTPTS,scale=640x480[v1];[1:a]volume=0.18,atrim=48.84:65.747,asetpts=PTS-STARTPTS[a1];[1:v]trim=128.293:147.147,setpts=PTS-STARTPTS,scale=640x480[v2];[1:a]volume=0.18,atrim=128.293:147.147,asetpts=PTS-STARTPTS[a2];[2:v]trim=145.213:169.267,setpts=PTS-STARTPTS,scale=640x480[v3];[2:a]volume=0.18,atrim=145.213:169.267,asetpts=PTS-STARTPTS[a3];[3:v]trim=13.133:27.347,setpts=PTS-STARTPTS,scale=640x480[v4];[3:a]volume=0.18,atrim=13.133:27.347,asetpts=PTS-STARTPTS[a4];[3:v]trim=139.373:175.907,setpts=PTS-STARTPTS,scale=640x480[v5];[3:a]volume=0.18,atrim=139.373:175.907,asetpts=PTS-STARTPTS[a5];[4:v]trim=5.413:25.347,setpts=PTS-STARTPTS,scale=640x480[v6];[4:a]volume=0.18,atrim=5.413:25.347,asetpts=PTS-STARTPTS[a6];[5:v]trim=60.433:121.467,setpts=PTS-STARTPTS,scale=640x480[v7];[5:a]volume=0.18,atrim=60.433:121.467,asetpts=PTS-STARTPTS[a7];[0:a]atrim=100.7:252.533,asetpts=PTS-STARTPTS[a0];[6:v]scale=64x48[wtm] ;[v1][v2][v3][v4][v5][v6][v7] concat=n=7:v=1:a=0[video0];[a1][a2][a3][a4][a5][a6][a7] concat=n=7:v=0:a=1[audio0];[a0] concat=n=1:v=0:a=1[audio1];[audio0][audio1]amerge=inputs=2[audio];[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]" -map "[video]" -map "[audio]" -r 30  -y "D:\Video\Bras_DVR\\Encode480@30.mp4"
@@ -438,23 +453,23 @@ void AExport::encodeVideoClips()
 
     if (audioClipsMap.count() > 0 && exportVideoAudioValue > 0)
     {
-        code += sep + "[audio0][audio1]amerge=inputs=2[audio]";
+        command += sep + "[audio0][audio1]amerge=inputs=2[audio]";
     }
 
     if (watermarkFileName != "")
-        code += sep + "[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]\" -map \"[video]\"";
+        command += sep + "[video0][wtm]overlay = main_w-overlay_w-10:main_h-overlay_h-10[video]\" -map \"[video]\"";
     else
-        code += "\" -map \"[video0]\"";
+        command += "\" -map \"[video0]\"";
 
     if (audioClipsMap.count() > 0 && exportVideoAudioValue > 0)
-        code += " -map \"[audio]\"";
+        command += " -map \"[audio]\"";
     else if (audioClipsMap.count() == 0 && exportVideoAudioValue > 0)
-        code += " -map \"[audio0]\"";
+        command += " -map \"[audio0]\"";
     else if (audioClipsMap.count() > 0 && exportVideoAudioValue == 0)
-        code += " -map \"[audio1]\"";
+        command += " -map \"[audio1]\"";
 
     if (frameRate != "")
-        code += " -r " + frameRate;
+        command += " -r " + frameRate; //tbd: consider -filter:v fps=24 (minterpolate instead of dropping or duplicating frames)
 
     videoFileExtension = ".mp4";
 
@@ -464,9 +479,9 @@ void AExport::encodeVideoClips()
     targetFileName = targetFileName.replace("/", "\\");
 #endif
 
-    code +=  "  -y \"" + targetFileName + "\"";
+    command +=  "  -y \"" + targetFileName + "\"";
 
-//        qDebug()<<"filter_complex"<<code;
+//        qDebug()<<"filter_complex"<<command;
 
     //        -filter_complex \"[0:v]scale=640x640 [0:a] [1:v]scale=640x640 [1:a] concat=n=2:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" .\\outputreencode.mp4";
 
@@ -477,12 +492,19 @@ void AExport::encodeVideoClips()
     emit addJob(currentDirectory, fileNameWithoutExtension + videoFileExtension, "FFMPeg Encode", processId);
     QMap<QString, QString> parameters;
     parameters["processId"] = *processId;
-    emit addToJob(parameters["processId"], code + "\n");
+    emit addToJob(parameters["processId"], command + "\n");
+
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/ffmpeg/" + command;
+#endif
+
 
     parameters["fileNameWithoutExtension"] = fileNameWithoutExtension;
     parameters["exportFileName"] = fileNameWithoutExtension + videoFileExtension;
 
-    processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
+    processManager->startProcess(command, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
         exportWidget->processOutput(parameters, result, 10, 80);
@@ -570,7 +592,7 @@ void AExport::muxVideoAndAudio()
     targetFileName = targetFileName.replace("/", "\\");
 #endif
 
-    QString code = "ffmpeg -i \"" + targetFileName + "\"";
+    QString command = "ffmpeg -i \"" + targetFileName + "\"";
 
     if (audioClipsMap.count() > 0)
     {
@@ -580,17 +602,17 @@ void AExport::muxVideoAndAudio()
         targetFileName = targetFileName.replace("/", "\\");
     #endif
 
-        code += " -i \"" + targetFileName + "\"";
+        command += " -i \"" + targetFileName + "\"";
 
         if (exportVideoAudioValue == 0)
-            code += " -c copy -map 0:v -map 1:a";
+            command += " -c copy -map 0:v -map 1:a";
         else if (exportVideoAudioValue == 100)
-            code += " -filter_complex \"[0][1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
+            command += " -filter_complex \"[0][1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
         else
-            code += " -filter_complex \"[0]volume=" + QString::number(exportVideoAudioValue / 100.0) + "[a0];[a0][1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
+            command += " -filter_complex \"[0]volume=" + QString::number(exportVideoAudioValue / 100.0) + "[a0];[a0][1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
     }
     else
-        code += " -filter:a \"volume=" + QString::number(exportVideoAudioValue / 100.0) + "\"";
+        command += " -filter:a \"volume=" + QString::number(exportVideoAudioValue / 100.0) + "\"";
 
     targetFileName = currentDirectory +  fileNameWithoutExtension + videoFileExtension;
 
@@ -598,15 +620,21 @@ void AExport::muxVideoAndAudio()
     targetFileName = targetFileName.replace("/", "\\");
 #endif
 
-    code += " -y \"" + targetFileName + "\"";
+    command += " -y \"" + targetFileName + "\"";
 
-    emit addToJob(*processId, code + "\n");
+    emit addToJob(*processId, command + "\n");
+
+#ifdef Q_OS_WIN
+    command = qApp->applicationDirPath() + "/" + command;
+#else
+    command = qApp->applicationDirPath() + "/../PlugIns/ffmpeg/" + command;
+#endif
 
     QMap<QString, QString> parameters;
     parameters["processId"] = *processId;
     parameters["exportFileName"] = fileNameWithoutExtension + videoFileExtension;
 
-    processManager->startProcess(code, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
+    processManager->startProcess(command, parameters, [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
     {
         AExport *exportWidget = qobject_cast<AExport *>(parent);
         exportWidget->processOutput(parameters, result, 70, 20);
@@ -1235,7 +1263,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     spinnerLabel = pSpinnerLabel;
     spinnerLabel->start();
 
-    //superview
+    //wideview
     //https://intofpv.com/t-using-free-command-line-sorcery-to-fake-superview
     //https://github.com/Niek/superview
 
@@ -1256,7 +1284,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         onPropertyUpdate(currentDirectory, videoFilesMap.first().fileName, fileNameWithoutExtension + videoFileExtension);
 
-//        removeTemporaryFiles();
+        removeTemporaryFiles();
 
         onReloadAll(includingSRT);
 

@@ -91,7 +91,7 @@ void AStarRating::paint(QPainter *painter, const QRect &rect,
     if (mode == Editable) {
         painter->setBrush(palette.highlight());
     } else {
-        painter->setBrush(palette.foreground());
+        painter->setBrush(palette.windowText());//foreground()
     }
 
     int yOffset = (rect.height() - PaintingScaleFactor) / 2;

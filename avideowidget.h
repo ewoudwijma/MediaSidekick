@@ -32,7 +32,6 @@ public:
 private:
     QMediaPlayer *m_player;
 
-    QVBoxLayout *parentLayout;
     SScrubBar* m_scrubber;
     int m_previousIn;
     int m_previousOut;
@@ -47,6 +46,8 @@ private:
     bool isLoading;
 
     int sourceVideoVolume;
+
+    QMediaPlayer::State oldState;
 
 public slots:
     void onFolderIndexClicked(QModelIndex index);

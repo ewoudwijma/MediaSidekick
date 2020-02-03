@@ -429,6 +429,7 @@ void MainWindow::allConnects()
     //do not show the graph tab (only in debug mode)
     graphWidget1 = ui->clipsTabWidget->widget(3);
     graphWidget2 = ui->clipsTabWidget->widget(4);
+    graphicsWidget = ui->clipsTabWidget->widget(5);
 
     connect(&m_network, SIGNAL(finished(QNetworkReply*)), SLOT(onUpgradeCheckFinished(QNetworkReply*)));
 
@@ -1478,9 +1479,11 @@ void MainWindow::on_actionDebug_mode_triggered(bool checked)
     {
         ui->clipsTabWidget->insertTab(3, graphWidget1, "Graph1");
         ui->clipsTabWidget->insertTab(4, graphWidget2, "Graph2");
+        ui->clipsTabWidget->insertTab(5, graphicsWidget, "Timeline2.0");
     }
     else
     {
+        ui->clipsTabWidget->removeTab(5);
         ui->clipsTabWidget->removeTab(4);
         ui->clipsTabWidget->removeTab(3);
     }
@@ -1911,8 +1914,13 @@ void MainWindow::on_watermarkButton_clicked()
 {
     if (watermarkFileName == "")
     {
+#ifdef Q_OS_WIN
         watermarkFileName = QFileDialog::getOpenFileName(this,
             tr("Open Image"), ui->folderTreeView->directoryModel->rootPath(), tr("Image Files (*.png *.jpg *.bmp *.ico)"));
+#else
+        watermarkFileName = QFileDialog::getOpenFileName(this,
+            tr("Open Image"), QDir::home().homePath(), tr("Image Files (*.png *.jpg *.bmp *.ico)"));
+#endif
     }
     else
     {
@@ -2137,17 +2145,24 @@ void MainWindow::on_propertyEditorPushButton_clicked()
     connect(propertyEditorDialog, &APropertyEditorDialog::reloadClips, ui->clipsTableView, &AClipsTableView::onReloadClips);
     connect(propertyEditorDialog, &APropertyEditorDialog::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
 
+    connect(propertyEditorDialog, &APropertyEditorDialog::finished, this, &MainWindow::onPropertyEditorDialogFinished);
+
     connect(this, &MainWindow::propertiesLoaded, propertyEditorDialog, &APropertyEditorDialog::onPropertiesLoaded);
 
     propertyEditorDialog->setProperties(ui->propertyTreeView->propertyItemModel);
 
     spinnerLabel->stop();
 
-    propertyEditorDialog->exec();
+    propertyEditorDialog->setWindowModality(Qt::NonModal);
 
+    propertyEditorDialog->show();
+}
+
+void MainWindow::onPropertyEditorDialogFinished(int result)
+{
+//    qDebug()<<"MainWindow::onPropertyEditorDialogFinished"<<result;
     disconnect(this, &MainWindow::propertiesLoaded, propertyEditorDialog, &APropertyEditorDialog::onPropertiesLoaded);
     propertyEditorDialog = nullptr; //garbagecollection?
-
 }
 
 void MainWindow::on_filterColumnsLineEdit_textChanged(const QString &arg1)

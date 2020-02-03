@@ -27,7 +27,8 @@ private slots:
 
     void onIndexActivated(QModelIndex index);
     void onModelLoaded(const QString &path);
-    void onSuperview();
+//    void onWideview();
+    void onWideview2();
     void onOpenInExplorer();
     void onOpenDefaultApplication();
 private:
