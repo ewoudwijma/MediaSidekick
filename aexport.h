@@ -6,7 +6,6 @@
 
 #include "aglobal.h"
 
-#include <QProgressBar>
 #include <QTextStream>
 #include <QWidget>
 #include <QXmlStreamWriter>
@@ -15,8 +14,7 @@
 
 #include <QPushButton>
 #include <QSlider>
-
-#include <QStatusBar>
+#include <QThread>
 
 class AExport: public QWidget
 {
@@ -24,31 +22,24 @@ class AExport: public QWidget
 public:
     explicit AExport(QWidget *parent = nullptr);
 
-    void exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QProgressBar *p_progressBar, QSlider *exportVideoAudioSlider, ASpinnerLabel *pSpinnerLabel, QString pwatermarkFileName, QPushButton *pExportButton, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox, QStatusBar *statusBar);
-    void stopAllProcesses();
+    void exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QSlider *exportVideoAudioSlider, QString pwatermarkFileName, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox);
+
+    AJobTreeView *jobTreeView;
+
 private:
-//    MainWindow *mainWindow;
-    AProcessManager *processManager;
-    QProgressBar *progressBar;
     QTextStream stream;
-    QPushButton *exportButton;
-    QStatusBar *statusBar;
 
     void shotcutTransitionTractor(QXmlStreamWriter *stream, int transitionTime);
     void s(QString y, QString arg1 = "", QString arg2 ="", QString arg3="", QString arg4="");
 
-    QString processError = "";
-
     ASpinnerLabel *spinnerLabel;
 
-    void encodeVideoClips();
+    QStandardItem *encodeVideoClips(QStandardItem *parentItem);
 
     QMap<int,int> clipsMap;
     QMap<int,int> videoClipsMap;
     QMap<int,int> audioClipsMap;
     QAbstractItemModel *timelineModel;
-//    int transitionTimeMSecs;
-//    QTime transitionTime;
     int transitionTimeFrames;
     QString currentDirectory ;
 //    QMap<QString, FileStruct> filesMap;
@@ -64,9 +55,8 @@ private:
     QString videoHeight;
     QString target;
 
-    void muxVideoAndAudio();
-    void losslessVideoAndAudio();
-    void removeTemporaryFiles();
+    QStandardItem *muxVideoAndAudio(QStandardItem *parentItem);
+    QStandardItem *losslessVideoAndAudio(QStandardItem *parentItem);
 
     void addPremiereTrack(QString mediaType, QMap<int,int> clipsMap, QMap<QString, FileStruct> filesMap);
     void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
@@ -74,24 +64,24 @@ private:
 
     int maxVideoDuration;
     int maxAudioDuration;
-    int maxCombinedDuration;
-    void processFinished(QMap<QString, QString> parameters);
-    void processOutput(QMap<QString, QString> parameters, QString result, int percentageStart, int percentageDelta);
+    int maxCombinedDurationInFrames;
+    void startWorkInAThread();
+    void exportShotcut(AJobParams jobParams);
+    void exportPremiere(AJobParams jobParams);
 signals:
-    void addJob(QString folder, QString file, QString action, QString *id);
-    void addToJob(QString function, QString log);
     void getPropertyValue(QString fileName, QString key, QVariant *value);
 
-    void reloadClips();
-    void reloadProperties();
+    void loadClips(QStandardItem *parentItem);
+    void loadProperties(QStandardItem *parentItem);
 
     void exportCompleted(QString error);
 
-public slots:
-    void onPropertyUpdate(QString folderName, QString fileNameSource, QString fileNameTarget);
+    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
 
-    void onTrimC(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage);
-    void onReloadAll(bool includingSRT);
+    void jobAddLog(AJobParams jobParams, QString logMessage);
+
+public slots:
+    void onPropertyCopy(QStandardItem *parentItem, QString folderName, QString fileNameSource, QString fileNameTarget);
 };
 
 #endif // AEXPORT_h

@@ -64,7 +64,6 @@ public slots:
     void onSpinnerPositionChanged(int frames);
     void onSetIn(int frames = -1);
     void onSetOut(int frames = -1);
-//    void onFileRename();
     void onMute();
     void onStop();
 

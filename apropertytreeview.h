@@ -1,7 +1,7 @@
 #ifndef APROPERTYTREEVIEW_H
 #define APROPERTYTREEVIEW_H
 
-#include "aprocessmanager.h"
+#include "ajobtreeview.h"
 #include "apropertysortfilterproxymodel.h"
 #include "aspinnerlabel.h"
 
@@ -35,9 +35,10 @@ public:
 
     bool isLoading;
 
+    AJobTreeView *jobTreeView;
+
 private:
-    void loadModel(QString folderName);
-    AProcessManager *processManager;
+    void loadModel(QStandardItem *parentItem, QString folderName);
     void addSublevelItem(QUrl fileUrl, QString itemName, QString type, QString value);
     QStandardItem *getToplevelItem(QString itemName);
     QTreeView *frozenTableView;
@@ -70,19 +71,18 @@ public slots:
     bool onSetPropertyValue(QString fileName, QString propertyName, QVariant value, int role = Qt::EditRole);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void onClipIndexClicked(QModelIndex index);
-    void onRemoveFile(QString fileName);
-    void onReloadProperties();
+//    void onArchiveFiles(QString fileName);
+    void onloadProperties(QStandardItem *parentItem);
 
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
 
 signals:
-      void addJob(QString folder, QString file, QString action, QString* id);
-      void addToJob(QString id, QString log);
-      void propertiesLoaded();
-      void releaseMedia(QString fileName);
-      void redrawMap();
+    void propertiesLoaded();
+    void releaseMedia(QString fileName);
+    void redrawMap();
+    void jobAddLog(AJobParams jobParams, QString logMessage);
 };
 
 #endif // APROPERTYTREEVIEW_H

@@ -27,6 +27,8 @@
 #ifdef Q_OS_WIN
     #include <QWinTaskbarProgress>
 #endif
+//https://stackoverflow.com/questions/43347722/qt-show-progress-bar-in-dock-macos
+//https://code.qt.io/cgit/qt-creator/qt-creator.git/tree/src/plugins/coreplugin/progressmanager
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -181,16 +183,8 @@ void MainWindow::changeUIProperties()
     ui->positionDial->setNotchesVisible(true);
 
     ui->videoFilesTreeView->setType("Video");
-    ui->audioFilestreeView->setType("Audio");
+    ui->audioFilesTreeView->setType("Audio");
     ui->exportFilesTreeView->setType("Export");
-
-    for (int i=20; i<=5; i++)
-    {
-        QPixmap pixmap(":/RatingW" + QString::number(i) + ".png");
-
-        ui->ratingFilterComboBox->setItemIcon(i, QIcon(pixmap));
-        ui->ratingFilterComboBox->setItemText(i,"");
-    }
 
     //transition
     ui->transitionDial->setNotchesVisible(true);
@@ -258,7 +252,9 @@ void MainWindow::changeUIProperties()
     ui->speedComboBox->setCurrentText("1x");
 
     ui->cancelButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
-    ui->cancelButton->setEnabled(false);
+//    ui->cancelButton->setEnabled(false);
+
+    spinnerLabel = new ASpinnerLabel(ui->filesTabWidget);
 }
 
 void MainWindow::allConnects()
@@ -296,11 +292,11 @@ void MainWindow::allConnects()
     connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->propertyTreeView, &APropertyTreeView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "prop", "folder");
 
-    connect(ui->propertyTreeView, &APropertyTreeView::propertiesLoaded, ui->clipsTableView, &AClipsTableView::onPropertiesLoaded);
+    connect(ui->folderTreeView, &AFolderTreeView::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
 
     QList<AFilesTreeView *> filesTreeList;
-    filesTreeList <<ui->videoFilesTreeView;
-    filesTreeList << ui->audioFilestreeView;
+    filesTreeList << ui->videoFilesTreeView;
+    filesTreeList << ui->audioFilesTreeView;
     filesTreeList << ui->exportFilesTreeView;
     foreach (AFilesTreeView* filesTree, filesTreeList)
     {
@@ -311,25 +307,45 @@ void MainWindow::allConnects()
         ui->graphicsView1->connectNodes("files", "clip", "file");
         connect(filesTree, &AFilesTreeView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia); //stop and release
         ui->graphicsView1->connectNodes("files", "video", "release");
-        connect(filesTree, &AFilesTreeView::clipsDelete, ui->clipsTableView, &AClipsTableView::onClipsDelete); //remove from clips
-        ui->graphicsView1->connectNodes("files", "clip", "delete");
-        connect(filesTree, &AFilesTreeView::reloadClips, ui->clipsTableView, &AClipsTableView::onReloadClips); //reload
-        ui->graphicsView1->connectNodes("files", "clip", "reload");
-        connect(filesTree, &AFilesTreeView::removeFile, ui->propertyTreeView, &APropertyTreeView::onRemoveFile); //remove from column
-        ui->graphicsView1->connectNodes("files", "prop", "remove");
-        connect(filesTree, &AFilesTreeView::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
-        ui->graphicsView1->connectNodes("files", "prop", "reload");
+//        connect(filesTree, &AFilesTreeView::archiveClips, ui->clipsTableView, &AClipsTableView::onArchiveClips); //remove from clips
+//        ui->graphicsView1->connectNodes("files", "clip", "delete");
+//        connect(filesTree, &AFilesTreeView::loadClips, ui->clipsTableView, &AClipsTableView::onloadClips); //reload
+//        ui->graphicsView1->connectNodes("files", "clip", "reload");
+//        connect(filesTree, &AFilesTreeView::archiveFiles, ui->propertyTreeView, &APropertyTreeView::onArchiveFiles); //remove from column
+//        ui->graphicsView1->connectNodes("files", "prop", "remove");
+//        connect(filesTree, &AFilesTreeView::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
+//        ui->graphicsView1->connectNodes("files", "prop", "reload");
         connect(filesTree, &AFilesTreeView::trimF, ui->clipsTableView, &AClipsTableView::onTrimF);
         ui->graphicsView1->connectNodes("files", "clip", "trim");
         connect(filesTree, &AFilesTreeView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 
         connect(ui->clipsTableView, &AClipsTableView::indexClicked, filesTree, &AFilesTreeView::onClipIndexClicked);
         ui->graphicsView1->connectNodes("clip", "files", "clip");
+
+//        connect(filesTree, &AFilesTreeView::derperView, this, &MainWindow::onDerperView);
+
+        connect(filesTree, &AFilesTreeView::propertyCopy, ui->exportWidget, &AExport::onPropertyCopy);
+        connect(filesTree, &AFilesTreeView::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
+        connect(filesTree, &AFilesTreeView::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
+        connect(filesTree, &AFilesTreeView::loadClips, ui->clipsTableView, &AClipsTableView::onLoadClips);
+
+        connect(filesTree, &AFilesTreeView::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
+
+        connect(filesTree, &AFilesTreeView::derperviewCompleted, this, &MainWindow::onDerperviewCompleted);
+
+        connect (ui->jobTreeView, &AJobTreeView::stopThreadProcess, filesTree, &AFilesTreeView::onStopThreadProcess);
+
+        filesTree->jobTreeView = ui->jobTreeView;
     }
+
+    ui->folderTreeView->jobTreeView = ui->jobTreeView;
+    ui->clipsTableView->jobTreeView = ui->jobTreeView;
+    ui->propertyTreeView->jobTreeView = ui->jobTreeView;
+    ui->exportWidget->jobTreeView = ui->jobTreeView;
 
     connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedItemModel, ui->tagsListView, &ATagsListView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("clip", "tags", "folder");
-    connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set clip counter
+    connect(ui->clipsTableView, &AClipsTableView::folderIndexClickedProxyModel, this,  &MainWindow::onFolderIndexClicked); //to set clip counter and more
     ui->graphicsView1->connectNodes("clip", "main", "folder");
 
     connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->videoWidget, &AVideoWidget::onFileIndexClicked); //setmedia
@@ -351,12 +367,6 @@ void MainWindow::allConnects()
     connect(ui->clipsTableView, &AClipsTableView::clipsChangedToTimeline, ui->timelineWidget,  &ATimeline::onClipsChangedToTimeline);
     ui->graphicsView2->connectNodes("clip", "time", "clipchangetimeline");
     connect(ui->clipsTableView, &AClipsTableView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
-//    ui->graphicsView1->connectNodes("clip", "prop", "get");
-    connect(ui->clipsTableView, &AClipsTableView::addJob, ui->logTableView, &AJobTableView::onAddJob);
-    ui->graphicsView1->connectNodes("video", "prop", "get");
-    connect(ui->clipsTableView, &AClipsTableView::addToJob, ui->logTableView, &AJobTableView::onAddToJob);
-
-    connect(ui->clipsTableView, &AClipsTableView::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
 
     connect(ui->clipsTableView, &AClipsTableView::setIn, ui->videoWidget, &AVideoWidget::onSetIn);
     connect(ui->clipsTableView, &AClipsTableView::setOut, ui->videoWidget, &AVideoWidget::onSetOut);
@@ -365,9 +375,16 @@ void MainWindow::allConnects()
 
     connect(ui->clipsTableView, &AClipsTableView::propertiesLoaded, this, &MainWindow::onPropertiesLoaded);
 
-    connect(ui->clipsTableView, &AClipsTableView::propertyUpdate, ui->exportWidget, &AExport::onPropertyUpdate);
-    connect(ui->clipsTableView, &AClipsTableView::trimC, ui->exportWidget, &AExport::onTrimC);
-    connect(ui->clipsTableView, &AClipsTableView::reloadAll, ui->exportWidget, &AExport::onReloadAll);
+    connect(ui->clipsTableView, &AClipsTableView::propertyCopy, ui->exportWidget, &AExport::onPropertyCopy);
+    connect(ui->clipsTableView, &AClipsTableView::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
+    connect(ui->clipsTableView, &AClipsTableView::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
+    connect(ui->clipsTableView, &AClipsTableView::showInStatusBar, this, &MainWindow::onShowInStatusBar);
+
+    connect(ui->clipsTableView, &AClipsTableView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia);
+
+    connect(ui->propertyTreeView, &APropertyTreeView::propertiesLoaded, ui->clipsTableView, &AClipsTableView::onPropertiesLoaded);
+    connect(ui->propertyTreeView, &APropertyTreeView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia);
+    connect(ui->propertyTreeView, &APropertyTreeView::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
 
     connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, ui->clipsTableView, &AClipsTableView::onVideoPositionChanged);
     ui->graphicsView1->connectNodes("video", "clip", "pos");
@@ -399,11 +416,6 @@ void MainWindow::allConnects()
 
     connect(ui->timelineWidget, &ATimeline::adjustTransitionTime, this, &MainWindow::onAdjustTransitionTime);
 
-    connect(ui->propertyTreeView, &APropertyTreeView::addJob, ui->logTableView, &AJobTableView::onAddJob);
-    ui->graphicsView1->connectNodes("video", "prop", "get");
-    connect(ui->propertyTreeView, &APropertyTreeView::addToJob, ui->logTableView, &AJobTableView::onAddToJob);
-    connect(ui->propertyTreeView, &APropertyTreeView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia); // on property change, stop video
-
     connect(this, &MainWindow::propertyFilterChanged, ui->propertyTreeView, &APropertyTreeView::onPropertyFilterChanged);
     ui->graphicsView1->connectNodes("main", "prop", "filter");
     connect(this, &MainWindow::clipsFilterChanged, ui->clipsTableView, &AClipsTableView::onClipsFilterChanged);
@@ -412,12 +424,18 @@ void MainWindow::allConnects()
     connect(this, &MainWindow::timelineWidgetsChanged, ui->timelineWidget, &ATimeline::onTimelineWidgetsChanged);
     ui->graphicsView2->connectNodes("main", "video", "widgetchanged");
 
-    connect(ui->exportWidget, &AExport::addJob, ui->logTableView, &AJobTableView::onAddJob);
-    connect(ui->exportWidget, &AExport::addToJob, ui->logTableView, &AJobTableView::onAddToJob);
     connect(ui->exportWidget, &AExport::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
-    connect(ui->exportWidget, &AExport::reloadClips, ui->clipsTableView, &AClipsTableView::onReloadClips);
-    connect(ui->exportWidget, &AExport::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
+    connect(ui->exportWidget, &AExport::loadClips, ui->clipsTableView, &AClipsTableView::onLoadClips);
+    connect(ui->exportWidget, &AExport::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
     connect(ui->exportWidget, &AExport::exportCompleted, this, &MainWindow::onExportCompleted); //reload
+
+    connect(ui->exportWidget, &AExport::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
+
+    connect(ui->exportWidget, &AExport::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
+
+    connect(ui->jobTreeView, &AJobTreeView::initProgress, this, &MainWindow::onInitProgress);
+    connect(ui->jobTreeView, &AJobTreeView::updateProgress, this, &MainWindow::onUpdateProgress);
+    connect(ui->jobTreeView, &AJobTreeView::readyProgress, this, &MainWindow::onReadyProgress);
 
     connect(ui->tagFilter1ListView, &ATagsListView::tagChanged,  this, &MainWindow::onTagFilter1ListViewChanged);
     connect(ui->tagFilter2ListView, &ATagsListView::tagChanged,  this, &MainWindow::onTagFilter2ListViewChanged);
@@ -460,7 +478,7 @@ void MainWindow::loadSettings()
         checkState = Qt::Unchecked;
     ui->fileOnlyCheckBox->setCheckState(checkState);
 
-//    ui->progressBar->setRange(0, 100);
+    ui->progressBar->setRange(0, 100);
     ui->progressBar->setValue(0);
 
     ui->filesTabWidget->setCurrentIndex(QSettings().value("filesTabIndex").toInt());
@@ -513,6 +531,10 @@ void MainWindow::loadSettings()
 
 void MainWindow::allTooltips()
 {
+    QString commandControl = "Ctrl-";
+#ifdef Q_OS_MAC
+    commandControl = "⌘-";
+#endif
     //folder and file
     ui->folderTreeView->setToolTip(tr("<p><b>Folder</b></p>"
                                       "<p><i>Select a folder containing video files</i></p>"
@@ -528,19 +550,23 @@ void MainWindow::allTooltips()
     ui->videoFilesTreeView->setToolTip(tr("<p><b>File</b></p>"
                                      "<p><i>Files within the selected folder</i></p>"
                                      "<ul>"
-                                     "<li>Click on file: Show the clips of this file on the timeline and highlight the clips of the file in the clips tab</li>"
+                                     "<li><b>Click on file</b>: Show the clips of this file on the timeline and in the clips tab</li>"
                                      "</ul>"
                                      "<p>Right mouse click:</p>"
-                                      "<ul>"
-                                     "<li>Trim: create new video file based on the clips of the video file. Rating, alike and tags as well as relevant properties are copied</li>"
-                                     "<li>Rename: Rename the file to the suggested file name (go to the properties tab to manage selected file names</li>"
-                                     "<li>Delete file(s): Delete the video file and its supporting files (clips)</li>"
-                                     "<li>Delete clips: Delete the clips of the file</li>"
-                                      "</ul>"));
+                                     "<ul>"
+                                     "<li><b>Trim (*)</b>: Create new video file(s) based on the clips of the video file. Clip and properties are copied</li>"
+//                                   "<li><b>Rename</b>: Rename the file to the suggested file name (go to the properties tab to manage selected file names</li>"
+                                     "<li><b>Archive file(s)</b>: Move the media file and its supporting files (clips / .srt files) to the ACVC recycle bin folder. If files do already exist in the recycle bin, these files will be renamed first with BU (Backup) added to their name</li>"
+                                     "<li><b>Archive clips</b>: Move the clips of the file (.srt file) to the ACVC recycle bin folder</li>"
+                                     "<li><b>Remux to mp4 / yuv420 (*)</b>: Put non mp4 videos into a mp4 container (enabling property updates) and convert video to yuv420 (enabling Wideview conversion). Usage example: <a href=\"https://www.fatshark.com/\">Fatshark</a> DVR</li>"
+                                     "<li><b>Wideview by Derperview (*)</b>: Perform non-linear stretch of 4:3 video to make it 16:9</li>"
+                                      "</ul>"
+                                     "<p><b>note: (*)</b> are time consuming actions. See Jobs tab for progress.</p>"
+                                          ));
 
     //video
     ui->videoWidget->setToolTip(tr("<p><b>Media window</b></p>"
-                                   "<p><i>Video and audio can be played here</i></p>"
+                                   "<p><i>Video and audio will be played here</i></p>"
                                    "<ul>"
                                    "<li>Player controls...</li>"
                                    "<li>Add clips...</li>"
@@ -559,15 +585,15 @@ void MainWindow::allTooltips()
     ui->skipForwardButton->setToolTip(tr("<p><b>Go to next or previous clip</b></p>"
                               "<p><i>Go to next or previous clip</i></p>"
                               "<ul>"
-                              "<li>Shortcut: ctrl-up and ctrl-down</li>"
-                              "</ul>"));
+                              "<li>Shortcut: %1up and %1down</li>"
+                              "</ul>").arg(commandControl));
     ui->skipBackwardButton->setToolTip(ui->skipForwardButton->toolTip());
 
     ui->seekBackwardButton->setToolTip(tr("<p><b>Go to next or previous frame</b></p>"
                               "<p><i>Go to next or previous frame</i></p>"
                               "<ul>"
-                              "<li>Shortcut: ctrl-left and ctrl-right</li>"
-                              "</ul>"));
+                              "<li>Shortcut: %1left and %1right</li>"
+                              "</ul>").arg(commandControl));
     ui->seekForwardButton->setToolTip(ui->seekBackwardButton->toolTip());
 
     ui->setInButton->setToolTip(tr("<p><b>Set in- and out- point</b></p>"
@@ -575,16 +601,16 @@ void MainWindow::allTooltips()
                                   "<ul>"
                                   "<li>Change: inpoint before outpoint of last selected clip or outpoint after inpoint of last selected clip</li>"
 //                                  "<li>Set: No last selected clip or inpoint after outpoint of last selected clip and outpoint before inpoint of last selected clip</li>"
-                                  "<li>Shortcut: ctrl-i and ctrl-o</li>"
-                                  "</ul>"));
+                                  "<li>Shortcut: %1i and %1o</li>"
+                                  "</ul>").arg(commandControl));
     ui->setOutButton->setToolTip(ui->setInButton->toolTip());
 
     ui->muteButton->setToolTip(tr("<p><b>Mute or unmute</b></p>"
                               "<p><i>Mute or unmute sound (toggle)</i></p>"
                               "<ul>"
                               "<li>Video files will be muted if selected. Audio files will be unmuted if selected</li>"
-                              "<li>Shortcut mute toggle: ctrl-m</li>"
-                              "</ul>"));
+                              "<li>Shortcut mute toggle: %1m</li>"
+                              "</ul>").arg(commandControl));
     ui->speedComboBox->setToolTip(tr("<p><b>Speed</b></p>"
                                  "<p><i>Change the play speed of the video</i></p>"
                                  "<ul>"
@@ -597,20 +623,28 @@ void MainWindow::allTooltips()
                                      "<p><i>This is used to exclude similar clips from the exported video.</i></p>"
                                      "<ul>"
                                      "<li>Alike filter checkbox: Show only alike clips</li>"
-                                     "<li>Alike column: Set if this clip is like another clip <CTRL-A></li>"
+                                     "<li>Alike column: Set if this clip is like another clip <%1 A></li>"
                                      "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
                                      "<li>Hint: Give the best of the alikes a higher rating than the others</li>"
                                      "<li>Hint: Give alike clips the same tags to filter on them later</li>"
                                      "</ul>"
-                                  ));
+                                  ).arg(commandControl));
 
     ui->ratingFilterComboBox->setToolTip(tr("<p><b>Ratings</b></p>"
-                                              "<p><i>Give a rating to an clip (0 to 5 stars)</i></p>"
+                                              "<p><i>Give a rating to a clip (0 to 5 stars)</i></p>"
                                               "<ul>"
                                                 "<li>Rating filter: Select 0 to 5 stars. All clips with same or higher rating will be shown</li>"
-                                                "<li>Rating column: Double click to change the rating (or CTRL-0 to CTRL-5 to rate the current clip)</li>"
+                                                "<li>Rating column: Double click to change the rating (or %1 0 to %1 5 to rate the current clip)</li>"
                                                 "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
-                                              "</ul>"));
+                                              "</ul>").arg(commandControl));
+
+    foreach (QAction *toolBarAction, ui->mainToolBar->actions())
+    {
+        if (toolBarAction->text() == "A&like")
+            toolBarAction->setToolTip(ui->alikeCheckBox->toolTip());
+        else if (toolBarAction->toolTip().contains("star"))
+                 toolBarAction->setToolTip(ui->ratingFilterComboBox->toolTip());
+    }
 
     ui->tagFilter1ListView->setToolTip(tr("<p><b>Tag filters</b></p>"
                                           "<p><i>Define which clips are shown based on their tags</i></p>"
@@ -625,35 +659,36 @@ void MainWindow::allTooltips()
     ui->fileOnlyCheckBox->setToolTip(tr("<p><b>File only</b></p>"
                                         "<p><i>Show only clips of the selected file</i></p>"
                                         "<ul>"
-                                        "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
+                                        "<li><b>Timeline</b>: If file only is checked, the timeline only shows clips of the selected file</li>"
                                         "</ul>"));
 
     ui->clipsSizeComboBox->setToolTip(tr("<p><b>Video size</b></p>"
                                          "<p><i>Shows the sizes found in the media used for clips</i></p>"
                                          "<ul>"
-                                         "<li>One of them should be selected.</li>"
+                                         "<li>The size of the first file is selected as default.</li>"
                                          "</ul>"));
 
     ui->clipsFramerateComboBox->setToolTip(tr("<p><b>Framerate</b></p>"
                                         "<p><i>Shows the framerates found in the media used for clips</i></p>"
                                         "<ul>"
-                                        "<li>Ones of them should be selected.</li>"
+                                              "<li>The framerate of the first file is selected as default.</li>"
                                         "</ul>"));
 
     //tt clips table
     ui->resetSortButton->setToolTip(tr("<p><b>Reset sort</b></p>"
-                                       "<p><i>Set the order of clips back to file default</i></p>"
+                                       "<p><i>Set the order of clips back to file order</i></p>"
                                        ));
 
     ui->clipsTableView->setToolTip(tr("<p><b>Clips list</b></p>"
                                      "<p><i>Show the clips for the files in the selected folder</i></p>"
                                      "<ul>"
-                                     "<li>Only clips applying to the filters above this table are shown</li>"
-                                     "<li>Move over the column headers to see column tooltips</li>"
-                                     "<li>Clips belonging to the selected file are highlighted gray</li>"
-                                     "<li>The clip currently shown in the video window is highlighted blue</li>"
-                                     "<li>To delete a clip: right mouse click</li>"
-                                     "<li>To change the order of clips: drag the number on the left of this table up or down</li>"
+                                     "<li>Only clips applying to the <b>filters</b> above this table are shown</li>"
+                                     "<li>Move over the column headers to see <b>column tooltips</b></li>"
+                                     "<li>Clips belonging to the <b>selected file</b> are highlighted gray</li>"
+                                     "<li>The clip <b>currently shown</b> in the video window is highlighted blue</li>"
+                                     "<li>To <b>delete</b> a clip: right mouse click</li>"
+                                     "<li>To change the <b>order</b> of clips: drag the number on the left of this table up or down</li>"
+                                      "<li>Note: Clips are saved on your filesystems as <b>.srt files</b>. They have the same name as the media file for which the edits are made.</li>"
                                      "</ul>"
                                      ));
 
@@ -695,13 +730,13 @@ void MainWindow::allTooltips()
     ui->propertyTreeView->setToolTip(tr("<p><b>Property list</b></p>"
                                      "<p><i>Show the properties (Metadata / EXIF data) for files of the selected folder</i></p>"
                                      "<ul>"
-                                        "<li>Only properties and files applying to the <u>filters</u> are shown</li>"
+                                        "<li>Only properties and files applying to the <b>filters</b> are shown</li>"
                                         "<ul>"
-                                        "<li>Filter files: only the columns matching are shown</li>"
-                                        "<li>Filter properties: only the rows matching are shown</li>"
-                                        "<li><u>Diff</u>: show only properties which differs between the files, are equal or both</li>"
+                                        "<li><b>Filter files</b>: only the columns matching are shown</li>"
+                                        "<li><b>Filter properties</b>: only the rows matching are shown</li>"
+                                        "<li><b>Diff</b>: show only properties which differs between the files, are equal or both</li>"
                                         "</ul>"
-                                        "<li>Properties belonging to the <u>selected file</u> are highlighted in blue</li>"
+                                        "<li>Properties belonging to the <b>selected file</b> are highlighted in blue</li>"
                                      "</ul>"
                                      ));
 
@@ -808,8 +843,8 @@ void MainWindow::allTooltips()
                                     ));
 
     //log
-    ui->logTableView->setToolTip(tr("<p><b>Log items</b></p>"
-                                    "<p><i>Show details of background processes for Exiftool and FFMpeg</i></p>"
+    ui->jobTreeView->setToolTip(tr("<p><b>Log items</b></p>"
+                                    "<p><i>Show details of background processes</i></p>"
                                     "<ul>"
                                     "<li>Click on a row to see details</li>"
                                     "</ul>"));
@@ -828,6 +863,7 @@ void MainWindow::on_actionBlack_theme_triggered()
     QColor linkColor = QColor(42, 130, 218);
     QColor linkVisitedColor = QColor(255, 0, 255);
     QColor highlightColor = QColor(42, 130, 218);
+    QColor menuColor = QColor(80,80,80);
 
     QPalette palette;
     palette.setColor(QPalette::Window, mainColor);
@@ -851,14 +887,6 @@ void MainWindow::on_actionBlack_theme_triggered()
 
     palette.setColor(QPalette::PlaceholderText, Qt::darkGray);
 
-//    palette.setColor(ui->menuBar->backgroundRole(), Qt::red);
-
-//    QPalette pal = ui->videoFilesTreeView->fileContextMenu->palette();
-//    qDebug()<<"basecolor"<<pal.base().color()<<qApp->palette().base().color();
-//    pal.setColor(QPalette::Base, qApp->palette().window().color());
-//    fileContextMenu->setPalette(pal);
-
-
     qApp->setPalette(palette);
 
 //    qDebug()<<"MainWindow::on_actionBlack_theme_triggered set palette"<<palette;
@@ -871,6 +899,21 @@ void MainWindow::on_actionBlack_theme_triggered()
     QSettings().sync();
 
     ui->clipsTableView->update();
+
+    QPalette pal = ui->exportFilesTreeView->fileContextMenu->palette();
+    pal.setColor(QPalette::Base, menuColor);
+    pal.setColor(QPalette::Window, menuColor);
+    ui->audioFilesTreeView->fileContextMenu->setPalette(pal);
+    ui->videoFilesTreeView->fileContextMenu->setPalette(pal);
+    ui->exportFilesTreeView->fileContextMenu->setPalette(pal);
+    ui->mainToolBar->setPalette(pal);
+
+    foreach (QObject *object, ui->menuBar->children())
+    {
+        QMenu *menuItem = qobject_cast<QMenu *>(object);
+        if (menuItem != nullptr)
+            menuItem->setPalette(pal);
+    }
 }
 
 void MainWindow::on_actionWhite_theme_triggered()
@@ -885,14 +928,7 @@ void MainWindow::on_actionWhite_theme_triggered()
     QColor linkColor = QColor(0, 0, 255);
     QColor linkVisitedColor = QColor(255, 0, 255);
     QColor highlightColor = QColor(0,120,215);
-
-//    qDebug()<<""<<qApp->palette().color(QPalette::Window);
-//    qDebug()<<""<<qApp->palette().color(QPalette::Base);
-//    qDebug()<<""<<qApp->palette().color(QPalette::Disabled, QPalette::Text);
-//    qDebug()<<""<<qApp->palette().color(QPalette::Link);
-//    qDebug()<<""<<qApp->palette().color(QPalette::LinkVisited);
-//    qDebug()<<""<<qApp->palette().color(QPalette::Highlight);
-//    qDebug()<<""<<qApp->palette().color(QPalette::PlaceholderText);
+    QColor menuColor = mainColor;
 
     QPalette palette;
     palette.setColor(QPalette::Window, mainColor);
@@ -926,6 +962,20 @@ void MainWindow::on_actionWhite_theme_triggered()
     QSettings().sync();
 
     ui->clipsTableView->update();
+
+    QPalette pal = ui->exportFilesTreeView->fileContextMenu->palette();
+    pal.setColor(QPalette::Base, menuColor);
+    ui->audioFilesTreeView->fileContextMenu->setPalette(pal);
+    ui->videoFilesTreeView->fileContextMenu->setPalette(pal);
+    ui->exportFilesTreeView->fileContextMenu->setPalette(pal);
+    ui->mainToolBar->setPalette(pal);
+
+    foreach (QObject *object, ui->menuBar->children())
+    {
+        QMenu *menuItem = qobject_cast<QMenu *>(object);
+        if (menuItem != nullptr)
+            menuItem->setPalette(pal);
+    }
 }
 
 void MainWindow::on_actionAbout_triggered()
@@ -942,6 +992,7 @@ void MainWindow::on_actionAbout_triggered()
                "<li><a href=\"https://www.shotcut.org/\">Shotcut</a> Open source video editor (timeline and version check)</li>"
                "<li><a href=\"https://www.ffmpeg.org/\">FFmpeg</a> multimedia format and codec libraries (lossless and encoded previews)</li>"
                "<li><a href=\"https://exiftool.org/\">Exiftool</a> Read, Write and Edit Meta Information (Properties)</li>"
+               "<li><a href=\"https://github.com/banelle/derperview\">Derperview by Banelle</a> Perform non-linear stretch of 4:3 video to make it 16:9. See also <a href=\"https://intofpv.com/t-derperview-a-command-line-superview-alternative>Derperview - A Command Line Superview Alternative</a></li>"
                "</ul>"
                "<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>"
                "<p>As ACVC may contain bugs, BACKUP your video files before editing!</p>"
@@ -983,10 +1034,8 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 {
 //    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount();
 
-//    ui->spinnerLabel->start();
-
-    spinnerLabel = new ASpinnerLabel(ui->filesTabWidget);
-    spinnerLabel->start();
+//    spinnerLabel->setParent(ui->filesTabWidget);
+//    spinnerLabel->start();
 
     ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
 
@@ -1050,6 +1099,13 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     name[0] = name.at(0).toTitleCase();
 
     AContextSensitiveHelpRequest contextSensitiveHelpRequest;
+
+    QString commandControl = "Ctrl-";
+
+#ifdef Q_OS_MAC
+    commandControl = "⌘-";
+#endif
+
     if (context == "ACVC started" || context == "Folder selected")
     {
         if (ui->folderTreeView->currentIndex() == QModelIndex())
@@ -1061,21 +1117,19 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
                                 "</ul>"), ui->filesTabWidget, 0});
         else if (ui->videoWidget->selectedFileName == "")
             requestList.append({context, ui->videoFilesTreeView, "Video files", tr("<p>Select a file</p>"
-                                                            "<p><i>If a video or audio file is selected, the file can be played in the media window, it's edits are shown and edits van be changed</i></p>"
+                                                            "<p><i>If a video or audio file is selected, it will play in the media window, it's clips are shown in the clip tab</i></p>"
                                 "<ul>"
-                                "<li>Next Context Sensitive Help Message: Press ? or CTRL-R</li>"
-                                "</ul>"), ui->filesTabWidget, 1});
+                                "<li>Next Context Sensitive Help Message: Press � or %1R</li>"
+                                "</ul>").arg(commandControl), ui->filesTabWidget, 1});
 
         if (context == "ACVC started")
         {
             requestList.append({context, ui->videoWidget, "Welcome message", tr("<p>Context sensitive help</p>"
-                                "<p><i>Context sensitive help is enabled and will guide you through ACVC.</i></p>"
+                                "<p><i>This is a context sensitive help message. Context sensitive help messages will pop up to <b>guide</b> you through ACVC.</i></p>"
                                 "<ul>"
-                                "<li>For a specific event, more then one help message can be shown, this is shown in the title bar as (x of y)</li>"
-                                "<li>Show next message: Press the ? in the toolbar repeatedly</li>"
-                                "<li>Switch off: Menu / Help / Context sensitive help</li>"
-                                "<li>Next Context Sensitive Help Message: Press ? or CTRL-R</li>"
-                                "</ul>"), nullptr, -1});
+                                "<li><b>Next help message</b>: Press the � in the toolbar or %1R. If there are more messages, it is shown in the title bar of a message as (x of y).</li>"
+                                "<li><b>Switch off</b>: Menu / Help / Context sensitive help</li>"
+                                "</ul>").arg(commandControl), nullptr, -1});
         }
 
         if (context == "Folder selected")
@@ -1110,8 +1164,10 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
         if (ui->clipsTableView->clipsItemModel->rowCount() == 0)
         {
             requestList.append({context, ui->setInButton, "In point", tr("<p>Set in point</p>"
-                                                            "<p><i>No clips created yet, you can add clips here by setting in and outpoints</i></p>"
-                                                            ), ui->clipsTabWidget, 0});
+                                "<p><i>No clips created yet, you can add clips here by setting in and outpoints</i></p>"
+                                "<ul>"
+                                "<li>Note: Clips are saved on your filesystems as <b>.srt files</b>. They have the same name as the media file for which the edits are made.</li>"
+                                                            "</ul>"), ui->clipsTabWidget, 0});
             requestList.append({context, ui->propertyEditorPushButton, "Properties", tr("<p>Edit properties</p>"
                                                             "<p><i>Edit the properties of the media files and rename the files</i></p>"
                                                             ), ui->clipsTabWidget, 1});
@@ -1145,7 +1201,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
 
             if (ui->timelineWidget->maxAudioDuration == 0)
             {
-                requestList.append({context, ui->audioFilestreeView, "Audio files", tr("<p>List of audio files in folder</p>"
+                requestList.append({context, ui->audioFilesTreeView, "Audio files", tr("<p>List of audio files in folder</p>"
                                                                 "<p><i>%1 clips selected but no audio clips selected. Add audio files here and create clips for them</i></p>"
                                                                 ).arg(QString::number(ui->clipsTableView->clipsProxyModel->rowCount())), ui->clipsTabWidget, 0});
             }
@@ -1155,7 +1211,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     }
     else if (context == "Export started") //to do use target as arg1
     {
-        requestList.append({context, ui->logTableView, "Jobs", tr("<p>Overview of jobs</p>"
+        requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
                                                         "<p><i>Exporting involves running of one or more processes</i></p>"
                                                         "<ul>"
                                                         "<li>Processes and process details are shown here</li>"
@@ -1168,8 +1224,21 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
                                                             "<p><i>Exported file can be found here</i></p>"
                                                             ), ui->filesTabWidget, 1});
         else
-            requestList.append({context, ui->logTableView, "Jobs", tr("<p>Overview of jobs</p>"
+            requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
                                                             "<p><i>Export completed with error, check the log to find out what went wrong</i></p>"
+                                                            "<ul>"
+                                                            "<li>Error message: %1</li>"
+                                                            "</ul>").arg(arg1), ui->clipsTabWidget, 2});
+    }
+    else if (context == "Wideview completed")
+    {
+        if (arg1 == "") //no error
+            requestList.append({context, ui->exportFilesTreeView, "Wideview result",  tr("<p>List of video or exported files</p>"
+                                                            "<p><i>Created file can be found here (DV added to the filename)</i></p>"
+                                                            ), ui->filesTabWidget, 1});
+        else
+            requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
+                                                            "<p><i>Wideview completed with error, check the log to find out what went wrong</i></p>"
                                                             "<ul>"
                                                             "<li>Error message: %1</li>"
                                                             "</ul>").arg(arg1), ui->clipsTabWidget, 2});
@@ -1202,8 +1271,8 @@ void MainWindow::onFileIndexClicked(QModelIndex index)
 
     if (ui->videoFilesTreeView->model() != index.model())
         ui->videoFilesTreeView->clearSelection();
-    if (ui->audioFilestreeView->model() != index.model())
-        ui->audioFilestreeView->clearSelection();
+    if (ui->audioFilesTreeView->model() != index.model())
+        ui->audioFilesTreeView->clearSelection();
     if (ui->exportFilesTreeView->model() != index.model())
         ui->exportFilesTreeView->clearSelection();
 
@@ -1357,16 +1426,14 @@ void MainWindow::on_newTagLineEdit_returnPressed()
 
 void MainWindow::on_exportButton_clicked()
 {
-    ui->cancelButton->setEnabled(true);
+//    ui->cancelButton->setEnabled(true);
     createContextSensitiveHelp("Export started");
-
-    spinnerLabel = new ASpinnerLabel(ui->exportGroupBox);
 
     int transitionTime = 0;
 //    if (ui->transitionComboBox->currentText() != "No transition")
     transitionTime = ui->transitionTimeSpinBox->value();
 //    qDebug()<<"MainWindow::on_exportButton_clicked";
-    ui->exportWidget->exportClips(ui->clipsTableView->clipsProxyModel, ui->exportTargetComboBox->currentText(), ui->exportSizeComboBox->currentText(), ui->exportFramerateComboBox->currentText(), transitionTime, ui->progressBar, ui->exportVideoAudioSlider, spinnerLabel, watermarkFileName, ui->exportButton, ui->clipsFramerateComboBox, ui->clipsSizeComboBox, ui->statusBar);
+    ui->exportWidget->exportClips(ui->clipsTableView->clipsProxyModel, ui->exportTargetComboBox->currentText(), ui->exportSizeComboBox->currentText(), ui->exportFramerateComboBox->currentText(), transitionTime, ui->exportVideoAudioSlider, watermarkFileName, ui->clipsFramerateComboBox, ui->clipsSizeComboBox);
 
 //    if (QSettings().value("firstUsedDate") == QVariant())
 //    {
@@ -1389,26 +1456,8 @@ void MainWindow::on_exportButton_clicked()
 
 void MainWindow::onExportCompleted(QString error)
 {
+//    ui->cancelButton->setEnabled(false);
     createContextSensitiveHelp("Export completed", error);
-
-#ifdef Q_OS_WIN
-    QWinTaskbarProgress *progress = taskbarButton->progress();
-
-    if (error == "")
-        progress->setVisible(false);
-    else
-    {
-        progress->stop();
-
-        QTimer::singleShot(5000, this, [progress]()->void //timer needed to show first message
-        {
-                               progress->resume();
-                               progress->setVisible(false);
-        });
-
-    }
-#endif
-    ui->cancelButton->setEnabled(false);
 }
 
 void MainWindow::on_exportTargetComboBox_currentTextChanged(const QString &arg1)
@@ -1693,7 +1742,7 @@ void MainWindow::onPlaybackRateChanged(qreal rate)
 
 void MainWindow::showUpgradePrompt()
 {
-    ui->statusBar->showMessage("Version check...", 15000);
+//    ui->statusBar->showMessage("Version check...", 15000);
     QNetworkRequest request(QUrl("http://www.actioncamvideocompanion.com/version.json"));
     QSslConfiguration sslConfig = request.sslConfiguration();
     sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
@@ -1746,16 +1795,19 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
             }
             reply->deleteLater();
             return;
-        } else {
-            ui->statusBar->showMessage("Version check: failed to parse version.json "+ error->errorString());
         }
+//        else
+//        {
+//            ui->statusBar->showMessage("Version check: failed to parse version.json "+ error->errorString());
+//        }
     } else {
-        ui->statusBar->showMessage("Network error " + reply->errorString());
+//        ui->statusBar->showMessage("Network error " + reply->errorString());
+        qDebug()<<"MainWindow::onUpgradeCheckFinished"<<"Network error " + reply->errorString();
     }
-    QMessageBox::StandardButton mreply;
-    mreply = QMessageBox::question(this, "Version check", tr("Failed to read version.json when checking. Click here to go to the Web site."), QMessageBox::Yes|QMessageBox::No);
-    if (mreply == QMessageBox::Yes)
-        QDesktopServices::openUrl(QUrl(m_upgradeUrl));
+//    QMessageBox::StandardButton mreply;
+//    mreply = QMessageBox::question(this, "Version check", tr("Failed to read version.json when checking. Click here to go to the Web site."), QMessageBox::Yes|QMessageBox::No);
+//    if (mreply == QMessageBox::Yes)
+//        QDesktopServices::openUrl(QUrl(m_upgradeUrl));
     reply->deleteLater();
 }
 
@@ -1848,9 +1900,7 @@ void MainWindow::onPropertiesLoaded()
         QSettings().setValue("frameRate", ui->clipsFramerateComboBox->currentText());
     }
 
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
-
-    spinnerLabel->stop();
+//    spinnerLabel->stop();
 
     emit propertiesLoaded();
 
@@ -1989,12 +2039,6 @@ void MainWindow::on_exportVideoAudioSlider_valueChanged(int value)
     }
 }
 
-void MainWindow::on_clearJobsButton_clicked()
-{
-    while (ui->logTableView->jobItemModel->rowCount()>0)
-        ui->logTableView->jobItemModel->takeRow(0);
-}
-
 void MainWindow::on_skipBackwardButton_clicked()
 {
     ui->videoWidget->skipPrevious();
@@ -2101,6 +2145,40 @@ void MainWindow::on_folderButton_clicked()
     QDesktopServices::openUrl( QUrl::fromLocalFile( folderName ) );
 }
 
+//derperview/superview
+//https://intofpv.com/t-using-free-command-line-sorcery-to-fake-superview
+//https://github.com/Niek/superview
+
+//void MainWindow::onDerperView(QString folderName, QString fileName)
+//{
+//    qDebug()<<"MainWindow::onDerperView"<< folderName << fileName;
+
+//    QString *processId = new QString();
+//    emit ui->jobTableView->onAddJob(folderName, fileName, "Derperview", processId);
+
+//    ADerperView *derperView = new ADerperView();
+
+//    connect(derperView, SIGNAL(finished()), derperView, SLOT(deleteLater()));
+//    connect(derperView, &ADerperView::addToJob, ui->jobTableView, &AJobTableView::onAddToJob);
+
+//    connect(derperView, &ADerperView::initProgress, this, &MainWindow::onInitProgress);
+//    connect(derperView, &ADerperView::updateProgress, this, &MainWindow::onUpdateProgress);
+//    connect(derperView, &ADerperView::readyProgress, this, &MainWindow::onReadyProgress);
+
+
+//    connect(derperView, &ADerperView::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
+
+//    derperView->folderName = folderName;
+//    derperView->fileName = fileName;
+//    derperView->processId = *processId;
+//    derperView->start();
+//}
+
+void MainWindow::onDerperviewCompleted(QString errorString)
+{
+    createContextSensitiveHelp("Wideview completed", errorString);
+}
+
 void MainWindow::on_progressBar_valueChanged(int value)
 {
 #ifdef Q_OS_WIN
@@ -2110,22 +2188,80 @@ void MainWindow::on_progressBar_valueChanged(int value)
 #endif
 }
 
+void MainWindow::onInitProgress()
+{
+//    qDebug()<<"MainWindow::onInitProgress";
+    spinnerLabel->setParent(ui->exportGroupBox);
+    spinnerLabel->start();
+    ui->progressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
+    ui->exportButton->setEnabled(false);
+}
+
+void MainWindow::onUpdateProgress(int value)
+{
+    //    qDebug()<<"MainWindow::onUpdateProgress"<<value;
+
+    ui->progressBar->setValue(value);
+    ui->progressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
+}
+
+void MainWindow::onReadyProgress(int result, QString errorString)
+{
+//    qDebug()<<"MainWindow::onReadyProgress"<<result<<errorString;
+    ui->progressBar->setValue(ui->progressBar->maximum());
+
+    if (result != 0)
+    {
+        ui->progressBar->setStyleSheet("QProgressBar::chunk {background: red}");
+        ui->statusBar->showMessage("Error occured, go to Jobs for details: " + errorString, 10000);
+    }
+    else
+        ui->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+
+    spinnerLabel->stop();
+    ui->exportButton->setEnabled(true);
+
+#ifdef Q_OS_WIN
+    QWinTaskbarProgress *progress = taskbarButton->progress();
+
+    if (errorString == "")
+        progress->setVisible(false);
+    else
+    {
+        progress->stop();
+
+        QTimer::singleShot(5000, this, [progress]()->void //timer needed to show first message
+        {
+                               progress->resume();
+                               progress->setVisible(false);
+        });
+
+    }
+#endif
+}
+
 void MainWindow::on_cancelButton_clicked()
 {
-    ui->exportWidget->stopAllProcesses();
+    ui->jobTreeView->stopAll();
+
     ui->exportButton->setEnabled(true);
 
     spinnerLabel->stop();
 
     ui->progressBar->setValue(0);
-    ui->cancelButton->setEnabled(false);
+//    ui->cancelButton->setEnabled(false);
 }
 
 void MainWindow::on_propertyEditorPushButton_clicked()
 {
+    ui->statusBar->showMessage("Opening editor window", 5000);
+
+    ui->videoWidget->onReleaseMedia(ui->videoWidget->selectedFileName);
     spinnerLabel->start();
 
     propertyEditorDialog = new APropertyEditorDialog(this);
+
+    propertyEditorDialog->jobTreeView = ui->jobTreeView;
 //    propertyEditorDialog->setModal(true);
 
 
@@ -2138,12 +2274,9 @@ void MainWindow::on_propertyEditorPushButton_clicked()
 
 //    propertyEditorDialog->propertyItemModel = ui->propertyTreeView->propertyItemModel;
 
-    connect(propertyEditorDialog, &APropertyEditorDialog::addJob, ui->logTableView, &AJobTableView::onAddJob);
-    connect(propertyEditorDialog, &APropertyEditorDialog::addToJob, ui->logTableView, &AJobTableView::onAddToJob);
-
     connect(propertyEditorDialog, &APropertyEditorDialog::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia);
-    connect(propertyEditorDialog, &APropertyEditorDialog::reloadClips, ui->clipsTableView, &AClipsTableView::onReloadClips);
-    connect(propertyEditorDialog, &APropertyEditorDialog::reloadProperties, ui->propertyTreeView, &APropertyTreeView::onReloadProperties);
+    connect(propertyEditorDialog, &APropertyEditorDialog::loadClips, ui->clipsTableView, &AClipsTableView::onLoadClips);
+    connect(propertyEditorDialog, &APropertyEditorDialog::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
 
     connect(propertyEditorDialog, &APropertyEditorDialog::finished, this, &MainWindow::onPropertyEditorDialogFinished);
 
@@ -2172,6 +2305,16 @@ void MainWindow::on_filterColumnsLineEdit_textChanged(const QString &arg1)
 
 void MainWindow::on_refreshButton_clicked()
 {
-    ui->propertyTreeView->onReloadProperties();
-//    emit reloadProperties;
+    ui->propertyTreeView->onloadProperties(nullptr);
+}
+
+void MainWindow::on_clearJobsTreeButton_clicked()
+{
+    while (ui->jobTreeView->jobItemModel->rowCount()>0)
+        ui->jobTreeView->jobItemModel->takeRow(0);
+}
+
+void MainWindow::onShowInStatusBar(QString message, int timeout)
+{
+    ui->statusBar->showMessage(message, timeout);
 }

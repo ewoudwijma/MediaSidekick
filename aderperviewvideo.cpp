@@ -1,10 +1,8 @@
-#include "awideviewvideo.h"
+#include "aderperviewvideo.h"
 
 #include <iostream>
 #include <fstream>
 #include <vector>
-
-#include <QDebug>
 
 extern "C"
 {
@@ -132,7 +130,7 @@ AVFrame *InputVideoFile::GetNextFrame()
                 if (lastError_ < 0)
                 {
                     cout << "*** Error sending video packet to decoder: " << GetErrorString(lastError_) << endl;
-//                    return nullptr;
+                    return nullptr;
                 }
                 lastError_ = avcodec_receive_frame(videoCodecContext_, frame_);
                 if (lastError_ < 0 && lastError_ != AVERROR(EAGAIN))
@@ -223,7 +221,7 @@ OutputVideoFile::OutputVideoFile(string filename, VideoInfo sourceInfo) :
     videoCodecContext_ = avcodec_alloc_context3(videoCodec);
     videoStream_ = avformat_new_stream(formatContext_, videoCodec);
 
-//    videoCodecContext_->profile = FF_PROFILE_H264_HIGH;
+    videoCodecContext_->profile = FF_PROFILE_H264_HIGH;
     videoCodecContext_->bit_rate = sourceInfo.bitRate;
     videoCodecContext_->width = sourceInfo.width;
     videoCodecContext_->height = sourceInfo.height;
@@ -271,7 +269,7 @@ OutputVideoFile::OutputVideoFile(string filename, VideoInfo sourceInfo) :
     if (lastError_ < 0)
     {
         cerr << "Error creating audio codec" << endl;
-//        return;
+        return;
     }
     av_dict_free(&opt);
 
@@ -334,7 +332,7 @@ int OutputVideoFile::WriteNextFrame(AVFrame *frame)
     if (lastError_ < 0 && lastError_ != AVERROR(EAGAIN) && lastError_ != AVERROR_EOF)
     {
         cerr << "Could not send frame to encoder: " << GetErrorString(lastError_) << endl;
-//        return lastError_;
+        return lastError_;
     }
 
     AVPacket packet = { 0 };
@@ -347,7 +345,7 @@ int OutputVideoFile::WriteNextFrame(AVFrame *frame)
         if (lastError_ < 0)
         {
             cerr << "Unable to encode packet: " << GetErrorString(lastError_) << endl;
-//            return lastError_;
+            return lastError_;
         }
         av_packet_rescale_ts(&packet, codec->time_base, stream->time_base);
         packet.stream_index = stream->index;

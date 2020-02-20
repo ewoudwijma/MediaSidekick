@@ -1,6 +1,7 @@
 #ifndef PROPERTYEDITORDIALOG_H
 #define PROPERTYEDITORDIALOG_H
 
+#include "ajobtreeview.h"
 #include "aspinnerlabel.h"
 
 #include <QDialog>
@@ -22,18 +23,18 @@ public:
     void setProperties(QStandardItemModel *itemModel);
 
     void closeEvent(QCloseEvent *event);
+
+    AJobTreeView *jobTreeView;
 private:
     Ui::propertyEditorDialog *ui;
     ASpinnerLabel *spinnerLabel;
 
-    void redrawMap();
+    void onRedrawMap();
     bool checkExit();
 public slots:
     void onPropertiesLoaded();
 
 private slots:
-    void onAddJob(QString folder, QString file, QString action, QString *id);
-    void onAddToJob(QString id, QString log);
     void on_filterColumnsLineEdit_textChanged(const QString &arg1);
 
     void on_locationCheckBox_clicked(bool checked);
@@ -54,11 +55,9 @@ private slots:
     void on_refreshButton_clicked();
 
 signals:
-    void addJob(QString folder, QString file, QString action, QString* id);
-    void addToJob(QString id, QString log);
     void releaseMedia(QString fileName);
-    void reloadClips();
-    void reloadProperties();
+    void loadClips(QStandardItem *parentItem);
+    void loadProperties(QStandardItem *parentItem);
 
 };
 

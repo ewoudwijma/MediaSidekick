@@ -96,14 +96,14 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
     ui->updateButton->setToolTip(tr("<p><b>%1</b></p>"
                                     "<p><i>Write properties to files</i></p>"
                                     "<ul>"
-                                    "<li>Values are not directly written to the media file. This update button will do this. The following color coding is used</li>"
+                                    "<li>Values are not directly written to the media file. This update button will do this. The following <b>color coding</b> is used</li>"
                                     "<ul>"
                                     "<li>Orange: Before updating: a value is updated but not yet written</li>"
                                     "<li>Green: After updating: The value is succesfully updated to the media file</li>"
                                     "<li>Red: After updating: The value is not updated to the media file. See the Status propery of each file to see what went wrong</li>"
                                     "</ul>"
-                                    "<li>Derived values (Artists, Keywords and Ratings): Derived values are updated so other media viewing tools show the keywords, ratings and artists correctly. E.g. Windows Explorer properties, ACDSee etc. As there is no unified standard (each tool will use their own properties) this will be updated / improved in future releases of ACVC</li>"
-                                    "<li>Currently writing to AVI and MP3 files is not supported. The status property will show if this attempted (Rename to suggested names is supported)</li>"
+                                    "<li><b>Derived values (Artists, Keywords and Ratings)</b>: Derived values are updated so other media viewing tools show the keywords, ratings and artists correctly. E.g. Windows Explorer properties, ACDSee etc. As there is no unified standard (each tool will use their own properties) this will be updated / improved in future releases of ACVC</li>"
+                                    "<li>Currently writing to <b>AVI and MP3 files is not supported</b>. The status property will show if this attempted (<b>Rename to suggested names is supported</b>)</li>"
                                     "</ul>").arg(ui->updateButton->text()));
     ui->renameButton->setToolTip(tr("<p><b>%1</b></p>"
                                     "<p><i>Rename selected files to suggested name</i></p>"
@@ -125,14 +125,9 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
                                          ));
 
     //connects
-    connect(ui->propertyTreeView, &APropertyTreeView::addJob, this, &APropertyEditorDialog::onAddJob);
-    connect(ui->propertyTreeView, &APropertyTreeView::addToJob, this, &APropertyEditorDialog::onAddToJob);
-    connect(ui->propertyTreeView, &APropertyTreeView::redrawMap, this, &APropertyEditorDialog::redrawMap);
+    connect(ui->propertyTreeView, &APropertyTreeView::redrawMap, this, &APropertyEditorDialog::onRedrawMap);
 
     connect(ui->geocodingWidget, &AGeocoding::finished, this, &APropertyEditorDialog::onGeoCodingFinished);
-
-//    spinnerLabel = new ASpinnerLabel(this);
-//    spinnerLabel->start();
 
     QTimer::singleShot(0, this, [this]()->void
     {
@@ -151,7 +146,7 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
 
 APropertyEditorDialog::~APropertyEditorDialog()
 {
-    qDebug()<<"destructor APropertyEditorDialog::~APropertyEditorDialog";
+    qDebug()<<"APropertyEditorDialog::~APropertyEditorDialog";
     delete ui;
 }
 
@@ -207,22 +202,10 @@ void APropertyEditorDialog::setProperties(QStandardItemModel *itemModel)
     onPropertiesLoaded();
 }
 
-void APropertyEditorDialog::onAddJob(QString folder, QString file, QString action, QString* id)
-{
-    emit addJob(folder, file, action, id);
-//    qDebug()<<"APropertyEditorDialog::onAddJob"<<folder << file << action<<*id;
-}
-
-void APropertyEditorDialog::onAddToJob(QString id, QString log)
-{
-//    qDebug()<<"APropertyEditorDialog::onAddToJob"<<id<<log;
-    emit addToJob(id, log);
-}
-
 void APropertyEditorDialog::on_filterColumnsLineEdit_textChanged(const QString &arg1)
 {
     ui->propertyTreeView->onPropertyColumnFilterChanged(arg1);
-    redrawMap();
+    onRedrawMap();
 }
 
 void APropertyEditorDialog::on_locationCheckBox_clicked(bool checked)
@@ -260,7 +243,7 @@ void APropertyEditorDialog::onPropertiesLoaded()
 //    qDebug()<<"APropertyEditorDialog::onPropertiesLoaded"<< ui->propertyTreeView->propertyItemModel->columnCount();
     ui->propertyTreeView->setupModel(); //to set hidden rows, other stuff already done by mainwindow property treeview
 
-    redrawMap();
+    onRedrawMap();
 
     for (int column = firstFileColumnIndex; column < ui->propertyTreeView->model()->columnCount(); column++)
     {
@@ -277,9 +260,9 @@ void APropertyEditorDialog::onPropertiesLoaded()
     checkAndMatchPicasa();
 }
 
-void APropertyEditorDialog::redrawMap()
+void APropertyEditorDialog::onRedrawMap()
 {
-//    qDebug()<<"APropertyEditorDialog::redrawMap";
+//    qDebug()<<"APropertyEditorDialog::onRedrawMap";
     QObject *target = qobject_cast<QObject *>(ui->mapQuickWidget->rootObject());
 
     QMetaObject::invokeMethod(target, "clearMapItems", Qt::AutoConnection);
@@ -308,7 +291,8 @@ void APropertyEditorDialog::on_updateButton_clicked()
     ui->updateProgressBar->setValue(0);
     ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
 
-    redrawMap();
+    onRedrawMap();
+    ui->propertyTreeView->jobTreeView = jobTreeView;
     ui->propertyTreeView->saveChanges(ui->updateProgressBar);
 //    onPropertiesLoaded();
 }
@@ -320,7 +304,7 @@ void APropertyEditorDialog::onGeoCodingFinished(QGeoCoordinate geoCoordinate)
 //    qDebug()<<"APropertyEditorDialog::onGeoCodingFinished"<<geoCoordinate;
     ui->propertyTreeView->onSetPropertyValue("Minimum", "GeoCoordinate", QString::number(geoCoordinate.latitude()) + ";" + QString::number(geoCoordinate.longitude()) + ";" + QString::number(geoCoordinate.altitude()));
     QMetaObject::invokeMethod(target, "center", Qt::AutoConnection, Q_ARG(QVariant, geoCoordinate.latitude()), Q_ARG(QVariant, geoCoordinate.longitude()));
-    redrawMap();
+    onRedrawMap();
 }
 
 void APropertyEditorDialog::on_renameButton_clicked()
@@ -391,9 +375,9 @@ void APropertyEditorDialog::on_renameButton_clicked()
                  ui->propertyTreeView->onSetPropertyValue(fileNameList[i], "SuggestedName", QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole);
 
              }
-             emit reloadClips();
+             emit loadClips(nullptr);
              ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
-             emit reloadProperties();
+             emit loadProperties(nullptr);
          }
     }
     else
@@ -412,12 +396,12 @@ void APropertyEditorDialog::checkAndMatchPicasa()
 
     if (file.open(QIODevice::ReadOnly))
     {
-        QString *processId = new QString();
+//        QString *processId = new QString();
         QStringList filesImported;
         QStringList filesNotImported;
         bool propertiesSet = false;
 
-        onAddJob(folderName, fileName, "Import picasa", processId);
+//        onAddJob(folderName, fileName, "Import picasa", processId);
         QString fileName;
         bool filePropertiesExist;
         QTextStream in(&file);
@@ -431,7 +415,7 @@ void APropertyEditorDialog::checkAndMatchPicasa()
                   filePropertiesExist = ui->propertyTreeView->onGetPropertyValue(fileName, "Directory", directoryName);
                   if (filePropertiesExist)
                   {
-                      onAddToJob(*processId, fileName + " added\n");
+//                      onAddToJob(*processId, fileName + " added\n");
                       filesImported << fileName;
                   }
                   else
@@ -452,7 +436,7 @@ void APropertyEditorDialog::checkAndMatchPicasa()
                         ui->propertyTreeView->onSetPropertyValue(fileName, "Keywords", line.mid(9));
                         propertiesSet = true;
                       }
-                      onAddToJob(*processId, " - " + line + " => Keywords: " + line.mid(9) + "\n");
+//                      onAddToJob(*processId, " - " + line + " => Keywords: " + line.mid(9) + "\n");
                   }
                   else if (line.contains("star=yes"))
                   {
@@ -465,21 +449,21 @@ void APropertyEditorDialog::checkAndMatchPicasa()
                         ui->propertyTreeView->onSetPropertyValue(fileName, "Rating", QVariant::fromValue(AStarRating(3)));
                         propertiesSet = true;
                       }
-                      onAddToJob(*processId, " - " + line + " => Rating: 3\n");
+//                      onAddToJob(*processId, " - " + line + " => Rating: 3\n");
                   }
-                  else
-                    onAddToJob(*processId, " - " + line + " ignored\n");
+//                  else
+//                    onAddToJob(*processId, " - " + line + " ignored\n");
               }
            }
 
         if (filesNotImported.count() > 0)
         {
-            onAddToJob(*processId, "\nFiles not found in current folder:\n");
+//            onAddToJob(*processId, "\nFiles not found in current folder:\n");
 
         }
         foreach (QString line, filesNotImported)
         {
-            onAddToJob(*processId, " - " + line + "\n");
+//            onAddToJob(*processId, " - " + line + "\n");
         }
 
         QStatusBar *bar = qobject_cast<QStatusBar *>(ui->statusBarLayout->itemAt(0)->widget());
@@ -503,7 +487,7 @@ void APropertyEditorDialog::checkAndMatchPicasa()
 void APropertyEditorDialog::on_refreshButton_clicked()
 {
     ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
-    emit reloadProperties();
+    emit loadProperties(nullptr);
     ui->updateProgressBar->setValue(0);
     ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
 

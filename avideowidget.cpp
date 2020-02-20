@@ -162,18 +162,14 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
     else
         m_scrubber->readOnly = false;
 
-//    qDebug()<<"AVideoWidget::onClipsChangedToVideo"<<itemModel->rowCount();
     for (int row = 0; row < itemModel->rowCount();row++)
     {
         QString fileName = itemModel->index(row,fileIndex).data().toString();
-//        qDebug()<<"AVideoWidget::onClipsChangedToVideo"<<fileName<<selectedFileName;
         if (fileName == selectedFileName)
         {
             QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
             int clipCounter = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
-
-//            qDebug()<<"AVideoWidget::onClipsChangedToVideo"<<inTime<<outTime<<folderFileName<<m_player->media().canonicalUrl();
 
             QString AV;
             if (fileName.toLower().contains(".mp3"))
@@ -244,16 +240,6 @@ void AVideoWidget::onReleaseMedia(QString fileName)
         m_player->setMedia(QMediaContent());
     }
 }
-
-//void AVideoWidget::onFileRename()
-//{
-//    qDebug()<<"AVideoWidget::onFileRename";
-////    if (fileName == selectedFileName)
-//    {
-//        m_player->stop();
-//        m_player->setMedia(QMediaContent());
-//    }
-//}
 
 void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 {

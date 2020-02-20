@@ -44,6 +44,11 @@ public:
     ~MainWindow();
 
     void closeEvent(QCloseEvent *event);
+public slots:
+    void onInitProgress();
+    void onUpdateProgress(int value);
+    void onReadyProgress(int result, QString errorString);
+    void onShowInStatusBar(QString message, int timeout = 0);
 private slots:
     void on_actionBlack_theme_triggered();
     void on_actionQuit_triggered();
@@ -109,8 +114,6 @@ private slots:
 
     void on_exportVideoAudioSlider_valueChanged(int value);
 
-    void on_clearJobsButton_clicked();
-
     void on_positionDial_sliderMoved(int position);
 
     void on_transitionDial_sliderMoved(int position);
@@ -163,6 +166,9 @@ private slots:
     void on_refreshButton_clicked();
 
     void onPropertyEditorDialogFinished(int result);
+    void onDerperviewCompleted(QString errorString);
+    void on_clearJobsTreeButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -199,7 +205,6 @@ signals:
     void giveStars(int starCount);
     void timelineWidgetsChanged(int transitionTime, QString transitionType, AClipsTableView *clipsTableView);
     void propertiesLoaded();
-//    void reloadProperties(QString fileName);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event);

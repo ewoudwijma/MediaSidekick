@@ -3,6 +3,7 @@
 #include <QTextBrowser>
 #include <QPainter>
 #include <QScrollBar>
+#include <QProgressBar>
 
 AJobItemDelegate::AJobItemDelegate(QObject *parent)
  : QStyledItemDelegate(parent)
@@ -13,7 +14,7 @@ AJobItemDelegate::AJobItemDelegate(QObject *parent)
 void AJobItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                          const QModelIndex &index) const
 {
-    if (index.column() == 3)
+    if (index.column() == 333)
     {
         QTextBrowser *textBrowser = new QTextBrowser();
 //        textBrowser->setText(index.data().toString());
@@ -35,6 +36,37 @@ void AJobItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
 //        QScrollBar *sb = textBrowser->verticalScrollBar();
 //        sb->setValue(sb->maximum());
     }
+    else if (index.column() == 5) //progress
+    {
+        QProgressBar *progressBar = new QProgressBar();
+
+        if (index.data().toInt() == -200) //parent job failed
+        {
+            progressBar->setValue(100);
+            progressBar->setStyleSheet("QProgressBar::chunk {background: orange}");
+        }
+        else if (index.data().toInt() == -300) //job cancelled
+        {
+            progressBar->setValue(100);
+            progressBar->setStyleSheet("QProgressBar::chunk {background: magenta}");
+        }
+        else if (index.data().toInt() < 0)
+        {
+            progressBar->setValue(100);
+            progressBar->setStyleSheet("QProgressBar::chunk {background: red}");
+        }
+        else if (index.data().toInt() == 100)
+        {
+            progressBar->setValue(100);
+            progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+        }
+        else
+            progressBar->setValue(index.data().toInt());
+
+        progressBar->setGeometry(option.rect); //fit into cell
+        QPixmap map = progressBar->grab();
+        painter->drawPixmap(option.rect.x(), option.rect.y(), map);
+    }
     else
     {
         QStyledItemDelegate::paint(painter, option, index);
@@ -48,7 +80,7 @@ QWidget *AJobItemDelegate::createEditor(QWidget *parent,
 {
 //    qDebug()<<"createEditor" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
 
-    if (index.column() == 3)
+    if (index.column() == 3333)
     {
         QTextBrowser *textBrowser = new QTextBrowser(parent);
 //        textBrowser->moveCursor (QTextCursor::End);
@@ -64,7 +96,7 @@ void AJobItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
 //    qDebug()<<"setEditorData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
-    if (index.column() == 3)
+    if (index.column() == 3333)
     {
         QTextBrowser* textBrowser = qobject_cast<QTextBrowser*>(editor);
         Q_ASSERT(textBrowser);
@@ -87,7 +119,7 @@ void AJobItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
 //    qDebug()<<"setModelData" <<index.data()<<index.model()->index(index.row(), 1,index.parent()).data().toString();
-    if (index.column() == 3)
+    if (index.column() == 3333)
     {
         QTextBrowser* textBrowser = qobject_cast<QTextBrowser*>(editor);
 //        textBrowser->moveCursor (QTextCursor::End);
@@ -104,8 +136,8 @@ void AJobItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
 QSize AJobItemDelegate::sizeHint(const QStyleOptionViewItem &option,
                              const QModelIndex &index) const
 {
-    qDebug()<<"sizeHint"<<index.data();
-    if (index.column() == 3)
+//    qDebug()<<"sizeHint"<<index.data();
+    if (index.column() == 333)
         return QSize(2000, 1000);
     else
         return QStyledItemDelegate::sizeHint(option, index);

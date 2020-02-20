@@ -3,7 +3,7 @@
 
 #include "aclipsitemmodel.h"
 #include "aclipssortfilterproxymodel.h"
-#include "aprocessmanager.h"
+#include "ajobtreeview.h"
 #include "astareditor.h"
 #include "stimespinbox.h"
 
@@ -34,6 +34,8 @@ public:
     void saveModels();
     int nrOfDeletedItems;
 
+    AJobTreeView *jobTreeView;
+
 private:
     QString selectedFolderName;
     QString selectedFileName;
@@ -48,6 +50,7 @@ private:
     bool doNotUpdate;
     bool continueLoading;
 
+    void onTrimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime);
 public slots:
     void onFolderIndexClicked(QModelIndex index);
     void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
@@ -55,11 +58,11 @@ public slots:
     void onScrubberOutChanged(QString AV, int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-    void onClipsDelete(QString fileName);
-    void onTrimF(QString fileName);
+//    void onArchiveClips(QString fileName);
+    void onTrimF(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
-    void onReloadClips();
+    void onLoadClips(QStandardItem *parentItem);
 
 private slots:
     void onIndexClicked(QModelIndex index);
@@ -77,17 +80,16 @@ signals:
     void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
     void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
-    void addJob(QString folder, QString file, QString action, QString *id);
-    void addToJob(QString id, QString log);
     void getPropertyValue(QString fileName, QString key, QVariant *value);
-    void reloadProperties(QString fileName);
+    void loadProperties(QStandardItem *parentItem);
     void setIn(int frames);
     void setOut(int frames);
     void frameRateChanged(int frameRate);
     void propertiesLoaded();
-    void propertyUpdate(QString selectedFolderName, QString fileName, QString targetFileName);
-    void trimC(QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime, int progressPercentage);
-    void reloadAll(bool includingSRT);
+    void propertyCopy(QStandardItem *parentItem, QString selectedFolderName, QString fileName, QString targetFileName);
+    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
+    void showInStatusBar(QString message, int timeout);
+    void releaseMedia(QString fileName);
 
 };
 

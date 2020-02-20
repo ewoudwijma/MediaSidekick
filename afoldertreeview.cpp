@@ -52,3 +52,114 @@ void AFolderTreeView::onIndexClicked(const QModelIndex &index)
         emit indexClicked(selectedIndex);
     }
 }
+
+void AFolderTreeView::recursiveFileRenameCopyIfExists(QString folderName, QString fileName)
+{
+    bool success;
+    QFile file(folderName + fileName);
+    if (file.exists())
+    {
+        QString fileNameWithoutExtension = fileName.left(fileName.lastIndexOf("."));
+        QString fileExtension = fileName.mid(fileName.lastIndexOf("."));
+
+//        qDebug()<<"AFolderTreeView::recursiveFileRenameCopyIfExists"<<fileNameWithoutExtension<<fileExtension<<fileNameWithoutExtension + "BU" + fileExtension;
+
+        recursiveFileRenameCopyIfExists(folderName, fileNameWithoutExtension + "BU" + fileExtension);
+
+        success = file.rename(folderName + fileNameWithoutExtension + "BU" + fileExtension);
+    }
+}
+
+void AFolderTreeView::onMoveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly)
+{
+//    qDebug()<<"AFolderTreeView::onMoveFilesToACVCRecycleBin"<<folderName<<fileName<<supportingFilesOnly;
+
+    AJobParams jobParams;
+    jobParams.thisWidget = this;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = folderName;
+    jobParams.fileName = fileName;
+    jobParams.action = "ToACVCRecycleBin";
+    jobParams.parameters["totalDuration"] = QString::number(1000);
+    jobParams.parameters["supportingFilesOnly"] = QString::number(supportingFilesOnly);
+
+    parentItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+    {
+            AFolderTreeView *folderTreeView = qobject_cast<AFolderTreeView *>(jobParams.thisWidget);
+
+            QString folderName = jobParams.folderName;
+            QString fileName = jobParams.fileName;
+
+            QString recycleFolder = folderName + "ACVCRecycleBin/";
+
+//            qDebug()<<"AFolderTreeView::onMoveFilesToACVCRecycleBin"<<folderName<<fileName<<recycleFolder<<jobParams.parameters["supportingFilesOnly"];
+
+            bool success = true;;
+
+            QDir dir(recycleFolder);
+            if (!dir.exists())
+            {
+                success = dir.mkpath(".");
+                if (success)
+                    emit folderTreeView->jobAddLog(jobParams, tr("%1 created").arg(recycleFolder));
+            }
+
+            if (success)
+            {
+                if (jobParams.parameters["supportingFilesOnly"] != "1")
+                {
+                    QFile file(folderName + fileName);
+
+                    if (file.exists())
+                    {
+                        folderTreeView->recursiveFileRenameCopyIfExists(recycleFolder, fileName);
+                        success = file.rename(recycleFolder + fileName);
+                        if (success)
+                            emit folderTreeView->jobAddLog(jobParams, tr("%1 moved to recycle folder").arg(fileName));
+                    }
+                }
+
+                if (success)
+                {
+                    int lastIndex = fileName.lastIndexOf(".");
+                    if (lastIndex > -1)
+                    {
+                        QString srtFileName = fileName.left(lastIndex) + ".srt";
+                        QFile *file = new QFile(folderName + srtFileName);
+                        if (file->exists())
+                        {
+                            folderTreeView->recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
+                            success = file->rename(recycleFolder + srtFileName);
+                            if (success)
+                                emit folderTreeView->jobAddLog(jobParams, tr("%1 moved to recycle folder").arg(srtFileName));
+                        }
+                        if (success)
+                        {
+                            srtFileName = fileName.left(lastIndex) + ".txt";
+                            file = new QFile(folderName + srtFileName);
+                            if (file->exists())
+                            {
+                                folderTreeView->recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
+                                success = file->rename(recycleFolder + srtFileName);
+                                if (success)
+                                    emit folderTreeView->jobAddLog(jobParams, tr("%1 moved to recycle folder").arg(srtFileName));
+                            }
+                        }
+                        else
+                             return QString("-3, could not rename to " + recycleFolder + srtFileName);
+                    }
+               }
+                else
+                     return QString("-2, could not rename to " + recycleFolder + fileName);
+
+           }
+           else
+            return QString("-1, could not create folder " + recycleFolder);
+
+
+           if (success)
+            return QString("");
+           else
+            return QString("-1, something wrong");
+    }, nullptr);
+}

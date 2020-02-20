@@ -6,16 +6,11 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QSettings>
+#include <QTime>
 
 #include <QDebug>
 
 #include "aglobal.h"
-
-#ifdef Q_OS_WIN
-#include "awideview.h"
-#endif
-
-//#include "fileapi.h"
 
 #include <QApplication>
 
@@ -56,21 +51,23 @@ AFilesTreeView::AFilesTreeView(QWidget *parent) : QTreeView(parent)
     fileContextMenu->actions().last()->setToolTip("tip");
     connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onTrim);
 
-//    fileContextMenu->addAction(new QAction("Rename",fileContextMenu));
-//    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileRename);
-
     QAction *sepAction = new QAction(this);
     sepAction->setSeparator(true);
     fileContextMenu->addAction(sepAction);
 
-    fileContextMenu->addAction(new QAction("Delete file",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onFileDelete);
+    fileContextMenu->addAction(new QAction("Archive file",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onArchiveFiles);
 
-    fileContextMenu->addAction(new QAction("Delete clips",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onClipsDelete);
+    fileContextMenu->addAction(new QAction("Archive clips",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onArchiveClips);
 
-    fileContextMenu->addAction(new QAction("Wideview",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onWideview2);
+    fileContextMenu->addAction(sepAction);
+
+    fileContextMenu->addAction(new QAction("Remux to Mp4 / yuv420",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onRemux);
+
+    fileContextMenu->addAction(new QAction("Wideview by Derperview",fileContextMenu));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, this, &AFilesTreeView::onDerperview);
 
     fileContextMenu->addSeparator();
 
@@ -162,332 +159,409 @@ void AFilesTreeView::this_customContextMenuRequested(const QPoint &point)
 
 void AFilesTreeView::onTrim()
 {
+    QStringList filePathList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
-    bool somethingTrimmed = false;
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
             QString fileName = indexList[i].data().toString();
-            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
-            {
-                qDebug()<<"AFilesTreeView::onTrim"<<fileName;
-
-                emit trimF(fileName);
-                somethingTrimmed = true;
-            }
-//            qDebug()<<"indexList[i].data()"<<indexList[i].row()<<indexList[i].column()<<indexList[i].data();
+            if (!fileName.toLower().contains(".jpg"))
+                filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
 
-    if (!somethingTrimmed)
-            QMessageBox::information(this, "Trim", "Nothing to do");
-}
-
-void AFilesTreeView::onFileRename()
-{
-    QStringList fileNameList;
-    QStringList newFileNameList;
-    QStringList noSuggestedList;
-    QModelIndexList indexList = selectionModel()->selectedIndexes();
-
-    for (int i=0; i< indexList.count();i++)
+    if (filePathList.count() > 0)
     {
-        if (indexList[i].column() == 0) //first column
-        {
-            QString fileName = indexList[i].data().toString();
-            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
-            {
-                QVariant *suggestedName = new QVariant();
-                emit getPropertyValue(fileName, "SuggestedName", suggestedName);
-
-                if (suggestedName->toString() != "")
-                {
-                    fileNameList << fileName;
-                    newFileNameList << suggestedName->toString();
-                }
-                else
-                    noSuggestedList << fileName;
-            }
-        }
-    }
-
-    if (noSuggestedList.count() == 0 && fileNameList.count() > 0)
-    {
-        QString folderName = QSettings().value("LastFolder").toString();
-
         QMessageBox::StandardButton reply;
-         reply = QMessageBox::question(this, "Rename " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to rename " + fileNameList.join(", ") + " and its supporting files (srt and txt) to " + newFileNameList.join(", ") + ".* ?",
+         reply = QMessageBox::question(this, "Trim" + QString::number(filePathList.count()) + " File(s)", "Are you sure you want to trim " + filePathList.join(", ") + "?",
                                        QMessageBox::Yes|QMessageBox::No);
 
          if (reply == QMessageBox::Yes)
          {
+             AJobParams jobParams;
+             jobParams.action = "Trim";
 
-             for (int i=0; i< fileNameList.count();i++)
+             QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);
+
+             QStandardItem *currentItem = nullptr;
+
+             bool trimDone = false;
+             for (int i=0; i< filePathList.count();i++)
              {
-    //             QString fileName = fileNameList[i];
-                 emit releaseMedia(fileNameList[i]); //to stop the video (tbd:but not to remove the clips!!!)
-                 QFile file(folderName + fileNameList[i]);
-                 QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
-                 qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
-                 if (file.exists())
-                    file.rename(folderName + newFileNameList[i] + extensionString);
+                 int lastIndexOf = filePathList[i].lastIndexOf("/");
+                 QString folderName = filePathList[i].left(lastIndexOf + 1);
+                 QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
-                 int lastIndex = fileNameList[i].lastIndexOf(".");
-                 if (lastIndex > -1)
+                 if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
                  {
-                     QFile *file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
-                     if (file->exists())
-                        file->rename(folderName + newFileNameList[i] + ".srt");
-
-                     file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
-                     if (file->exists())
-                        file->rename(folderName + newFileNameList[i] + ".txt");
+//                     QStandardItem *parentItem2 = nullptr;
+                     emit trimF(parentItem, currentItem, folderName, fileName); //should return a parentItem
+                     qDebug()<<"AFilesTreeView::onTrimF"<<fileName<<parentItem;
+                     trimDone = true;
                  }
              }
-             emit reloadClips();
-             emit reloadProperties();
-         }
-    }
-    else
-    {
-        if (noSuggestedList.count() > 0)
-            QMessageBox::information(this, "Rename", "No valid suggested name for the following files (see properties tab): " + noSuggestedList.join(", "));
-        else
-            QMessageBox::information(this, "Rename", "Nothing to do");
-    }
 
-    fileContextMenu->close();
-}
-
-void AFilesTreeView::onFileDelete()
-{
-    QStringList fileNameList;
-    QModelIndexList indexList = selectionModel()->selectedIndexes();
-    for (int i=0; i< indexList.count();i++)
-    {
-        if (indexList[i].column() == 0) //first column
-        {
-            fileNameList << indexList[i].data().toString();
-        }
-    }
-
-    if (fileNameList.count()>0)
-    {
-        QString folderName = QSettings().value("LastFolder").toString();
-
-        QMessageBox::StandardButton reply;
-         reply = QMessageBox::question(this, "Delete file(s)" + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete " + fileNameList.join(", ") + " and its supporting files (srt and txt)?",
-                                       QMessageBox::Yes|QMessageBox::No);
-
-         if (reply == QMessageBox::Yes)
-         {
-
-             for (int i=0; i< fileNameList.count();i++)
+             if (trimDone)
              {
-                 QString fileName = fileNameList[i];
-                 emit releaseMedia(fileName);
-                 emit clipsDelete(fileName);
-                 emit removeFile(fileName);
-                 QFile file(folderName + fileName);
-                 if (file.exists())
-                    file.remove();
+                 emit loadClips(parentItem);
 
-                 int lastIndex = fileName.lastIndexOf(".");
-                 if (lastIndex > -1)
-                 {
-                     QString srtFileName = fileName.left(lastIndex) + ".srt";
-                     QFile *file = new QFile(folderName + srtFileName);
-                     if (file->exists())
-                        file->remove();
-                     srtFileName = fileName.left(lastIndex) + ".txt";
-                     file = new QFile(folderName + srtFileName);
-                     if (file->exists())
-                        file->remove();
-                 }
-             }
-         }
-    }
-
-    fileContextMenu->close();
-}
-
-void AFilesTreeView::onClipsDelete()
-{
-    QStringList fileNameList;
-    QModelIndexList indexList = selectionModel()->selectedIndexes();
-    for (int i=0; i< indexList.count();i++)
-    {
-        if (indexList[i].column() == 0) //first column
-        {
-            QString fileName = indexList[i].data().toString();
-            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
-                fileNameList << fileName;
-        }
-    }
-
-    if (fileNameList.count()>0)
-    {
-        QString folderName = QSettings().value("LastFolder").toString();
-
-        QMessageBox::StandardButton reply;
-         reply = QMessageBox::question(this, "Delete clips" + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to PERMANENTLY delete  supporting files (srt and txt) of " + fileNameList.join(", ") + "?",
-                                       QMessageBox::Yes|QMessageBox::No);
-
-         if (reply == QMessageBox::Yes)
-         {
-
-             for (int i=0; i< fileNameList.count();i++)
-             {
-                 QString fileName = fileNameList[i];
-                 emit clipsDelete(fileName);
-
-                 int lastIndex = fileName.lastIndexOf(".");
-                 if (lastIndex > -1)
-                 {
-                     QString srtFileName = fileName.left(lastIndex) + ".srt";
-                     QFile *file = new QFile(folderName + srtFileName);
-                     if (file->exists())
-                        file->remove();
-                     srtFileName = fileName.left(lastIndex) + ".txt";
-                     file = new QFile(folderName + srtFileName);
-                     if (file->exists())
-                        file->remove();
-                 }
+                 emit loadProperties(parentItem);
              }
          }
     }
     else
-        QMessageBox::information(this, "Delete clips", "Nothing to do");
+        QMessageBox::information(this, "Trim", "Nothing to trim");
 
      fileContextMenu->close();
 }
 
-void AFilesTreeView::onWideview2()
+void AFilesTreeView::onStopThreadProcess()
 {
-    QStringList fileNameList;
+    qDebug()<<"AFilesTreeView::onStopThreadProcess"<<this;
+    emit stopThreadProcess();
+}
+
+void AFilesTreeView::onDerperview()
+{
+    QStringList filePathList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
             QString fileName = indexList[i].data().toString();
-            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
-                fileNameList << fileName;
+            if (!fileName.toLower().contains(".mp3") && !fileName.toLower().contains(".jpg"))
+                filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
 
-    if (fileNameList.count()>0)
+    if (filePathList.count() > 0)
     {
-        QString folderName = QSettings().value("LastFolder").toString();
-
         QMessageBox::StandardButton reply;
-         reply = QMessageBox::question(this, "Wideview" + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to wideview " + fileNameList.join(", ") + "?",
+         reply = QMessageBox::question(this, "Wideview" + QString::number(filePathList.count()) + " File(s)", "Are you sure you want to wideview " + filePathList.join(", ") + "?",
                                        QMessageBox::Yes|QMessageBox::No);
 
          if (reply == QMessageBox::Yes)
          {
-             for (int i=0; i< fileNameList.count();i++)
+             AJobParams jobParams;
+             jobParams.action = "Wideview";
+
+             QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);
+
+             QStandardItem *currentItem = nullptr;
+
+             for (int i=0; i< filePathList.count();i++)
              {
-                 QString fileName = fileNameList[i];
+                 int lastIndexOf = filePathList[i].lastIndexOf("/");
+                 QString folderName = filePathList[i].left(lastIndexOf + 1);
+                 QString fileName = filePathList[i].mid(lastIndexOf + 1);
+
+                 QVariant *durationPointer = new QVariant();
+                 emit getPropertyValue(fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+                 *durationPointer = durationPointer->toString().replace(" (approx)", "");
+                 QTime durationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
+                 if (durationTime == QTime())
+                 {
+                     QString durationString = durationPointer->toString();
+                     durationString = durationString.left(durationString.length() - 2); //remove " -s"
+                     durationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
+                 }
+
+                 if (durationTime.msecsSinceStartOfDay() == 0)
+                     durationTime = QTime::fromMSecsSinceStartOfDay(24 * 60 * 60 * 1000 - 1);
+
+                 derperView = new ADerperView();
+
+                 connect(this, &AFilesTreeView::stopThreadProcess, derperView, &ADerperView::onStopThreadProcess);
+
+                 AJobParams jobParams;
+                 jobParams.thisWidget = this;
+                 jobParams.parentItem = parentItem;
+                 jobParams.folderName = folderName;
+                 jobParams.fileName = fileName;
+                 jobParams.action = "Wideview";
+                 jobParams.parameters["totalDuration"] = QString::number(durationTime.msecsSinceStartOfDay());
+                 jobParams.parameters["durationMultiplier"] = QString::number(0.6);
+
+                 currentItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+                 {
+                     AFilesTreeView *filesTreeView = qobject_cast<AFilesTreeView *>(jobParams.thisWidget);
+
+                         connect(filesTreeView->derperView, &ADerperView::processOutput, [=](QString output)
+                         {
+        //                         qDebug() << "AFilesTreeView::processOutput" <<jobParams.parameters["totalDuration"] << output<<jobParams.currentIndex<<jobParams.currentIndex.data();
+                             emit filesTreeView->jobAddLog(jobParams, output);
+                         });
+
+                         emit filesTreeView->jobAddLog(jobParams, "===================");
+                         emit filesTreeView->jobAddLog(jobParams, "WideView by Derperview, Derperview by Banelle: https://github.com/banelle/derperview");
+                         emit filesTreeView->jobAddLog(jobParams, "Perform non-linear stretch of 4:3 video to make it 16:9.");
+                         emit filesTreeView->jobAddLog(jobParams, "See also Derperview - A Command Line Superview Alternative: https://intofpv.com/t-derperview-a-command-line-superview-alternative");
+                         emit filesTreeView->jobAddLog(jobParams, "===================");
+                         emit filesTreeView->jobAddLog(jobParams, "ACVC uses unmodified Derperview sourcecode and embedded it in the Qt and ACVC job handling structure.");
+                         emit filesTreeView->jobAddLog(jobParams, "ACVC added 'Remux to MP4/Yuv420' to prepare videocontent for Wideview conversion");
+                         emit filesTreeView->jobAddLog(jobParams, "===================");
+
+                     return filesTreeView->derperView->Go((jobParams.folderName + jobParams.fileName).toUtf8().constData(), (jobParams.folderName + jobParams.fileName.left(jobParams.fileName.lastIndexOf(".")) + "WV.mp4").toUtf8().constData(), 1);
+
+                 }, nullptr);
+
+                 copyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
+
+                 emit propertyCopy(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
+
+                 emit releaseMedia(fileName);
+                 emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
+             } //for all files
+
+             emit loadClips(parentItem);
+
+             emit loadProperties(parentItem);
+
+             emit derperviewCompleted("");
+
+         }
+    }
+    else
+        QMessageBox::information(this, "Wideview", "Nothing to derp");
+
+     fileContextMenu->close();
+}
+
+void AFilesTreeView::onRemux()
+{
+    QStringList filePathList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            QString fileName = indexList[i].data().toString();
+            if (!fileName.toLower().contains(".mp3") && !fileName.toLower().contains(".jpg"))
+                filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
+        }
+    }
+
+    if (filePathList.count() > 0)
+    {
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Remux to mp4 / yuv420" + QString::number(filePathList.count()) + " File(s)", "Are you sure you want to remux to mp4 / yuv420 " + filePathList.join(", ") + "?",
+                                       QMessageBox::Yes|QMessageBox::No);
+
+         if (reply == QMessageBox::Yes)
+         {
+             AJobParams jobParams;
+             jobParams.thisWidget = this;
+             jobParams.action = "Remux";
+
+             QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);
+
+             QStandardItem *currentItem = nullptr;
+
+             for (int i=0; i< filePathList.count();i++)
+             {
+                 int lastIndexOf = filePathList[i].lastIndexOf("/");
+                 QString folderName = filePathList[i].left(lastIndexOf + 1);
+                 QString fileName = filePathList[i].mid(lastIndexOf + 1);
+
+                 currentItem = onRemux2(parentItem, folderName, fileName);
+
+                 copyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
+
+                 emit propertyCopy(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
+
+                 emit releaseMedia(fileName);
+                 emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
+             }
+
+             emit loadClips(parentItem);
+
+             emit loadProperties(parentItem);
+
+         }
+    }
+    else
+        QMessageBox::information(this, "Remux to mp4 / yuv420", "Nothing to remux");
+
+     fileContextMenu->close();
+}
+
+void AFilesTreeView::copyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName)
+{
+    AJobParams jobParams;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = folderName;
+    jobParams.fileName = fileName;
+    jobParams.action = "Copy clips";
+    jobParams.parameters["targetFileName"] = targetFileName;
+
+    jobTreeView->createJob(jobParams,  [] (AJobParams jobParams)
+    {
+//        qDebug()<<"AFilesTreeView::copyClips thread"<<jobParams.folderName + jobParams.fileName.left(jobParams.fileName.lastIndexOf(".")) + ".srt"<<jobParams.folderName + jobParams.parameters["targetFileName"].left(jobParams.parameters["targetFileName"].lastIndexOf(".")) + ".srt";
+        QFile file(jobParams.folderName + jobParams.fileName.left(jobParams.fileName.lastIndexOf(".")) + ".srt");
+        if (file.exists())
+           file.copy(jobParams.folderName + jobParams.parameters["targetFileName"].left(jobParams.parameters["targetFileName"].lastIndexOf(".")) + ".srt");
+
+        return QString();
+    }
+        , nullptr);
+}
+
+QStandardItem *AFilesTreeView::onRemux2(QStandardItem *parentItem, QString folderName, QString fileName)
+{
+    QString sourceFolderFileName = folderName + fileName;
+
+    QString targetFolderFileName;
+    int lastIndex = fileName.lastIndexOf(".");
+    if (lastIndex > -1)
+        targetFolderFileName = folderName + fileName.left(lastIndex) + "RM.mp4";
 
 #ifdef Q_OS_WIN
-                 Go((folderName + fileName).toUtf8().constData(), (folderName + fileName.left(fileName.lastIndexOf(".")) + "SV.mp4").toUtf8().constData(), 4);
+    sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
+    targetFolderFileName = targetFolderFileName.replace("/", "\\");
 #endif
+
+    QVariant *durationPointer = new QVariant();
+    emit getPropertyValue(fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+    *durationPointer = durationPointer->toString().replace(" (approx)", "");
+    QTime durationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
+    if (durationTime == QTime())
+    {
+        QString durationString = durationPointer->toString();
+        durationString = durationString.left(durationString.length() - 2); //remove " -s"
+        durationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
+    }
+
+    if (durationTime.msecsSinceStartOfDay() == 0)
+        durationTime = QTime::fromMSecsSinceStartOfDay(24 * 60 * 60 * 1000 - 1);
+
+    qDebug()<<"AFilesTreeView::onRemux"<<folderName<<fileName;
+
+    AJobParams jobParams;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = folderName;
+    jobParams.fileName = fileName;
+    jobParams.action = "Remux";
+    jobParams.command = "ffmpeg -y -i \"" + sourceFolderFileName + "\" -pix_fmt yuv420p -y \"" + targetFolderFileName + "\""; //-map_metadata 0  -loglevel +verbose
+    jobParams.parameters["exportFolderFileName"] = targetFolderFileName;
+    jobParams.parameters["totalDuration"] = QString::number(durationTime.msecsSinceStartOfDay());
+    jobParams.parameters["durationMultiplier"] = QString::number(2);
+
+    return jobTreeView->createJob(jobParams, nullptr, nullptr);
+}
+
+void AFilesTreeView::onArchiveFiles()
+{
+    QStringList filePathList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
+        }
+    }
+
+    if (filePathList.count()>0)
+    {
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Archive file(s)" + QString::number(filePathList.count()) + " File(s)", "Are you sure you want to move " + filePathList.join(", ") + " and its supporting files (srt and txt) to the ACVC recycle bin folder?",
+                                       QMessageBox::Yes|QMessageBox::No);
+
+         if (reply == QMessageBox::Yes)
+         {
+             AJobParams jobParams;
+             jobParams.thisWidget = this;
+             jobParams.action = "Archive Files";
+
+             QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);
+
+             for (int i=0; i< filePathList.count();i++)
+             {
+
+                 int lastIndexOf = filePathList[i].lastIndexOf("/");
+                 QString folderName = filePathList[i].left(lastIndexOf + 1);
+                 QString fileName = filePathList[i].mid(lastIndexOf + 1);
+
+                 emit releaseMedia(fileName);
+                 emit moveFilesToACVCRecycleBin(parentItem, folderName, fileName);
+
              }
+             emit loadClips(parentItem);
+             emit loadProperties(parentItem);
+         }
+    }
+
+    fileContextMenu->close();
+}
+
+void AFilesTreeView::onArchiveClips()
+{
+    QStringList filePathList;
+    QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column
+        {
+            QString fileName = indexList[i].data().toString();
+            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+                filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
+        }
+    }
+
+    if (filePathList.count()>0)
+    {
+        QMessageBox::StandardButton reply;
+         reply = QMessageBox::question(this, "Archive clips" + QString::number(filePathList.count()) + " File(s)", "Are you sure you want to move supporting files (srt and txt) of " + filePathList.join(", ") + " to the ACVC recycle bin folder?",
+                                       QMessageBox::Yes|QMessageBox::No);
+
+         if (reply == QMessageBox::Yes)
+         {
+
+             AJobParams jobParams;
+             jobParams.action = "Archive Clips";
+
+             QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);
+
+             for (int i=0; i< filePathList.count();i++)
+             {
+                 int lastIndexOf = filePathList[i].lastIndexOf("/");
+                 QString folderName = filePathList[i].left(lastIndexOf + 1);
+                 QString fileName = filePathList[i].mid(lastIndexOf + 1);
+
+                 emit releaseMedia(fileName);
+                 emit moveFilesToACVCRecycleBin(parentItem, folderName, fileName, true); //supporting files only
+             }
+             emit loadClips(parentItem);
+             emit loadProperties(parentItem);
          }
     }
     else
-        QMessageBox::information(this, "Wideview", "Nothing to do");
+        QMessageBox::information(this, "Archive clips", "Nothing to do");
 
      fileContextMenu->close();
-
 }
-
-//double derp_it(int tx, int target_width, int src_width)
-//{
-//    double x = (static_cast<double>(tx) / target_width - 0.5) * 2; //  - 1 -> 1
-//    double sx = tx - (target_width - src_width) / 2;
-//    double offset = x * x * (x < 0 ? -1 : 1) * ((target_width - src_width) / 2);
-//    return sx - offset;
-//}
-
-//void BuildLookup(int width)
-//{
-//    // Generate lookup table
-//    int targetWidth = width * 4 / 3;
-////    LOOKUP[width] = vector<double>(targetWidth);
-//    for (int tx = 0; tx < targetWidth; tx++)
-//    {
-//        double x = (static_cast<double>(tx) / targetWidth - 0.5) * 2; //  - 1 -> 1
-//        double sx = tx - (targetWidth - width) / 2;
-//        double offset = x * x * (x < 0 ? -1 : 1) * ((targetWidth - width) / 2);
-////        LOOKUP[width][tx] = derp_it(tx, targetWidth, width)
-//    }
-//}
-
-//void AFilesTreeView::onWideview()
-//{
-//       int target_width = 3500;//int(sys.argv[1])
-//       int height = 1520;//int(sys.argv[2])
-//       int src_width = 2704;//int(sys.argv[3])
-
-//       QFile srtOutputFile(QSettings().value("LastFileFolder").toString() + "xmap.pgm");
-//       if (srtOutputFile.open(QIODevice::WriteOnly) )
-//       {
-//           QTextStream srtStream( &srtOutputFile );
-
-//           srtStream << "P2 " + QString::number(target_width) + " " + QString::number(height) + " 65535" << endl;
-
-//           for (int y = 0; y < height; y++)
-//           {
-//               for (int x = 0; x < target_width; x++)
-//               {
-//                   srtStream << QString::number(derp_it(x, target_width, src_width)) + " ";
-//               }
-//               srtStream << endl;
-//           }
-//       }
-//       srtOutputFile.close();
-
-//       QFile srtOutputFile2(QSettings().value("LastFileFolder").toString() + "ymap.pgm");
-//       if (srtOutputFile2.open(QIODevice::WriteOnly) )
-//       {
-//           QTextStream srtStream( &srtOutputFile2 );
-
-//           srtStream << "P2 " + QString::number(target_width) + " " + QString::number(height) + " 65535" << endl;
-
-//           for (int y = 0; y < height; y++)
-//           {
-//               for (int x = 0; x < target_width; x++)
-//               {
-//                   srtStream << QString::number(y) + " ";
-//               }
-//               srtStream << endl;
-//           }
-//       }
-//       srtOutputFile2.close();
-//}
 
 void AFilesTreeView::onOpenInExplorer()
 {
-    QStringList fileNameList;
+    QStringList filePathList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
-            fileNameList << indexList[i].data().toString();
+            filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
 
-    if (fileNameList.count() > 0)
+    if (filePathList.count() > 0)
     {
-        QString folderName = QSettings().value("LastFolder").toString();
-
-        for (int i=0; i< fileNameList.count();i++)
+        for (int i=0; i< filePathList.count();i++)
         {
-            QString fileName = fileNameList[i];
+            int lastIndexOf = filePathList[i].lastIndexOf("/");
+            QString folderName = filePathList[i].left(lastIndexOf + 1);
+            QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
             //http://lynxline.com/show-in-finder-show-in-explorer/
             //https://stackoverflow.com/questions/3490336/how-to-reveal-in-finder-or-show-in-explorer-with-qt
@@ -516,23 +590,23 @@ void AFilesTreeView::onOpenInExplorer()
 
 void AFilesTreeView::onOpenDefaultApplication()
 {
-    QStringList fileNameList;
+    QStringList filePathList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
     for (int i=0; i< indexList.count();i++)
     {
         if (indexList[i].column() == 0) //first column
         {
-            fileNameList << indexList[i].data().toString();
+            filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
 
-    if (fileNameList.count()>0)
+    if (filePathList.count()>0)
     {
-        QString folderName = QSettings().value("LastFolder").toString();
-
-        for (int i=0; i< fileNameList.count();i++)
+        for (int i=0; i< filePathList.count();i++)
         {
-            QString fileName = fileNameList[i];
+            int lastIndexOf = filePathList[i].lastIndexOf("/");
+            QString folderName = filePathList[i].left(lastIndexOf + 1);
+            QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
             QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName) );
         }
@@ -557,19 +631,19 @@ void AFilesTreeView::onClipIndexClicked(QModelIndex index)
     setCurrentIndex(filesProxyModel->mapFromSource(modelIndex)); //does also the scrollTo
 }
 
-QModelIndex AFilesTreeView::recursiveFiles(QAbstractItemModel *fileModel, QModelIndex parentIndex, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString> , QModelIndex))
-{
-    QModelIndex fileIndex = QModelIndex();
-    for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
-    {
-        QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
+//QModelIndex AFilesTreeView::recursiveFiles(QAbstractItemModel *fileModel, QModelIndex parentIndex, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString> , QModelIndex))
+//{
+//    QModelIndex fileIndex = QModelIndex();
+//    for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
+//    {
+//        QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
 
-        processOutput(this, parameters, childIndex);
+//        processOutput(this, parameters, childIndex);
 
-        fileIndex = recursiveFiles(fileModel, childIndex, parameters, processOutput);
-    }
-    return fileIndex;
-}
+//        fileIndex = recursiveFiles(fileModel, childIndex, parameters, processOutput);
+//    }
+//    return fileIndex;
+//}
 
 
 QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIndex)
@@ -580,7 +654,7 @@ QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIn
         QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
         if (childIndex.data().toString().toLower().contains(".mp4") || childIndex.data().toString().toLower().contains(".avi") || childIndex.data().toString().toLower().contains(".wmv") || childIndex.data().toString().toLower().contains(".mts")) // && fileIndex == QModelIndex()
         {
-//            qDebug()<<"recursiveFiles"<<childIndex.data().toString();
+//            qDebug()<<"recursiveFirstFile"<<childIndex.data().toString();
             return childIndex;
         }
         fileIndex = recursiveFirstFile(fileModel, childIndex);

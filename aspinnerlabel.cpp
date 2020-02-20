@@ -20,7 +20,6 @@ ASpinnerLabel::ASpinnerLabel(QWidget *parent): QLabel(parent)
 
 void ASpinnerLabel::start()
 {
-//    qDebug()<<"start"<<parent();
     if (startCounter == 0)
     {
         show();
@@ -35,18 +34,19 @@ void ASpinnerLabel::start()
         movie()->start();
     }
     startCounter++;
+//    qDebug()<<"ASpinnerLabel::start"<<parent()<<startCounter;
 }
 
 void ASpinnerLabel::stop()
 {
     startCounter--;
-//    qDebug()<<"stop"<<parent();
     if (startCounter == 0)
     {
         if (movie() != nullptr)
             movie()->stop();
         clear();
     }
+//    qDebug()<<"ASpinnerLabel::stop"<<parent()<<startCounter;
 }
 
 ////    spinnerLabel->setGeometry(QRect(geometry().x() + geometry().width() / 2.0, geometry().y() + geometry().height() / 2.0, geometry().width() / 4.0, geometry().height() / 4.0));

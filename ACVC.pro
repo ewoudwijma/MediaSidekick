@@ -41,6 +41,9 @@ SOURCES += \
         aclipsitemmodel.cpp \
         aclipssortfilterproxymodel.cpp \
         aclipstableview.cpp \
+        aderperviewmain.cpp \
+        aderperviewprocess.cpp \
+        aderperviewvideo.cpp \
         adragdroplineedit.cpp \
         aexport.cpp \
         afilessortfilterproxymodel.cpp \
@@ -49,10 +52,10 @@ SOURCES += \
         ageocoding.cpp \
         aglobal.cpp \
         ajobitemdelegate.cpp \
-        ajobtableview.cpp \
+        ajobthread.cpp \
+        ajobtreeview.cpp \
         amaingraphicsitem.cpp \
         amaingraphicsview.cpp \
-        aprocessmanager.cpp \
         apropertyeditordialog.cpp \
         apropertyitemdelegate.cpp \
         apropertysortfilterproxymodel.cpp \
@@ -63,9 +66,6 @@ SOURCES += \
         atagslistview.cpp \
         atimeline.cpp \
         avideowidget.cpp \
-        awideview.cpp \
-        awideviewprocess.cpp \
-        awideviewvideo.cpp \
         main.cpp \
         mainwindow.cpp \
         qedge.cpp \
@@ -74,15 +74,14 @@ SOURCES += \
         sscrubbar.cpp \
         stimespinbox.cpp
 
-win32: SOURCES +=
-win32: SOURCES += 
-win32: SOURCES +=
-
 HEADERS += \
         aclipsitemdelegate.h \
         aclipsitemmodel.h \
         aclipssortfilterproxymodel.h \
         aclipstableview.h \
+        aderperviewmain.h \
+        aderperviewprocess.h \
+        aderperviewvideo.h \
         adragdroplineedit.h \
         aexport.h \
         afilessortfilterproxymodel.h \
@@ -91,10 +90,10 @@ HEADERS += \
         ageocoding.h \
         aglobal.h \
         ajobitemdelegate.h \
-        ajobtableview.h \
+        ajobthread.h \
+        ajobtreeview.h \
         amaingraphicsitem.h \
         amaingraphicsview.h \
-        aprocessmanager.h \
         apropertyeditordialog.h \
         apropertyitemdelegate.h \
         apropertysortfilterproxymodel.h \
@@ -105,19 +104,12 @@ HEADERS += \
         atagslistview.h \
         atimeline.h \
         avideowidget.h \
-        awideview.h \
-        awideviewprocess.h \
-        awideviewvideo.h \
         mainwindow.h \
         qedge.h \
         qgraphwidget.h \
         qnode.h \
         sscrubbar.h \
         stimespinbox.h
-
-win32: HEADERS +=
-win32: HEADERS += 
-win32: HEADERS +=
 
 FORMS += \
         mainwindow.ui \
@@ -139,6 +131,6 @@ win32: LIBS += -LD:\ACVC\windows\ffmpeg-20200121-fc6fde2-win64-dev\lib
 win32: LIBS += -lavcodec -lavformat -lavutil -lswscale #-lavdevice -lavfilter -lpostproc -lswresample
 win32: INCLUDEPATH +=D:\ACVC\windows\ffmpeg-20200121-fc6fde2-win64-dev\include
 
-#unix:LIBS += -L/Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin
-#unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample
-#unix:INCLUDEPATH += /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-dev/include
+unix:LIBS += -L/Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-shared/bin
+unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample
+unix:INCLUDEPATH += /Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-dev/include

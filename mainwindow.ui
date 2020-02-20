@@ -29,7 +29,7 @@
          <enum>QTabWidget::South</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_folder">
          <attribute name="title">
@@ -71,7 +71,7 @@
            </widget>
           </item>
           <item>
-           <widget class="AFilesTreeView" name="audioFilestreeView"/>
+           <widget class="AFilesTreeView" name="audioFilesTreeView"/>
           </item>
           <item>
            <widget class="QLabel" name="label_11">
@@ -217,7 +217,7 @@
           <enum>QTabWidget::South</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="tab_clips">
           <attribute name="title">
@@ -425,22 +425,25 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="tabJobs">
+         <widget class="QWidget" name="tabJobTree">
           <attribute name="title">
-           <string>Jobs</string>
+           <string>Job tree</string>
           </attribute>
-          <layout class="QVBoxLayout" name="verticalLayout_8">
+          <layout class="QVBoxLayout" name="verticalLayout_18">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <layout class="QHBoxLayout" name="horizontalLayout_4"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
              <item>
-              <widget class="QPushButton" name="clearJobsButton">
+              <widget class="QPushButton" name="clearJobsTreeButton">
                <property name="text">
                 <string>Clear</string>
                </property>
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer">
+              <spacer name="horizontalSpacer_4">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
@@ -455,7 +458,7 @@
             </layout>
            </item>
            <item>
-            <widget class="AJobTableView" name="logTableView"/>
+            <widget class="AJobTreeView" name="jobTreeView"/>
            </item>
           </layout>
          </widget>
@@ -1027,12 +1030,8 @@
    </property>
   </action>
   <action name="action1_star">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/Rating1.png</normaloff>:/Rating1.png</iconset>
-   </property>
    <property name="text">
-    <string>&amp;1 star</string>
+    <string>*....</string>
    </property>
    <property name="toolTip">
     <string>1 star</string>
@@ -1042,12 +1041,8 @@
    </property>
   </action>
   <action name="action2_stars">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/Rating2.png</normaloff>:/Rating2.png</iconset>
-   </property>
    <property name="text">
-    <string>&amp;2 stars</string>
+    <string>**...</string>
    </property>
    <property name="toolTip">
     <string>2 stars</string>
@@ -1057,12 +1052,8 @@
    </property>
   </action>
   <action name="action3_stars">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/Rating3.png</normaloff>:/Rating3.png</iconset>
-   </property>
    <property name="text">
-    <string>&amp;3 stars</string>
+    <string>***..</string>
    </property>
    <property name="toolTip">
     <string>3 stars</string>
@@ -1072,12 +1063,8 @@
    </property>
   </action>
   <action name="action4_stars">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/Rating4.png</normaloff>:/Rating4.png</iconset>
-   </property>
    <property name="text">
-    <string>&amp;4 stars</string>
+    <string>****.</string>
    </property>
    <property name="toolTip">
     <string>4 stars</string>
@@ -1087,12 +1074,8 @@
    </property>
   </action>
   <action name="action5_stars">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/Rating5.png</normaloff>:/Rating5.png</iconset>
-   </property>
    <property name="text">
-    <string>&amp;5 stars</string>
+    <string>*****</string>
    </property>
    <property name="toolTip">
     <string>5 stars</string>
@@ -1102,12 +1085,8 @@
    </property>
   </action>
   <action name="action0_stars">
-   <property name="icon">
-    <iconset resource="images.qrc">
-     <normaloff>:/Rating0.png</normaloff>:/Rating0.png</iconset>
-   </property>
    <property name="text">
-    <string>&amp;0 stars</string>
+    <string>.....</string>
    </property>
    <property name="toolTip">
     <string>0 stars</string>
@@ -1323,14 +1302,14 @@
    <header>aclipstableview.h</header>
   </customwidget>
   <customwidget>
-   <class>AJobTableView</class>
-   <extends>QTableView</extends>
-   <header>ajobtableview.h</header>
-  </customwidget>
-  <customwidget>
    <class>AMainGraphicsView</class>
    <extends>QGraphicsView</extends>
    <header>amaingraphicsview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>AJobTreeView</class>
+   <extends>QTreeView</extends>
+   <header>ajobtreeview.h</header>
   </customwidget>
  </customwidgets>
  <resources>

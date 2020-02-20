@@ -55,7 +55,7 @@
 #include <QPainter>
 #include <QPointF>
 #include <QPolygonF>
-#include <QVector>
+//#include <QVector>
 
 //! [0]
 class AStarRating

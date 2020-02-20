@@ -82,4 +82,4 @@ protected:
 };
 
 std::string GetErrorString(int errorCode);
-}
+} //namespace DerperView

@@ -8,7 +8,6 @@
 //#include <stdlib.h>
 //#include <string.h>
 
-#ifdef Q_OS_WIN
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -19,19 +18,24 @@ extern "C" {
 ////#include <libpostproc/postprocess.h>
 ////#include <libswresample/swresample.h>
 }
-#endif
 
 int main(int argc, char *argv[])
 {
-#ifdef false
+    QApplication a(argc, argv);
 
+#ifdef false
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *tag = NULL;
     int ret;
 
 //    if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\Bras_DVR\\Encode2.7K@30.mp4", NULL, NULL)))
+#ifdef Q_OS_WIN
     if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\Bras_DVR\\2020-01-15 00-42-21.AVI", NULL, NULL)))
         return ret;
+#else
+    if ((ret = avformat_open_input(&fmt_ctx, "/Users/ewoudwijma/Movies/2019-09-02 Fipre/2000-01-19 00-00-00 +53632ms.MP4", NULL, NULL)))
+        return ret;
+#endif
 
     if ((ret = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find stream information\n");
@@ -65,7 +69,7 @@ int main(int argc, char *argv[])
     avformat_close_input(&fmt_ctx);
 #endif
 
-    QApplication a(argc, argv);
+    qRegisterMetaType<AJobParams>("AJobParams"); //so signal/slots can use it (jobAddlog)
 
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
@@ -101,18 +105,9 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 
-//deploy in shell (not powershell...)
-//C:\Qt\5.12.6\mingw73_64\bin\qtenv2.bat
-//cd d:\ACVC\build-ACVC-Desktop_Qt_5_12_6_MinGW_64_bit-Release\release
-//c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --quick --no-translations .
-//c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --release --no-translations .
 
 
 //https://stackoverflow.com/questions/30814475/qml-module-not-installed-error-running-qt-app-on-embedded-linux
-
-
-//http://www.gnu.org/licenses/lgpl-3.0.html
-//https://doc.qt.io/qtinstallerframework/index.html
 
 //    ..\..\bin\binarycreator.exe -c config\config.xml -p packages ACVCInstaller.exe
 
@@ -145,19 +140,13 @@ add to $QTmingwFolder
     - make sure bin, include and lib exists
             storing C:\Users\ewoud\OneDrive\Documents\ACVC project\ACVC support files\additional\Win for the time being
 
-
-
-create deploy folder
-    - Copy contents of D:\ACVC\ffmpeg-20200121-fc6fde2-win64-shared\bin to debug or release folder (avcodec 58)
-
-
 and more... (temp?)
     - lib_win_x86_64 contents in the main folder
     - $QTmingwFolder\bin\ contents in the main folder (a lot)
     - then it works ...
 
 
-Clean install of both QT/Mingw and deploy folder
+Clean install of both QT/Mingw/QtAV and deploy folder
 
     - Project ERROR: Unknown module(s) in QT: avwidgets / :-1: error: Unknown module(s) in QT: avwidgets
         - QtAV: run sdk_deploy.bat from D:\ACVC\QtAV-Qt5.9-VS2017x64-release-6067154 to the mingw folder (copying avcodec 57 to bin, conflict with 58???)
@@ -176,22 +165,6 @@ Clean install of both QT/Mingw and deploy folder
                 - https://github.com/wang-bin/QtAV/issues/1193
                 - https://github.com/wang-bin/QtAV/wiki/Build-QtAV
         - ACVC starts
-    - ACVC exiftool missing
-        - Copy exiftool.exe (and also scripts, ico)
-    - Prepare for installer
-        - deploy in shell (not powershell...)
-        - C:\Qt\5.14.1\mingw73_64\bin\qtenv2.bat
-            - C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
-        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_14_1_MinGW_64_bit-Release\release or cd D:\ACVC\build-ACVC-Desktop_Qt_5_14_1_MinGW_64_bit-Debug
-            - cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug3\debug
-        - C:\Qt\5.14.1\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir C:\Qt\5.14.1\mingw73_64\qml  .
-            - C:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir C:\Qt\5.13.2\mingw73_64\qml  .
-
-        - why all those big files e.g. Qt5Guid.dll, Qt5Qmld.dll, Qt5Quickd.dll (was not there in 0.2.1)
-
-        -manually copy $QTmingwFolder\qml\QtPositioning and $QTmingwFolder\qml\QtLocation folders!!!! (bug, solved in future ming version?)
-
-        - copy all of deploy to installer/data
     - Qt5OpenGL.dll was not found
         - copy C:/Qt/5.13.2/mingw73_64/bin/Qt5OpenGLd.dll to deploy... (why not automatic?) -> do this before copy all of deploy
         - installer/data acvc starts!
@@ -215,9 +188,27 @@ Background
 
    install_name_tool -change /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/libavcodec.58.dylib "@loader_path/libavcodec.58.dylib" ACVC
 
-MACOS 2020-01-31
-    - cp /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/* build
-    - sudo mv ffmpeg ACVC.app/Contents/PlugIns/
+Windows 2020-02-01
+    //c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --release --no-translations .
+
+    - Prepare for installer
+        - deploy in shell (not powershell...)
+        - C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
+        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug\debug
+        - C:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\ACVC\ACVC\ .
+
+    create deploy folder
+        - Copy contents of D:\ACVC\ffmpeg-20200121-fc6fde2-win64-shared\bin to debug or release folder (avcodec 58)
+
+    - ACVC exiftool missing
+        - Copy exiftool.exe (and also scripts, ico, icns)
+
+        - why all those big files e.g. Qt5Guid.dll, Qt5Qmld.dll, Qt5Quickd.dll (was not there in 0.2.1)
+
+        - NO!! manually copy $QTmingwFolder\qml\QtPositioning and $QTmingwFolder\qml\QtLocation folders!!!! (bug, solved in future ming version?)
+
+        - copy all of deploy to installer/data
+
 
 MacOS 2020-02-01
     - QT Creator run/build
@@ -234,12 +225,27 @@ MacOS 2020-02-01
         - (https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip)
         - Install dmg / pkg
         - Script
-            mkdir $acvc_build_path/ACVC.app/Contents/Plugins/exiftool
-            mkdir $acvc_build_path/ACVC.app/Contents/Plugins/ffmpeg
-            cp -r /usr/local/bin/lib $acvc_build_path/ACVC.app/Contents/Plugins/exiftool/
-            cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/Plugins/exiftool/
-            cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/Plugins/ffmpeg/
+            cp -r /usr/local/bin/lib $acvc_build_path/ACVC.app/Contents/MACOS
+            cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/MACOS
+            cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
      - Make dmg (repeat this step only to create new deployment)
         - /Users/ewoudwijma/Qt/5.13.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
+        - Add license.txt and symbolic link to applications folder
+            - https://www.dragly.org/2012/01/13/deploy-qt-applications-for-mac-os-x/
+                - open DiskUtility
+                    - From menu: Images/Convert...
+                    - Find created dmg
+                    - Choose Image Format: read/write then Convert. A link will be created on the desktop
+                - Open terminal
+                    - type cd<space> and drag the desktop icon after this
+                    - ln -s /Applications ./Applications
+                    - cp $acvc_build_path/../ACVC/license.txt READ BEFORE OPENING ACVC license.txt
+                - Open DiskUtility
+                    - Select image
+                    - Right click: Rename to ACVC vx.y.z (version
+                    - Close m
+                    - From menu: Images/Convert...
+                    - Find created dmg
+                    - Choose Image Format: compressed then Convert. A link will be created on the desktop
 
 */

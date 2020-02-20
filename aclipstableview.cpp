@@ -140,10 +140,12 @@ void AClipsTableView::onFolderIndexClicked(QModelIndex )//index
 {
     selectedFolderName = QSettings().value("LastFolder").toString();
 //    qDebug()<<"AClipsTableView::onFolderIndexClicked"<<selectedFolderName;
-    loadModel(selectedFolderName);
+//    loadModel(selectedFolderName);
 
-    emit folderIndexClickedItemModel(clipsItemModel);
-    emit folderIndexClickedProxyModel(model());
+//    emit folderIndexClickedItemModel(clipsItemModel);
+//    emit folderIndexClickedProxyModel(model());
+
+    onLoadClips(nullptr);
 }
 
 void AClipsTableView::onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices)
@@ -390,62 +392,92 @@ void AClipsTableView::onClipRightClickMenu(const QPoint &point)
         clipContextMenu->exec(viewport()->mapToGlobal(point));
 }
 
-void AClipsTableView::onClipsDelete(QString fileName)
+//void AClipsTableView::onArchiveClips(QString fileName)
+//{
+//    bool isClipChanged = false;
+//    for (int row=clipsItemModel->rowCount()-1; row>=0; row--) //reverse as takeRow is changing rows
+//    {
+//        QString folderNameX = clipsItemModel->index(row, folderIndex).data().toString();
+//        QString fileNameX = clipsItemModel->index(row, fileIndex).data().toString();
+
+////        qDebug()<<"AClipsTableView::onArchiveClips"<<folderNameX<<selectedFolderName<<fileNameX<<fileName;
+//        if (folderNameX == selectedFolderName && fileNameX == fileName)
+//        {
+//            clipsItemModel->takeRow(row);
+//            isClipChanged = true;
+//        }
+//    }
+
+//    if (isClipChanged) //reset orderBeforeLoadIndex
+//    {
+//        for (int row = 0; row<clipsItemModel->rowCount();row++)
+//        {
+//            int order = clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt();
+//            if (order != row+1)
+//            {
+//                clipsItemModel->setData(clipsItemModel->index(row, orderBeforeLoadIndex), row+1);
+//                clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
+//            }
+//        }
+
+//        emit clipsChangedToVideo(model());
+//        emit clipsChangedToTimeline(clipsProxyModel);
+//    }
+//}
+
+void AClipsTableView::onLoadClips(QStandardItem *parentItem)
 {
-    bool isClipChanged = false;
-    for (int row=clipsItemModel->rowCount()-1; row>=0; row--) //reverse as takeRow is changing rows
-    {
-        QString folderNameX = clipsItemModel->index(row, folderIndex).data().toString();
-        QString fileNameX = clipsItemModel->index(row, fileIndex).data().toString();
+//    qDebug()<<"AClipsTableView::onloadClips";
 
-//        qDebug()<<"AClipsTableView::onClipsDelete"<<folderNameX<<selectedFolderName<<fileNameX<<fileName;
-        if (folderNameX == selectedFolderName && fileNameX == fileName)
-        {
-            clipsItemModel->takeRow(row);
-            isClipChanged = true;
-        }
-    }
-
-    if (isClipChanged) //reset orderBeforeLoadIndex
-    {
-        for (int row = 0; row<clipsItemModel->rowCount();row++)
-        {
-            int order = clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt();
-            if (order != row+1)
-            {
-                clipsItemModel->setData(clipsItemModel->index(row, orderBeforeLoadIndex), row+1);
-                clipsItemModel->setData(clipsItemModel->index(row, changedIndex), "yes");
-            }
-        }
-
-        emit clipsChangedToVideo(model());
-        emit clipsChangedToTimeline(clipsProxyModel);
-    }
-}
-
-void AClipsTableView::onReloadClips()
-{
-//    qDebug()<<"AClipsTableView::onReloadClips";
-    loadModel(selectedFolderName);
-}
-
-void AClipsTableView::onTrimF(QString pfileName)
-{
-    qDebug()<<"AClipsTableView::onTrim"<< pfileName;
     if (checkSaveIfClipsChanged())
     {
         saveModels();
     }
 
+    AJobParams jobParams;
+    jobParams.thisWidget = this;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = selectedFolderName;
+    jobParams.fileName = "All";
+    jobParams.action = "Load clips";
+    jobParams.parameters["totalDuration"] = QString::number(1000);
+
+    jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+    {
+        AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisWidget);
+//        qDebug()<<"AClipsTableView::onloadClips thread"<<jobParams.folderName;
+        clipsTableView->loadModel(jobParams.folderName);
+
+        emit clipsTableView->folderIndexClickedItemModel(clipsTableView->clipsItemModel);
+        emit clipsTableView->folderIndexClickedProxyModel(clipsTableView->model());
+
+        return QString();
+    }, nullptr);
+}
+
+void AClipsTableView::onTrimF(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString pfileName)
+{
+    if (checkSaveIfClipsChanged())
+    {
+        saveModels();
+    }
+//    else
+//    {
+//        QMessageBox::information(this, "Trim", tr("Trim aborted as not all clips saved"));
+
+//        return;
+//    }
+
 //    qDebug()<<"AClipsTableView::onTrim saved"<< pfileName;
 
+    bool fileTrimmed = false;
     for (int row = 0; row < clipsItemModel->rowCount(); row++) // for each clip of file
     {
         QString fileName = clipsItemModel->index(row,fileIndex).data().toString();
 
         if (fileName == pfileName)
         {
-            qDebug()<<"AClipsTableView::onTrim file"<<row<< fileName;
+            qDebug()<<"AClipsTableView::onTrim"<<row<< fileName;
             QTime inTime = QTime::fromString(clipsItemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(clipsItemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
 
@@ -465,94 +497,105 @@ void AClipsTableView::onTrimF(QString pfileName)
             else
                 targetFileName = targetFileName + "+" + QString::number(inTime.msecsSinceStartOfDay()) + "ms";
 
-            qDebug()<<"AClipsTableView::onTrimC before emit"<< selectedFolderName<<fileName<<targetFileName<<inTime<<outTime;
-            emit trimC(selectedFolderName, fileName, targetFileName, inTime, outTime, 10);
+            currentItem = nullptr;
+            onTrimC(parentItem, currentItem, folderName, fileName, targetFileName, inTime, outTime);
 
-//            QString code = "ffmpeg -y -i \"" + QString(selectedFolderName + fileName).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
+            qDebug()<<"AClipsTableView::onTrim before propertyCopy"<< folderName<<fileName<<targetFileName<<parentItem;
+            emit propertyCopy(currentItem, folderName, fileName, targetFileName);
 
-//            QMap<QString, QString> parameters;
+            AJobParams jobParams;
+            jobParams.thisWidget = this;
+            jobParams.parentItem = currentItem;
+            jobParams.folderName = folderName;
+            jobParams.fileName = fileName;
+            jobParams.action = "Create clip";
+            jobParams.parameters["targetFileName"] = targetFileName;
+            jobParams.parameters["row"] = QString::number(row);
+            jobParams.parameters["deltaIn"] = QString::number(deltaIn);
+            jobParams.parameters["deltaOut"] = QString::number(deltaOut);
+            jobParams.parameters["clipDuration"] = QString::number(clipDuration);
+//            jobParams.parameters["totalDuration"] = QString::number(duration);
 
-//            QString *processId = new QString();
-//            emit addJob(selectedFolderName, targetFileName, "Trim", processId);
-//            emit addToJob(*processId, code);
-//            parameters["processId"] = *processId;
-
-//            processManager->startProcess(code, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
-//            {
-//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
-//                emit clipsTableView->addToJob(parameters["processId"], result);
-//            }, [] (QWidget *parent, QString command, QMap<QString, QString> parameters, QStringList result)
-//            {
-//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
-//                qDebug()<<"trim"<<parent <<command;
-//    //            emit clipsTableView->addToJob("trim ", result.join("\n"));
-//                emit clipsTableView->addToJob(parameters["processId"], "Completed");
-//            });
-
-            qDebug()<<"AClipsTableView::onTrim before propertyUpdate"<< selectedFolderName<<fileName<<targetFileName;
-            emit propertyUpdate(selectedFolderName, fileName, targetFileName);
-
-//            emit addJob(selectedFolderName, targetFileName, "Property update", processId);
-
-//            QString attributeString = "";
-//            QStringList texts;
-//            texts << "CreateDate" << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model" << "Director" << "Producer"  << "Publisher";
-//            for (int iText = 0; iText < texts.count(); iText++)
-//            {
-//                QString *value = new QString();
-//                emit getPropertyValue(fileName, texts[iText], value);
-
-//                attributeString += " -" + texts[iText] + "=\"" + *value + "\"";
-//            }
-
-//            QString command = "exiftool" + attributeString + " -overwrite_original \"" + QString(selectedFolderName + targetFileName).replace("/", "//") + "\"";
-//            emit addToJob(*processId, command + "\n");
-//            parameters["processId"] = *processId;
-//            processManager->startProcess(command, parameters, [](QWidget *parent, QMap<QString, QString> parameters, QString result)
-//            {
-//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
-//                emit clipsTableView->addToJob(parameters["processId"], result);
-//            }, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
-//            {
-//                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(parent);
-//                emit clipsTableView->addToJob(parameters["processId"], "Completed");
-//            });
-
-            //create srt file
-            QString fileName;
-            lastIndex = targetFileName.lastIndexOf(".");
-            if (lastIndex > -1)
-                fileName = targetFileName.left(lastIndex) + ".srt";
-
-            QFile file(selectedFolderName + fileName);
-            if ( file.open(QIODevice::WriteOnly) )
+            jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
             {
-                QTextStream stream( &file );
-                AStarRating starRating = qvariant_cast<AStarRating>(clipsItemModel->index(row, ratingIndex).data());
+                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisWidget);
 
-                int order = clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
+                    //create srt file
+                    QString fileName;
+                    int lastIndex = jobParams.parameters["targetFileName"].lastIndexOf(".");
+                    if (lastIndex > -1)
+                        fileName = jobParams.parameters["targetFileName"].left(lastIndex) + ".srt";
 
-                QString srtContentString = "";
-                srtContentString += "<o>" + QString::number(order + 1) + "</o>"; //+1 for file trim, +2 for export
-                srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
-                srtContentString += "<a>" + clipsItemModel->index(row, alikeIndex).data().toString() + "</a>";
-                srtContentString += "<h>" + clipsItemModel->index(row, hintIndex).data().toString() + "</h>";
-                srtContentString += "<t>" + clipsItemModel->index(row, tagIndex).data().toString() + "</t>";
+                    int row = jobParams.parameters["row"].toInt();
+                    int deltaIn = jobParams.parameters["deltaIn"].toInt();
+                    int deltaOut = jobParams.parameters["deltaOut"].toInt();
+                    int clipDuration = jobParams.parameters["clipDuration"].toInt();
 
-                stream << 1 << endl;
-                stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(clipDuration - deltaOut -  AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
-                stream << srtContentString << endl;
-                stream << endl;
+                    QFile file(jobParams.folderName + fileName);
+                    if ( file.open(QIODevice::WriteOnly) )
+                    {
+                        QTextStream stream( &file );
+                        AStarRating starRating = qvariant_cast<AStarRating>(clipsTableView->clipsItemModel->index(row, ratingIndex).data());
 
-                file.close();
-            }
+                        int order = clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
+
+                        QString srtContentString = "";
+                        srtContentString += "<o>" + QString::number(order) + "</o>"; //+1 for file trim, +2 for export
+                        srtContentString += "<r>" + QString::number(starRating.starCount()) + "</r>";
+                        srtContentString += "<a>" + clipsTableView->clipsItemModel->index(row, alikeIndex).data().toString() + "</a>";
+                        srtContentString += "<h>" + clipsTableView->clipsItemModel->index(row, hintIndex).data().toString() + "</h>";
+                        srtContentString += "<t>" + clipsTableView->clipsItemModel->index(row, tagIndex).data().toString() + "</t>";
+
+                        stream << 1 << endl;
+                        stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(clipDuration - deltaOut -  AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
+                        stream << srtContentString << endl;
+                        stream << endl;
+
+                        file.close();
+                    }
+
+                return QString();
+            }, nullptr);
+
+            fileTrimmed = true;
         }
     } //for each clip of file
 
-    qDebug()<<"AClipsTableView::onTrimF"<<"ReloadAll";
-    emit reloadAll(true);
+    if (fileTrimmed)
+    {
+        emit releaseMedia(pfileName);
+        emit moveFilesToACVCRecycleBin(currentItem, folderName, pfileName);
+    }
 
-} //onTrim
+} //onTrimF
+
+void AClipsTableView::onTrimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileNameSource, QString fileNameTarget, QTime inTime, QTime outTime)
+{
+//    qDebug()<<"AExport::onTrimC"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage;
+    int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+
+    QString sourceFolderFileName = folderName + fileNameSource;
+    QString targetFolderFileName = folderName + fileNameTarget;
+
+#ifdef Q_OS_WIN
+    sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
+    targetFolderFileName = targetFolderFileName.replace("/", "\\");
+#endif
+
+    //    QString command = "ffmpeg -y -i \"" + QString(folderName + "//" + fileNameSource).replace("/", "//") + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + QString(folderName + fileNameTarget).replace("/", "//") + "\"";
+
+    AJobParams jobParams;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = folderName;
+    jobParams.fileName = fileNameTarget;
+    jobParams.action = "Trim";
+    jobParams.command = "ffmpeg -y -i \"" + sourceFolderFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -map_metadata 0 -vcodec copy -acodec copy \"" + targetFolderFileName + "\"";;
+    jobParams.parameters["exportFolderFileName"] = targetFolderFileName;
+    jobParams.parameters["totalDuration"] = QString::number(duration);
+
+    currentItem = jobTreeView->createJob(jobParams, nullptr, nullptr);
+
+}
 
 void AClipsTableView::onPropertiesLoaded()
 {
@@ -825,7 +868,6 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
 
 QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
 {
-//    qDebug()<<"AClipsTableView::read"<<folderName << fileName;
     QString srtFileName;
 //    fileName = QString(mediaFilePath.toString()).replace(".mp4",".srt").replace(".jpg",".srt").replace(".avi",".srt").replace(".wmv",".srt");
 //    fileName.replace(".MP4",".srt").replace(".JPG",".srt").replace(".AVI",".srt").replace(".WMV",".srt");
@@ -833,7 +875,7 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
     if (lastIndex > -1)
         srtFileName = folderName + fileName.left(lastIndex) + ".srt";
 
-    QStandardItemModel *srtItemModel = new QStandardItemModel(this);
+    QStandardItemModel *srtItemModel = new QStandardItemModel();
     QStringList labels;
     labels << "Path"<< "File"<<"In"<<"Out"<<"Duration"<<"Order"<<"Rating"<<"Tags";
     srtItemModel->setHorizontalHeaderLabels(labels);
@@ -859,7 +901,6 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
         int pos = line.indexOf("-->");
         if (pos >= 0)
         {
-//            qDebug()<<line;
             line.replace(",",".");
 
             QTime inTime = QTime::fromString(line.left(12),"HH:mm:ss.zzz");
@@ -970,9 +1011,11 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
 //            tagItem->setFlags(Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsSelectable);
 //            tagItem->setFlags(tagItem->flags() &~Qt::ItemIsEditable);
             items.append(tagItem);
+
             srtItemModel->appendRow(items);
-//                QLineEdit *edit = new QLineEdit(this);
+//                QLineEdit *edit = new QLineEdit;
             clipCounter++;
+
             originalDuration += AGlobal().msec_to_frames(duration);
         }
     }
@@ -982,16 +1025,22 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
 
 void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 {
+//    qDebug()<<"AClipsTableView::scanDir"<<dir.absolutePath()<<extensionList;
+
+    emit showInStatusBar("Loading clips from " + dir.absolutePath(), 3000);
+
     if (!continueLoading)
         return;
 
     dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
     dir.setSorting(QDir::Name | QDir::LocaleAware); //localeaware to get +99999ms sorted the right way
     QStringList dirList = dir.entryList();
-    for (int i=0; i<dirList.size(); ++i)
+
+    for (int i=0; i < dirList.size(); ++i)
     {
         QString newPath = QString("%1/%2").arg(dir.absolutePath()).arg(dirList.at(i));
-        scanDir(QDir(newPath), extensionList);
+//        if (!newPath.contains("ACVCRecycleBin"))
+//            scanDir(QDir(newPath), extensionList);
     }
 
 //    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts";
@@ -1002,11 +1051,11 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 //    qDebug() << "AClipsTableView::scanDir" << dir.path();
 
     QStringList fileList = dir.entryList();
-    for (int i=0; i<fileList.count(); i++)
+    for (int i=0; i < fileList.count(); i++)
     {
         QStandardItemModel *srtItemModel = read(dir.path() + "/", fileList[i]);
 
-        if (srtItemModel->rowCount()>0)
+        if (srtItemModel->rowCount() > 0)
             fileCounter++;
 
         if (fileCounter > 10 && fileCounter%100==0)
@@ -1051,14 +1100,6 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 
 void AClipsTableView::loadModel(QString folderName)
 {
-//    qDebug() << "AClipsTableView::loadModel" << folderName;
-    if (checkSaveIfClipsChanged())
-    {
-        saveModels();
-    }
-
-//    qDebug() << "AClipsTableView::loadModel check done" << folderName;
-
     clipCounter = 1;
     fileCounter = 0;
     originalDuration = 0;
@@ -1068,8 +1109,6 @@ void AClipsTableView::loadModel(QString folderName)
 
     scanDir(QDir(folderName), QStringList() << "*.MP4"<<"*.AVI"<<"*.WMV"<<"*.MTS");
     scanDir(QDir(folderName), QStringList() << "*.mp3"<<"*.JPG");
-
-//    qDebug() << "AClipsTableView::loadModel done" << folderName;
 }
 
 bool AClipsTableView::checkSaveIfClipsChanged()
@@ -1083,8 +1122,9 @@ bool AClipsTableView::checkSaveIfClipsChanged()
 
     if (changeCount > 0 || nrOfDeletedItems > 0)
     {
+        qDebug() << "AClipsTableView::checkSaveIfClipsChanged before answer" ;
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Check changes", tr("There are %1 clips with changes and %2 clips deleted. Do you want to save these changes?").arg(QString::number(changeCount), QString::number(nrOfDeletedItems)),
+        reply = QMessageBox::question(this, "Check changes", tr("There are %1 clips with changes and %2 clips deleted. Do you want to save these changes (recommended: yes) ?").arg(QString::number(changeCount), QString::number(nrOfDeletedItems)),
                                       QMessageBox::Yes|QMessageBox::No);
 
         qDebug() << "AClipsTableView::checkSaveIfClipsChanged answer" ;

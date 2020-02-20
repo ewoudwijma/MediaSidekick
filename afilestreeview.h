@@ -6,7 +6,9 @@
 #include <QTreeView>
 #include <QUrl>
 
+#include "aderperviewmain.h"
 #include "afilessortfilterproxymodel.h"
+#include "ajobtreeview.h"
 
 class AFilesTreeView: public QTreeView
 {
@@ -17,38 +19,55 @@ public:
     AFilesSortFilterProxyModel *filesProxyModel;
 
     void setType(QString type);
+    QMenu *fileContextMenu;
+
+    AJobTreeView *jobTreeView;
+
 private slots:
     void this_customContextMenuRequested(const QPoint &point);
     void onTrim();
-    void onFileDelete();
-    void onClipsDelete();
+    void onArchiveFiles();
+    void onArchiveClips();
     void onIndexClicked(QModelIndex index);
-    void onFileRename();
 
     void onIndexActivated(QModelIndex index);
     void onModelLoaded(const QString &path);
-//    void onWideview();
-    void onWideview2();
+    void onRemux();
+    void onDerperview();
     void onOpenInExplorer();
     void onOpenDefaultApplication();
 private:
     void loadModel(QUrl folderUrl);
-    QMenu *fileContextMenu;
 
-    QModelIndex recursiveFiles(QAbstractItemModel *fileModel, QModelIndex parentIndex, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QModelIndex));
+    //    QModelIndex recursiveFiles(QAbstractItemModel *fileModel, QModelIndex parentIndex, QMap<QString, QString> parameters, void (*processOutput)(QWidget *, QMap<QString, QString>, QModelIndex));
+    QStandardItem *onRemux2(QStandardItem *parentItem, QString folderName, QString fileName);
+    void copyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName);
+
+    ADerperView *derperView;
 public slots:
     void onClipIndexClicked(QModelIndex index);
     void onFolderIndexClicked(QModelIndex index);
+    void onStopThreadProcess();
 
 signals:
     void indexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
     void releaseMedia(QString fileName);
-    void clipsDelete(QString fileName);
-    void removeFile(QString fileName);
-    void reloadClips();
-    void reloadProperties();
-    void trimF(QString fileName);
+//    void archiveClips(QString fileName);
+//    void archiveFiles(QString fileName);
+    void trimF(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName);
+//    void derperView(QString folderName, QString fileName);
     void getPropertyValue(QString fileName, QString key, QVariant *value);
+
+    void propertyCopy(QStandardItem *parentItem, QString selectedFolderName, QString fileName, QString targetFileName);
+    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
+    void loadProperties(QStandardItem *parentItem);
+    void loadClips(QStandardItem *parentItem);
+
+    void jobAddLog(AJobParams jobParams, QString logMessage);
+
+    void derperviewCompleted(QString errorString);
+
+    void stopThreadProcess();
 
 };
 

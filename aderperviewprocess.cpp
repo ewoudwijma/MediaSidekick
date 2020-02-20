@@ -1,12 +1,10 @@
-#include "awideviewprocess.h"
+#include "aderperviewprocess.h"
 
 #include <cmath>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
-
-#include <QtDebug>
 
 using namespace std;
 
@@ -83,7 +81,6 @@ int ProcessFrame(int width, int height, vector<unsigned char> &inData, vector<un
 
 int ProcessFrameYuv(int width, int height, std::vector<unsigned char> &inData, std::vector<unsigned char> &outData)
 {
-//    cout<<"ProcessFrameYuv"<<width<<height << endl;
     int targetWidth = GetDerpedWidth(width);
 
     // Have we done this size before?
@@ -131,8 +128,6 @@ int ProcessFrameYuv(int width, int height, std::vector<unsigned char> &inData, s
             }
         }
     }
-
-//    cout<<"ProcessFrameYuv done"<<targetWidth << endl;
 
     return targetWidth;
 }

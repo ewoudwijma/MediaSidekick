@@ -54,15 +54,12 @@ APropertyTreeView::APropertyTreeView(QWidget *parent) : QTreeView(parent)
 
     isLoading = false;
 
-    processManager = new AProcessManager(this);
-
     editMode = false;
 
     QTimer::singleShot(0, this, [this]()->void
     {
         spinnerLabel = new ASpinnerLabel(this); //otherwise not centered!
                        });
-
 }
 
 APropertyTreeView::~APropertyTreeView()
@@ -81,7 +78,7 @@ void APropertyTreeView::onFolderIndexClicked(QModelIndex index)//
 
     QString lastFolder = QSettings().value("LastFolder").toString();
 //    qDebug()<<"APropertyTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder<<editMode;
-    loadModel(lastFolder);
+    loadModel(nullptr, lastFolder);
 }
 
 void APropertyTreeView::setCellStyle(QStringList fileNames)
@@ -153,7 +150,7 @@ void APropertyTreeView::onClipIndexClicked(QModelIndex index)
     setCellStyle(selectedFileNames);
 }
 
-void APropertyTreeView::loadModel(QString folderName)
+void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 {
     spinnerLabel->start();
 
@@ -170,36 +167,28 @@ void APropertyTreeView::loadModel(QString folderName)
     while (propertyItemModel->columnCount() > firstFileColumnIndex) //remove old columns
         propertyItemModel->removeColumn(propertyItemModel->columnCount() - 1);
 
-    QString command = "exiftool -s -c \"%02.6f\" \"" + folderName + "\""; ////
+//    qDebug()<<"APropertyTreeView::loadModel"<<folderName<<jobTreeView;
 
-    QMap<QString, QString> parameters;
+    AJobParams jobParams;
+    jobParams.thisWidget = this;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = folderName;
+    jobParams.fileName = "All";
+    jobParams.action = "Load properties";
+    jobParams.command = "exiftool -s -c \"%02.6f\" \"" + folderName + "\"";
+    jobParams.parameters["totalDuration"] = QString::number(1000);
 
-    QString *processId = new QString();
-    emit addJob(folderName, "All", "Property load", processId);
-    emit addToJob(*processId, command + "\n");
-
-#ifdef Q_OS_WIN
-    command = qApp->applicationDirPath() + "/" + command;
-#else
-    command = qApp->applicationDirPath() + "/../PlugIns/exiftool/" + command;
-#endif
-
-    parameters["processId"] = *processId;
-
-    processManager->startProcess(command, parameters
-                                   , [] (QWidget *parent, QMap<QString, QString> parameters, QString result)
+    jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
     {
-        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
-        emit propertyTreeView->addToJob(parameters["processId"], result);
-    }
-                                   , [] (QWidget *parent, QString , QMap<QString, QString> parameters, QStringList result)
-     {
-        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
+        if (jobParams.parameters["errorMessage"] != "")
+            return;
+        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisWidget);
+//        qDebug()<<"Load properties done"<<propertyTreeView<<jobParams.parameters<<result.count();
 
         //create topLevelItems
         QStringList toplevelPropertyNames;
 
-        toplevelPropertyNames << "General" << "Location" << "Camera" << "Labels" << "Status" << "Video" << "Audio" << "Media" << "File" << "Date" << "Artists" << "Keywords" << "Ratings"<< "Other";
+        toplevelPropertyNames << "General" << "Video" << "Audio" << "Location" << "Camera" << "Labels" << "Status" << "Media" << "File" << "Date" << "Artists" << "Keywords" << "Ratings"<< "Other";
 
         QMap<QString, QStandardItem *> topLevelItems;
         for (int i = 0; i < toplevelPropertyNames.count(); i++)
@@ -224,7 +213,8 @@ void APropertyTreeView::loadModel(QString folderName)
             {
                 folderFileName = result[resultIndex].mid(indexOf+9);
                 folderFile = QUrl(folderFileName);
-                emit propertyTreeView->addToJob(parameters["processId"], "Processing " + folderFileName + "\n");
+
+                emit propertyTreeView->jobAddLog(jobParams, "Processing " + folderFileName);
             }
             else
             {
@@ -372,7 +362,7 @@ void APropertyTreeView::loadModel(QString folderName)
         QMapIterator<QString, QString> fileIterator(fileMap);
         QStringList headerLabels = QStringList() << "Property" << "Minimum" << "Delta" << "Maximum" << "Type" << "Diff";
 
-        emit propertyTreeView->addToJob(parameters["processId"], "add all files as labels\n");
+        emit propertyTreeView->jobAddLog(jobParams, "add all files as labels");
 
         while (fileIterator.hasNext()) //add all files as labels
         {
@@ -386,7 +376,7 @@ void APropertyTreeView::loadModel(QString folderName)
         }
         propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(headerLabels);
 
-        emit propertyTreeView->addToJob(parameters["processId"], "add all properties\n");
+        emit propertyTreeView->jobAddLog(jobParams, "add all properties");
 
         QMapIterator<QString, QStandardItem *> propertyIterator(propertyMap);
         while (propertyIterator.hasNext()) //all labels
@@ -487,14 +477,15 @@ void APropertyTreeView::loadModel(QString folderName)
             propertyIterator.value()->appendRow(sublevelItems);
         } // all labels
 
-        emit propertyTreeView->addToJob(parameters["processId"], "Update suggested names\n");
+        emit propertyTreeView->jobAddLog(jobParams, "Update suggested names");
 
         propertyTreeView->setupModel();
 
-        emit propertyTreeView->addToJob(parameters["processId"], "Completed");
+        emit propertyTreeView->jobAddLog(jobParams, "Success");
 
         propertyTreeView->spinnerLabel->stop();
     });
+
 } //loadmodel
 
 void APropertyTreeView::initModel(QStandardItemModel *itemModel)
@@ -1258,7 +1249,7 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
                     valueString = QString::number(geoCoordinate.altitude());
                     if (geoCoordinate.altitude() < 0)
                         valueString += " -GPSAltitudeRef=\"Below Sea Level\"";
-                    else
+                    if (geoCoordinate.altitude() > 0)
                         valueString += " -GPSAltitudeRef=\"Above Sea Level\"";
                 }
                 else if (propertyName == "Rating")
@@ -1296,14 +1287,6 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
 
         emit releaseMedia(fileName); //to stop the video to free the resource in windows/os
 
-        QString *processId = new QString();
-        emit addJob(directoryName->toString(), fileName, "Update properties", processId);
-
-        QMap<QString, QString> parameters;
-        parameters["processId"] = *processId;
-        parameters["fileName"] = fileName;
-        parameters["propertyNames"] = propertyNames.join(";");
-
         QString command = "exiftool";
 
 //        qDebug()<<"APropertyTreeView::saveChanges"<<propertyNames.count()<<values.count();
@@ -1313,30 +1296,30 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
 
         command += " -overwrite_original \"" + directoryName->toString() + "//" + fileName + "\"";
 
-//        qDebug()<<"APropertyTreeView::saveChanges"<<command;
-
-#ifdef Q_OS_WIN
-    command = qApp->applicationDirPath() + "/" + command;
-#else
-    command = qApp->applicationDirPath() + "/../PlugIns/exiftool/" + command;
-#endif
-
-
         if (command.contains("exiftool"))
-            onSetPropertyValue(parameters["fileName"], "Status", "Updating metadata");
+            onSetPropertyValue(fileName, "Status", "Updating metadata");
         else
-            onSetPropertyValue(parameters["fileName"], "Status", command);
+            onSetPropertyValue(fileName, "Status", command);
 
-        processManager->startProcess(command, parameters, nullptr, [] (QWidget *parent, QString, QMap<QString, QString> parameters, QStringList result)
+        AJobParams jobParams;
+        jobParams.thisWidget = this;
+        jobParams.folderName =  directoryName->toString() + "/";
+        jobParams.fileName = fileName;
+        jobParams.action = "Update properties";
+        jobParams.command = command;
+        jobParams.parameters["propertyNames"] = propertyNames.join(";");
+        jobParams.parameters["totalDuration"] = QString::number(2000);
+
+        jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
         {
-            APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
-
             qDebug()<<"APropertyTreeView::saveChanges"<<result.join("\n");
+            APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisWidget);
+
             QString resultJoin = result.join(" ").trimmed();
 
-            propertyTreeView->onSetPropertyValue(parameters["fileName"], "Status", resultJoin);//color done in propertychanged
+            propertyTreeView->onSetPropertyValue(jobParams.fileName, "Status", resultJoin);//color done in propertychanged
 
-            QStringList propertyNames = parameters["propertyNames"].split(";");
+            QStringList propertyNames = jobParams.parameters["propertyNames"].split(";");
             foreach (QString propertyName, propertyNames)
             {
 //                qDebug()<<"savechanges colorChanged" <<propertyName;
@@ -1349,49 +1332,43 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
 
                 propertyTreeView->colorChanged = "yes";
                 if (!resultJoin.contains("1 image files updated") || resultJoin.contains(propertyName)) //property mentioned in error message
-                    propertyTreeView->onSetPropertyValue(parameters["fileName"], propName, QBrush(QColor(255, 140, 0, 50)), Qt::BackgroundRole); //orange
+                    propertyTreeView->onSetPropertyValue(jobParams.fileName, propName, QBrush(QColor(255, 140, 0, 50)), Qt::BackgroundRole); //orange
                 else
-                    propertyTreeView->onSetPropertyValue(parameters["fileName"], propName, QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole); //darkgreen
+                    propertyTreeView->onSetPropertyValue(jobParams.fileName, propName, QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole); //darkgreen
             }
 
-//            qDebug()<<""<<propertyNames.count()<<propertyTreeView->changedIndexesMap.count()<<100.0 / (propertyTreeView->changedIndexesMap.count());
+//            qDebug()<<"propertyTreeView->progressBar"<<propertyNames.count()<<propertyTreeView->changedIndexesMap.count()<<100.0 / (propertyTreeView->changedIndexesMap.count())<<propertyTreeView->progressBar->value();
             propertyTreeView->progressBar->setValue(propertyTreeView->progressBar->value() + 100.0 / propertyTreeView->changedIndexesMap.count());
 
-            emit propertyTreeView->addToJob(parameters["processId"], result.join("\n"));
+            if (propertyTreeView->progressBar->value() > 99)
+            {
+                propertyTreeView->progressBar->setValue(100);
+                propertyTreeView->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+                propertyTreeView->changedIndexesMap.clear();
+                propertyTreeView->spinnerLabel->stop();
+            }
         });
 
     }//files
 
-    QMap<QString, QString> parameters;
-    processManager->startProcess(parameters, [] (QWidget *parent, QString , QMap<QString, QString> , QStringList ) //command, parameters, result
-    {
-        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(parent);
-
-        propertyTreeView->progressBar->setValue(100);
-        propertyTreeView->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
-
-        propertyTreeView->changedIndexesMap.clear();
-
-        propertyTreeView->spinnerLabel->stop();
-    });
 } //saveChanges
 
-void APropertyTreeView::onRemoveFile(QString fileName)
-{
-//    qDebug()<<"APropertyTreeView::onRemoveFile"<<fileName;
+//void APropertyTreeView::onArchiveFiles(QString fileName)
+//{
+////    qDebug()<<"APropertyTreeView::onFileArchived"<<fileName;
 
-    for (int column=0; column<propertyItemModel->columnCount();column++)
-    {
-        if (propertyItemModel->headerData(column,Qt::Horizontal).toString() == fileName)
-            propertyItemModel->takeColumn(column);
-    }
-}
+//    for (int column=0; column<propertyItemModel->columnCount();column++)
+//    {
+//        if (propertyItemModel->headerData(column,Qt::Horizontal).toString() == fileName)
+//            propertyItemModel->takeColumn(column);
+//    }
+//}
 
-void APropertyTreeView::onReloadProperties()
+void APropertyTreeView::onloadProperties(QStandardItem *parentItem)
 {
     QString lastFolder = QSettings().value("LastFolder").toString();
-//    qDebug()<<"APropertyTreeView::onReloadProperties"<<lastFolder;
-    loadModel(lastFolder);
+//    qDebug()<<"APropertyTreeView::onloadProperties"<<lastFolder;
+    loadModel(parentItem, lastFolder);
 }
 
 void APropertyTreeView::onPropertyColumnFilterChanged(QString filter)
@@ -1528,7 +1505,12 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
                 }
             }
             else
-                propertyProxyModel->setData(propertyProxyModel->index(childRow, minimumIndex, parentIndex), "");
+            {
+                if (typeValue.data().toString() == "ARating")
+                    propertyProxyModel->setData(propertyProxyModel->index(childRow, minimumIndex, parentIndex), QVariant::fromValue(AStarRating(0)));
+                else
+                    propertyProxyModel->setData(propertyProxyModel->index(childRow, minimumIndex, parentIndex), "");
+            }
 
             if (maxValue != "")
             {
