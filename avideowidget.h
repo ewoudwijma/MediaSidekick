@@ -51,7 +51,7 @@ private:
 
 public slots:
     void onFolderIndexClicked(QModelIndex index);
-    void onFileIndexClicked(QModelIndex index);
+    void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void onClipIndexClicked(QModelIndex index);
     void togglePlayPaused();
     void fastForward();

@@ -76,20 +76,22 @@ void AJobTreeView::onThreadResultReady(QString errorString)
 
     jobThread->functionIsCalled = false; //enforce sequential execution
 
-    if (errorString == "Job cancelled")
-        processFinished(-300, errorString);
-    else if (errorString != "")
-        processFinished(-1, errorString);
-    else
-        processFinished(0, "");
-
+    if (process->state() == QProcess::NotRunning) //job contains both thread and process, wait until the process finishes to do processFinished (ignoring the thread result).
+    {
+        if (errorString == "Job cancelled")
+            processFinished(-300, errorString);
+        else if (errorString != "")
+            processFinished(-1, errorString);
+        else
+            processFinished(0, "");
+    }
 }
 
 QStandardItem *AJobTreeView::createJob(AJobParams jobParams, QString (*functionCall)(AJobParams jobParams), void (*processResult)(AJobParams jobParams, QStringList result))
 {
 //    qDebug()<<"AJobTreeView::createJob"<<jobParams.parentItem<<jobParams.folderName<<jobParams.fileName<<jobParams.action;
 
-    QString lastFolder = QSettings().value("LastFolder").toString();
+    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
     QString jobName = jobParams.action;
 
     if (jobParams.fileName != "")
@@ -99,7 +101,7 @@ QStandardItem *AJobTreeView::createJob(AJobParams jobParams, QString (*functionC
     {
         jobName = jobParams.folderName + jobName;
 //        if (jobParams.folderName != lastFolder)
-            jobName = jobName.replace(lastFolder,"");
+            jobName = jobName.replace(selectedFolderName,"");
     }
 
     QList<QStandardItem *> items;
@@ -167,6 +169,8 @@ QStandardItem *AJobTreeView::createJob(AJobParams jobParams, QString (*functionC
 //        AJobTreeView *jobTreeView = qobject_cast<AJobTreeView *>(jobParams.thisWidget);
     };
     jobQueueParams.processResult = processResult;
+
+    scrollTo(jobQueueParams.jobParams.currentIndex);
 
     if (jobQueue.count() == 0)
         emit initProgress();
@@ -344,13 +348,12 @@ void AJobTreeView::ExecuteNextProcess()
             else
                 onJobAddLog(jobQueue.first().jobParams, "-");
 
-            //QProcess or QThreat or none (e.g. wrapper?)
-            if (jobQueue.first().jobParams.command != "") //in case no command (execute processfinished after other commands)
+            //QProcess or QThreat or none (e.g. wrapper)
+
+            bool somethingStarted = false;
+            if (jobQueue.first().functionCall != nullptr)
             {
-                process->start(qApp->applicationDirPath() + "/" + jobQueue.first().jobParams.command);
-            }
-            else if (jobQueue.first().functionCall != nullptr)
-            {
+                somethingStarted = true;
                 if (true)//jobQueue.first().jobParams.action.contains("ACVC"))
                 {
                     jobThread->jobParams = jobQueue.first().jobParams;
@@ -368,7 +371,18 @@ void AJobTreeView::ExecuteNextProcess()
                         processFinished(0, "");
                 }
             }
-            else //no thread or process
+            if (jobQueue.first().jobParams.command != "") //in case no command (execute processfinished after other commands)
+            {
+                somethingStarted = true;
+                QString execPath = "";
+#ifdef Q_OS_MAC
+    execPath = qApp->applicationDirPath() + "/";
+#endif
+
+                process->start(execPath + jobQueue.first().jobParams.command);
+            }
+
+            if (!somethingStarted)//no thread or process
             {
 //                qDebug()<<"AJobTreeView::ExecuteNextProcess no thread or process"<<jobQueue.first().jobParams.action;
                 processFinished(0, "");
@@ -410,9 +424,14 @@ void AJobTreeView::onProcessFinished(int exitCode , QProcess::ExitStatus exitSta
 {
 //    qDebug()<<"AJobTreeView::onProcessFinished"<<exitCode << exitStatus;
     if (exitStatus == QProcess::NormalExit)
-        processFinished(exitCode, "Normal exit");
+    {
+        if (exitCode == 0)
+            processFinished(0, ""); //make error code negative value
+        else
+            processFinished(0 - qAbs(exitCode), "Normal exit with error"); //make error code negative value
+    }
     else
-        processFinished(exitCode, "Crash exit");
+        processFinished(0 - qAbs(exitCode), "Crash exit");
 }
 
 void AJobTreeView::onProcessErrorOccurred(QProcess::ProcessError error)

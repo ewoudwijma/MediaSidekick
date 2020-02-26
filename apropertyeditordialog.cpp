@@ -131,14 +131,6 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
 
     QTimer::singleShot(0, this, [this]()->void
     {
-
-    //initial processing
-
-//                           if (propertyItemModel != nullptr)
-//                                ui->propertyTreeView->propertyItemModel = propertyItemModel;
-//                           else
-//                                ui->propertyTreeView->onFolderIndexClicked(QModelIndex());
-
                            ui->propertyTreeView->onSuggestedNameFiltersClicked(ui->locationCheckBox, ui->cameraCheckBox, ui->artistCheckBox);
 
                        });
@@ -340,7 +332,7 @@ void APropertyEditorDialog::on_renameButton_clicked()
     }
     else if (fileNameList.count() > 0)
     {
-        QString folderName = QSettings().value("LastFolder").toString();
+        QString selectedFolderName = QSettings().value("selectedFolderName").toString();
 
         QMessageBox::StandardButton reply;
          reply = QMessageBox::question(this, "Rename " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to rename " + fileNameList.join(", ") + " and its supporting files (srt and txt) to " + newFileNameList.join(", ") + ".* ?",
@@ -353,22 +345,22 @@ void APropertyEditorDialog::on_renameButton_clicked()
              {
     //             QString fileName = fileNameList[i];
                  emit releaseMedia(fileNameList[i]); //to stop the video
-                 QFile file(folderName + fileNameList[i]);
+                 QFile file(selectedFolderName + fileNameList[i]);
                  QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
 //                 qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
                  if (file.exists())
-                    file.rename(folderName + newFileNameList[i] + extensionString);
+                    file.rename(selectedFolderName + newFileNameList[i] + extensionString);
 
                  int lastIndex = fileNameList[i].lastIndexOf(".");
                  if (lastIndex > -1)
                  {
-                     QFile *file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
+                     QFile *file = new QFile(selectedFolderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
                      if (file->exists())
-                        file->rename(folderName + newFileNameList[i] + ".srt");
+                        file->rename(selectedFolderName + newFileNameList[i] + ".srt");
 
-                     file = new QFile(folderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
+                     file = new QFile(selectedFolderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
                      if (file->exists())
-                        file->rename(folderName + newFileNameList[i] + ".txt");
+                        file->rename(selectedFolderName + newFileNameList[i] + ".txt");
                  }
 //                 qDebug()<<"on_renameButton_clicked colorChanged";
                  ui->propertyTreeView->colorChanged = "yes";
@@ -389,9 +381,9 @@ void APropertyEditorDialog::on_renameButton_clicked()
 
 void APropertyEditorDialog::checkAndMatchPicasa()
 {
-    QString folderName = QSettings().value("LastFolder").toString();
+    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
     QString fileName = ".picasa.ini";
-    QFile file(folderName + fileName);
+    QFile file(selectedFolderName + fileName);
 
 
     if (file.open(QIODevice::ReadOnly))

@@ -127,9 +127,9 @@ RESOURCES += \
     images.qrc \
     qml.qrc
 
-win32: LIBS += -LD:\ACVC\windows\ffmpeg-20200121-fc6fde2-win64-dev\lib
+win32: LIBS += -LD:\ACVC\windows\ffmpeg-latest-win64-dev\lib
 win32: LIBS += -lavcodec -lavformat -lavutil -lswscale #-lavdevice -lavfilter -lpostproc -lswresample
-win32: INCLUDEPATH +=D:\ACVC\windows\ffmpeg-20200121-fc6fde2-win64-dev\include
+win32: INCLUDEPATH +=D:\ACVC\windows\ffmpeg-latest-win64-dev\include
 
 unix:LIBS += -L/Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-shared/bin
 unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample

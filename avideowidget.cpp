@@ -88,17 +88,19 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
 
 void AVideoWidget::onFolderIndexClicked(QModelIndex )//index
 {
-    selectedFolderName = QSettings().value("LastFolder").toString();
+    selectedFolderName = QSettings().value("selectedFolderName").toString();
 //    qDebug()<<"AVideoWidget::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
     m_player->stop();
     m_scrubber->clearInOuts();
     selectedFileName = "";
 }
 
-void AVideoWidget::onFileIndexClicked(QModelIndex index)
+void AVideoWidget::onFileIndexClicked(QModelIndex index, QStringList filePathList)
 {
-    selectedFolderName = QSettings().value("LastFileFolder").toString();
-    selectedFileName = index.model()->index(index.row(), 0, index.parent()).data().toString();
+    int lastIndexOf = filePathList[0].lastIndexOf("/");
+    selectedFolderName = filePathList[0].left(lastIndexOf + 1);
+    selectedFileName = filePathList[0].mid(lastIndexOf + 1);
+
 //    qDebug()<<"AVideoWidget::onFileIndexClicked"<<index.column()<<index.data().toString()<<selectedFolderName + selectedFileName<<QSettings().value("frameRate").toInt();
     oldState = m_player->state();
 
@@ -118,7 +120,7 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
     if (selectedFileName != fileName)
         selectedFileName = fileName;
 
-    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().canonicalUrl();
+//    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().canonicalUrl();
 
     if (QUrl::fromLocalFile(folderFileName) != m_player->media().canonicalUrl()) //another media file
     {
@@ -126,7 +128,7 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
 //        emit getPropertyValue(selectedFileName, "VideoFrameRate", frameratePointer);
 //        fpsRounded = int( qRound(index.model()->index(index.row(),fpsIndex).data().toDouble() / 5) * 5);
 
-        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
+//        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
         oldState = m_player->state();
 //        bool oldMuted = m_player->isMuted();
         m_player->setMedia(QUrl::fromLocalFile(folderFileName));
@@ -235,7 +237,7 @@ void AVideoWidget::onReleaseMedia(QString fileName)
 {
     if (fileName == selectedFileName)
     {
-        qDebug()<<"AVideoWidget::onReleaseMedia"<<fileName;
+//        qDebug()<<"AVideoWidget::onReleaseMedia"<<fileName;
         m_player->stop();
         m_player->setMedia(QMediaContent());
     }
@@ -248,7 +250,7 @@ void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 
 void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().canonicalUrl()<<m_player->error()<<m_player->errorString();
+//    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().canonicalUrl()<<m_player->error()<<m_player->errorString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {
@@ -282,7 +284,7 @@ void AVideoWidget::onMetaDataChanged()
 {
 
     QStringList metadatalist = m_player->availableMetaData();
-    qDebug()<<"AVideoWidget::onMetaDataChanged"<<m_player->metaData(QMediaMetaData::MediaType).toString()<<metadatalist.count();
+//    qDebug()<<"AVideoWidget::onMetaDataChanged VideoFrameRate:"<<m_player->metaData(QMediaMetaData::VideoFrameRate).toString()<<metadatalist.count();
 
        // Get the size of the list
        int list_size = metadatalist.size();
@@ -301,13 +303,13 @@ void AVideoWidget::onMetaDataChanged()
          // Get the value for the key
          var_data = m_player->metaData(metadata_key);
 
-        qDebug() <<"AVideoWidget::onMetaDataChanged" << metadata_key << var_data.toString();
+//        qDebug() <<"AVideoWidget::onMetaDataChanged" << metadata_key << var_data.toString();
        }
 }
 
 void AVideoWidget::onMetaDataAvailableChanged(bool available)
 {
-    qDebug()<<"AVideoWidget::onMetaDataAvailableChanged"<<available<<m_player->metaData(QMediaMetaData::MediaType).toString();
+//    qDebug()<<"AVideoWidget::onMetaDataAvailableChanged"<<available<<m_player->metaData(QMediaMetaData::VideoFrameRate).toString();
 }
 
 void AVideoWidget::togglePlayPaused()

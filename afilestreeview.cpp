@@ -113,29 +113,28 @@ void AFilesTreeView::setType(QString type)
 
 void AFilesTreeView::onIndexClicked(QModelIndex index)
 {
-//    QModelIndex fileModelIndex = fileModel->index(index.data(index.parent()).toString());
-//    QModelIndex fileModelIndex = fileModel->index(index.parent().data().toString());
+    QModelIndex fileIndex = index.model()->index(index.row(), 0, index.parent());
 
-    QModelIndex fileModelIndex = filesProxyModel->mapToSource(index);
+    QModelIndex fileModelIndex = filesProxyModel->mapToSource(fileIndex);
 
     QFileInfo fileInfo = fileModel->fileInfo(fileModelIndex);
     QString filePath = fileInfo.absolutePath() + "/";
 
 //    qDebug()<<"AFilesTreeView::onIndexClicked"<<index.parent().data().toString()<<index.data().toString()<<fileInfo<<filePath;
 
-    QSettings().setValue("LastFile", index.data().toString());
-    QSettings().setValue("LastFileFolder", filePath);
-    QSettings().sync();
-
+    QStringList filePathList;
     QModelIndexList indexList = selectionModel()->selectedIndexes();
+    for (int i=0; i< indexList.count();i++)
+    {
+        if (indexList[i].column() == 0) //first column => name!!!
+        {
+            QString fileName = indexList[i].data().toString();
+            filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
+        }
+    }
 
-//    qDebug()<<"AFilesTreeView::onIndexClicked"<<index.row()<<index.column()<<index.data().toString()<<filePath<<indexList.count();
-//    if (clipsItemModel->index(index.row(),fileIndex).data().toString()!=fileUrl.fileName())
-//    {
-//        qDebug()<<"tableClicked different!!!"<<index.data()<<clipsItemModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
-//    }
-    if (!index.data().toString().contains(".mlt") && !index.data().toString().contains(".xml"))
-        emit indexClicked(index, selectionModel()->selectedIndexes());
+    if (!fileIndex.data().toString().contains(".mlt") && !fileIndex.data().toString().contains(".xml"))
+        emit fileIndexClicked(fileIndex, filePathList);
 }
 
 void AFilesTreeView::onIndexActivated(QModelIndex index)
@@ -196,8 +195,8 @@ void AFilesTreeView::onTrim()
                  if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
                  {
 //                     QStandardItem *parentItem2 = nullptr;
-                     emit trimF(parentItem, currentItem, folderName, fileName); //should return a parentItem
-                     qDebug()<<"AFilesTreeView::onTrimF"<<fileName<<parentItem;
+                     emit trimAll(parentItem, currentItem, folderName, fileName);
+//                     qDebug()<<"AFilesTreeView::onTrimAll"<<fileName<<parentItem;
                      trimDone = true;
                  }
              }
@@ -309,7 +308,7 @@ void AFilesTreeView::onDerperview()
 
                  copyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
 
-                 emit propertyCopy(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
+                 emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
 
                  emit releaseMedia(fileName);
                  emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
@@ -369,7 +368,7 @@ void AFilesTreeView::onRemux()
 
                  copyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
 
-                 emit propertyCopy(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
+                 emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
 
                  emit releaseMedia(fileName);
                  emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
@@ -615,10 +614,10 @@ void AFilesTreeView::onOpenDefaultApplication()
 
 void AFilesTreeView::onFolderIndexClicked(QModelIndex )//index
 {
-    QString lastFolder = QSettings().value("LastFolder").toString();
+    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
 //    qDebug()<<"AFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
     setCurrentIndex(QModelIndex());
-    loadModel(lastFolder);
+    loadModel(selectedFolderName);
 }
 
 void AFilesTreeView::onClipIndexClicked(QModelIndex index)
@@ -662,32 +661,32 @@ QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIn
     return fileIndex;
 }
 
-void AFilesTreeView::onModelLoaded(const QString &)//path
-{
-    if (filesProxyModel->filterRegExp().pattern() == "Video")
-        qDebug()<<"AFilesTreeView::onModelLoaded"<<filesProxyModel->filterRegExp().pattern();
+//void AFilesTreeView::onModelLoaded(const QString &)//path
+//{
+//    if (filesProxyModel->filterRegExp().pattern() == "Video")
+//        qDebug()<<"AFilesTreeView::onModelLoaded"<<filesProxyModel->filterRegExp().pattern();
 
-    setCurrentIndex(QModelIndex());
+//    setCurrentIndex(QModelIndex());
 
-    return; //tbd: find out why not enabled
+//    return; //tbd: find out why not enabled
 
-    QModelIndex fileIndex = QModelIndex();
+//    QModelIndex fileIndex = QModelIndex();
 
-    QString lastFile = QSettings().value("LastFile").toString();
-    if (lastFile != "" ) //not the root folder
-    {
-        QString lastFileFolder = QSettings().value("LastFileFolder").toString();
-        fileIndex = fileModel->index(lastFileFolder + lastFile, 0);
-    }
-    else
-    {
-        QModelIndex parentIndex = rootIndex();
-        fileIndex = recursiveFirstFile(fileModel, parentIndex);
-    }
+//    QString lastFile = QSettings().value("LastFile").toString();
+//    if (lastFile != "" ) //not the root folder
+//    {
+//        QString lastFileFolder = QSettings().value("LastFileFolder").toString();
+//        fileIndex = fileModel->index(lastFileFolder + lastFile, 0);
+//    }
+//    else
+//    {
+//        QModelIndex parentIndex = rootIndex();
+//        fileIndex = recursiveFirstFile(fileModel, parentIndex);
+//    }
 
-    if (fileIndex != QModelIndex())
-    {
-        onIndexClicked(filesProxyModel->mapFromSource(fileIndex));
-        setCurrentIndex(filesProxyModel->mapFromSource(fileIndex));
-    }
-}
+//    if (fileIndex != QModelIndex())
+//    {
+//        onIndexClicked(filesProxyModel->mapFromSource(fileIndex));
+//        setCurrentIndex(filesProxyModel->mapFromSource(fileIndex));
+//    }
+//}

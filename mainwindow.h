@@ -81,7 +81,7 @@ private slots:
     void on_exportTargetComboBox_currentTextChanged(const QString &arg1);
     void on_exportSizeComboBox_currentTextChanged(const QString &arg1);
     void on_actionExport_triggered();
-    void onFileIndexClicked(QModelIndex index);
+    void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void on_alikeCheckBox_clicked(bool checked);
     void on_fileOnlyCheckBox_clicked(bool checked);
     void on_actionDebug_mode_triggered(bool checked);

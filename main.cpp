@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.2.1");
+    a.setApplicationVersion("0.3.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -109,17 +109,10 @@ int main(int argc, char *argv[])
 
 //https://stackoverflow.com/questions/30814475/qml-module-not-installed-error-running-qt-app-on-embedded-linux
 
-//    ..\..\bin\binarycreator.exe -c config\config.xml -p packages ACVCInstaller.exe
-
-//<p><a href="https://ffmpeg.zeranoe.com/builds/">FFMpeg</a> (extract, move to c:\ffmpeg\, add \bin in environment variabe)</p>
-
-//<p><a href="https://www.sno.phy.queensu.ca/~phil/exiftool/">Exiftool</a> (download zip, remove -k, move to c:\ffmpeg\bin)</p>
-//https://exiftool.org/
-
 //https://stackoverflow.com/questions/46455360/workaround-for-qt-installer-framework-not-overwriting-existing-installation
 
 //Derperview VCRuntime140_1.dll error: https://aka.ms/vs/16/release/VC_redist.x64.exe
-//https://ffmpeg.zeranoe.com/builds/win64/dev/
+//
 
 //install shotcut
 //https://shotcut.org/notes/windowsdev/
@@ -188,26 +181,34 @@ Background
 
    install_name_tool -change /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/libavcodec.58.dylib "@loader_path/libavcodec.58.dylib" ACVC
 
-Windows 2020-02-01
-    //c:\Qt\5.12.6\mingw73_64\bin\windeployqt.exe --release --no-translations .
+General pre
+    - setApplicationVersion("0.3.0") in main.cpp
+
+Windows 2020-02-20
+
+    - get latest version of ffmpeg:
+        - https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-latest-win64-dev.zip
+        - https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-latest-win64-shared.zip
+    - latest version exiftool
+        - https://exiftool.org/: download zip, remove -k
+
+    - create deploy folder (otherwise crash)
+        - Copy contents of D:\ACVC\windows\ffmpeg-latest-win64-shared\bin to debug or release folder (avcodec 58)
+
+    - ACVC exiftool and others missing
+        - Copy D:\ACVC\ACVC support files\additional\exiftool.exe
+        - D:\ACVC\ACVC support files\additional\scripts to debug or release folder
+        - D:\ACVC\ACVC support files\additional\ACVC.ico to debug or release folder
+        - D:\ACVC\ACVC support files\additional\ACVC.icns to debug or release folder
 
     - Prepare for installer
         - deploy in shell (not powershell...)
         - C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
-        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug\debug
+        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug\debug or cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Release\release
         - C:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\ACVC\ACVC\ .
 
-    create deploy folder
-        - Copy contents of D:\ACVC\ffmpeg-20200121-fc6fde2-win64-shared\bin to debug or release folder (avcodec 58)
-
-    - ACVC exiftool missing
-        - Copy exiftool.exe (and also scripts, ico, icns)
-
-        - why all those big files e.g. Qt5Guid.dll, Qt5Qmld.dll, Qt5Quickd.dll (was not there in 0.2.1)
-
-        - NO!! manually copy $QTmingwFolder\qml\QtPositioning and $QTmingwFolder\qml\QtLocation folders!!!! (bug, solved in future ming version?)
-
-        - copy all of deploy to installer/data
+    - copy all of deploy to installer/data
+    - update version in D:\ACVC\ACVCInstaller\run.bat, D:\ACVC\ACVCInstaller\config\config.xml and D:\ACVC\ACVCInstaller\packages\com.actioncamvideocompanion.acvc\meta\package.xml
 
 
 MacOS 2020-02-01
@@ -229,23 +230,26 @@ MacOS 2020-02-01
             cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/MACOS
             cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
      - Make dmg (repeat this step only to create new deployment)
+        - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Release/
         - /Users/ewoudwijma/Qt/5.13.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
         - Add license.txt and symbolic link to applications folder
             - https://www.dragly.org/2012/01/13/deploy-qt-applications-for-mac-os-x/
                 - open DiskUtility
                     - From menu: Images/Convert...
                     - Find created dmg
-                    - Choose Image Format: read/write then Convert. A link will be created on the desktop
+                    - Choose Image Format: read/write then Convert. A link will be created on the desktop (if not open the dmg file in the destionation folder Documents)
                 - Open terminal
                     - type cd<space> and drag the desktop icon after this
                     - ln -s /Applications ./Applications
-                    - cp $acvc_build_path/../ACVC/license.txt READ BEFORE OPENING ACVC license.txt
+                    - cp $acvc_build_path/../ACVC/license.txt READ_BEFORE_OPENING_ACVC_license.txt
                 - Open DiskUtility
                     - Select image
                     - Right click: Rename to ACVC vx.y.z (version
-                    - Close m
+                    - Close mounted image
                     - From menu: Images/Convert...
                     - Find created dmg
                     - Choose Image Format: compressed then Convert. A link will be created on the desktop
 
+General post
+    - Update version.json on actioncamvideocompanion.com
 */

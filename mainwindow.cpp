@@ -252,7 +252,6 @@ void MainWindow::changeUIProperties()
     ui->speedComboBox->setCurrentText("1x");
 
     ui->cancelButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
-//    ui->cancelButton->setEnabled(false);
 
     spinnerLabel = new ASpinnerLabel(ui->filesTabWidget);
 }
@@ -303,7 +302,7 @@ void MainWindow::allConnects()
         connect(ui->folderTreeView, &AFolderTreeView::indexClicked, filesTree, &AFilesTreeView::onFolderIndexClicked);
         ui->graphicsView1->connectNodes("folder", "files", "folder");
 
-        connect(filesTree, &AFilesTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
+        connect(filesTree, &AFilesTreeView::fileIndexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
         ui->graphicsView1->connectNodes("files", "clip", "file");
         connect(filesTree, &AFilesTreeView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia); //stop and release
         ui->graphicsView1->connectNodes("files", "video", "release");
@@ -315,7 +314,7 @@ void MainWindow::allConnects()
 //        ui->graphicsView1->connectNodes("files", "prop", "remove");
 //        connect(filesTree, &AFilesTreeView::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
 //        ui->graphicsView1->connectNodes("files", "prop", "reload");
-        connect(filesTree, &AFilesTreeView::trimF, ui->clipsTableView, &AClipsTableView::onTrimF);
+        connect(filesTree, &AFilesTreeView::trimAll, ui->clipsTableView, &AClipsTableView::onTrimAll);
         ui->graphicsView1->connectNodes("files", "clip", "trim");
         connect(filesTree, &AFilesTreeView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 
@@ -324,7 +323,7 @@ void MainWindow::allConnects()
 
 //        connect(filesTree, &AFilesTreeView::derperView, this, &MainWindow::onDerperView);
 
-        connect(filesTree, &AFilesTreeView::propertyCopy, ui->exportWidget, &AExport::onPropertyCopy);
+        connect(filesTree, &AFilesTreeView::propertyCopy, ui->propertyTreeView, &APropertyTreeView::onPropertyCopy);
         connect(filesTree, &AFilesTreeView::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
         connect(filesTree, &AFilesTreeView::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
         connect(filesTree, &AFilesTreeView::loadClips, ui->clipsTableView, &AClipsTableView::onLoadClips);
@@ -375,7 +374,7 @@ void MainWindow::allConnects()
 
     connect(ui->clipsTableView, &AClipsTableView::propertiesLoaded, this, &MainWindow::onPropertiesLoaded);
 
-    connect(ui->clipsTableView, &AClipsTableView::propertyCopy, ui->exportWidget, &AExport::onPropertyCopy);
+    connect(ui->clipsTableView, &AClipsTableView::propertyCopy, ui->propertyTreeView, &APropertyTreeView::onPropertyCopy);
     connect(ui->clipsTableView, &AClipsTableView::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
     connect(ui->clipsTableView, &AClipsTableView::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
     connect(ui->clipsTableView, &AClipsTableView::showInStatusBar, this, &MainWindow::onShowInStatusBar);
@@ -428,10 +427,14 @@ void MainWindow::allConnects()
     connect(ui->exportWidget, &AExport::loadClips, ui->clipsTableView, &AClipsTableView::onLoadClips);
     connect(ui->exportWidget, &AExport::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
     connect(ui->exportWidget, &AExport::exportCompleted, this, &MainWindow::onExportCompleted); //reload
+    connect(ui->exportWidget, &AExport::trimC, ui->clipsTableView, &AClipsTableView::onTrimC);
+    connect(ui->exportWidget, &AExport::trimF, ui->clipsTableView, &AClipsTableView::onTrimF);
 
     connect(ui->exportWidget, &AExport::moveFilesToACVCRecycleBin, ui->folderTreeView, &AFolderTreeView::onMoveFilesToACVCRecycleBin);
 
     connect(ui->exportWidget, &AExport::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
+    connect(ui->exportWidget, &AExport::propertyCopy, ui->propertyTreeView, &APropertyTreeView::onPropertyCopy);
+    connect(ui->exportWidget, &AExport::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia);
 
     connect(ui->jobTreeView, &AJobTreeView::initProgress, this, &MainWindow::onInitProgress);
     connect(ui->jobTreeView, &AJobTreeView::updateProgress, this, &MainWindow::onUpdateProgress);
@@ -1034,9 +1037,6 @@ void MainWindow::onFolderIndexClicked(QAbstractItemModel *itemModel)
 {
 //    qDebug()<<"MainWindow::onFolderIndexClicked"<<itemModel->rowCount();
 
-//    spinnerLabel->setParent(ui->filesTabWidget);
-//    spinnerLabel->start();
-
     ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
 
     ui->filesTabWidget->setCurrentIndex(1); //go to files tab
@@ -1265,7 +1265,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     }
 }
 
-void MainWindow::onFileIndexClicked(QModelIndex index)
+void MainWindow::onFileIndexClicked(QModelIndex index, QStringList filePathList)
 {
 //    qDebug()<<"MainWindow::onFileIndexClicked"<<index.data().toString();
 
@@ -1314,7 +1314,7 @@ void MainWindow::onTagFilter1ListViewChanged()
 
 void MainWindow::onTagFilter2ListViewChanged()
 {
-    qDebug()<<"MainWindow::on_tagFilter2ListView_indexesMoved";
+//    qDebug()<<"MainWindow::on_tagFilter2ListView_indexesMoved";
 
     QString string1 = ui->tagFilter2ListView->modelToString();
 
@@ -1426,7 +1426,6 @@ void MainWindow::on_newTagLineEdit_returnPressed()
 
 void MainWindow::on_exportButton_clicked()
 {
-//    ui->cancelButton->setEnabled(true);
     createContextSensitiveHelp("Export started");
 
     int transitionTime = 0;
@@ -1456,7 +1455,6 @@ void MainWindow::on_exportButton_clicked()
 
 void MainWindow::onExportCompleted(QString error)
 {
-//    ui->cancelButton->setEnabled(false);
     createContextSensitiveHelp("Export completed", error);
 }
 
@@ -1542,6 +1540,9 @@ void MainWindow::on_actionDebug_mode_triggered(bool checked)
     ui->clipsTableView->setColumnHidden(orderAfterMovingIndex, !checked);
     ui->clipsTableView->setColumnHidden(fpsIndex, !checked);
     ui->clipsTableView->setColumnHidden(fileDurationIndex, !checked);
+    ui->clipsTableView->setColumnHidden(imageWidthIndex, !checked);
+    ui->clipsTableView->setColumnHidden(imageHeightIndex, !checked);
+    ui->clipsTableView->setColumnHidden(channelsIndex, !checked);
     ui->clipsTableView->setColumnHidden(changedIndex, !checked);
 }
 
@@ -2195,6 +2196,7 @@ void MainWindow::onInitProgress()
     spinnerLabel->start();
     ui->progressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
     ui->exportButton->setEnabled(false);
+    ui->cancelButton->setEnabled(true);
 }
 
 void MainWindow::onUpdateProgress(int value)
@@ -2220,6 +2222,7 @@ void MainWindow::onReadyProgress(int result, QString errorString)
 
     spinnerLabel->stop();
     ui->exportButton->setEnabled(true);
+    ui->cancelButton->setEnabled(false);
 
 #ifdef Q_OS_WIN
     QWinTaskbarProgress *progress = taskbarButton->progress();
@@ -2249,7 +2252,6 @@ void MainWindow::on_cancelButton_clicked()
     spinnerLabel->stop();
 
     ui->progressBar->setValue(0);
-//    ui->cancelButton->setEnabled(false);
 }
 
 void MainWindow::on_propertyEditorPushButton_clicked()

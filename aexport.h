@@ -41,7 +41,7 @@ private:
     QMap<int,int> audioClipsMap;
     QAbstractItemModel *timelineModel;
     int transitionTimeFrames;
-    QString currentDirectory ;
+    QString selectedFolderName ;
 //    QMap<QString, FileStruct> filesMap;
     QMap<QString, FileStruct> filesMap;
     QMap<QString, FileStruct> videoFilesMap;
@@ -60,7 +60,7 @@ private:
 
     void addPremiereTrack(QString mediaType, QMap<int,int> clipsMap, QMap<QString, FileStruct> filesMap);
     void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
-    void addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels);
+    void addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels, QString imageWidth, QString imageHeight);
 
     int maxVideoDuration;
     int maxAudioDuration;
@@ -79,9 +79,11 @@ signals:
     void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
 
     void jobAddLog(AJobParams jobParams, QString logMessage);
+    void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
+    void trimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget, QTime inTime, QTime outTime);
+    void trimF(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget);
+    void releaseMedia(QString fileName);
 
-public slots:
-    void onPropertyCopy(QStandardItem *parentItem, QString folderName, QString fileNameSource, QString fileNameTarget);
 };
 
 #endif // AEXPORT_h

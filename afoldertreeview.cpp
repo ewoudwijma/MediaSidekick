@@ -26,9 +26,9 @@ AFolderTreeView::AFolderTreeView(QWidget *parent) : QTreeView(parent)
     connect( this, &QTreeView::clicked, this, &AFolderTreeView::onIndexClicked);
 
 
-    QString lastFolder = QSettings().value("LastFolder").toString();
-    if (lastFolder != ""  && lastFolder.length() > 4) //not the root folder
-        setCurrentIndex(directoryModel->index(lastFolder)); //does also the scrollTo
+    QString selectedFolderName= QSettings().value("selectedFolderName").toString();
+    if (selectedFolderName != ""  && selectedFolderName.length() > 4) //not the root folder
+        setCurrentIndex(directoryModel->index(selectedFolderName)); //does also the scrollTo
 }
 
 void AFolderTreeView::onIndexClicked(const QModelIndex &index)
@@ -44,7 +44,7 @@ void AFolderTreeView::onIndexClicked(const QModelIndex &index)
 
     QString lastFolder = directoryModel->fileInfo(selectedIndex).absoluteFilePath() + "/";
 //    qDebug()<<"AFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
-    QSettings().setValue("LastFolder", lastFolder);
+    QSettings().setValue("selectedFolderName", lastFolder);
     QSettings().sync();
 
     if (lastFolder != ""  && lastFolder.length()>4) //not the root folder

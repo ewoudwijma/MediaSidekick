@@ -38,7 +38,7 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
     )
     {
 //        cerr << "Source not in compatible pixel format" << endl;
-        return "Source not in compatible pixel format (AV_PIX_FMT_YUV420P or AV_PIX_FMT_YUVJ420P) (" + QString(inputVideoInfo.pixelFormat) + ")";
+        return "Source not in compatible pixel format (AV_PIX_FMT_YUV420P or AV_PIX_FMT_YUVJ420P) (" + QString(inputVideoInfo.pixelFormat) + "). Remux to Mp3/yuv420 first.";
     }
 
     auto outputVideoInfo = inputVideoInfo; // Copy video info and tweak for output

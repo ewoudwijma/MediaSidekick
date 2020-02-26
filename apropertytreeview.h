@@ -69,10 +69,11 @@ public slots:
     void onFolderIndexClicked(QModelIndex index);
     bool onGetPropertyValue(QString fileName, QString propertyName, QVariant *value);
     bool onSetPropertyValue(QString fileName, QString propertyName, QVariant value, int role = Qt::EditRole);
-    void onFileIndexClicked(QModelIndex index, QModelIndexList selectedIndices = QModelIndexList());
+    void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void onClipIndexClicked(QModelIndex index);
-//    void onArchiveFiles(QString fileName);
     void onloadProperties(QStandardItem *parentItem);
+    void onPropertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
+
 
 private slots:
     void updateSectionWidth(int logicalIndex, int, int newSize);

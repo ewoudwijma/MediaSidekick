@@ -70,20 +70,20 @@ APropertyTreeView::~APropertyTreeView()
     delete frozenTableView;
 }
 
-void APropertyTreeView::onFolderIndexClicked(QModelIndex index)//
+void APropertyTreeView::onFolderIndexClicked(QModelIndex )//index
 {
     setColumnHidden(minimumIndex, !editMode);
     setColumnHidden(deltaIndex, !editMode);
     setColumnHidden(maximumIndex, !editMode);
 
-    QString lastFolder = QSettings().value("LastFolder").toString();
+    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
 //    qDebug()<<"APropertyTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder<<editMode;
-    loadModel(nullptr, lastFolder);
+    loadModel(nullptr, selectedFolderName);
 }
 
-void APropertyTreeView::setCellStyle(QStringList fileNames)
+void APropertyTreeView::setCellStyle(QStringList filePathList)
 {
-//    qDebug()<<"APropertyTreeView::setCellStyle"<<fileNames.count()<<propertyProxyModel->rowCount();
+//    qDebug()<<"APropertyTreeView::setCellStyle"<<filePathList<<propertyProxyModel->rowCount();
     isLoading = true;
     QFont boldFont;
     boldFont.setBold(true);
@@ -104,8 +104,9 @@ void APropertyTreeView::setCellStyle(QStringList fileNames)
                 {
                     propertyProxyModel->setData(childIndex, boldFont, Qt::FontRole);
                 }
-                if (fileNames.contains(hItem.toString()))
+                if (filePathList.join(",").contains(hItem.toString()))
                 {
+//                    qDebug()<<"APropertyTreeView::setCellStyle"<<parentRow<<childRow<<filePathList<<hItem.toString();
                     propertyProxyModel->setData(childIndex,  QVariant(palette().highlight()) , Qt::BackgroundRole);
                     if (childRow == 0 && parentIndex.row() == 0) //first item of first toplevelitem (createdate within general)
                         scrollToIndex = childIndex;
@@ -126,19 +127,9 @@ void APropertyTreeView::setCellStyle(QStringList fileNames)
     }
 }
 
-void APropertyTreeView::onFileIndexClicked(QModelIndex , QModelIndexList selectedIndices)//index
+void APropertyTreeView::onFileIndexClicked(QModelIndex , QStringList filePathList)//index
 {
-    QStringList selectedFileNames;
-    for (int i = 0; i < selectedIndices.count(); i++)
-    {
-        QModelIndex index = selectedIndices[i];
-        if (index.column() == propertyIndex)
-        {
-            selectedFileNames << index.data().toString();
-        }
-    }
-
-    setCellStyle(selectedFileNames);
+    setCellStyle(filePathList);
 }
 
 void APropertyTreeView::onClipIndexClicked(QModelIndex index)
@@ -152,8 +143,6 @@ void APropertyTreeView::onClipIndexClicked(QModelIndex index)
 
 void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 {
-    spinnerLabel->start();
-
     isLoading = true;
 
     if (editMode)
@@ -162,10 +151,6 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
         setColumnWidth(deltaIndex, columnWidth(propertyIndex) * 0.5);
         setColumnWidth(maximumIndex, columnWidth(propertyIndex) * 1.0);
     }
-
-    propertyItemModel->removeRows(0, propertyItemModel->rowCount());
-    while (propertyItemModel->columnCount() > firstFileColumnIndex) //remove old columns
-        propertyItemModel->removeColumn(propertyItemModel->columnCount() - 1);
 
 //    qDebug()<<"APropertyTreeView::loadModel"<<folderName<<jobTreeView;
 
@@ -180,10 +165,14 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 
     jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
     {
-        if (jobParams.parameters["errorMessage"] != "")
-            return;
+//        if (jobParams.parameters["errorMessage"] != "")
+//            return;
         APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisWidget);
 //        qDebug()<<"Load properties done"<<propertyTreeView<<jobParams.parameters<<result.count();
+
+        propertyTreeView->propertyItemModel->removeRows(0, propertyTreeView->propertyItemModel->rowCount());
+        while (propertyTreeView->propertyItemModel->columnCount() > firstFileColumnIndex) //remove old columns
+            propertyTreeView->propertyItemModel->removeColumn(propertyTreeView->propertyItemModel->columnCount() - 1);
 
         //create topLevelItems
         QStringList toplevelPropertyNames;
@@ -482,8 +471,6 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
         propertyTreeView->setupModel();
 
         emit propertyTreeView->jobAddLog(jobParams, "Success");
-
-        propertyTreeView->spinnerLabel->stop();
     });
 
 } //loadmodel
@@ -762,16 +749,19 @@ QModelIndex APropertyTreeView::findIndex(QString fileName, QString propertyName)
 
 bool APropertyTreeView::onGetPropertyValue(QString fileName, QString propertyName, QVariant *value)
 {
+//    qDebug()<<"APropertyTreeView::onGetPropertyValue"<<fileName<<propertyName;
     QModelIndex index = findIndex(fileName, propertyName);
 
     if (index != QModelIndex())
     {
         *value = index.data();
+//        qDebug()<<"  APropertyTreeView::onGetPropertyValue"<<index.data().toString()<<value->toString();
         return true;
     }
     else
     {
         *value = "";
+//        qDebug()<<"  APropertyTreeView::onGetPropertyValue"<<index.data().toString()<<value->toString();
         return false;
     }
 }
@@ -1366,9 +1356,9 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
 
 void APropertyTreeView::onloadProperties(QStandardItem *parentItem)
 {
-    QString lastFolder = QSettings().value("LastFolder").toString();
+    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
 //    qDebug()<<"APropertyTreeView::onloadProperties"<<lastFolder;
-    loadModel(parentItem, lastFolder);
+    loadModel(parentItem, selectedFolderName);
 }
 
 void APropertyTreeView::onPropertyColumnFilterChanged(QString filter)
@@ -1548,3 +1538,37 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
         }
     }
 } //calculateMinimumDeltaMaximum
+
+void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget)
+{
+//    qDebug()<<"AExport::onPropertyCopy"<<folderNameSource<<fileNameSource<<folderNameTarget<<fileNameTarget;
+    QString attributeString = "";
+    QStringList texts;
+    texts << "CreateDate" << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model" << "Director" << "Producer"  << "Publisher";
+    for (int iText = 0; iText < texts.count(); iText++)
+    {
+        QVariant *propertyValue = new QVariant();
+        onGetPropertyValue(fileNameSource, texts[iText], propertyValue);
+        if (propertyValue->toString() != "")
+            attributeString += " -" + texts[iText] + "=\"" + propertyValue->toString() + "\"";
+    }
+
+    if (attributeString != "")
+    {
+        QString targetFolderFileName = folderNameTarget + fileNameTarget;
+    #ifdef Q_OS_WIN
+        targetFolderFileName = targetFolderFileName.replace("/", "\\");
+    #endif
+
+        AJobParams jobParams;
+        jobParams.thisWidget = this;
+        jobParams.parentItem = parentItem;
+        jobParams.folderName = folderNameSource;
+        jobParams.fileName = fileNameTarget;
+        jobParams.action = "Copy properties";
+        jobParams.command = "exiftool" + attributeString + " -overwrite_original \"" + targetFolderFileName + "\"";
+        jobParams.parameters["totalDuration"] = QString::number(1000);
+
+        jobTreeView->createJob(jobParams, nullptr, nullptr);
+    }
+}
