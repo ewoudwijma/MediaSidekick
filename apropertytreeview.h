@@ -37,6 +37,7 @@ public:
 
     AJobTreeView *jobTreeView;
 
+    QMap<QString, QString> propertiesForFile(QString folderName, QString fileName);
 private:
     void loadModel(QStandardItem *parentItem, QString folderName);
     void addSublevelItem(QUrl fileUrl, QString itemName, QString type, QString value);
@@ -51,7 +52,7 @@ private:
     bool locationInName;
     bool cameraInName;
     bool artistInName;
-    QModelIndex findIndex(QString fileName, QString propertyName);
+    QModelIndex findIndex(QString folderFileName, QString propertyName);
 
     ASpinnerLabel *spinnerLabel;
 
@@ -67,8 +68,8 @@ protected:
 public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void onFolderIndexClicked(QModelIndex index);
-    bool onGetPropertyValue(QString fileName, QString propertyName, QVariant *value);
-    bool onSetPropertyValue(QString fileName, QString propertyName, QVariant value, int role = Qt::EditRole);
+    bool onGetPropertyValue(QString folderFileName, QString propertyName, QVariant *value);
+    bool onSetPropertyValue(QString folderFileName, QString propertyName, QVariant value, int role = Qt::EditRole);
     void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void onClipIndexClicked(QModelIndex index);
     void onloadProperties(QStandardItem *parentItem);
@@ -81,7 +82,7 @@ private slots:
 
 signals:
     void propertiesLoaded();
-    void releaseMedia(QString fileName);
+    void releaseMedia(QString folderName, QString fileName);
     void redrawMap();
     void jobAddLog(AJobParams jobParams, QString logMessage);
 };

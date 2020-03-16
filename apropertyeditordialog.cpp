@@ -263,16 +263,16 @@ void APropertyEditorDialog::onRedrawMap()
     {
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
-            QString fileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
+            QString folderFileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
 
             QVariant *coordinate = new QVariant();
-            ui->propertyTreeView->onGetPropertyValue(fileName, "GeoCoordinate", coordinate);
+            ui->propertyTreeView->onGetPropertyValue(folderFileName, "GeoCoordinate", coordinate);
 
             QGeoCoordinate geoCoordinate = AGlobal().csvToGeoCoordinate(coordinate->toString());
 
 //            qDebug()<<"coordinateString"<<coordinate->toString();
 
-            QMetaObject::invokeMethod(target, "addMarker", Qt::AutoConnection, Q_ARG(QVariant, fileName), Q_ARG(QVariant, geoCoordinate.latitude()), Q_ARG(QVariant, geoCoordinate.longitude()));
+            QMetaObject::invokeMethod(target, "addMarker", Qt::AutoConnection, Q_ARG(QVariant, folderFileName), Q_ARG(QVariant, geoCoordinate.latitude()), Q_ARG(QVariant, geoCoordinate.longitude()));
         }
     }
     QMetaObject::invokeMethod(target, "fitViewportToMapItems", Qt::AutoConnection);
@@ -301,26 +301,30 @@ void APropertyEditorDialog::onGeoCodingFinished(QGeoCoordinate geoCoordinate)
 
 void APropertyEditorDialog::on_renameButton_clicked()
 {
-    QStringList fileNameList;
-    QStringList newFileNameList;
+    QStringList folderFileNameList;
+    QStringList suggestedFolderFileNameList;
     bool uniqueFileNames = true;
 
     for(int col = firstFileColumnIndex; col < ui->propertyTreeView->propertyProxyModel->columnCount(); col++)
     {
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
-            QString fileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
-            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+            QString folderFileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
+            if (!folderFileName.contains(".mlt") && !folderFileName.contains("*.xml"))
             {
-                QVariant *suggestedName = new QVariant();
+                QVariant *suggestedFolderFileName = new QVariant();
 
-                ui->propertyTreeView->onGetPropertyValue(fileName, "SuggestedName", suggestedName);
+                ui->propertyTreeView->onGetPropertyValue(folderFileName, "SuggestedName", suggestedFolderFileName);
 
-                if (suggestedName->toString() != "")
+                if (suggestedFolderFileName->toString() != "")
                 {
-                    uniqueFileNames = !fileNameList.contains(fileName);
-                    fileNameList << fileName;
-                    newFileNameList << suggestedName->toString();
+                    if (suggestedFolderFileNameList.contains(suggestedFolderFileName->toString()))
+                            uniqueFileNames = false;
+                    else
+                    {
+                        folderFileNameList << folderFileName;
+                        suggestedFolderFileNameList << suggestedFolderFileName->toString();
+                    }
                 }
             }
         }
@@ -330,41 +334,43 @@ void APropertyEditorDialog::on_renameButton_clicked()
     {
         QMessageBox::information(this, "Rename", "Not all filenames unique. Cannot rename");
     }
-    else if (fileNameList.count() > 0)
+    else if (folderFileNameList.count() > 0)
     {
-        QString selectedFolderName = QSettings().value("selectedFolderName").toString();
-
         QMessageBox::StandardButton reply;
-         reply = QMessageBox::question(this, "Rename " + QString::number(fileNameList.count()) + " File(s)", "Are you sure you want to rename " + fileNameList.join(", ") + " and its supporting files (srt and txt) to " + newFileNameList.join(", ") + ".* ?",
+         reply = QMessageBox::question(this, "Rename " + QString::number(folderFileNameList.count()) + " File(s)", "Are you sure you want to rename " + folderFileNameList.join(", ") + " and its supporting files (srt and txt) to " + suggestedFolderFileNameList.join(", ") + ".* ?",
                                        QMessageBox::Yes|QMessageBox::No);
 
          if (reply == QMessageBox::Yes)
          {
 
-             for (int i=0; i< fileNameList.count();i++)
+             for (int i=0; i< folderFileNameList.count();i++)
              {
-    //             QString fileName = fileNameList[i];
-                 emit releaseMedia(fileNameList[i]); //to stop the video
-                 QFile file(selectedFolderName + fileNameList[i]);
-                 QString extensionString = fileNameList[i].mid(fileNameList[i].lastIndexOf(".")); //.avi ..mp4 etc.
-//                 qDebug()<<"Rename"<<fileNameList[i]<<newFileNameList[i] + extensionString;
-                 if (file.exists())
-                    file.rename(selectedFolderName + newFileNameList[i] + extensionString);
+                 int lastIndexOf = folderFileNameList[i].lastIndexOf("/");
+                 QString folderName = folderFileNameList[i].left(lastIndexOf + 1);
+                 QString fileName = folderFileNameList[i].mid(lastIndexOf + 1);
 
-                 int lastIndex = fileNameList[i].lastIndexOf(".");
+                 emit releaseMedia(folderName, fileName); //to stop the video
+                 QFile file(folderFileNameList[i]);
+                 QString extensionString = fileName.mid(fileName.lastIndexOf(".")); //.avi ..mp4 etc.
+
+//                 qDebug()<<"Rename"<<fileNameList[i]<<suggestedFileNameList[i] + extensionString;
+                 if (file.exists())
+                    file.rename(suggestedFolderFileNameList[i] + extensionString);
+
+                 int lastIndex = fileName.lastIndexOf(".");
                  if (lastIndex > -1)
                  {
-                     QFile *file = new QFile(selectedFolderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".srt");
+                     QFile *file = new QFile(folderFileNameList[i].left(folderFileNameList[i].lastIndexOf(".")) + ".srt");
                      if (file->exists())
-                        file->rename(selectedFolderName + newFileNameList[i] + ".srt");
+                        file->rename(suggestedFolderFileNameList[i] + ".srt");
 
-                     file = new QFile(selectedFolderName + fileNameList[i].left(fileNameList[i].lastIndexOf(".")) + ".txt");
+                     file = new QFile(folderFileNameList[i].left(folderFileNameList[i].lastIndexOf(".")) + ".txt");
                      if (file->exists())
-                        file->rename(selectedFolderName + newFileNameList[i] + ".txt");
+                        file->rename(suggestedFolderFileNameList[i] + ".txt");
                  }
 //                 qDebug()<<"on_renameButton_clicked colorChanged";
                  ui->propertyTreeView->colorChanged = "yes";
-                 ui->propertyTreeView->onSetPropertyValue(fileNameList[i], "SuggestedName", QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole);
+                 ui->propertyTreeView->onSetPropertyValue(folderFileNameList[i], "SuggestedName", QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole);
 
              }
              emit loadClips(nullptr);
@@ -402,9 +408,9 @@ void APropertyEditorDialog::checkAndMatchPicasa()
               QString line = in.readLine();
               if (line.indexOf("[") == 0)
               {
-                  fileName = line.mid(1,line.length() -2);
+                  fileName = line.mid(1,line.length() -2); //picasa file has only filenames not foldernames.
                   QVariant *directoryName = new QVariant;
-                  filePropertiesExist = ui->propertyTreeView->onGetPropertyValue(fileName, "Directory", directoryName);
+                  filePropertiesExist = ui->propertyTreeView->onGetPropertyValue(selectedFolderName + fileName, "Directory", directoryName);
                   if (filePropertiesExist)
                   {
 //                      onAddToJob(*processId, fileName + " added\n");
@@ -421,11 +427,11 @@ void APropertyEditorDialog::checkAndMatchPicasa()
                   if (line.contains("keywords="))
                   {
                       QVariant *keywords = new QVariant;
-                      ui->propertyTreeView->onGetPropertyValue(fileName, "Keywords", keywords);
+                      ui->propertyTreeView->onGetPropertyValue(selectedFolderName + fileName, "Keywords", keywords);
 
                       if (keywords->toString() != line.mid(9))
                       {
-                        ui->propertyTreeView->onSetPropertyValue(fileName, "Keywords", line.mid(9));
+                        ui->propertyTreeView->onSetPropertyValue(selectedFolderName + fileName, "Keywords", line.mid(9));
                         propertiesSet = true;
                       }
 //                      onAddToJob(*processId, " - " + line + " => Keywords: " + line.mid(9) + "\n");
@@ -433,12 +439,12 @@ void APropertyEditorDialog::checkAndMatchPicasa()
                   else if (line.contains("star=yes"))
                   {
                       QVariant *rating = new QVariant;
-                      ui->propertyTreeView->onGetPropertyValue(fileName, "Rating", rating);
+                      ui->propertyTreeView->onGetPropertyValue(selectedFolderName + fileName, "Rating", rating);
                       AStarRating starRating = qvariant_cast<AStarRating>( *rating);
 //                      qDebug()<<"Picasa star"<<starRating.starCount();
                       if (starRating.starCount() != 3)
                       {
-                        ui->propertyTreeView->onSetPropertyValue(fileName, "Rating", QVariant::fromValue(AStarRating(3)));
+                        ui->propertyTreeView->onSetPropertyValue(selectedFolderName + fileName, "Rating", QVariant::fromValue(AStarRating(3)));
                         propertiesSet = true;
                       }
 //                      onAddToJob(*processId, " - " + line + " => Rating: 3\n");

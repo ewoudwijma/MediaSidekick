@@ -57,7 +57,6 @@ public slots:
     void onScrubberOutChanged(QString AV, int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-//    void onArchiveClips(QString fileName);
     void onTrimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
@@ -81,7 +80,7 @@ signals:
     void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
     void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
-    void getPropertyValue(QString fileName, QString key, QVariant *value);
+    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
     void loadProperties(QStandardItem *parentItem);
     void setIn(int frames);
     void setOut(int frames);
@@ -90,7 +89,7 @@ signals:
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
     void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
     void showInStatusBar(QString message, int timeout);
-    void releaseMedia(QString fileName);
+    void releaseMedia(QString folderName, QString fileName);
 
 };
 

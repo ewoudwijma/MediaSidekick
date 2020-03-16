@@ -55,7 +55,7 @@ private slots:
     void on_refreshButton_clicked();
 
 signals:
-    void releaseMedia(QString fileName);
+    void releaseMedia(QString folderName, QString fileName);
     void loadClips(QStandardItem *parentItem);
     void loadProperties(QStandardItem *parentItem);
 

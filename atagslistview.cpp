@@ -33,7 +33,6 @@ ATagsListView::ATagsListView(QWidget *parent) : QListView(parent)
 
 void ATagsListView::onFolderIndexClicked(QAbstractItemModel *model)
 {
-//    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
 //    qDebug()<<"ATagsListView::onFolderIndexClicked"<<model->rowCount();
     loadModel(model);
 }

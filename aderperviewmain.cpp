@@ -75,6 +75,9 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
     QTime mediaTime = QTime();
 
     auto frame = input.GetNextFrame();
+
+//    QImage image = QImage((uchar*)frame->data[0], 200, 200, frame->linesize[0], QImage::Format_RGB888);
+
     while (frame != nullptr && !processStopped)
     {
         if (frame->width == 0) // Audio - stream it through

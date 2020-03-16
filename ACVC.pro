@@ -49,13 +49,14 @@ SOURCES += \
         afilessortfilterproxymodel.cpp \
         afilestreeview.cpp \
         afoldertreeview.cpp \
+        agcliprectangleitem.cpp \
         ageocoding.cpp \
+        agfilesystem.cpp \
         aglobal.cpp \
+        agview.cpp \
         ajobitemdelegate.cpp \
         ajobthread.cpp \
         ajobtreeview.cpp \
-        amaingraphicsitem.cpp \
-        amaingraphicsview.cpp \
         apropertyeditordialog.cpp \
         apropertyitemdelegate.cpp \
         apropertysortfilterproxymodel.cpp \
@@ -87,13 +88,14 @@ HEADERS += \
         afilessortfilterproxymodel.h \
         afilestreeview.h \
         afoldertreeview.h \
+        agcliprectangleitem.h \
         ageocoding.h \
+        agfilesystem.h \
         aglobal.h \
+        agview.h \
         ajobitemdelegate.h \
         ajobthread.h \
         ajobtreeview.h \
-        amaingraphicsitem.h \
-        amaingraphicsview.h \
         apropertyeditordialog.h \
         apropertyitemdelegate.h \
         apropertysortfilterproxymodel.h \

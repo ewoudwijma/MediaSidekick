@@ -3,6 +3,7 @@
 
 #include "aclipssortfilterproxymodel.h"
 #include "aclipstableview.h"
+#include "agfilesystem.h"
 #include "astareditor.h"
 
 #include <QCheckBox>
@@ -169,6 +170,18 @@ private slots:
     void onDerperviewCompleted(QString errorString);
     void on_clearJobsTreeButton_clicked();
 
+    void on_actionOpen_Folder_triggered();
+
+    void onGraphicsItemSelected(QGraphicsItem *item);
+
+    void on_tabUIWidget_currentChanged(int index);
+
+    void on_spotviewButton_clicked();
+
+    void on_timelineViewButton_clicked();
+
+    void on_searchLineEdit_textChanged(const QString &arg1);
+
 private:
     Ui::MainWindow *ui;
 
@@ -198,6 +211,8 @@ private:
 #endif
 
     APropertyEditorDialog *propertyEditorDialog;
+
+    AGFileSystem *agFileSystem;
 
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);

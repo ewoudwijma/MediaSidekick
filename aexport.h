@@ -69,7 +69,7 @@ private:
     void exportShotcut(AJobParams jobParams);
     void exportPremiere(AJobParams jobParams);
 signals:
-    void getPropertyValue(QString fileName, QString key, QVariant *value);
+    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 
     void loadClips(QStandardItem *parentItem);
     void loadProperties(QStandardItem *parentItem);
@@ -82,7 +82,7 @@ signals:
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
     void trimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget, QTime inTime, QTime outTime);
     void trimF(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget);
-    void releaseMedia(QString fileName);
+    void releaseMedia(QString folderName, QString fileName);
 
 };
 

@@ -27,6 +27,7 @@ public:
     QAction *actionSetIn;
 
     void setPlaybackRate(qreal rate);
+    QString selectedFolderName;
     QString selectedFileName;
 
 private:
@@ -37,8 +38,6 @@ private:
     int m_previousOut;
     int m_duration;
     bool m_isSeekable;
-
-    QString selectedFolderName;
 
     bool isTimelinePlaymode;
     int lastHighlightedRow;
@@ -58,7 +57,7 @@ public slots:
     void rewind();
     void onClipsChangedToVideo(QAbstractItemModel *clipsProxyModel);
     void onTimelinePositionChanged(int progress, int row, int relativeProgress);
-    void onReleaseMedia(QString fileName);
+    void onReleaseMedia(QString folderName, QString fileName);
     void skipNext();
     void skipPrevious();
     void onSpinnerPositionChanged(int frames);
@@ -85,7 +84,7 @@ signals:
     void durationChanged(int duration);
     void scrubberInChanged(QString AV, int row, int in);
     void scrubberOutChanged(QString AV, int row, int out);
-    void getPropertyValue(QString fileName, QString key, QVariant *value);
+    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 //    void fpsChanged(int fps);
     void createNewEdit(int frames);
 

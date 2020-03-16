@@ -74,6 +74,8 @@ InputVideoFile::InputVideoFile(std::string filename) :
     av_register_all();
 #endif
 
+    av_log_set_level(AV_LOG_QUIET);
+
     lastError_ = avformat_open_input(&formatContext_, filename_.c_str(), nullptr, nullptr);
     if (lastError_ < 0)
     {
@@ -189,10 +191,13 @@ AVFrame *InputVideoFile::GetNextDrainFrame()
 VideoInfo InputVideoFile::GetVideoInfo()
 {
     VideoInfo v;
-    v.audioBitRate = audioCodecContext_->bit_rate;
-    v.audioChannelLayout = audioCodecContext_->channel_layout;
-    v.audioSampleRate = audioCodecContext_->sample_rate;
-    v.audioTimeBase = audioCodecContext_->time_base;
+    if (audioStreamIndex_ > 0) //ewi 20200313: otherwises crashes for video with audio problems (e.g. no audio)
+    {
+        v.audioBitRate = audioCodecContext_->bit_rate;
+        v.audioChannelLayout = audioCodecContext_->channel_layout;
+        v.audioSampleRate = audioCodecContext_->sample_rate;
+        v.audioTimeBase = audioCodecContext_->time_base;
+    }
     v.bitRate = static_cast<int>(videoCodecContext_->bit_rate);
     v.frameRate = formatContext_->streams[videoStreamIndex_]->r_frame_rate;
     v.height = videoCodecContext_->height;

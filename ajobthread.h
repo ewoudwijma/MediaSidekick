@@ -6,7 +6,7 @@
 #include <QThread>
 
 typedef struct {
-    QWidget *thisWidget;
+    QObject *thisWidget;
     QString folderName = "";
     QString fileName = "";
     QString action;

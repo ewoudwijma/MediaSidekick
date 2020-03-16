@@ -1,3 +1,6 @@
+#ifndef Aderperviewvideo_H
+#define Aderperviewvideo_H
+
 extern "C"
 {
     #include "libavformat/avformat.h"
@@ -83,3 +86,5 @@ protected:
 
 std::string GetErrorString(int errorCode);
 } //namespace DerperView
+
+#endif

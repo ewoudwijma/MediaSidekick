@@ -5,5 +5,8 @@
         <file>acvc.ico</file>
         <file>Spinner.gif</file>
         <file>acvc.icns</file>
+        <file>musicnote.png</file>
+        <file>movie.png</file>
+        <file>images/karton.jpg</file>
     </qresource>
 </RCC>

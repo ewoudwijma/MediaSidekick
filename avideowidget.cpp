@@ -122,15 +122,10 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
 
 //    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().canonicalUrl();
 
-    if (QUrl::fromLocalFile(folderFileName) != m_player->media().canonicalUrl()) //another media file
+    if (QUrl::fromLocalFile(folderFileName) != m_player->currentMedia().canonicalUrl()) //another media file
     {
-//        QString *frameratePointer = new QString();
-//        emit getPropertyValue(selectedFileName, "VideoFrameRate", frameratePointer);
-//        fpsRounded = int( qRound(index.model()->index(index.row(),fpsIndex).data().toDouble() / 5) * 5);
-
 //        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
         oldState = m_player->state();
-//        bool oldMuted = m_player->isMuted();
         m_player->setMedia(QUrl::fromLocalFile(folderFileName));
     }
 
@@ -233,11 +228,11 @@ void AVideoWidget::onSpinnerPositionChanged(int frames)
     m_player->setPosition(AGlobal().frames_to_msec(frames));
 }
 
-void AVideoWidget::onReleaseMedia(QString fileName)
+void AVideoWidget::onReleaseMedia(QString folderName, QString fileName)
 {
-    if (fileName == selectedFileName)
+    if (folderName == selectedFolderName && fileName == selectedFileName)
     {
-//        qDebug()<<"AVideoWidget::onReleaseMedia"<<fileName;
+//        qDebug()<<"AVideoWidget::onReleaseMedia"<<folderFileName;
         m_player->stop();
         m_player->setMedia(QMediaContent());
     }
@@ -250,7 +245,7 @@ void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 
 void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-//    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().canonicalUrl()<<m_player->error()<<m_player->errorString();
+    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().canonicalUrl()<<m_player->error()<<m_player->errorString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {

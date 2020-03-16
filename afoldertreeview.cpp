@@ -42,12 +42,31 @@ void AFolderTreeView::onIndexClicked(const QModelIndex &index)
     else
         expand(selectedIndex);
 
-    QString lastFolder = directoryModel->fileInfo(selectedIndex).absoluteFilePath() + "/";
+    QString selectedFolderName = directoryModel->fileInfo(selectedIndex).absoluteFilePath() + "/";
 //    qDebug()<<"AFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
-    QSettings().setValue("selectedFolderName", lastFolder);
+    QSettings().setValue("selectedFolderName", selectedFolderName);
     QSettings().sync();
 
-    if (lastFolder != ""  && lastFolder.length()>4) //not the root folder
+    if (selectedFolderName != ""  && selectedFolderName.length()>4) //not the root folder
+    {
+        emit indexClicked(selectedIndex);
+    }
+}
+
+void AFolderTreeView::simulateIndexClicked(QString folderName)
+{
+    QModelIndex selectedIndex = currentIndex();
+
+    if (isExpanded(selectedIndex))
+        collapse(selectedIndex);
+    else
+        expand(selectedIndex);
+
+//    qDebug()<<"AFolderTreeView::onIndexClicked"<<selectedIndex.data().toString()<<lastFolder;
+    QSettings().setValue("selectedFolderName", folderName);
+    QSettings().sync();
+
+    if (folderName != ""  && folderName.length()>4) //not the root folder
     {
         emit indexClicked(selectedIndex);
     }

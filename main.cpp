@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
 //    if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\Bras_DVR\\Encode2.7K@30.mp4", NULL, NULL)))
 #ifdef Q_OS_WIN
-    if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\Bras_DVR\\2020-01-15 00-42-21.AVI", NULL, NULL)))
+    if ((ret = avformat_open_input(&fmt_ctx, "D:\\Video\\2019-04 La Palma archive\\GoPro\\2019-04-19 08.46.10 GoPro-1.mp4", NULL, NULL)))
         return ret;
 #else
     if ((ret = avformat_open_input(&fmt_ctx, "/Users/ewoudwijma/Movies/2019-09-02 Fipre/2000-01-19 00-00-00 +53632ms.MP4", NULL, NULL)))
@@ -99,13 +99,12 @@ int main(int argc, char *argv[])
 
 //    w.setGeometry(1536,512,2048,960);
     w.show();
+
     splash->showMessage("Established connections");
     splash->finish(&w);
 
     return a.exec();
 }
-
-
 
 //https://stackoverflow.com/questions/30814475/qml-module-not-installed-error-running-qt-app-on-embedded-linux
 
@@ -213,25 +212,29 @@ Windows 2020-02-20
 
 MacOS 2020-02-01
     - QT Creator run/build
+    - Get ffmpeg
+        - Get https://ffmpeg.zeranoe.com/builds/macos64/shared/ffmpeg-latest-macos64-shared.zip
+        - Get https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip
+        - Script
+            - export qtVersion =
+            - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_1_clang_64bit-Release
+            - cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
+
+    - Get exiftool
+        - Get https://exiftool.org/ExifTool-xx.yy.dmg from https://exiftool.org/
+        - Install dmg / pkg
+        - Script
+            cp -r /usr/local/bin/lib $acvc_build_path/ACVC.app/Contents/MACOS/lib
+            cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/MACOS
+
     - macdeployqt
         - https://doc.qt.io/qt-5/macos-deployment.html
         - https://blog.inventic.eu/2012/08/how-to-deploy-qt-application-on-macos-2/
         - https://doc-snapshots.qt.io/qt5-5.11/osx-deployment.html
-        - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Release/
-        - /Users/ewoudwijma/Qt/5.13.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/
 
-    - Get exiftool and ffmpeg files
-        - Get https://exiftool.org/ExifTool-xx.yy.dmg from https://exiftool.org/
-        - Get https://ffmpeg.zeranoe.com/builds/macos64/shared/ffmpeg-latest-macos64-shared.zip
-        - (https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip)
-        - Install dmg / pkg
-        - Script
-            cp -r /usr/local/bin/lib $acvc_build_path/ACVC.app/Contents/MACOS
-            cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/MACOS
-            cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
      - Make dmg (repeat this step only to create new deployment)
         - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Release/
-        - /Users/ewoudwijma/Qt/5.13.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
+        - /Users/ewoudwijma/Qt/5.14.1/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
         - Add license.txt and symbolic link to applications folder
             - https://www.dragly.org/2012/01/13/deploy-qt-applications-for-mac-os-x/
                 - open DiskUtility
@@ -245,7 +248,7 @@ MacOS 2020-02-01
                 - Open DiskUtility
                     - Select image
                     - Right click: Rename to ACVC vx.y.z (version
-                    - Close mounted image
+                    - Eject mounted image
                     - From menu: Images/Convert...
                     - Find created dmg
                     - Choose Image Format: compressed then Convert. A link will be created on the desktop

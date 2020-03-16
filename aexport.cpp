@@ -1602,7 +1602,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     {
         childItem = losslessVideoAndAudio(parentItem); //assigning videoFileExtension
 
-        emit releaseMedia(fileNameWithoutExtension + videoFileExtension);
+        emit releaseMedia(selectedFolderName, fileNameWithoutExtension + videoFileExtension);
 
         if (audioClipsMap.count() > 0)
             childItem = muxVideoAndAudio(childItem);
@@ -1622,7 +1622,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     {
         childItem = encodeVideoClips(parentItem); //assigning videoFileExtension
 
-        emit releaseMedia(fileNameWithoutExtension + videoFileExtension);
+        emit releaseMedia(selectedFolderName, fileNameWithoutExtension + videoFileExtension);
 
         emit propertyCopy(childItem, selectedFolderName, videoFilesMap.first().fileName, selectedFolderName, fileNameWithoutExtension + videoFileExtension);
 

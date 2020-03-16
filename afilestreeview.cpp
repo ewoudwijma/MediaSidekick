@@ -257,7 +257,7 @@ void AFilesTreeView::onDerperview()
                  QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
                  QVariant *durationPointer = new QVariant();
-                 emit getPropertyValue(fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+                 emit getPropertyValue(folderName + fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
                  *durationPointer = durationPointer->toString().replace(" (approx)", "");
                  QTime durationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
                  if (durationTime == QTime())
@@ -310,7 +310,7 @@ void AFilesTreeView::onDerperview()
 
                  emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
 
-                 emit releaseMedia(fileName);
+                 emit releaseMedia(folderName, fileName);
                  emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
              } //for all files
 
@@ -370,7 +370,7 @@ void AFilesTreeView::onRemux()
 
                  emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
 
-                 emit releaseMedia(fileName);
+                 emit releaseMedia(folderName, fileName);
                  emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
              }
 
@@ -422,7 +422,7 @@ QStandardItem *AFilesTreeView::onRemux2(QStandardItem *parentItem, QString folde
 #endif
 
     QVariant *durationPointer = new QVariant();
-    emit getPropertyValue(fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
+    emit getPropertyValue(folderName + fileName, "Duration", durationPointer); //format <30s: [ss.mm s] >30s: [h.mm:ss]
     *durationPointer = durationPointer->toString().replace(" (approx)", "");
     QTime durationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
     if (durationTime == QTime())
@@ -483,7 +483,7 @@ void AFilesTreeView::onArchiveFiles()
                  QString folderName = filePathList[i].left(lastIndexOf + 1);
                  QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
-                 emit releaseMedia(fileName);
+                 emit releaseMedia(folderName, fileName);
                  emit moveFilesToACVCRecycleBin(parentItem, folderName, fileName);
 
              }
@@ -529,7 +529,7 @@ void AFilesTreeView::onArchiveClips()
                  QString folderName = filePathList[i].left(lastIndexOf + 1);
                  QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
-                 emit releaseMedia(fileName);
+                 emit releaseMedia(folderName, fileName);
                  emit moveFilesToACVCRecycleBin(parentItem, folderName, fileName, true); //supporting files only
              }
              emit loadClips(parentItem);

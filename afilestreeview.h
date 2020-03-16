@@ -49,9 +49,9 @@ public slots:
 
 signals:
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
-    void releaseMedia(QString fileName);
+    void releaseMedia(QString folderName, QString fileName);
     void trimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName);
-    void getPropertyValue(QString fileName, QString key, QVariant *value);
+    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
     void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);

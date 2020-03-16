@@ -105,9 +105,8 @@ QStandardItem *AJobTreeView::createJob(AJobParams jobParams, QString (*functionC
     }
 
     QList<QStandardItem *> items;
-
     QStandardItem *childItem = nullptr;
-    foreach (QString headerLabel, headerlabels)
+    foreach (QString headerLabel, headerlabels) //if crash here then jobTreeView not assigned yet in class calling addjob
     {
         QStandardItem *item;
 

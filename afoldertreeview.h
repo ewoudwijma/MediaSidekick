@@ -19,6 +19,7 @@ public:
 
     AJobTreeView *jobTreeView;
 
+    void simulateIndexClicked(QString folderName);
 signals:
     void indexClicked(QModelIndex index);
     void jobAddLog(AJobParams jobParams, QString logMessage);

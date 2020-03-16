@@ -38,8 +38,8 @@ void APropertyItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 
     if (isEditable && index.model()->index(index.row(), propertyIndex, index.parent()).data().toString() == "SuggestedName" && index.column() >= firstFileColumnIndex) //suggestedName
     {
-        QString fileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
-//        qDebug()<<"APropertyItemDelegate::paint" <<index.data()<<index.row()<<index.column()<<fileName;
+        QString folderFileName = index.model()->headerData(index.column(), Qt::Horizontal).toString();
+//        qDebug()<<"APropertyItemDelegate::paint" <<index.data()<<index.row()<<index.column()<<folderFileName;
 
         QStyleOptionViewItem optCopy = option;
 
@@ -49,7 +49,7 @@ void APropertyItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 //        optCopy.palette.setBrush(QPalette::Window, QBrush(Qt::blue));
 //        optCopy.palette.text();
 
-        if (!fileName.contains(value + "."))
+        if (!folderFileName.contains(value + "."))
             optCopy.font.setBold(true);
         else
             optCopy.font.setBold(false);
