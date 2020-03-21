@@ -125,7 +125,7 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
     //                command.replace("-c copy -y", " -r " + frameRate + " -c copy -y");
 
                 AJobParams jobParams;
-//                jobParams.thisWidget = this;
+//                jobParams.thisObject = this;
                 jobParams.parentItem = childItem;
                 jobParams.folderName = selectedFolderName;
                 jobParams.fileName = fileNamePlusExtension;
@@ -391,7 +391,7 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
     //https://ffmpeg.org/ffmpeg-filters.html#trim
 
     AJobParams jobParams;
-    jobParams.thisWidget = this;
+    jobParams.thisObject = this;
     jobParams.parentItem = parentItem;
     jobParams.folderName = selectedFolderName;
     jobParams.fileName = fileNameWithoutExtension + videoFileExtension;
@@ -410,7 +410,7 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
     childItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
     {
 
-            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisWidget);
+            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisObject);
             emit exportWidget->jobAddLog(jobParams, "");
             emit exportWidget->jobAddLog(jobParams, "Files:");
             emit exportWidget->jobAddLog(jobParams, jobParams.parameters["ffmpegFiles"]);
@@ -427,7 +427,7 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
             return QString();
     }, [] (AJobParams jobParams, QStringList result)
     {
-        AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisWidget);
+        AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisObject);
     });
 
     return childItem;
@@ -551,7 +551,7 @@ QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
     command += " -y \"" + targetFolderFileName + "\"";
 
     AJobParams jobParams;
-//    jobParams.thisWidget = this;
+//    jobParams.thisObject = this;
     jobParams.parentItem = parentItem;
     jobParams.folderName = selectedFolderName;
     jobParams.fileName = fileNameWithoutExtension + videoFileExtension;
@@ -573,7 +573,7 @@ QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
 //    QStandardItem *childItem = parentItem;
 
 //    AJobParams jobParams;
-//    jobParams.thisWidget = this;
+//    jobParams.thisObject = this;
 //    jobParams.parentItem = parentItem;
 //    jobParams.folderName = currentDirectory;
 //    jobParams.fileName = fileNameWithoutExtension;
@@ -582,7 +582,7 @@ QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
 
 //    childItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
 //    {
-//            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisWidget);
+//            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisObject);
 
 //            QDir dir(jobParams.folderName);
 //            dir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
@@ -1634,7 +1634,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     else if (target == "Shotcut")
     {
         AJobParams jobParams;
-        jobParams.thisWidget = this;
+        jobParams.thisObject = this;
         jobParams.parentItem = parentItem;
         jobParams.folderName = selectedFolderName;
         jobParams.fileName = fileNameWithoutExtension + ".mlt";
@@ -1643,7 +1643,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
         {
-            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisWidget);
+            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisObject);
 
             exportWidget->exportShotcut(jobParams);
 
@@ -1654,7 +1654,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     else if (target == "Premiere")
     {
         AJobParams jobParams;
-        jobParams.thisWidget = this;
+        jobParams.thisObject = this;
         jobParams.parentItem = parentItem;
         jobParams.folderName = selectedFolderName;
         jobParams.fileName = fileNameWithoutExtension + ".xml";
@@ -1663,7 +1663,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
         {
-            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisWidget);
+            AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisObject);
 
             exportWidget->exportPremiere(jobParams);
 
@@ -1673,7 +1673,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
     {
     AJobParams jobParams;
-    jobParams.thisWidget = this;
+    jobParams.thisObject = this;
     jobParams.parentItem = parentItem;
     jobParams.folderName = selectedFolderName;
     jobParams.fileName = fileNameWithoutExtension;
@@ -1682,7 +1682,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
     jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
     {
-        AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisWidget);
+        AExport *exportWidget = qobject_cast<AExport *>(jobParams.thisObject);
 
         emit exportWidget->exportCompleted("");
 

@@ -32,6 +32,8 @@
 //https://stackoverflow.com/questions/43347722/qt-show-progress-bar-in-dock-macos
 //https://code.qt.io/cgit/qt-creator/qt-creator.git/tree/src/plugins/coreplugin/progressmanager
 
+#include <QScrollBar>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -41,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent) :
     qApp->installEventFilter(this);
 
     agFileSystem = new AGFileSystem(this);
+    connect(agFileSystem, &AGFileSystem::addItem, ui->graphicsView, &AGView::addItem);
 
     changeUIProperties();
 
@@ -68,6 +71,38 @@ MainWindow::MainWindow(QWidget *parent) :
 //                           qDebug()<<"contextSensitiveHelpOn"<<QSettings().value("contextSensitiveHelpOn");
                            if (QSettings().value("contextSensitiveHelpOn").toString() == "" || QSettings().value("contextSensitiveHelpOn").toBool())
                                ui->actionContext_Sensitive_Help->setChecked(true);
+
+                           QString graphicalFolderName = QSettings().value("graphicalFolderName").toString();
+
+                           if (graphicalFolderName != "")
+                           {
+//                               AJobParams jobParams;
+//                               jobParams.thisObject = this;
+//                               jobParams.parentItem = nullptr;
+//                               jobParams.folderName = graphicalFolderName;
+//                               jobParams.fileName = "All";
+//                               jobParams.action = "Load files and folders";
+//                               jobParams.parameters["totalDuration"] = QString::number(1000);
+
+//                               ui->jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+//                               {
+//                                   MainWindow *mainWindow = qobject_cast<MainWindow *>(jobParams.thisObject);
+
+//                                   QString folderName = jobParams.folderName;
+
+//                                   mainWindow->agFileSystem->loadFilesAndFolders(mainWindow->ui->graphicsView, QDir(folderName));//2019-09-02 Fipre
+
+//                                   mainWindow->ui->graphicsView->arrangeItems(nullptr);
+
+//                                   return QString();
+//                               }, nullptr);
+
+//                               qDebug()<<"before loadFilesAndFolders"<<graphicalFolderName<<QDir(graphicalFolderName)<<QDir(graphicalFolderName).absolutePath();
+
+                               agFileSystem->loadFilesAndFolders(QDir(graphicalFolderName));
+
+                               ui->graphicsView->arrangeItems(nullptr);
+                           }
 
                            showUpgradePrompt();
                        });
@@ -289,13 +324,13 @@ void MainWindow::allConnects()
 //    ui->graphicsView2->addNode("files", 0, 6);
     ui->graphicsView2->addNode("clip", 0, 3);
 
-    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->clipsTableView, &AClipsTableView::onFolderIndexClicked); //this before propertiesLoaded because save check!
+    connect(ui->folderTreeView, &AFolderTreeView::folderIndexClicked, ui->clipsTableView, &AClipsTableView::onFolderIndexClicked); //this before propertiesLoaded because save check!
     ui->graphicsView1->connectNodes("folder", "clip", "folder");
 
-    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->videoWidget, &AVideoWidget::onFolderIndexClicked);
+    connect(ui->folderTreeView, &AFolderTreeView::folderIndexClicked, ui->videoWidget, &AVideoWidget::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "video", "folder");
 
-    connect(ui->folderTreeView, &AFolderTreeView::indexClicked, ui->propertyTreeView, &APropertyTreeView::onFolderIndexClicked);
+    connect(ui->folderTreeView, &AFolderTreeView::folderIndexClicked, ui->propertyTreeView, &APropertyTreeView::onFolderIndexClicked);
     ui->graphicsView1->connectNodes("folder", "prop", "folder");
 
     connect(ui->folderTreeView, &AFolderTreeView::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
@@ -306,7 +341,7 @@ void MainWindow::allConnects()
     filesTreeList << ui->exportFilesTreeView;
     foreach (AFilesTreeView* filesTree, filesTreeList)
     {
-        connect(ui->folderTreeView, &AFolderTreeView::indexClicked, filesTree, &AFilesTreeView::onFolderIndexClicked);
+        connect(ui->folderTreeView, &AFolderTreeView::folderIndexClicked, filesTree, &AFilesTreeView::onFolderIndexClicked);
         ui->graphicsView1->connectNodes("folder", "files", "folder");
 
         connect(filesTree, &AFilesTreeView::fileIndexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
@@ -325,7 +360,7 @@ void MainWindow::allConnects()
         ui->graphicsView1->connectNodes("files", "clip", "trim");
         connect(filesTree, &AFilesTreeView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
 
-        connect(ui->clipsTableView, &AClipsTableView::indexClicked, filesTree, &AFilesTreeView::onClipIndexClicked);
+        connect(ui->clipsTableView, &AClipsTableView::clipIndexClicked, filesTree, &AFilesTreeView::onClipIndexClicked);
         ui->graphicsView1->connectNodes("clip", "files", "clip");
 
 //        connect(filesTree, &AFilesTreeView::derperView, this, &MainWindow::onDerperView);
@@ -361,9 +396,9 @@ void MainWindow::allConnects()
     connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, this, &MainWindow::onFileIndexClicked); //trigger onclipfilterchanged
     ui->graphicsView1->connectNodes("clip", "prop", "file");
 
-    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->videoWidget, &AVideoWidget::onClipIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::clipIndexClicked, ui->videoWidget, &AVideoWidget::onClipIndexClicked);
     ui->graphicsView1->connectNodes("clip", "video", "clip");
-    connect(ui->clipsTableView, &AClipsTableView::indexClicked, ui->propertyTreeView, &APropertyTreeView::onClipIndexClicked);
+    connect(ui->clipsTableView, &AClipsTableView::clipIndexClicked, ui->propertyTreeView, &APropertyTreeView::onClipIndexClicked);
     ui->graphicsView1->connectNodes("clip", "video", "clip");
 
     connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, ui->videoWidget, &AVideoWidget::onClipsChangedToVideo);
@@ -543,17 +578,6 @@ void MainWindow::loadSettings()
 
     if (QSettings().value("muteOn").toBool())
         ui->videoWidget->onMute();
-
-    QString graphicalFolderName = QSettings().value("graphicalFolderName").toString();
-
-    if (graphicalFolderName != "")
-    {
-        agFileSystem->loadFilesAndFolders(ui->graphicsView, nullptr, QDir(graphicalFolderName));
-
-        ui->graphicsView->arrangeItems(nullptr);
-    }
-
-
 } //loadSettings
 
 void MainWindow::allTooltips()
@@ -2378,7 +2402,33 @@ void MainWindow::on_actionOpen_Folder_triggered()
 
         QSettings().setValue("graphicalFolderName", graphicalFolderName);
 
-        agFileSystem->loadFilesAndFolders(ui->graphicsView, nullptr, QDir(graphicalFolderName));//2019-09-02 Fipre
+        ui->graphicsView->horizontalScrollBar()->setValue( 0 );
+        ui->graphicsView->verticalScrollBar()->setValue( 0 );
+        ui->graphicsView->clearAll();
+
+//        AJobParams jobParams;
+//        jobParams.thisObject = this;
+//        jobParams.parentItem = nullptr;
+//        jobParams.folderName = graphicalFolderName;
+//        jobParams.fileName = "All";
+//        jobParams.action = "Load files and folders";
+//        jobParams.parameters["totalDuration"] = QString::number(1000);
+
+//        ui->jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+//        {
+//            MainWindow *mainWindow = qobject_cast<MainWindow *>(jobParams.thisObject);
+
+//            QString folderName = jobParams.folderName;
+
+//            mainWindow->agFileSystem->loadFilesAndFolders(mainWindow->ui->graphicsView, QDir(folderName));//2019-09-02 Fipre
+
+//            mainWindow->ui->graphicsView->arrangeItems(nullptr);
+
+//            return QString();
+//        }, nullptr);
+
+
+        agFileSystem->loadFilesAndFolders(QDir(graphicalFolderName));
 
         ui->graphicsView->arrangeItems(nullptr);
     }
@@ -2387,9 +2437,9 @@ void MainWindow::on_actionOpen_Folder_triggered()
 void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
 {
     //remove old items
-    if (ui->graphicsScrollArea->layout() != nullptr)
+    if (ui->graphicsScrollAreaWidget->layout() != nullptr)
     {
-        QLayout *layout = ui->graphicsScrollArea->layout();
+        QLayout *layout = ui->graphicsScrollAreaWidget->layout();
 
         QLayoutItem * item;
         QLayout * sublayout;
@@ -2407,31 +2457,31 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     QString folderName = item->data(folderNameIndex).toString();
     QString fileName = item->data(fileNameIndex).toString();
 
-    QVBoxLayout *vBoxLayout = new QVBoxLayout(ui->graphicsScrollArea);
+    QVBoxLayout *mainLayout = new QVBoxLayout(ui->graphicsScrollAreaWidget);
 
-    QLabel *mediaTypeLabel = new QLabel(ui->graphicsScrollArea);
+    QLabel *mediaTypeLabel = new QLabel(ui->graphicsScrollAreaWidget);
     mediaTypeLabel->setText(item->data(mediaTypeIndex).toString());
     QFont font;
     font.setBold(true);
     mediaTypeLabel->setFont(font);
-    vBoxLayout->addWidget(mediaTypeLabel);
-    QLabel *folderNameLabel = new QLabel(ui->graphicsScrollArea);
+    mainLayout->addWidget(mediaTypeLabel);
+    QLabel *folderNameLabel = new QLabel(ui->graphicsScrollAreaWidget);
     folderNameLabel->setText("Foldername: " + folderName);
-    vBoxLayout->addWidget(folderNameLabel);
-    QLabel *fileNameLabel = new QLabel(ui->graphicsScrollArea);
+    mainLayout->addWidget(folderNameLabel);
+    QLabel *fileNameLabel = new QLabel(ui->graphicsScrollAreaWidget);
     fileNameLabel->setText("Filename: " + fileName);
-    vBoxLayout->addWidget(fileNameLabel);
+    mainLayout->addWidget(fileNameLabel);
 
-    QPushButton *zoomToItemButton = new QPushButton(ui->graphicsScrollArea);
+    QPushButton *zoomToItemButton = new QPushButton(ui->graphicsScrollAreaWidget);
     zoomToItemButton->setText("Zoom to item");
-    vBoxLayout->addWidget(zoomToItemButton);
+    mainLayout->addWidget(zoomToItemButton);
     connect(zoomToItemButton, &QPushButton::clicked, ui->graphicsView, &AGView::onFileView);
 
     if (item->data(mediaTypeIndex).toString() == "MediaFile")
     {
-        QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollArea);
+        QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollAreaWidget);
         openInExplorerButton->setText("Open in explorer");
-        vBoxLayout->addWidget(openInExplorerButton);
+        mainLayout->addWidget(openInExplorerButton);
         connect(openInExplorerButton, &QPushButton::clicked, [=]()
         {
     #ifdef Q_OS_MAC
@@ -2454,23 +2504,23 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
                 #endif
     });
 
-        QPushButton *createClip = new QPushButton(ui->graphicsScrollArea);
+        QPushButton *createClip = new QPushButton(ui->graphicsScrollAreaWidget);
         createClip->setText("Create Clip");
-        vBoxLayout->addWidget(createClip);
+        mainLayout->addWidget(createClip);
         connect(createClip, &QPushButton::clicked, ui->graphicsView, &AGView::onCreateClip);
 
-        QPushButton *playButton = new QPushButton(ui->graphicsScrollArea);
+        QPushButton *playButton = new QPushButton(ui->graphicsScrollAreaWidget);
         playButton->setText("");
         playButton->setMaximumWidth(playButton->height());
         playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-        vBoxLayout->addWidget(playButton);
+        mainLayout->addWidget(playButton);
         connect(playButton, &QPushButton::clicked, ui->graphicsView, &AGView::onPlayVideoButton);
 
-        QPushButton *muteButton = new QPushButton(ui->graphicsScrollArea);
+        QPushButton *muteButton = new QPushButton(ui->graphicsScrollAreaWidget);
         muteButton->setText("");
         muteButton->setMaximumWidth(playButton->height());
         muteButton->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
-        vBoxLayout->addWidget(muteButton);
+        mainLayout->addWidget(muteButton);
         connect(muteButton, &QPushButton::clicked, ui->graphicsView, &AGView::onMuteVideoButton);
 
         //    ui->skipBackwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSkipBackward));
@@ -2482,71 +2532,123 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
         //    ui->stopButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
         //    ui->muteButton->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
 
-        QGraphicsVideoItem *vidItem = nullptr;
+        QGraphicsVideoItem *playerItem = nullptr;
         foreach (QGraphicsItem *childItem, item->childItems())
         {
-            if (childItem->data(itemTypeIndex).toString().contains("SubVid"))
-                vidItem = (QGraphicsVideoItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                playerItem = (QGraphicsVideoItem *)childItem;
 
         }
-        if (vidItem != nullptr)
+        if (playerItem != nullptr)
         {
-            QGroupBox *groupBox = new QGroupBox(ui->graphicsScrollArea);
-            groupBox->setTitle("Metadata");
-            vBoxLayout->addWidget(groupBox);
-            QVBoxLayout *groupBoxLayout = new QVBoxLayout;
-            groupBox->setLayout(groupBoxLayout);
+            QGroupBox *metadataGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
+            metadataGroupBox->setTitle("Metadata by QMediaPlayer");
+            mainLayout->addWidget(metadataGroupBox);
+            QVBoxLayout *metadataLayout = new QVBoxLayout;
+            metadataGroupBox->setLayout(metadataLayout);
 
 
-            QMediaPlayer *m_player = (QMediaPlayer *)vidItem->mediaObject();
+            QMediaPlayer *m_player = (QMediaPlayer *)playerItem->mediaObject();
 
             foreach (QString metadata_key, m_player->availableMetaData())
             {
-                QLabel *metaDataLabel = new QLabel(ui->graphicsScrollArea);
-                qDebug()<<"Metadata"<<metadata_key<<m_player->metaData(metadata_key);
+                QLabel *metaDataLabel = new QLabel(metadataGroupBox);
+//                qDebug()<<"Metadata"<<metadata_key<<m_player->metaData(metadata_key);
                 QVariant meta = m_player->metaData(metadata_key);
                 if (meta.toSize() != QSize())
                     metaDataLabel->setText(metadata_key + ": " + QString::number( meta.toSize().width()) + " x " + QString::number( meta.toSize().height()));
                 else
                     metaDataLabel->setText(metadata_key + ": " + meta.toString());
-                groupBoxLayout->addWidget(metaDataLabel);
+                metadataLayout->addWidget(metaDataLabel);
             }
         }
 
-        QGroupBox *propertyGroupBox = new QGroupBox(ui->graphicsScrollArea);
-        propertyGroupBox->setTitle("Properties");
-        vBoxLayout->addWidget(propertyGroupBox);
-        QVBoxLayout *groupBoxLayout = new QVBoxLayout;
-        propertyGroupBox->setLayout(groupBoxLayout);
+        QStringList ffMpegMetaList = item->data(ffMpegMetaIndex).toString().split(";");
 
-        QMap<QString, QString> properties = ui->propertyTreeView->propertiesForFile(folderName, fileName);
-        QMapIterator<QString, QString> propertyIterator(properties);
-        while (propertyIterator.hasNext()) //add all files as labels
+        if (ffMpegMetaList.count() > 0 && ffMpegMetaList.first() != "")
         {
-            propertyIterator.next();
-            QString fileName = propertyIterator.key();
+            QGroupBox *ffMpegMetaGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
+            ffMpegMetaGroupBox->setTitle("Meta by FFMpeg");
+            mainLayout->addWidget(ffMpegMetaGroupBox);
+            QVBoxLayout *ffMpegMetaLayout = new QVBoxLayout;
+            ffMpegMetaGroupBox->setLayout(ffMpegMetaLayout);
 
-            if (propertyIterator.value() != "")
+            foreach (QString keyValuePair, ffMpegMetaList)
             {
-                QLabel *metaDataLabel = new QLabel(ui->graphicsScrollArea);
-                 metaDataLabel->setText(propertyIterator.key() + ": " + propertyIterator.value());
-                groupBoxLayout->addWidget(metaDataLabel);
+                QLabel *ffMpegMetaLabel = new QLabel(ffMpegMetaGroupBox);
+                ffMpegMetaLabel->setText(keyValuePair);
+                ffMpegMetaLayout->addWidget(ffMpegMetaLabel);
+            }
+        }
+
+        QGroupBox *parentPropGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
+        parentPropGroupBox->setTitle("Properties by Exiftool");
+        mainLayout->addWidget(parentPropGroupBox);
+        QVBoxLayout *parentPropLayout = new QVBoxLayout;
+        parentPropGroupBox->setLayout(parentPropLayout);
+
+        int fileColumnNr = -1;
+        for(int col = 0; col < ui->propertyTreeView->propertyItemModel->columnCount(); col++)
+        {
+          if (ui->propertyTreeView->propertyItemModel->headerData(col, Qt::Horizontal).toString() == folderName + fileName)
+          {
+              fileColumnNr = col;
+          }
+        }
+    //    qDebug()<<"APropertyTreeView::onSetPropertyValue"<<fileName<<fileColumnNr<<propertyName<<propertyItemModel->rowCount();
+
+        if (fileColumnNr != -1)
+        {
+            //get row/ item value
+            for(int rowIndex = 0; rowIndex < ui->propertyTreeView->propertyItemModel->rowCount(); rowIndex++)
+            {
+                QModelIndex topLevelIndex = ui->propertyTreeView->propertyItemModel->index(rowIndex,propertyIndex);
+
+                if (ui->propertyTreeView->propertyItemModel->rowCount(topLevelIndex) > 0)
+                {
+
+                    bool first = true;
+                    QGroupBox *childPropGroupBox = new QGroupBox(parentPropGroupBox);
+                    QVBoxLayout *childPropLayout = new QVBoxLayout;
+
+                    for (int childRowIndex = 0; childRowIndex < ui->propertyTreeView->propertyItemModel->rowCount(topLevelIndex); childRowIndex++)
+                    {
+                        QModelIndex sublevelIndex = ui->propertyTreeView->propertyItemModel->index(childRowIndex,propertyIndex, topLevelIndex);
+                        QString propValue = ui->propertyTreeView->propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex).data().toString();
+
+                        if (propValue != "")
+                        {
+                            if (first)
+                            {
+                                childPropGroupBox->setTitle(topLevelIndex.data().toString());
+                                parentPropLayout->addWidget(childPropGroupBox);
+                                childPropGroupBox->setLayout(childPropLayout);
+
+                                first = false;
+                            }
+
+                            QLabel *metaDataLabel = new QLabel(childPropGroupBox);
+                            metaDataLabel->setText(sublevelIndex.data().toString() + ": " + propValue);
+                            childPropLayout->addWidget(metaDataLabel);
+                        }
+                    }
+                }
             }
         }
     }
     else if (item->data(mediaTypeIndex).toString() == "Folder")
     {
-        QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollArea);
+        QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollAreaWidget);
         openInExplorerButton->setText("Open in explorer");
-        vBoxLayout->addWidget(openInExplorerButton);
+        mainLayout->addWidget(openInExplorerButton);
         connect(openInExplorerButton, &QPushButton::clicked, [=]()
         {
             QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName) );
         });
 
-        QPushButton *exportButton = new QPushButton(ui->graphicsScrollArea);
+        QPushButton *exportButton = new QPushButton(ui->graphicsScrollAreaWidget);
         exportButton->setText("Export");
-        vBoxLayout->addWidget(exportButton);
+        mainLayout->addWidget(exportButton);
         connect(exportButton, &QPushButton::clicked, ui->graphicsView, &AGView::onFileView);
 
 //        QPushButton *recycleButton = new QPushButton(ui->graphicsWidget);
@@ -2564,7 +2666,7 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     }
 
     QSpacerItem *spacer = new QSpacerItem(0,0, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    vBoxLayout->addSpacerItem(spacer);
+    mainLayout->addSpacerItem(spacer);
 }
 
 

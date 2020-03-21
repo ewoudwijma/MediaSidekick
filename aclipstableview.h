@@ -73,7 +73,7 @@ private slots:
     void onIndexActivated(QModelIndex index);
     void onSectionEntered(int logicalIndex);
 signals:
-    void indexClicked(QModelIndex index);
+    void clipIndexClicked(QModelIndex index);
     void clipAdded(QModelIndex clipInIndex);
     void clipsChangedToVideo(QAbstractItemModel *itemModel);
     void clipsChangedToTimeline(AClipsSortFilterProxyModel *clipProxyModel);

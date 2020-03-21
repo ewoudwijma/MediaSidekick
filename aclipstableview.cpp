@@ -100,7 +100,7 @@ void AClipsTableView::onIndexClicked(QModelIndex index)
 //        qDebug()<<"tableClicked different!!!"<<index.data()<<clipsProxyModel->index(index.row(),fileIndex).data()<<fileUrl.fileName();
 //    }
 
-    emit indexClicked(index);
+    emit clipIndexClicked(index);
 
     if (clipsProxyModel->index(index.row(),fileIndex).data().toString() != selectedFileName)
     {
@@ -419,7 +419,7 @@ void AClipsTableView::onLoadClips(QStandardItem *parentItem)
     }
 
     AJobParams jobParams;
-    jobParams.thisWidget = this;
+    jobParams.thisObject = this;
     jobParams.parentItem = parentItem;
     jobParams.folderName = selectedFolderName;
     jobParams.fileName = "All";
@@ -428,7 +428,7 @@ void AClipsTableView::onLoadClips(QStandardItem *parentItem)
 
     jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
     {
-        AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisWidget);
+        AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisObject);
 //        qDebug()<<"AClipsTableView::onloadClips thread"<<jobParams.folderName;
         clipsTableView->loadModel(jobParams.folderName);
 
@@ -500,7 +500,7 @@ void AClipsTableView::onTrimF(QStandardItem *parentItem, QStandardItem *&current
             emit propertyCopy(currentItem, folderNameSource, fileNameSource, folderNameTarget, fileNameTarget);
 
             AJobParams jobParams;
-            jobParams.thisWidget = this;
+            jobParams.thisObject = this;
             jobParams.parentItem = currentItem;
             jobParams.folderName = folderNameSource;
             jobParams.fileName = fileNameSource;
@@ -515,7 +515,7 @@ void AClipsTableView::onTrimF(QStandardItem *parentItem, QStandardItem *&current
 
             jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
             {
-                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisWidget);
+                AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisObject);
 
                     //create srt file
                     QString fileNameTarget;

@@ -23,6 +23,8 @@
 
 #include "apropertyeditordialog.h"
 
+#include <QGraphicsItem>
+
 namespace Ui {
 class MainWindow;
 }

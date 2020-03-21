@@ -21,7 +21,7 @@
        <enum>QTabWidget::South</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabClassical">
        <attribute name="title">
@@ -42,7 +42,7 @@
              <enum>QTabWidget::South</enum>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>1</number>
             </property>
             <widget class="QWidget" name="tab_folder">
              <attribute name="title">
@@ -938,26 +938,44 @@
           <widget class="AGView" name="graphicsView">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>1</horstretch>
+             <horstretch>250</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
           </widget>
           <widget class="QWidget" name="graphicsItemWidget" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <layout class="QVBoxLayout" name="verticalLayout_16">
             <item>
              <widget class="QScrollArea" name="graphicsScrollArea">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="widgetResizable">
                <bool>true</bool>
               </property>
-              <widget class="QWidget" name="scrollAreaWidgetContents_3">
+              <widget class="QWidget" name="graphicsScrollAreaWidget">
                <property name="geometry">
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>68</width>
+                 <width>558</width>
                  <height>410</height>
                 </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
               </widget>
              </widget>

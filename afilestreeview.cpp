@@ -275,7 +275,7 @@ void AFilesTreeView::onDerperview()
                  connect(this, &AFilesTreeView::stopThreadProcess, derperView, &ADerperView::onStopThreadProcess);
 
                  AJobParams jobParams;
-                 jobParams.thisWidget = this;
+                 jobParams.thisObject = this;
                  jobParams.parentItem = parentItem;
                  jobParams.folderName = folderName;
                  jobParams.fileName = fileName;
@@ -285,7 +285,7 @@ void AFilesTreeView::onDerperview()
 
                  currentItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
                  {
-                     AFilesTreeView *filesTreeView = qobject_cast<AFilesTreeView *>(jobParams.thisWidget);
+                     AFilesTreeView *filesTreeView = qobject_cast<AFilesTreeView *>(jobParams.thisObject);
 
                          connect(filesTreeView->derperView, &ADerperView::processOutput, [=](QString output)
                          {
@@ -351,7 +351,7 @@ void AFilesTreeView::onRemux()
          if (reply == QMessageBox::Yes)
          {
              AJobParams jobParams;
-             jobParams.thisWidget = this;
+             jobParams.thisObject = this;
              jobParams.action = "Remux";
 
              QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);
@@ -471,7 +471,7 @@ void AFilesTreeView::onArchiveFiles()
          if (reply == QMessageBox::Yes)
          {
              AJobParams jobParams;
-             jobParams.thisWidget = this;
+             jobParams.thisObject = this;
              jobParams.action = "Archive Files";
 
              QStandardItem *parentItem = jobTreeView->createJob(jobParams, nullptr , nullptr);

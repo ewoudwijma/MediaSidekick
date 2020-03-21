@@ -155,7 +155,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 //    qDebug()<<"APropertyTreeView::loadModel"<<folderName<<jobTreeView;
 
     AJobParams jobParams;
-    jobParams.thisWidget = this;
+    jobParams.thisObject = this;
     jobParams.parentItem = parentItem;
     jobParams.folderName = folderName;
     jobParams.fileName = "All";
@@ -167,7 +167,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
     {
 //        if (jobParams.parameters["errorMessage"] != "")
 //            return;
-        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisWidget);
+        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisObject);
 //        qDebug()<<"Load properties done"<<propertyTreeView<<jobParams.parameters<<result.count();
 
         propertyTreeView->propertyItemModel->removeRows(0, propertyTreeView->propertyItemModel->rowCount());
@@ -711,39 +711,6 @@ void APropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdi
 
     expandAll();
     frozenTableView->expandAll();
-}
-
-QMap<QString,QString> APropertyTreeView::propertiesForFile(QString folderName, QString fileName)
-{
-    QMap<QString,QString> properties;
-    int fileColumnNr = -1;
-    for(int col = 0; col < propertyItemModel->columnCount(); col++)
-    {
-      if (propertyItemModel->headerData(col, Qt::Horizontal).toString() == folderName + fileName)
-      {
-          fileColumnNr = col;
-      }
-    }
-//    qDebug()<<"APropertyTreeView::onSetPropertyValue"<<fileName<<fileColumnNr<<propertyName<<propertyItemModel->rowCount();
-
-    if (fileColumnNr != -1)
-    {
-        //get row/ item value
-        for(int rowIndex = 0; rowIndex < propertyItemModel->rowCount(); rowIndex++)
-        {
-            QModelIndex topLevelIndex = propertyItemModel->index(rowIndex,propertyIndex);
-
-            for (int childRowIndex = 0; childRowIndex < propertyItemModel->rowCount(topLevelIndex); childRowIndex++)
-            {
-                QModelIndex sublevelIndex = propertyItemModel->index(childRowIndex,propertyIndex, topLevelIndex);
-
-                properties[sublevelIndex.data().toString()] = propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex).data().toString();
-
-            }
-
-        }
-    }
-    return properties;
 }
 
 QModelIndex APropertyTreeView::findIndex(QString folderFileName, QString propertyName)
@@ -1326,7 +1293,7 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
             onSetPropertyValue(folderFileName, "Status", command);
 
         AJobParams jobParams;
-        jobParams.thisWidget = this;
+        jobParams.thisObject = this;
         jobParams.folderName =  folderName;
         jobParams.fileName = fileName;
         jobParams.action = "Update properties";
@@ -1337,7 +1304,7 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
         jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
         {
             qDebug()<<"APropertyTreeView::saveChanges"<<result.join("\n");
-            APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisWidget);
+            APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisObject);
 
             QString resultJoin = result.join(" ").trimmed();
 
@@ -1583,7 +1550,7 @@ void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folder
     #endif
 
         AJobParams jobParams;
-        jobParams.thisWidget = this;
+        jobParams.thisObject = this;
         jobParams.parentItem = parentItem;
         jobParams.folderName = folderNameSource;
         jobParams.fileName = fileNameTarget;

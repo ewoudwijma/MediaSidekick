@@ -37,7 +37,6 @@ public:
 
     AJobTreeView *jobTreeView;
 
-    QMap<QString, QString> propertiesForFile(QString folderName, QString fileName);
 private:
     void loadModel(QStandardItem *parentItem, QString folderName);
     void addSublevelItem(QUrl fileUrl, QString itemName, QString type, QString value);

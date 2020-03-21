@@ -53,6 +53,7 @@ SOURCES += \
         ageocoding.cpp \
         agfilesystem.cpp \
         aglobal.cpp \
+        agmediarectangleitem.cpp \
         agview.cpp \
         ajobitemdelegate.cpp \
         ajobthread.cpp \
@@ -92,6 +93,7 @@ HEADERS += \
         ageocoding.h \
         agfilesystem.h \
         aglobal.h \
+        agmediarectangleitem.h \
         agview.h \
         ajobitemdelegate.h \
         ajobthread.h \

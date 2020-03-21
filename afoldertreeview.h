@@ -21,7 +21,7 @@ public:
 
     void simulateIndexClicked(QString folderName);
 signals:
-    void indexClicked(QModelIndex index);
+    void folderIndexClicked(QModelIndex index);
     void jobAddLog(AJobParams jobParams, QString logMessage);
 
 public slots:

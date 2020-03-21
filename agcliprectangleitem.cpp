@@ -4,7 +4,7 @@
 #include "agview.h"
 
 #include <QStyleOption>
-#include <QtDebug>
+#include <QDebug>
 
 AGClipRectangleItem::AGClipRectangleItem(QGraphicsItem * parent) :
     QGraphicsRectItem( parent)
@@ -69,7 +69,6 @@ void AGClipRectangleItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     mDragStartPosition = QCursor::pos();
     originalClipIn = data(clipInIndex).toInt();
     originalClipOut = data(clipOutIndex).toInt();
-
     QGraphicsRectItem::mousePressEvent(event);
 }
 
@@ -168,7 +167,17 @@ void AGClipRectangleItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
     }
     }
 
-    emit clipPositionChanged(this, event->pos().x()/double(draggedWidth));
+    if (originalClipOut == 0) //MediaFile Base
+    {
+        qDebug()<<"clip mediaDurationIndex"<<data(mediaDurationIndex);
+        setData(clipOutIndex, data(mediaDurationIndex));
+        originalClipOut = data(mediaDurationIndex).toInt();
+    }
+
+
+
+    qDebug()<<"emit clipPositionChanged"<<data(clipInIndex).toInt()<<data(clipOutIndex).toInt()<<event->pos()<<draggedWidth<<event->pos().x()/double(draggedWidth);
+    emit clipPositionChanged(this, data(clipInIndex).toInt() + (data(clipOutIndex).toInt() - data(clipInIndex).toInt()) * event->pos().x()/double(draggedWidth));
 
     QGraphicsRectItem::hoverMoveEvent(event);
 }

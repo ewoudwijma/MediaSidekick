@@ -165,7 +165,7 @@ QStandardItem *AJobTreeView::createJob(AJobParams jobParams, QString (*functionC
     jobQueueParams.functionCall = functionCall;
     jobQueueParams.processOutput = [] (AJobParams jobParams, QString result)
     {
-//        AJobTreeView *jobTreeView = qobject_cast<AJobTreeView *>(jobParams.thisWidget);
+//        AJobTreeView *jobTreeView = qobject_cast<AJobTreeView *>(jobParams.thisObject);
     };
     jobQueueParams.processResult = processResult;
 

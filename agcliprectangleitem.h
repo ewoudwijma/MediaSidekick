@@ -32,9 +32,9 @@ protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 signals:
-    void agItemChanged(AGClipRectangleItem *clipItem);
-    void agMouseReleased(AGClipRectangleItem *clipItem);
-    void clipPositionChanged(AGClipRectangleItem *clipItem, double position);
+    void agItemChanged(QGraphicsItem *clipItem);
+    void agMouseReleased(QGraphicsItem *clipItem);
+    void clipPositionChanged(QGraphicsItem *clipItem, double position);
 
 private slots:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

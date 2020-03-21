@@ -206,6 +206,9 @@ VideoInfo InputVideoFile::GetVideoInfo()
     v.totalFrames = formatContext_->streams[videoStreamIndex_]->nb_frames;
     v.videoTimeBase = videoCodecContext_->time_base;
     v.width = videoCodecContext_->width;
+
+    v.avg_frame_rate = formatContext_->streams[videoStreamIndex_]->avg_frame_rate;  //ewi 20200318
+
     return v;
 }
 

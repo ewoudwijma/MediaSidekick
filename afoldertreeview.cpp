@@ -49,7 +49,7 @@ void AFolderTreeView::onIndexClicked(const QModelIndex &index)
 
     if (selectedFolderName != ""  && selectedFolderName.length()>4) //not the root folder
     {
-        emit indexClicked(selectedIndex);
+        emit folderIndexClicked(selectedIndex);
     }
 }
 
@@ -68,7 +68,7 @@ void AFolderTreeView::simulateIndexClicked(QString folderName)
 
     if (folderName != ""  && folderName.length()>4) //not the root folder
     {
-        emit indexClicked(selectedIndex);
+        emit folderIndexClicked(selectedIndex);
     }
 }
 
@@ -94,7 +94,7 @@ void AFolderTreeView::onMoveFilesToACVCRecycleBin(QStandardItem *parentItem, QSt
 //    qDebug()<<"AFolderTreeView::onMoveFilesToACVCRecycleBin"<<folderName<<fileName<<supportingFilesOnly;
 
     AJobParams jobParams;
-    jobParams.thisWidget = this;
+    jobParams.thisObject = this;
     jobParams.parentItem = parentItem;
     jobParams.folderName = folderName;
     jobParams.fileName = fileName;
@@ -104,7 +104,7 @@ void AFolderTreeView::onMoveFilesToACVCRecycleBin(QStandardItem *parentItem, QSt
 
     parentItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
     {
-            AFolderTreeView *folderTreeView = qobject_cast<AFolderTreeView *>(jobParams.thisWidget);
+            AFolderTreeView *folderTreeView = qobject_cast<AFolderTreeView *>(jobParams.thisObject);
 
             QString folderName = jobParams.folderName;
             QString fileName = jobParams.fileName;

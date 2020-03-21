@@ -17,6 +17,7 @@ static const int mediaDurationIndex = 6;
 static const int clipInIndex = 7;
 static const int clipOutIndex = 8;
 static const int clipTagIndex = 9;
+static const int ffMpegMetaIndex = 10;
 
 
 class AGView: public QGraphicsView
@@ -30,7 +31,8 @@ class AGView: public QGraphicsView
     double _panStartX;
     double _panStartY;
 
-    void folderScan(QGraphicsItem *parentItem, QString mode);
+    void folderScan(QGraphicsItem *parentItem, QString mode, QString prefix = "");
+    QString viewMode;
     bool noFileOrClipDescendants(QGraphicsItem *parentItem);
     QGraphicsItem *drawPoly(QGraphicsItem *parentItem);
     void setItemProperties(QGraphicsItem *parentItem, QString mediaType, QString type, QString folderName, QString fileName, int duration, QSize mediaSize = QSize(), int clipIn = 0, int clipOut = 0, QString tag = "");
@@ -39,7 +41,7 @@ class AGView: public QGraphicsView
     void updateToolTip(QGraphicsItem *item);
 public:
     AGView(QWidget *parent = nullptr);
-    QGraphicsItem *addItem(QGraphicsItem *parentItem, QString type, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
+    void addItem(QString parentFileName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
     QRectF arrangeItems(QGraphicsItem *parentItem);
     ~AGView();
     void onSearchTextChanged(QString text);
@@ -47,11 +49,12 @@ public:
 public slots:
     void onTimelineView();
     void onFileView();
-    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize);
+    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize = QSize(), QString ffmpegMeta = "");
     void onCreateClip();
-    void onClipItemChanged(AGClipRectangleItem *clipItem);
-    void onClipMouseReleased(AGClipRectangleItem *clipItem);
-    void onClipPositionChanged(AGClipRectangleItem *clipItem, int progress);
+    void onClipItemChanged(QGraphicsItem *clipItem);
+    void onClipMouseReleased(QGraphicsItem *clipItem);
+    void onItemClicked(QGraphicsItem *clipItem);
+    void onClipPositionChanged(QGraphicsItem *clipItem, int progress);
     void onPlayVideoButton();
     void onMuteVideoButton();
 private slots:

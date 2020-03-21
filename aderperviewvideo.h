@@ -22,6 +22,7 @@ struct VideoInfo
     AVPixelFormat pixelFormat;
     int64_t totalFrames;
     AVRational frameRate;
+    AVRational avg_frame_rate; //ewi 20200318
     AVRational videoTimeBase;
     AVRational streamTimeBase;
     AVRational audioTimeBase;

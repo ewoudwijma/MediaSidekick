@@ -1,4 +1,5 @@
 #include "aglobal.h"
+#include "agmediarectangleitem.h"
 #include "agview.h"
 
 #include <QGraphicsItem>
@@ -27,6 +28,8 @@ AGView::AGView(QWidget *parent)
     QPixmap bgPix(":/images/karton.jpg");
 
     setBackgroundBrush(bgPix);
+
+    viewMode = "fileView"; //default
 }
 
 AGView::~AGView()
@@ -43,16 +46,16 @@ void AGView::clearAll()
     {
         if (item->data(mediaTypeIndex).toString() == "MediaFile" && item->data(itemTypeIndex).toString() == "Base")
         {
-            QGraphicsVideoItem *vidItem = nullptr;
+            QGraphicsVideoItem *playerItem = nullptr;
             foreach (QGraphicsItem *childItem, item->childItems())
             {
-                if (childItem->data(itemTypeIndex).toString().contains("SubVid"))
-                    vidItem = (QGraphicsVideoItem *)childItem;
+                if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                    playerItem = (QGraphicsVideoItem *)childItem;
 
             }
-            if (vidItem != nullptr)
+            if (playerItem != nullptr)
             {
-                QMediaPlayer *m_player = (QMediaPlayer *)vidItem->mediaObject();
+                QMediaPlayer *m_player = (QMediaPlayer *)playerItem->mediaObject();
 
                 qDebug()<<"Player stopped"<<itemToString(item);
 
@@ -67,13 +70,13 @@ void AGView::clearAll()
 
 void AGView::onSelectionChanged()
 {
-    foreach (QGraphicsItem *item, scene->selectedItems())
-        qDebug()<<"AGView::onSelectionChanged()"<<itemToString(item);
+//    foreach (QGraphicsItem *item, scene->selectedItems())
+//        qDebug()<<"AGView::onSelectionChanged()"<<itemToString(item);
 
     if (scene->selectedItems().count() == 1)
     {
         emit itemSelected(scene->selectedItems().first());
-//        playMedia(scene->selectedItems().first());
+        playMedia(scene->selectedItems().first());
     }
 }
 
@@ -85,33 +88,21 @@ void AGView::playMedia(QGraphicsItem *mediaItem)
         {
             //find videoscreen
             //if not then create
-            QGraphicsVideoItem *vidItem = nullptr;
+            QGraphicsVideoItem *playerItem = nullptr;
+            QGraphicsPixmapItem *pictureItem = nullptr;
             foreach (QGraphicsItem *childItem, mediaItem->childItems())
             {
-                if (childItem->data(itemTypeIndex).toString().contains("SubVid"))
-                    vidItem = (QGraphicsVideoItem *)childItem;
+                if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                    playerItem = (QGraphicsVideoItem *)childItem;
+                if (childItem->data(itemTypeIndex).toString().contains("SubPicture"))
+                    pictureItem = (QGraphicsPixmapItem *)childItem;
             }
 
-            if (vidItem != nullptr)
+            if (playerItem == nullptr)
             {
-                vidItem = (QGraphicsVideoItem *)vidItem;
-                QMediaPlayer *m_player = (QMediaPlayer *)vidItem->mediaObject();
-
-                qDebug()<<"vid found"<<itemToString(vidItem)<<vidItem->mediaObject();
-
-                if (m_player->state() != QMediaPlayer::PlayingState)
-                    m_player->play();
-                else
-                    m_player->pause();
-
-            }
-            else
-            {
-                qDebug()<<"no vid found";
-
-                vidItem = new QGraphicsVideoItem(mediaItem);
-                vidItem->setSize(QSize(200 * 0.8, 200 * 9 / 16 * 0.8));
-                vidItem->setPos(mediaItem->boundingRect().height() * 0.1, mediaItem->boundingRect().height() * 0.1);
+                playerItem = new QGraphicsVideoItem(mediaItem);
+                playerItem->setSize(QSize(200 * 0.8, 200 * 9 / 16 * 0.8));
+                playerItem->setPos(mediaItem->boundingRect().height() * 0.1, mediaItem->boundingRect().height() * 0.1);
 
                 QMediaPlayer *m_player = new QMediaPlayer();
                 connect(m_player, &QMediaPlayer::mediaStatusChanged, this, &AGView::onMediaStatusChanged);
@@ -119,17 +110,22 @@ void AGView::playMedia(QGraphicsItem *mediaItem)
                 connect(m_player, &QMediaPlayer::metaDataAvailableChanged, this, &AGView::onMetaDataAvailableChanged);
                 connect(m_player, &QMediaPlayer::positionChanged, this, &AGView::onPositionChanged);
 
-                m_player->setVideoOutput(vidItem);
+                m_player->setVideoOutput(playerItem);
 
                 QString folderName = mediaItem->data(folderNameIndex).toString();
                 QString fileName = mediaItem->data(fileNameIndex).toString();
 
-                QTimer::singleShot(1000, this, [m_player, folderName, fileName]()->void
-                {
+//                QTimer::singleShot(1000, this, [m_player, folderName, fileName]()->void
+//                {
                     m_player->setMedia(QUrl::fromLocalFile(folderName + fileName));
-                });
-                setItemProperties(vidItem, mediaItem->data(mediaTypeIndex).toString(), "SubVid", folderName, fileName, mediaItem->data(mediaDurationIndex).toInt());
+//                });
+                setItemProperties(playerItem, mediaItem->data(mediaTypeIndex).toString(), "SubPlayer", folderName, fileName, mediaItem->data(mediaDurationIndex).toInt());
+            }
 
+            if (pictureItem != nullptr) //remove picture
+            {
+                scene->removeItem(pictureItem);
+                delete pictureItem;
             }
         }
     }
@@ -176,8 +172,49 @@ void AGView::setItemProperties(QGraphicsItem *parentItem, QString mediaType, QSt
     updateToolTip(parentItem);
 }
 
-QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QString folderName, QString fileName, int duration, int clipIn, int clipOut, QString tag)
+void AGView::addItem(QString parentFileName, QString mediaType, QString folderName, QString fileName, int duration, int clipIn, int clipOut, QString tag)
 {
+    QString parentMediaType;
+    if (mediaType == "Folder")
+        parentMediaType = "Folder";
+    else if (mediaType == "FileGroup")
+        parentMediaType = "Folder";
+    else if (mediaType == "TimelineGroup")
+        parentMediaType = "FileGroup";
+    else if (mediaType == "MediaFile")
+        parentMediaType = "FileGroup";
+    else if (mediaType == "Clip")
+        parentMediaType = "MediaFile";
+    else if (mediaType == "Tag")
+        parentMediaType = "Clip";
+
+    QGraphicsItem *parentItem = nullptr;
+    foreach (QGraphicsItem *item, scene->items())
+    {
+        if (item->data(mediaTypeIndex).toString() == parentMediaType && item->data(itemTypeIndex).toString() == "Base")
+        {
+        if (mediaType == "Folder" && item->data(folderNameIndex).toString() + item->data(fileNameIndex).toString() + "/" == folderName)
+                parentItem = item;
+        else if (mediaType == "FileGroup" && item->data(folderNameIndex).toString() + item->data(fileNameIndex).toString() + "/" == folderName)
+                parentItem = item;
+        else if (mediaType == "TimelineGroup" && item->data(folderNameIndex).toString() == folderName && item->data(fileNameIndex).toString() == parentFileName)
+                parentItem = item;
+        else if (mediaType == "MediaFile" && item->data(folderNameIndex).toString() == folderName  && item->data(fileNameIndex).toString() ==  parentFileName)
+                parentItem = item;
+        else if (mediaType == "Clip" && item->data(folderNameIndex).toString() == folderName && item->data(fileNameIndex).toString() ==  fileName)
+                parentItem = item;
+        else if (mediaType == "Tag" && item->data(folderNameIndex).toString() == folderName && item->data(fileNameIndex).toString() ==  fileName && item->data(clipInIndex).toInt() ==  clipIn)
+                parentItem = item;
+        }
+    }
+
+//    if (parentItem != parentItem2)
+
+//    qDebug()<<""<<parentFileName<<mediaType<<folderName<<fileName<<parentMediaType<<itemToString(parentItem)<<itemToString(parentItem2)<<(parentItem == parentItem2);
+
+//    if (parentItem2 != nullptr)
+//        parentItem = parentItem2;
+
     QGraphicsItem *childItem = nullptr;
 
     if (mediaType == "Folder")
@@ -207,7 +244,7 @@ QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QS
     }
     else if (mediaType == "MediaFile")// && fileName.toLower().contains(".mp4")
     {
-        QGraphicsRectItem *mediaItem = new QGraphicsRectItem(parentItem);
+        AGMediaRectangleItem *mediaItem = new AGMediaRectangleItem(parentItem);
         mediaItem->setRect(QRectF(0, 0, qMax(duration/100.0,200.0), 200 * 9 / 16));
         if (parentItem->data(fileNameIndex).toString() == "Export")
             mediaItem->setRect(QRectF(0, 0, qMax(duration/100.0,200.0), 200 * 9 / 16)); //scale same as clips for export mediafiles
@@ -218,9 +255,10 @@ QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QS
 
 //        connect(mediaItem, &AGClipRectangleItem::agItemChanged, this, &AGView::onClipItemChanged);
 //        connect(mediaItem, &AGClipRectangleItem::agMouseReleased, this, &AGView::onClipMouseReleased);
-//        connect(mediaItem, &AGClipRectangleItem::clipPositionChanged, this, &AGView::onClipPositionChanged);
+        connect(mediaItem, &AGMediaRectangleItem::clipPositionChanged, this, &AGView::onClipPositionChanged);
+        connect(mediaItem, &AGMediaRectangleItem::itemClicked, this, &AGView::onItemClicked);
 
-        setItemProperties(mediaItem, mediaType, "Base", folderName, fileName, duration);
+        setItemProperties(mediaItem, mediaType, "Base", folderName, fileName, duration, QSize(), 0, duration);
 
         if (fileName.toLower().contains(".mp3"))
         {
@@ -235,12 +273,12 @@ QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QS
 
             m_player->setVideoOutput(childVideoItem);
 
-            QTimer::singleShot(1000, this, [m_player, folderName, fileName]()->void
-            {
+//            QTimer::singleShot(1000, this, [m_player, folderName, fileName]()->void
+//            {
                 m_player->setMedia(QUrl::fromLocalFile(folderName + fileName));
-            });
+//            });
 
-            setItemProperties(childVideoItem, mediaType, "SubVid", folderName, fileName, duration);
+            setItemProperties(childVideoItem, mediaType, "SubPlayer", folderName, fileName, duration);
         }
 
         childItem = mediaItem;
@@ -249,18 +287,37 @@ QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QS
     }
     else if (mediaType == "Clip")
     {
-        QGraphicsRectItem *clipItem = new QGraphicsRectItem(parentItem);
+        AGMediaRectangleItem *clipItem = new AGMediaRectangleItem(parentItem);
         clipItem->setRect(QRectF(0, 0, duration/100.0, 100));
         clipItem->setBrush(QBrush(Qt::red));
         clipItem->setFocusProxy(parentItem);
 
-//        connect(clipItem, &AGClipRectangleItem::agItemChanged, this, &AGView::onClipItemChanged);
-//        connect(clipItem, &AGClipRectangleItem::agMouseReleased, this, &AGView::onClipMouseReleased);
-//        connect(clipItem, &AGClipRectangleItem::clipPositionChanged, this, &AGView::onClipPositionChanged);
+//        connect(clipItem, &AGMediaRectangleItem::agItemChanged, this, &AGView::onClipItemChanged);
+//        connect(clipItem, &AGMediaRectangleItem::agMouseReleased, this, &AGView::onClipMouseReleased);
+        connect(clipItem, &AGMediaRectangleItem::clipPositionChanged, this, &AGView::onClipPositionChanged);
+        connect(clipItem, &AGMediaRectangleItem::itemClicked, this, &AGView::onItemClicked);
+
 //        QGraphicsBlurEffect *bef = new QGraphicsBlurEffect();
 //        QGraphicsDropShadowEffect *bef = new QGraphicsDropShadowEffect();
 
         setItemProperties(clipItem, mediaType, "Base", folderName, fileName, duration, QSize(), clipIn, clipOut);
+
+        QGraphicsLineItem *durationLine = new QGraphicsLineItem(clipItem);
+//        QBrush brush;
+//        brush.setColor(Qt::red);
+//        brush.setStyle(Qt::SolidPattern);
+
+        QPen pen;
+        pen.setWidth(5);
+//        pen.setBrush(brush);
+
+        durationLine->setPen(pen);
+
+        durationLine->setLine(QLineF(durationLine->pen().width()/2, 0, duration/500.0, 0));
+//            durationLine->setLine(QLineF(durationLine->pen().width()/2, 0, qMax(durationLine->parentItem()->boundingRect().width() - durationLine->pen().width()/2.0,durationLine->pen().width()/2.0), 0));
+
+        setItemProperties(durationLine, mediaType, "SubDurationLine", folderName, fileName, duration, QSize(), clipIn, clipOut);
+
 
         childItem = clipItem;
     }
@@ -275,7 +332,7 @@ QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QS
         childItem = tagItem;
     }
 
-//    childItem->setFlag(QGraphicsItem::ItemIsMovable, true);
+    childItem->setFlag(QGraphicsItem::ItemIsMovable, true);
     childItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
 
     if (parentItem == nullptr)
@@ -293,23 +350,20 @@ QGraphicsItem * AGView::addItem(QGraphicsItem *parentItem, QString mediaType, QS
 //        childTextItem->setFlag(QGraphicsItem::ItemIsMovable, true);
 //        childTextItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-        setItemProperties(childTextItem, mediaType, "SubTxt", folderName, fileName, duration);
+        setItemProperties(childTextItem, mediaType, "SubText", folderName, fileName, duration);
 
         childTextItem->setTextWidth(childItem->boundingRect().width() * 0.8);
 
 //        return childTextItem;
     }
-
-
-    return childItem;
 }
 
-void AGView::onClipItemChanged(AGClipRectangleItem *clipItem)
+void AGView::onClipItemChanged(QGraphicsItem *clipItem)
 {
     drawPoly(clipItem);
 }
 
-void AGView::onClipMouseReleased(AGClipRectangleItem *clipItem)
+void AGView::onClipMouseReleased(QGraphicsItem *clipItem)
 {
     //update clipIn and out
     updateToolTip(clipItem);
@@ -317,7 +371,47 @@ void AGView::onClipMouseReleased(AGClipRectangleItem *clipItem)
     arrangeItems(nullptr);
 }
 
-void AGView::onClipPositionChanged(AGClipRectangleItem *clipItem, int progress)
+void AGView::onItemClicked(QGraphicsItem *item)
+{
+//    qDebug()<<"AGView::onItemClicked"<<itemToString(item);
+    QGraphicsItem *mediaItem = item;
+
+    if (item->data(mediaTypeIndex) == "Clip")
+    {
+        mediaItem = item->focusProxy();
+        playMedia(mediaItem);//load if not already done
+    }
+    else
+        mediaItem = item;
+
+    {
+        if (mediaItem->data(fileNameIndex).toString().toLower().contains(".mp"))
+        {
+            //find videoscreen
+            //if not then create
+            QGraphicsVideoItem *playerItem = nullptr;
+            foreach (QGraphicsItem *childItem, mediaItem->childItems())
+            {
+                if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                    playerItem = (QGraphicsVideoItem *)childItem;
+            }
+
+            if (playerItem != nullptr)
+            {
+                playerItem = (QGraphicsVideoItem *)playerItem;
+                QMediaPlayer *m_player = (QMediaPlayer *)playerItem->mediaObject();
+
+                if (m_player->state() != QMediaPlayer::PlayingState)
+                    m_player->play();
+                else
+                    m_player->pause();
+            }
+        }
+    }
+
+}
+
+void AGView::onClipPositionChanged(QGraphicsItem *clipItem, int progress)
 {
     QGraphicsItem *mediaItem = nullptr;
     if (clipItem->data(mediaTypeIndex).toString() == "Clip")
@@ -325,52 +419,40 @@ void AGView::onClipPositionChanged(AGClipRectangleItem *clipItem, int progress)
     else if (clipItem->data(mediaTypeIndex).toString() == "MediaFile")
         mediaItem = clipItem;
 
-//    qDebug()<<"AGView::onClipPositionChanged"<<itemToString(mediaItem)<<itemToString(clipItem)<<duration;
-
-    QGraphicsItem *vidItem = nullptr;
-    QGraphicsItem *pixItem = nullptr;
-    QGraphicsLineItem *lineItem = nullptr;
+    QGraphicsItem *playerItem = nullptr;
+    QGraphicsLineItem *progressLineItem = nullptr;
 
     if (mediaItem != nullptr)
         foreach (QGraphicsItem *childItem, mediaItem->childItems())
         {
-            if (childItem->data(itemTypeIndex).toString().contains("SubVid"))
-                vidItem = childItem;
-            if (childItem->data(itemTypeIndex).toString().contains("SubPix"))
-                pixItem = childItem;
-            if (childItem->data(itemTypeIndex).toString().contains("SubLine"))
-                lineItem = (QGraphicsLineItem *)childItem;
-
+            if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                playerItem = childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubProgressLine"))
+                progressLineItem = (QGraphicsLineItem *)childItem;
         }
 
-    if (vidItem != nullptr)
+//    qDebug()<<"AGView::onClipPositionChanged"<<itemToString(mediaItem)<<itemToString(clipItem)<<itemToString(progressLineItem)<<progress;
+
+    if (playerItem != nullptr)
     {
-        QGraphicsVideoItem *childVideoItem = (QGraphicsVideoItem *)vidItem;
+        QGraphicsVideoItem *childVideoItem = (QGraphicsVideoItem *)playerItem;
         QMediaPlayer *m_player = (QMediaPlayer *)childVideoItem->mediaObject();
 
-//        qDebug()<<"vid found"<<itemToString(vidItem)<<childVideoItem->mediaObject();
+//        qDebug()<<"vid found"<<itemToString(playerItem)<<childVideoItem->mediaObject();
 
-        m_player->pause();
-        m_player->setPosition(m_player->duration() * progress);
+//        m_player->pause();
+        m_player->setPosition(progress);
 
-//        if (m_player->state() != QMediaPlayer::PlayingState)
-//            m_player->play();
-//        else
-//            m_player->pause();
-
-        if (lineItem != nullptr)
-            lineItem->setLine(QLineF(lineItem->pen().width()/2, 0, qMax(lineItem->parentItem()->boundingRect().width() * progress / m_player->duration() - lineItem->pen().width()/2.0,lineItem->pen().width()/2.0), 0));
+        if (progressLineItem != nullptr)
+            progressLineItem->setLine(QLineF(progressLineItem->pen().width()/2, 0, qMax(progressLineItem->parentItem()->boundingRect().width() * progress / m_player->duration() - progressLineItem->pen().width()/2.0,progressLineItem->pen().width()/2.0), 0));
 
 //            lineItem->setLine(QLineF(0, 0, lineItem->parentItem()->boundingRect().width() * progress / m_player->duration(), 0));
     }
-
-
-
 }
 
-void AGView::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize)
+void AGView::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta)
 {
-//    qDebug()<<"AGView::onMediaLoaded"<<folderName<<fileName<<duration<<mediaSize;
+    qDebug()<<"AGView::onMediaLoaded"<<folderName<<fileName<<duration<<mediaSize<<ffmpegMeta;
 
     QGraphicsItem *mediaItem = nullptr;
     foreach (QGraphicsItem *item, scene->items())
@@ -384,26 +466,80 @@ void AGView::onMediaLoaded(QString folderName, QString fileName, QImage image, i
 
     if (mediaItem != nullptr)
     {
-        QGraphicsPixmapItem *pixItem = nullptr;
-
         setItemProperties(mediaItem, "MediaFile", "Base", folderName, fileName,  duration, mediaSize);
+        if (ffmpegMeta != "") //when called by onMetaDataChanged (from QMediaPlayer)
+            mediaItem->setData(ffMpegMetaIndex, ffmpegMeta);
+
+        QGraphicsPixmapItem *pictureItem = nullptr;
+        QGraphicsLineItem *durationLine = nullptr;
+        QGraphicsLineItem *progressLineItem = nullptr;
+        QGraphicsVideoItem *playerItem = nullptr;
+
 
         foreach (QGraphicsItem *childItem, mediaItem->childItems())
         {
-            if (childItem->data(itemTypeIndex).toString().contains("SubPix"))
-                pixItem = (QGraphicsPixmapItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubPicture"))
+                pictureItem = (QGraphicsPixmapItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubDurationLine"))
+                durationLine = (QGraphicsLineItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubProgressline"))
+                progressLineItem = (QGraphicsLineItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                playerItem = (QGraphicsVideoItem *)childItem;
         }
 
         if (image != QImage())
         {
-            if (pixItem == nullptr)
-                pixItem = new QGraphicsPixmapItem(mediaItem);
+            if (pictureItem == nullptr)
+                pictureItem = new QGraphicsPixmapItem(mediaItem);
 
             QPixmap pixmap = QPixmap::fromImage(image);//.scaled(QSize(200,200 * myImage.height() / myImage.width()))
-            pixItem->setPixmap(pixmap);
-            pixItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
+            pictureItem->setPixmap(pixmap);
+            pictureItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
 
-            setItemProperties(pixItem, "MediaFile", "SubPix", folderName, fileName, duration, mediaSize);
+            setItemProperties(pictureItem, "MediaFile", "SubPicture", folderName, fileName, duration, mediaSize);
+        }
+
+        if (duration != 0)
+        {
+            if (durationLine == nullptr)
+            {
+                durationLine = new QGraphicsLineItem(mediaItem);
+
+//                QBrush brush;
+//                brush.setColor(Qt::red);
+//                brush.setStyle(Qt::SolidPattern);
+
+                QPen pen;
+                pen.setWidth(5);
+//                pen.setBrush(brush);
+
+                durationLine->setPen(pen);
+
+                setItemProperties(durationLine, "MediaFile", "SubDurationLine", folderName, fileName, duration, mediaSize);
+            }
+
+            durationLine->setLine(QLineF(durationLine->pen().width()/2, 0, duration/500 - durationLine->pen().width()/2.0, 0));
+    //            durationLine->setLine(QLineF(durationLine->pen().width()/2, 0, qMax(durationLine->parentItem()->boundingRect().width() - durationLine->pen().width()/2.0,durationLine->pen().width()/2.0), 0));
+
+            if (progressLineItem == nullptr)
+            {
+                progressLineItem = new QGraphicsLineItem(mediaItem);
+
+                QPen pen;
+                pen.setWidth(10);
+                progressLineItem->setPen(pen);
+
+                setItemProperties(progressLineItem, "MediaFile", "SubProgressline", folderName, fileName, duration, mediaSize);
+                progressLineItem->setLine(QLineF(progressLineItem->pen().width()/2, 0, progressLineItem->pen().width()/2, 0));
+            }
+
+//            lineItem->setLine(QLineF(lineItem->pen().width()/2, 0, lineItem->parentItem()->boundingRect().width() - lineItem->pen().width()/2.0, 0));
+//            progressLineItem->setLine(QLineF(progressLineItem->pen().width()/2, 0, qMax(progressLineItem->parentItem()->boundingRect().width() * progress / m_player->duration() - progressLineItem->pen().width()/2.0,progressLineItem->pen().width()/2.0), 0));
+
+            if (playerItem != nullptr) //update duration from QMediaPlayer (needed for mp3)
+                setItemProperties(playerItem, "MediaFile", "SubPlayer", folderName, fileName, duration, mediaSize);
+
         }
 
         arrangeItems(mediaItem->parentItem()); //arrange the folder / foldergroup
@@ -429,7 +565,7 @@ QGraphicsItem * AGView::drawPoly(QGraphicsItem *parentItem)
         QPen pen(Qt::transparent);
 
         polyItem = new QGraphicsPolygonItem(parentItem);
-        polyItem->setPen(pen);
+//        polyItem->setPen(pen);
         polyItem->setBrush(brush);
     //    QGraphicsPolygonItem *pItem = scene->addPolygon(polyGon, pen, brush);
 //        polyItem->setParentItem(parentItem);
@@ -487,11 +623,13 @@ void AGView::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 
     if (status == QMediaPlayer::LoadedMedia)
     {
+        m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
+
         if (m_player->media().canonicalUrl().toString().toLower().contains(".mp4"))
         {
-//            m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
 
             m_player->play();
+//            m_player->pause();
 #ifdef Q_OS_MACxxxx
         QSize s1 = size();
         QSize s2 = s1 + QSize(1, 1);
@@ -531,7 +669,7 @@ void AGView::onMetaDataChanged()
     QImage image = QImage();
     if (fileName.toLower().contains("mp3"))
         image = QImage(":/musicnote.png");
-    onMediaLoaded(folderName, fileName, image, m_player->metaData(QMediaMetaData::Duration).toInt(), QSize());
+    onMediaLoaded(folderName, fileName, image, m_player->metaData(QMediaMetaData::Duration).toInt());
 
     //to do: for mp3, Author, Title and AlbumTitle if available
 
@@ -560,19 +698,6 @@ void AGView::onPositionChanged(int progress)
 
 //    qDebug()<<"AGView::onPositionChanged"<<fileName<<progress<<m_player->duration();
 
-//    foreach (QGraphicsItem *item, scene->items())
-//    {
-//        if (item->data(folderNameIndex) == folderName && item->data(fileNameIndex) == fileName && item->data(itemTypeIndex) == "SubLine")
-//        {
-//            QGraphicsLineItem *lineItem = (QGraphicsLineItem *)item;
-
-//            if (lineItem != nullptr)
-//            {
-//                lineItem->setLine(QLineF(lineItem->pen().width()/2, 0, qMax(lineItem->parentItem()->boundingRect().width() * progress / m_player->duration() - lineItem->pen().width()/2.0,lineItem->pen().width()/2.0), 0));
-//            }
-//        }
-//    }
-
     QGraphicsItem *mediaItem = nullptr;
     foreach (QGraphicsItem *item, scene->items())
     {
@@ -583,48 +708,44 @@ void AGView::onPositionChanged(int progress)
         }
     }
 
-    if (mediaItem != nullptr)
+    if (mediaItem != nullptr  && m_player->duration() != 0)
     {
-//        QGraphicsItem *vidItem = nullptr;
-//        QGraphicsPixmapItem *pixItem = nullptr;
-        QGraphicsLineItem *lineItem = nullptr;
+        QGraphicsVideoItem *playerItem = nullptr;
+        QGraphicsLineItem *progressLineItem = nullptr;
 
         foreach (QGraphicsItem *childItem, mediaItem->childItems())
         {
-//            if (childItem->data(itemTypeIndex).toString().contains("SubVid"))
-//                vidItem = childItem;
-//            if (childItem->data(itemTypeIndex).toString().contains("SubPix"))
-//                pixItem = (QGraphicsPixmapItem *)childItem;
-            if (childItem->data(itemTypeIndex).toString().contains("SubLine"))
-                lineItem = (QGraphicsLineItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                playerItem = (QGraphicsVideoItem *)childItem;
+            if (childItem->data(itemTypeIndex).toString().contains("SubProgressline"))
+                progressLineItem = (QGraphicsLineItem *)childItem;
         }
 
-        if (mediaItem->data(mediaDurationIndex).toInt() != 0)
+        if (progressLineItem != nullptr) // subProgressline already created in mediaLoaded
         {
-            if (lineItem == nullptr)
-            {
-                lineItem = new QGraphicsLineItem(mediaItem);
-                QPen pen;
-                pen.setWidth(10);
-                lineItem->setPen(pen);
-
-//                arrangeItems(mediaItem);
-
-                setItemProperties(lineItem, "MediaFile", "SubLine", folderName, fileName, mediaItem->data(mediaDurationIndex).toInt(), QSize(mediaItem->data(mediaWithIndex).toInt(), mediaItem->data(mediaHeightIndex).toInt()));
-            }
 
 //            lineItem->setLine(QLineF(lineItem->pen().width()/2, 0, lineItem->parentItem()->boundingRect().width() - lineItem->pen().width()/2.0, 0));
-            lineItem->setLine(QLineF(lineItem->pen().width()/2, 0, qMax(lineItem->parentItem()->boundingRect().width() * progress / m_player->duration() - lineItem->pen().width()/2.0,lineItem->pen().width()/2.0), 0));
+            progressLineItem->setLine(QLineF(progressLineItem->pen().width()/2, 0, qMax(progressLineItem->parentItem()->boundingRect().width() * progress / m_player->duration() - progressLineItem->pen().width()/2.0,progressLineItem->pen().width()/2.0), 0));
+        }
+
+        if (playerItem != 0) //move video to current position
+        {
+            double minX = mediaItem->boundingRect().height() * 0.1;
+            double maxX = mediaItem->boundingRect().width() - playerItem->boundingRect().width() - minX;
+            playerItem->setPos(qMin(qMax(mediaItem->boundingRect().width() * progress / m_player->duration() - playerItem->boundingRect().width() / 2.0, minX), maxX), playerItem->pos().y());
 
         }
     }
 }
 
-void AGView::folderScan(QGraphicsItem *parentItem, QString mode)
+void AGView::folderScan(QGraphicsItem *parentItem, QString mode, QString prefix)
 {
+    viewMode = mode;
     foreach (QGraphicsItem *childItem, parentItem->childItems())
     {
-        if (mode == "fileView")
+        if (childItem->data(itemTypeIndex) == "Base")
+            qDebug()<<"AGView::folderScan" + prefix<<itemToString(childItem);
+        if (viewMode == "fileView")
         {
             if (childItem->data(mediaTypeIndex).toString() == "TimelineGroup" && childItem->data(itemTypeIndex).toString() == "Base")
             {
@@ -668,7 +789,7 @@ void AGView::folderScan(QGraphicsItem *parentItem, QString mode)
                 }
             }
         }
-        folderScan(childItem, mode);
+        folderScan(childItem, mode, prefix + "  ");
     }
 }
 
@@ -724,16 +845,23 @@ void AGView::onCreateClip()
         qDebug()<<"Find position of"<<itemToString(selectedItem);
         //check if it fits within current clips
         //add clip
-        addItem(selectedItem, "Clip", selectedItem->data(folderNameIndex).toString(), selectedItem->data(fileNameIndex).toString(), 3000, 2000, 5000);
+
+        addItem("Media", "Clip", selectedItem->data(folderNameIndex).toString(), selectedItem->data(fileNameIndex).toString(), 3000, 2000, 5000);
+        //selectedItem
         arrangeItems(nullptr);
     }
 
 }
 void AGView::onPlayVideoButton()
 {
+//    if (scene->selectedItems().count() == 1)
+//        playMedia(scene->selectedItems().first());
     if (scene->selectedItems().count() == 1)
-        playMedia(scene->selectedItems().first());
+    {
+        QGraphicsItem *mediaItem = scene->selectedItems().first();
 
+        onItemClicked(mediaItem);
+    }
 }
 
 void AGView::onMuteVideoButton()
@@ -748,17 +876,17 @@ void AGView::onMuteVideoButton()
             {
                 //find videoscreen
                 //if not then create
-                QGraphicsVideoItem *vidItem = nullptr;
+                QGraphicsVideoItem *playerItem = nullptr;
                 foreach (QGraphicsItem *childItem, mediaItem->childItems())
                 {
-                    if (childItem->data(itemTypeIndex).toString().contains("SubVid"))
-                        vidItem = (QGraphicsVideoItem *)childItem;
+                    if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                        playerItem = (QGraphicsVideoItem *)childItem;
                 }
 
-                if (vidItem != nullptr)
+                if (playerItem != nullptr)
                 {
-                    vidItem = (QGraphicsVideoItem *)vidItem;
-                    QMediaPlayer *m_player = (QMediaPlayer *)vidItem->mediaObject();
+                    playerItem = (QGraphicsVideoItem *)playerItem;
+                    QMediaPlayer *m_player = (QMediaPlayer *)playerItem->mediaObject();
 
                     m_player->setMuted(!m_player->isMuted());
                 }
@@ -817,19 +945,19 @@ QRectF AGView::arrangeItems(QGraphicsItem *parentItem)
 
     //set the children start position
     QPointF nextPos = QPointF(0, parentItem->boundingRect().height() + spaceBetween);
+    QPointF lastClipNextPos = nextPos;
 
     int mediaDuration = parentItem->data(mediaDurationIndex).toInt();
 
     bool alternator = false;
     bool firstClip = true;
-    bool checkSpotView = false;
 
     if (parentItem == rootItem)
         qDebug()<<"arrangeItems"<<parentItemType<<itemToString(parentItem)<<parentMediaType;
 
     foreach (QGraphicsItem *childItem, parentItem->childItems())
     {
-//        qDebug()<<"childItem"<<itemToString(childItem);
+//        qDebug()<<"childItem before"<<itemToString(childItem)<<nextPos;
 //        if (childItem->isVisible())
         {
         QString childMediaType = childItem->data(mediaTypeIndex).toString();
@@ -856,7 +984,6 @@ QRectF AGView::arrangeItems(QGraphicsItem *parentItem)
                 else //mediaFile
                 {
                     nextPos = QPointF(0, parentItem->boundingRect().height() + spaceBetween + 50); //spotView mode: first clip below mediafile (parent)
-                    checkSpotView = true;
                 }
                 firstClip = false;
                 alternator = false;
@@ -878,16 +1005,21 @@ QRectF AGView::arrangeItems(QGraphicsItem *parentItem)
                 nextPos = QPointF(qMax(mediaDuration==0?0:(parentItem->boundingRect().width() * (clipIn+clipOut)/ 2.0 / mediaDuration - childItem->boundingRect().width() / 2.0), nextPos.x()), nextPos.y());
             }
         }
-        else if (childItemType == "SubLine") //progressline
+        else if (childItemType == "SubProgressline") //progressline
         {
             QGraphicsLineItem *lineItem = (QGraphicsLineItem *)childItem;
 
-//            qDebug()<<"Sub on base"<<itemToString(childItem)<<nextPos<<lineItem->pen().width();
+//            qDebug()<<"SubProgressline"<<itemToString(parentItem)<<itemToString(childItem)<<parentItem->boundingRect();
 
             nextPos = QPointF(0, parentItem->boundingRect().height() - lineItem->pen().width()/ 2.0 );
-//            nextPos = QPointF(0, parentItem->boundingRect().height() );
         }
-        else if (childItemType.contains("Sub")) //other subs (pic and txt)
+        else if (childItemType == "SubDurationLine") //progressline
+        {
+//            QGraphicsLineItem *lineItem = (QGraphicsLineItem *)childItem;
+
+            nextPos = QPointF(0, 0 );
+        }
+        else if (childItemType.contains("Sub")) //other subs (subpic and subtxt and subplayer)
         {
             nextPos = QPointF(parentItem->boundingRect().height() * 0.1, parentItem->boundingRect().height() * 0.1);
 //                qDebug()<<"Sub on base"<<itemToString(childItem)<<nextPos;
@@ -914,17 +1046,22 @@ QRectF AGView::arrangeItems(QGraphicsItem *parentItem)
 //            qDebug()<<"nexttag"<<itemToString(childItem)<<nextPos;
         }
 
+        if (childMediaType == "Clip")
+            lastClipNextPos = nextPos;
+
         alternator = !alternator;
         }
-    }
+    } //foreach
 
-    if (parentMediaType == "MediaFile" && parentItemType == "Base")
+    if (parentMediaType == "MediaFile" && parentItemType == "Base") //childs have been arranged now
     {
-//        if (checkSpotView)
-//            parentRectItem->setRect(QRectF(parentRectItem->rect().x(), parentRectItem->rect().y(), qMax(parentRectItem->rect().width(), nextPos.x()), parentRectItem->rect().height()));
-//        else
-//            parentRectItem->setRect(QRectF(parentRectItem->rect().x(), parentRectItem->rect().y(), qMax(200.0, nextPos.x()), parentRectItem->rect().height()));
-////            parentRectItem->setRect(QRectF(parentRectItem->rect().x(), parentRectItem->rect().y(), 200, parentRectItem->rect().height()));
+//        qDebug()<<"checkSpotView"<<itemToString(parentRectItem)<<viewMode<<parentRectItem->rect()<<nextPos;
+        if (viewMode == "fileView")
+            parentRectItem->setRect(QRectF(parentRectItem->rect().x(), parentRectItem->rect().y(), qMax(parentRectItem->rect().width(), lastClipNextPos.x()), parentRectItem->rect().height()));
+            //if coming from timelineview,. the childrenboundingrect is still to big...
+        else //timelineView
+            parentRectItem->setRect(QRectF(parentRectItem->rect().x(), parentRectItem->rect().y(), qMax(200.0, parentRectItem->rect().width()), parentRectItem->rect().height()));
+//            parentRectItem->setRect(QRectF(parentRectItem->rect().x(), parentRectItem->rect().y(), 200, parentRectItem->rect().height()));
 
         //reallign all poly's
         if (mediaDuration != 0)
