@@ -86,10 +86,10 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
     });
 }
 
-void AVideoWidget::onFolderIndexClicked(QModelIndex )//index
+void AVideoWidget::onFolderSelected(QString folderName)
 {
-    selectedFolderName = QSettings().value("selectedFolderName").toString();
-//    qDebug()<<"AVideoWidget::onFolderIndexClicked"<<index.data().toString()<<selectedFolderName;
+    selectedFolderName = folderName;
+//    qDebug()<<"AVideoWidget::onFolderSelected"<<index.data().toString()<<selectedFolderName;
     m_player->stop();
     m_scrubber->clearInOuts();
     selectedFileName = "";
@@ -146,7 +146,11 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
     isLoading = true;
     m_scrubber->clearInOuts();
 
-    if (selectedFileName.toLower().contains(".mp3"))
+    QString fileNameLow = selectedFileName.toLower();
+    int lastIndexOf = fileNameLow.lastIndexOf(".");
+    QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+    if (AGlobal().audioExtensions.contains(extension))
         m_scrubber->setAudioOrVideo("A");
     else
         m_scrubber->setAudioOrVideo("V");
@@ -169,7 +173,11 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
             int clipCounter = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
 
             QString AV;
-            if (fileName.toLower().contains(".mp3"))
+            QString fileNameLow = selectedFileName.toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+            if (AGlobal().audioExtensions.contains(extension))
                 AV = "A";
             else
                 AV = "V";
@@ -266,9 +274,17 @@ void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
             m_player->pause();
         m_player->setNotifyInterval(AGlobal().frames_to_msec(1));
         m_scrubber->setFramerate(QSettings().value("frameRate").toInt());
-    //    m_player->setMuted(!selectedFileName.contains(".mp3"));
 
-        if (selectedFileName.toLower().contains(".mp3") || selectedFileName.toLower().contains("lossless") || selectedFileName.toLower().contains("encode") || selectedFileName.toLower().contains("shotcut") || selectedFileName.toLower().contains("premiere"))
+        QString fileNameLow = selectedFileName.toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        bool exportFileFound = false;
+        foreach (QString exportMethod, AGlobal().exportMethods)
+            if (fileNameLow.contains(exportMethod))
+                exportFileFound = true;
+
+        if (AGlobal().audioExtensions.contains(extension) || exportFileFound)
             m_player->setVolume(100);
         else
             m_player->setVolume(sourceVideoVolume);
@@ -414,7 +430,16 @@ void AVideoWidget::setSourceVideoVolume(int volume)
 {
     sourceVideoVolume = volume;
 
-    if (!(selectedFileName.toLower().contains(".mp3") || selectedFileName.toLower().contains("lossless") || selectedFileName.toLower().contains("encode") || selectedFileName.toLower().contains("shotcut") || selectedFileName.toLower().contains("premiere")))
+    QString fileNameLow = selectedFileName.toLower();
+    int lastIndexOf = fileNameLow.lastIndexOf(".");
+    QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+    bool exportFileFound = false;
+    foreach (QString exportMethod, AGlobal().exportMethods)
+        if (fileNameLow.contains(exportMethod))
+            exportFileFound = true;
+
+    if (!(AGlobal().audioExtensions.contains(extension) || exportFileFound))
         m_player->setVolume(volume);
 }
 
@@ -477,7 +502,11 @@ void AVideoWidget::onSetIn(int frames)
 
     QString AV;
 
-    if (selectedFileName.toLower().contains(".mp3"))
+    QString fileNameLow = selectedFileName.toLower();
+    int lastIndexOf = fileNameLow.lastIndexOf(".");
+    QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+    if (AGlobal().audioExtensions.contains(extension))
             AV = "A";
     else
             AV = "V";

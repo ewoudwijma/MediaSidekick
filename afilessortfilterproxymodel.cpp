@@ -1,4 +1,5 @@
 #include "afilessortfilterproxymodel.h"
+#include "aglobal.h"
 
 #include <QDebug>
 
@@ -15,16 +16,19 @@ bool AFilesSortFilterProxyModel::filterAcceptsRow(int sourceRow,
 
     QModelIndex fileNameIndex = sourceModel()->index(sourceRow, 0, sourceParent);
 
-    bool containsGeneratedNames = fileNameIndex.data().toString().toLower().contains("lossless") || fileNameIndex.data().toString().toLower().contains("encode") || fileNameIndex.data().toString().toLower().contains("premiere") || fileNameIndex.data().toString().toLower().contains("shotcut");
+    bool exportFileFound = false;
+    foreach (QString exportMethod, AGlobal().exportMethods)
+        if (fileNameIndex.data().toString().toLower().contains(exportMethod))
+            exportFileFound = true;
 
 //    qDebug()<<"AFilesSortFilterProxyModel::filterAcceptsRow"<<sourceRow<<sourceParent.data().toString()<<fileNameIndex.data().toString()<<expString<<containsGeneratedNames;
 
     if (expString == "Video")
-        return !containsGeneratedNames;
+        return !exportFileFound;
     else if (expString == "Audio")
     {
 //        qDebug()<<"  Audio"<<fileNameIndex.data().toString()<<containsGeneratedNames;
-        return !containsGeneratedNames;
+        return !exportFileFound;
     }
     else if (expString == "Export")
     {

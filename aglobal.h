@@ -53,6 +53,14 @@ public:
     QString csvToString(QString csv);
     qint64 csvToSeconds(QString csv);
     QGeoCoordinate csvToGeoCoordinate(QString csv);
+
+    QStringList exportMethods = QStringList() << "lossless" << "encode" << "shotcut" << "premiere";
+    QStringList videoExtensions = QStringList() << "mp4"<<"avi"<<"wmv"<<"mts";
+    QStringList audioExtensions = QStringList() << "mp3"<<"wav"<<"wma";
+    QStringList imageExtensions = QStringList() << "jpg"<<"jpeg"<<"png";
+    QStringList projectExtensions = QStringList() << "mlt" << "xml";
+    QStringList exportExtensions = QStringList() << videoExtensions;// << projectExtensions;
+
 };
 
 #endif // AGLOBAL_H

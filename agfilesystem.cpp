@@ -45,69 +45,103 @@ void AGFileSystem::loadFilesAndFolders(QDir dir)
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Audio");
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Image");
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Export");
+        emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Project");
 
         emit addItem("Video", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         //videoParentItem,
         emit addItem("Audio", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         emit addItem("Image", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         emit addItem("Export", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
+        emit addItem("Project", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
 
     }
     else // file  if (parentItem->toolTip().contains("Video"))
     {
+        QString fileNameLow = fileInfo.fileName().toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.toLower().mid(lastIndexOf + 1);
 
-//        qDebug()<< ""<< fileInfo.path()<< fileInfo.fileName()<<fileInfo.size()/1024<<fileInfo.metadataChangeTime().toString();
+        bool exportFileFound = false;
+        foreach (QString exportMethod, AGlobal().exportMethods)
+            if (fileNameLow.contains(exportMethod))
+                exportFileFound = true;
 
-        if (!fileInfo.fileName().toLower().contains(".mp3"))
+        if (exportFileFound && AGlobal().exportExtensions.contains(extension))
         {
-//            qDebug()<<"loadMedia"<<folderName << fileInfo.fileName();
-            loadMedia(folderName, fileInfo.fileName());
-        }
-
-        if (fileInfo.fileName().toLower().contains("lossless") || fileInfo.fileName().toLower().contains("encode") || fileInfo.fileName().toLower().contains("shotcut") || fileInfo.fileName().toLower().contains("premiere"))
-        {
-            qDebug()<<"load Export"<<dir.absolutePath();
             emit addItem("Export", "MediaFile", folderName, fileInfo.fileName());
-//            childItem = emit addItem(exportParentItem, "Export", "MediaFile", exportParentItem->data(folderNameIndex).toString(), fileInfo.fileName());
-            //exportParentItem,
-            loadClips(fileInfo);
+//            if (!AGlobal().projectExtensions.contains(extension))
+                loadClips(fileInfo);
         }
-        else if (fileInfo.fileName().toLower().contains(".mp4"))
+        else if (AGlobal().videoExtensions.contains(extension))
         {
             emit addItem("Video", "MediaFile", folderName, fileInfo.fileName());
             loadClips(fileInfo);
         }
-        else if (fileInfo.fileName().toLower().contains(".mp3"))
+        else if (AGlobal().audioExtensions.contains(extension))
         {
             emit addItem("Audio", "MediaFile", folderName, fileInfo.fileName());
-//            childItem = emit addItem(audioParentItem, "Audio", "MediaFile", audioParentItem->data(folderNameIndex).toString(), fileInfo.fileName());
             loadClips(fileInfo);
         }
-        else
+        else if (AGlobal().imageExtensions.contains(extension))
         {
             emit addItem("Image", "MediaFile", folderName, fileInfo.fileName());
             loadClips(fileInfo);
+        }
+        else if (AGlobal().projectExtensions.contains(extension))
+        {
+            emit addItem("Project", "MediaFile", folderName, fileInfo.fileName());
+            loadClips(fileInfo);
+        }
+        //else  stuff which is outside ACVC
+
+        if (AGlobal().videoExtensions.contains(extension) || AGlobal().imageExtensions.contains(extension)) //load video and images
+        {
+            loadMedia(folderName, fileInfo.fileName());
         }
 
     }
 //    else
 //        return nullptr;
 
-    QString oldAbsolutePath = dir.absolutePath();
+//    QString oldAbsolutePath = dir.absolutePath();
 //    qDebug()<<"before dir filters1"<<dir.absolutePath()<<dir.entryList().size();
 
     //read subfolders
     dir.setFilter(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
     dir.setSorting(QDir::Name | QDir::LocaleAware); //localeaware to get +99999ms sorted the right way
 
-    dir.setNameFilters(QStringList() << "*.mp4"<< "*.MP4"<<"*.AVI"<<"*.WMV"<<"*.MTS"<< "*.mp3"<<"*.JPG");
+    QStringList nameFilters;
+    foreach (QString extension, AGlobal().exportExtensions << AGlobal().audioExtensions << AGlobal().imageExtensions << AGlobal().projectExtensions)
+        nameFilters << "*." + extension;
+
+//    qDebug()<<"nameFilters"<<nameFilters;
+    dir.setNameFilters(nameFilters);
+
+    //calculate totals before
+    for (int i=0; i < dir.entryList().size(); i++)
+    {
+        QString fileNameLow = (dir.absolutePath() + "/" + dir.entryList().at(i)).toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.toLower().mid(lastIndexOf + 1);
+
+        if (AGlobal().videoExtensions.contains(extension) || AGlobal().audioExtensions.contains(extension) || AGlobal().imageExtensions.contains(extension))
+        {
+//            qDebug()<<"loadMediaTotal"<<dir.absolutePath()<<dir.entryList().at(i);
+            loadMediaTotal ++;
+        }
+    }
 
     for (int i=0; i < dir.entryList().size(); i++)
     {
+
+        if (!dir.entryInfoList().at(i).isDir())
+        {
+
+        }
         if (dir.entryList().at(i) != "ACVCRecycleBin")
         {
-//            qDebug()<<"before loadfaf"<<dir.absolutePath()<<oldAbsolutePath<<dir.entryList().at(i);
-            loadFilesAndFolders(QDir(oldAbsolutePath + "/" + dir.entryList().at(i)));
+//            qDebug()<<"before loadfaf"<<dir.absolutePath()<<dir.entryList().at(i);
+            loadFilesAndFolders(QDir(dir.absolutePath() + "/" + dir.entryList().at(i)));
         }
     }
 }
@@ -283,7 +317,7 @@ void AGFileSystem::onFileChanged(const QString &path)
 
 void AGFileSystem::onDirectoryChanged(const QString &path)
 {
-    qDebug()<<"AGFileSystem::onDirectoryChanged"<<path;
+//    qDebug()<<"AGFileSystem::onDirectoryChanged"<<path;
 
     QDirIterator it(path, QDir::Dirs|QDir::Drives|QDir::NoDotAndDotDot|QDir::AllDirs|QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext())
@@ -297,7 +331,7 @@ void AGFileSystem::onDirectoryChanged(const QString &path)
         {
             fileSystemWatcher->addPath(filePath);
 
-            qDebug()<<"  AGFileSystem::onDirectoryChanged - not in watch - file or filder exists (new!) - added in watch"<<filePath;
+//            qDebug()<<"  AGFileSystem::onDirectoryChanged - not in watch - file or filder exists (new!) - added in watch"<<filePath;
         }
         // else nothing special
     }
@@ -309,25 +343,30 @@ void AGFileSystem::loadMedia(QString folderName, QString fileName)
 //    if (!fileName.toLower().contains("bras"))
 //        return;
     {
-        AJobParams jobParams;
-        jobParams.thisObject = this;
-        jobParams.parentItem = nullptr;
-        jobParams.folderName = folderName;
-        jobParams.fileName = fileName;
-        jobParams.action = "Load first frame";
-        jobParams.parameters["totalDuration"] = QString::number(1000);
+//        AJobParams jobParams;
+//        jobParams.thisObject = this;
+//        jobParams.parentItem = nullptr;
+//        jobParams.folderName = folderName;
+//        jobParams.fileName = fileName;
+//        jobParams.action = "Load first frame";
+//        jobParams.parameters["totalDuration"] = QString::number(1000);
 
-        jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
-        {
-            AGFileSystem *fileSystem = qobject_cast<AGFileSystem *>(jobParams.thisObject);
+//        jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+//        {
+            AGFileSystem *fileSystem = this;//qobject_cast<AGFileSystem *>(jobParams.thisObject);
 
-            QString folderName = jobParams.folderName;
-            QString fileName = jobParams.fileName;
+//            QString folderName = jobParams.folderName;
+//            QString fileName = jobParams.fileName;
 
             DerperView::VideoInfo videoInfo;
 
             QImage myImage = QImage();
-            if (fileName.toLower().contains(".mp4"))
+
+            QString fileNameLow = fileName.toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.toLower().mid(lastIndexOf + 1);
+
+            if (AGlobal().videoExtensions.contains(extension))
             {
 //                qDebug()<<"AGFileSystem::loadMedia frame"<<folderName<<fileName;
                 DerperView::InputVideoFile input((folderName + fileName).toUtf8().constData());
@@ -378,46 +417,39 @@ void AGFileSystem::loadMedia(QString folderName, QString fileName)
                 else
                     myImage = QImage((uchar*)frame->data[0], frame->width, frame->height, frame->linesize[0], QImage::Format_RGB888);
 
-//                qDebug()<<"AGFileSystem::loadMedia frame"<<folderName<<fileName<<frameCounter<<frame->format<<frame->width<<frame->height<<frame->sample_aspect_ratio.num<<frame->sample_rate<<frame->key_frame<<frame->pict_type;
-
-//                qDebug()<<"AGFileSystem::loadMedia myImage"<<myImage<<myImage.size();
-    //            myImage.save(folderName + fileName + ".png");
             }
-
-           else if (fileName.toLower().contains(".jpg"))
+            else if (AGlobal().imageExtensions.contains(extension))
             {
                 myImage.load(folderName + fileName);
-
             }
-//            else if (fileName.toLower().contains(".mp3"))
-//            {
-//                myImage.load(":/acvc.ico");
-//            }
-//            else
-//                myImage.load(":/movie.png");
 
             if (myImage != QImage())
             {
                 int duration;
 
+                QStringList ffMpegMetaString;
                 if (videoInfo.avg_frame_rate.num != 0)
+                {
                     duration = 1000.0 * videoInfo.totalFrames / videoInfo.avg_frame_rate.num * videoInfo.avg_frame_rate.den;
+
+                    ffMpegMetaString << "Width = " + QString::number(videoInfo.width);
+                    ffMpegMetaString << "Height = " + QString::number(videoInfo.height);
+                    ffMpegMetaString << "Total frames = " + QString::number(videoInfo.totalFrames);
+                    if (videoInfo.frameRate.den != 0)
+                        ffMpegMetaString << "Framerate = " + QString::number(videoInfo.frameRate.num / videoInfo.frameRate.den);
+                    ffMpegMetaString << "Average framerate = " + QString::number(videoInfo.avg_frame_rate.num / videoInfo.avg_frame_rate.den);
+                }
                 else
                     duration = 0; //for images
 
 //                qDebug()<<"AGFileSystem::loadMedia videoinfo"<<duration<<videoInfo.totalFrames << videoInfo.avg_frame_rate.num<<videoInfo.avg_frame_rate.den;
 
-                QStringList ffMpegMetaString;
-                ffMpegMetaString << "Width = " + QString::number(videoInfo.width);
-                ffMpegMetaString << "Height = " + QString::number(videoInfo.height);
-                ffMpegMetaString << "Total frames = " + QString::number(videoInfo.totalFrames);
-                ffMpegMetaString << "Framerate = " + QString::number(videoInfo.frameRate.num / videoInfo.frameRate.den);
-                ffMpegMetaString << "Average framerate = " + QString::number(videoInfo.avg_frame_rate.num / videoInfo.avg_frame_rate.den);
-
                 emit fileSystem->mediaLoaded(folderName, fileName, myImage, duration , QSize(videoInfo.width,videoInfo.height), ffMpegMetaString.join(";"));
             }
+            else
+                emit fileSystem->mediaLoaded(folderName, fileName, myImage, -1 , QSize(), ""); //as not always image loaded (e.g. png currently)
 
-            return QString();
-        }, nullptr);
+//            return QString();
+//        }, nullptr);
     }
 }

@@ -48,7 +48,6 @@ SOURCES += \
         aexport.cpp \
         afilessortfilterproxymodel.cpp \
         afilestreeview.cpp \
-        afoldertreeview.cpp \
         agcliprectangleitem.cpp \
         ageocoding.cpp \
         agfilesystem.cpp \
@@ -88,7 +87,6 @@ HEADERS += \
         aexport.h \
         afilessortfilterproxymodel.h \
         afilestreeview.h \
-        afoldertreeview.h \
         agcliprectangleitem.h \
         ageocoding.h \
         agfilesystem.h \

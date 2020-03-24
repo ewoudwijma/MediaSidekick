@@ -51,6 +51,7 @@ private:
     QString frameRate;
     QString fileNameWithoutExtension;
     QString videoFileExtension;
+    QString audioFileExtension;
     QString videoWidth;
     QString videoHeight;
     QString target;

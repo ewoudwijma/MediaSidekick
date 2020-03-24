@@ -66,7 +66,7 @@ protected:
 
 public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
-    void onFolderIndexClicked(QModelIndex index);
+    void onFolderSelected(QString folderName);
     bool onGetPropertyValue(QString folderFileName, QString propertyName, QVariant *value);
     bool onSetPropertyValue(QString folderFileName, QString propertyName, QVariant value, int role = Qt::EditRole);
     void onFileIndexClicked(QModelIndex index, QStringList filePathList);

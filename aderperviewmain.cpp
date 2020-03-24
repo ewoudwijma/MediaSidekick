@@ -14,6 +14,12 @@
 //#include "version.hpp"
 //#include "cxxopts.hpp"
 
+
+//derperview/superview
+//https://intofpv.com/t-using-free-command-line-sorcery-to-fake-superview
+//https://github.com/Niek/superview
+
+
 using namespace DerperView;
 
 //cxxopts::Options options("derperview", "creates derperview (like superview) from 4:3 videos");

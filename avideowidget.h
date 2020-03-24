@@ -49,7 +49,7 @@ private:
     QMediaPlayer::State oldState;
 
 public slots:
-    void onFolderIndexClicked(QModelIndex index);
+    void onFolderSelected(QString folderName);
     void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void onClipIndexClicked(QModelIndex index);
     void togglePlayPaused();

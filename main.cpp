@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.3.1");
+    a.setApplicationVersion("0.4.0");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com

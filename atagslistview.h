@@ -17,7 +17,7 @@ private:
     void loadModel(QAbstractItemModel *editItemModel);
 
 public slots:
-    void onFolderIndexClicked(QAbstractItemModel *model);
+    void onFolderSelected(QAbstractItemModel *model);
 private slots:
     void onDoubleClicked(const QModelIndex &index);
     void onTagChanged();

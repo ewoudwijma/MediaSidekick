@@ -140,10 +140,10 @@ void AClipsTableView::onSectionMoved(int , int , int ) //logicalIndex, oldVisual
     emit clipsChangedToTimeline(clipsProxyModel); //not to video because this will not change the video
 }
 
-void AClipsTableView::onFolderIndexClicked(QModelIndex )//index
+void AClipsTableView::onFolderSelected(QString folderName)
 {
-    selectedFolderName = QSettings().value("selectedFolderName").toString();
-//    qDebug()<<"AClipsTableView::onFolderIndexClicked"<<selectedFolderName;
+    selectedFolderName = folderName;
+//    qDebug()<<"AClipsTableView::onFolderSelected"<<selectedFolderName;
 
     onLoadClips(nullptr);
 }
@@ -252,13 +252,23 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
         }
 
         QString fileNameAudioVideoPrefix;
-        if (fileName.toLower().contains(".mp3"))
+
+        QString fileNameLow = fileName.toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().audioExtensions.contains(extension))
             fileNameAudioVideoPrefix = "ZZZ";
         else
             fileNameAudioVideoPrefix = "AAA";
 
         QString selectedFileNameAudioVideoPrefix;
-        if (selectedFileName.toLower().contains(".mp3"))
+
+        fileNameLow = selectedFileName.toLower();
+        lastIndexOf = fileNameLow.lastIndexOf(".");
+        extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().audioExtensions.contains(extension))
             selectedFileNameAudioVideoPrefix = "ZZZ";
         else
             selectedFileNameAudioVideoPrefix = "AAA";
@@ -432,8 +442,8 @@ void AClipsTableView::onLoadClips(QStandardItem *parentItem)
 //        qDebug()<<"AClipsTableView::onloadClips thread"<<jobParams.folderName;
         clipsTableView->loadModel(jobParams.folderName);
 
-        emit clipsTableView->folderIndexClickedItemModel(clipsTableView->clipsItemModel);
-        emit clipsTableView->folderIndexClickedProxyModel(clipsTableView->model());
+        emit clipsTableView->folderSelectedItemModel(clipsTableView->clipsItemModel);
+        emit clipsTableView->folderSelectedProxyModel(clipsTableView->model());
 
         return QString();
     }, nullptr);
@@ -1052,8 +1062,6 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 //            scanDir(QDir(newPath), extensionList);
     }
 
-//    filters << "*.mp4"<<"*.jpg"<<"*.avi"<<"*.wmv"<<"*.mts";
-
     dir.setNameFilters(extensionList);
     dir.setFilter(QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks);
 
@@ -1116,8 +1124,17 @@ void AClipsTableView::loadModel(QString folderName)
     clipsItemModel->removeRows(0, clipsItemModel->rowCount());
     srtFileItemModel->removeRows(0,srtFileItemModel->rowCount());
 
-    scanDir(QDir(folderName), QStringList() << "*.MP4"<<"*.AVI"<<"*.WMV"<<"*.MTS");
-    scanDir(QDir(folderName), QStringList() << "*.mp3"<<"*.JPG");
+    QStringList videoFilters;
+    foreach (QString extension, AGlobal().videoExtensions)
+        videoFilters << "*." + extension;
+
+    scanDir(QDir(folderName), videoFilters);
+
+    QStringList audioFilters;
+    foreach (QString extension, AGlobal().audioExtensions)
+        audioFilters << "*." + extension;
+
+    scanDir(QDir(folderName), audioFilters);
 }
 
 bool AClipsTableView::checkSaveIfClipsChanged()

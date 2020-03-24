@@ -87,27 +87,34 @@ void AFilesTreeView::setType(QString type)
                                                 QRegExp::FixedString));
     filesProxyModel->setFilterKeyColumn(-1);
 
-    QStringList exportMethods = QStringList() << "Lossless" << "Encode" << "shotcut" << "Premiere";
-    QStringList videoExtensions = QStringList() << "*.MP4"<<"*.AVI"<<"*.WMV"<<"*.MTS";
-    QStringList exportExtensions = QStringList() << "*.MP4"<<"*.JPG"<<"*.AVI"<<"*.WMV"<<"*.MTS" << "*.mlt" << "*.xml" << "*.mp3";
-    QStringList audioExtensions = QStringList() << "*.mp3"<<"*.JPG";
-
     if (type == "Video") //exclude lossless done in sortfilterproxymodel
     {
-        fileModel->setNameFilters(videoExtensions);
+        QStringList videoFilters;
+        foreach (QString extension, AGlobal().videoExtensions)
+            videoFilters << "*." + extension;
+
+        fileModel->setNameFilters(videoFilters);
     }
     else if (type == "Audio")
     {
-        fileModel->setNameFilters(audioExtensions);
+        QStringList audioFilters;
+        foreach (QString extension, AGlobal().audioExtensions)
+            audioFilters << "*." + extension;
+
+        fileModel->setNameFilters(audioFilters);
     }
     else if (type == "Export")
     {
-        QStringList filters;
-        foreach (QString exportMethod, exportMethods)
-            foreach (QString extension, exportExtensions)
-                filters <<exportMethod + extension;
+        QStringList exportFilters;
+        foreach (QString extension, AGlobal().exportExtensions)
+            exportFilters << "*." + extension;
+
+        QStringList exportMethodAndExtensionFilter;
+        foreach (QString exportMethod, AGlobal().exportMethods)
+            foreach (QString exportFilter, exportFilters)
+                exportMethodAndExtensionFilter <<exportMethod + exportFilter;
 //        filters <<"Lossless*.*"<<"Encode*.*"<<"shotcut*.*"<<"Premiere*.*";
-        fileModel->setNameFilters(filters);
+        fileModel->setNameFilters(exportMethodAndExtensionFilter);
     }
 }
 
@@ -133,7 +140,11 @@ void AFilesTreeView::onIndexClicked(QModelIndex index)
         }
     }
 
-    if (!fileIndex.data().toString().contains(".mlt") && !fileIndex.data().toString().contains(".xml"))
+    QString folderFileNameLow = fileIndex.data().toString().toLower();
+    int lastIndexOf = folderFileNameLow.lastIndexOf(".");
+    QString extension = folderFileNameLow.mid(lastIndexOf + 1);
+
+    if (!AGlobal().projectExtensions.contains(extension))
         emit fileIndexClicked(fileIndex, filePathList);
 }
 
@@ -165,7 +176,11 @@ void AFilesTreeView::onTrim()
         if (indexList[i].column() == 0) //first column
         {
             QString fileName = indexList[i].data().toString();
-            if (!fileName.toLower().contains(".jpg"))
+            QString fileNameLow = fileName.toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.toLower().mid(lastIndexOf + 1);
+
+            if (AGlobal().videoExtensions.contains(extension) || AGlobal().audioExtensions.contains(extension)) //can only be trimmed
                 filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
@@ -192,7 +207,11 @@ void AFilesTreeView::onTrim()
                  QString folderName = filePathList[i].left(lastIndexOf + 1);
                  QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
-                 if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+                 QString folderFileNameLow = fileName.toLower();
+                 lastIndexOf = folderFileNameLow.lastIndexOf(".");
+                 QString extension = folderFileNameLow.mid(lastIndexOf + 1);
+
+                 if (!AGlobal().projectExtensions.contains(extension))
                  {
 //                     QStandardItem *parentItem2 = nullptr;
                      emit trimAll(parentItem, currentItem, folderName, fileName);
@@ -229,8 +248,11 @@ void AFilesTreeView::onDerperview()
     {
         if (indexList[i].column() == 0) //first column
         {
-            QString fileName = indexList[i].data().toString();
-            if (!fileName.toLower().contains(".mp3") && !fileName.toLower().contains(".jpg"))
+            QString fileNameLow = indexList[i].data().toString().toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+            if (AGlobal().videoExtensions.contains(extension))
                 filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
@@ -311,7 +333,7 @@ void AFilesTreeView::onDerperview()
                  emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
 
                  emit releaseMedia(folderName, fileName);
-                 emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
+                 onMoveFilesToACVCRecycleBin(currentItem, folderName, fileName);
              } //for all files
 
              emit loadClips(parentItem);
@@ -336,8 +358,11 @@ void AFilesTreeView::onRemux()
     {
         if (indexList[i].column() == 0) //first column
         {
-            QString fileName = indexList[i].data().toString();
-            if (!fileName.toLower().contains(".mp3") && !fileName.toLower().contains(".jpg"))
+            QString fileNameLow = indexList[i].data().toString().toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+            if (AGlobal().videoExtensions.contains(extension))
                 filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
@@ -371,7 +396,7 @@ void AFilesTreeView::onRemux()
                  emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
 
                  emit releaseMedia(folderName, fileName);
-                 emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
+                 onMoveFilesToACVCRecycleBin(currentItem, folderName, fileName);
              }
 
              emit loadClips(parentItem);
@@ -484,7 +509,7 @@ void AFilesTreeView::onArchiveFiles()
                  QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
                  emit releaseMedia(folderName, fileName);
-                 emit moveFilesToACVCRecycleBin(parentItem, folderName, fileName);
+                 onMoveFilesToACVCRecycleBin(parentItem, folderName, fileName);
 
              }
              emit loadClips(parentItem);
@@ -503,8 +528,11 @@ void AFilesTreeView::onArchiveClips()
     {
         if (indexList[i].column() == 0) //first column
         {
-            QString fileName = indexList[i].data().toString();
-            if (!fileName.contains(".mlt") && !fileName.contains("*.xml"))
+            QString fileNameLow = indexList[i].data().toString().toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+            if (!AGlobal().projectExtensions.contains(extension))
                 filePathList << fileModel->filePath( filesProxyModel->mapToSource(indexList[i]));
         }
     }
@@ -530,7 +558,7 @@ void AFilesTreeView::onArchiveClips()
                  QString fileName = filePathList[i].mid(lastIndexOf + 1);
 
                  emit releaseMedia(folderName, fileName);
-                 emit moveFilesToACVCRecycleBin(parentItem, folderName, fileName, true); //supporting files only
+                 onMoveFilesToACVCRecycleBin(parentItem, folderName, fileName, true); //supporting files only
              }
              emit loadClips(parentItem);
              emit loadProperties(parentItem);
@@ -612,12 +640,11 @@ void AFilesTreeView::onOpenDefaultApplication()
     }
 }
 
-void AFilesTreeView::onFolderIndexClicked(QModelIndex )//index
+void AFilesTreeView::onFolderSelected(QString folderName)
 {
-    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
-//    qDebug()<<"AFilesTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder;
+//    qDebug()<<"AFilesTreeView::onFolderSelected"<<index.data().toString()<<lastFolder;
     setCurrentIndex(QModelIndex());
-    loadModel(selectedFolderName);
+    loadModel(folderName);
 }
 
 void AFilesTreeView::onClipIndexClicked(QModelIndex index)
@@ -651,11 +678,14 @@ QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIn
     for (int childRow=0;childRow<fileModel->rowCount(parentIndex);childRow++)
     {
         QModelIndex childIndex = fileModel->index(childRow, 0, parentIndex);
-        if (childIndex.data().toString().toLower().contains(".mp4") || childIndex.data().toString().toLower().contains(".avi") || childIndex.data().toString().toLower().contains(".wmv") || childIndex.data().toString().toLower().contains(".mts")) // && fileIndex == QModelIndex()
-        {
-//            qDebug()<<"recursiveFirstFile"<<childIndex.data().toString();
+
+        QString fileNameLow = childIndex.data().toString().toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().videoExtensions.contains(extension))
             return childIndex;
-        }
+
         fileIndex = recursiveFirstFile(fileModel, childIndex);
     }
     return fileIndex;
@@ -690,3 +720,114 @@ QModelIndex recursiveFirstFile(QFileSystemModel *fileModel, QModelIndex parentIn
 //        setCurrentIndex(filesProxyModel->mapFromSource(fileIndex));
 //    }
 //}
+
+void AFilesTreeView::recursiveFileRenameCopyIfExists(QString folderName, QString fileName)
+{
+    bool success;
+    QFile file(folderName + fileName);
+    if (file.exists())
+    {
+        QString fileNameWithoutExtension = fileName.left(fileName.lastIndexOf("."));
+        QString fileExtension = fileName.mid(fileName.lastIndexOf("."));
+
+//        qDebug()<<"AFilesTreeView::recursiveFileRenameCopyIfExists"<<fileNameWithoutExtension<<fileExtension<<fileNameWithoutExtension + "BU" + fileExtension;
+
+        recursiveFileRenameCopyIfExists(folderName, fileNameWithoutExtension + "BU" + fileExtension);
+
+        success = file.rename(folderName + fileNameWithoutExtension + "BU" + fileExtension);
+    }
+}
+
+void AFilesTreeView::onMoveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly)
+{
+//    qDebug()<<"AFilesTreeView::onMoveFilesToACVCRecycleBin"<<folderName<<fileName<<supportingFilesOnly;
+
+    AJobParams jobParams;
+    jobParams.thisObject = this;
+    jobParams.parentItem = parentItem;
+    jobParams.folderName = folderName;
+    jobParams.fileName = fileName;
+    jobParams.action = "ToACVCRecycleBin";
+    jobParams.parameters["totalDuration"] = QString::number(1000);
+    jobParams.parameters["supportingFilesOnly"] = QString::number(supportingFilesOnly);
+
+    parentItem = jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
+    {
+            AFilesTreeView *filesTreeView = qobject_cast<AFilesTreeView *>(jobParams.thisObject);
+
+            QString folderName = jobParams.folderName;
+            QString fileName = jobParams.fileName;
+
+            QString recycleFolder = folderName + "ACVCRecycleBin/";
+
+//            qDebug()<<"AFilesTreeView::onMoveFilesToACVCRecycleBin"<<folderName<<fileName<<recycleFolder<<jobParams.parameters["supportingFilesOnly"];
+
+            bool success = true;;
+
+            QDir dir(recycleFolder);
+            if (!dir.exists())
+            {
+                success = dir.mkpath(".");
+                if (success)
+                    emit filesTreeView->jobAddLog(jobParams, tr("%1 created").arg(recycleFolder));
+            }
+
+            if (success)
+            {
+                if (jobParams.parameters["supportingFilesOnly"] != "1")
+                {
+                    QFile file(folderName + fileName);
+
+                    if (file.exists())
+                    {
+                        filesTreeView->recursiveFileRenameCopyIfExists(recycleFolder, fileName);
+                        success = file.rename(recycleFolder + fileName);
+                        if (success)
+                            emit filesTreeView->jobAddLog(jobParams, tr("%1 moved to recycle folder").arg(fileName));
+                    }
+                }
+
+                if (success)
+                {
+                    int lastIndex = fileName.lastIndexOf(".");
+                    if (lastIndex > -1)
+                    {
+                        QString srtFileName = fileName.left(lastIndex) + ".srt";
+                        QFile *file = new QFile(folderName + srtFileName);
+                        if (file->exists())
+                        {
+                            filesTreeView->recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
+                            success = file->rename(recycleFolder + srtFileName);
+                            if (success)
+                                emit filesTreeView->jobAddLog(jobParams, tr("%1 moved to recycle folder").arg(srtFileName));
+                        }
+                        if (success)
+                        {
+                            srtFileName = fileName.left(lastIndex) + ".txt";
+                            file = new QFile(folderName + srtFileName);
+                            if (file->exists())
+                            {
+                                filesTreeView->recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
+                                success = file->rename(recycleFolder + srtFileName);
+                                if (success)
+                                    emit filesTreeView->jobAddLog(jobParams, tr("%1 moved to recycle folder").arg(srtFileName));
+                            }
+                        }
+                        else
+                             return QString("-3, could not rename to " + recycleFolder + srtFileName);
+                    }
+               }
+                else
+                     return QString("-2, could not rename to " + recycleFolder + fileName);
+
+           }
+           else
+            return QString("-1, could not create folder " + recycleFolder);
+
+
+           if (success)
+            return QString("");
+           else
+            return QString("-1, something wrong");
+    }, nullptr);
+}

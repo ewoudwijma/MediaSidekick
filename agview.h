@@ -46,6 +46,9 @@ public:
     ~AGView();
     void onSearchTextChanged(QString text);
     void clearAll();
+    void setTextItemsColor(QColor color);
+    int loadMediaCompleted = 0;
+
 public slots:
     void onTimelineView();
     void onFileView();
@@ -55,8 +58,16 @@ public slots:
     void onClipMouseReleased(QGraphicsItem *clipItem);
     void onItemClicked(QGraphicsItem *clipItem);
     void onClipPositionChanged(QGraphicsItem *clipItem, int progress);
-    void onPlayVideoButton();
-    void onMuteVideoButton();
+    void onPlayVideoButton(QMediaPlayer *m_player);
+    void onMuteVideoButton(QMediaPlayer *m_player);
+    void onFastForward(QMediaPlayer *m_player);
+    void onRewind(QMediaPlayer *m_player);
+    void onSkipNext(QMediaPlayer *m_player);
+    void onSkipPrevious(QMediaPlayer *m_player);
+    void onStop(QMediaPlayer *m_player);
+    void onMute(QMediaPlayer *m_player);
+    void onSetSourceVideoVolume(QMediaPlayer *m_player, int volume);
+    void onSetPlaybackRate(QMediaPlayer *m_player, qreal rate);
 private slots:
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
 
@@ -72,6 +83,7 @@ private slots:
     void onPositionChanged(int progress);
 signals:
     void itemSelected(QGraphicsItem *item);
+    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta);
 };
 
 #endif // AGVIEW_H

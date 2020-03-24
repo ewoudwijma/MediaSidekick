@@ -51,7 +51,7 @@ private:
     bool continueLoading;
 
 public slots:
-    void onFolderIndexClicked(QModelIndex index);
+    void onFolderSelected(QString folderName);
     void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void onScrubberInChanged(QString AV, int row, int in);
     void onScrubberOutChanged(QString AV, int row, int out);
@@ -77,8 +77,8 @@ signals:
     void clipAdded(QModelIndex clipInIndex);
     void clipsChangedToVideo(QAbstractItemModel *itemModel);
     void clipsChangedToTimeline(AClipsSortFilterProxyModel *clipProxyModel);
-    void folderIndexClickedItemModel(QAbstractItemModel *itemModel);
-    void folderIndexClickedProxyModel(QAbstractItemModel *itemModel);
+    void folderSelectedItemModel(QAbstractItemModel *itemModel);
+    void folderSelectedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
     void getPropertyValue(QString folderFileName, QString key, QVariant *value);
     void loadProperties(QStandardItem *parentItem);

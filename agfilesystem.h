@@ -17,6 +17,8 @@ public:
     AJobTreeView *jobTreeView;
 
     void loadMedia(QString folderName, QString fileName);
+    int loadMediaTotal = 0;
+
     void loadFilesAndFolders(QDir dir);
 private slots:
     void onFileChanged(const QString &path);

@@ -31,9 +31,9 @@ ATagsListView::ATagsListView(QWidget *parent) : QListView(parent)
     connect(tagsItemModel, &QStandardItemModel::rowsRemoved,  this, &ATagsListView::onTagChanged); //datachanged not signalled when removing
 }
 
-void ATagsListView::onFolderIndexClicked(QAbstractItemModel *model)
+void ATagsListView::onFolderSelected(QAbstractItemModel *model)
 {
-//    qDebug()<<"ATagsListView::onFolderIndexClicked"<<model->rowCount();
+//    qDebug()<<"ATagsListView::onFolderSelected"<<model->rowCount();
     loadModel(model);
 }
 

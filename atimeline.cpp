@@ -145,7 +145,11 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 
         int frameDuration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
 
-        if (!fileName.toLower().contains(".mp3"))
+        QString fileNameLow = fileName.toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().videoExtensions.contains(extension))
         {
             videoOriginalDuration += frameDuration;
             videoCountNrOfClips++;
@@ -197,7 +201,11 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
 
             QString fileName = itemModel->index(row,fileIndex).data().toString();
 
-            if ((fileName.toLower().contains(".mp3") && mediaType == "A") || (!fileName.toLower().contains(".mp3") && mediaType == "V"))
+            QString fileNameLow = fileName.toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+            if ((AGlobal().audioExtensions.contains(extension) && mediaType == "A") || (AGlobal().videoExtensions.contains(extension) && mediaType == "V"))
             {
                 QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
@@ -221,12 +229,14 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
                 int porderBeforeLoadIndex = itemModel->index(row, orderBeforeLoadIndex).data().toInt();
                 QString AV;
 
-                if (fileName.toLower().contains(".mp3"))
+                QString fileNameLow = fileName.toLower();
+                int lastIndexOf = fileNameLow.lastIndexOf(".");
+                QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+                if (AGlobal().audioExtensions.contains(extension))
                     AV = "A";
                 else
-                {
                     AV = "V";
-                }
 
                 m_scrubber->setInOutPoint(AV, porderBeforeLoadIndex, AGlobal().frames_to_msec( inpoint), AGlobal().frames_to_msec(outpoint));
 

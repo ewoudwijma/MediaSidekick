@@ -42,10 +42,14 @@ private:
     void copyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName);
 
     ADerperView *derperView;
+
+    void recursiveFileRenameCopyIfExists(QString folderName, QString fileName);
+
 public slots:
     void onClipIndexClicked(QModelIndex index);
-    void onFolderIndexClicked(QModelIndex index);
+    void onFolderSelected(QString folderName);
     void onStopThreadProcess();
+    void onMoveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
 
 signals:
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
@@ -54,7 +58,7 @@ signals:
     void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
-    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
+//    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
     void loadProperties(QStandardItem *parentItem);
     void loadClips(QStandardItem *parentItem);
 

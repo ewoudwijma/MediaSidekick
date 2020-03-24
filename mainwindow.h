@@ -52,6 +52,7 @@ public slots:
     void onUpdateProgress(int value);
     void onReadyProgress(int result, QString errorString);
     void onShowInStatusBar(QString message, int timeout = 0);
+    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta);
 private slots:
     void on_actionBlack_theme_triggered();
     void on_actionQuit_triggered();
@@ -78,7 +79,7 @@ private slots:
     void on_actionNext_frame_triggered();
     void on_actionPrevious_in_out_triggered();
     void on_actionNext_in_out_triggered();
-    void onFolderIndexClicked(QAbstractItemModel *itemModel);
+    void onFolderSelected(QAbstractItemModel *itemModel);
     void on_newTagLineEdit_returnPressed();
     void on_exportButton_clicked();
     void on_exportTargetComboBox_currentTextChanged(const QString &arg1);
@@ -184,6 +185,8 @@ private slots:
 
     void on_searchLineEdit_textChanged(const QString &arg1);
 
+    void on_refreshViewButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -216,6 +219,7 @@ private:
 
     AGFileSystem *agFileSystem;
 
+    int countFolders(QString folderName, int depth = 0);
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);

@@ -310,7 +310,11 @@ void APropertyEditorDialog::on_renameButton_clicked()
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
             QString folderFileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
-            if (!folderFileName.contains(".mlt") && !folderFileName.contains("*.xml"))
+            QString fileNameLow = folderFileName.toLower();
+            int lastIndexOf = fileNameLow.lastIndexOf(".");
+            QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+            if (!AGlobal().projectExtensions.contains(extension))
             {
                 QVariant *suggestedFolderFileName = new QVariant();
 

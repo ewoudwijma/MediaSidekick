@@ -21,7 +21,7 @@
        <enum>QTabWidget::South</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabClassical">
        <attribute name="title">
@@ -42,18 +42,8 @@
              <enum>QTabWidget::South</enum>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
-            <widget class="QWidget" name="tab_folder">
-             <attribute name="title">
-              <string>Folder</string>
-             </attribute>
-             <layout class="QVBoxLayout" name="verticalLayout_4">
-              <item>
-               <widget class="AFolderTreeView" name="folderTreeView"/>
-              </item>
-             </layout>
-            </widget>
             <widget class="QWidget" name="tab_file">
              <attribute name="title">
               <string>Files</string>
@@ -230,7 +220,7 @@
               <enum>QTabWidget::South</enum>
              </property>
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_clips">
               <attribute name="title">
@@ -906,7 +896,18 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="tagFilter1ListWidget"/>
+            <widget class="QProgressBar" name="loadMediaProgressBar">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="refreshViewButton">
+             <property name="text">
+              <string>Refresh</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer">
@@ -967,8 +968,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>558</width>
-                 <height>410</height>
+                 <width>68</width>
+                 <height>580</height>
                 </rect>
                </property>
                <property name="sizePolicy">
@@ -1387,11 +1388,6 @@
    <extends>QWidget</extends>
    <header>avideowidget.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>AFolderTreeView</class>
-   <extends>QTreeView</extends>
-   <header>afoldertreeview.h</header>
   </customwidget>
   <customwidget>
    <class>AFilesTreeView</class>

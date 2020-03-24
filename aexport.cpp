@@ -64,13 +64,18 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
                 QTime outTime = QTime::fromString(timelineModel->index(row, outIndex).data().toString(),"HH:mm:ss.zzz");
                 QString fileName = timelineModel->index(row, fileIndex).data().toString();
 
-                if ((mediaType == "V" && !fileName.toLower().contains(".mp3")) || (mediaType == "A" && fileName.toLower().contains(".mp3"))) //if video then video files, if audio then audio files
+                QString fileNameLow = fileName.toLower();
+                int lastIndexOf = fileNameLow.lastIndexOf(".");
+                QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+                if ((mediaType == "V" && AGlobal().videoExtensions.contains(extension)) || (mediaType == "A" && AGlobal().audioExtensions.contains(extension))) //if video then video files, if audio then audio files
                 {
+                    int lastIndex = fileName.lastIndexOf(".");
                     if (mediaType == "V" && videoFileExtension == "")
-                    {
-                        int lastIndex = fileName.lastIndexOf(".");
                         videoFileExtension = fileName.mid(lastIndex);
-                    }
+                    if (mediaType == "A" && audioFileExtension == "")
+                        audioFileExtension = fileName.mid(lastIndex);
+
                     vidlistStream << "file '" << timelineModel->index(row, folderIndex).data().toString() + timelineModel->index(row, fileIndex).data().toString() << "'" << endl;
                     if (transitionTimeFrames > 0)
                     {
@@ -107,7 +112,7 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
                         fileNamePlusExtension = fileNameWithoutExtension + videoFileExtension;
                 }
                 else
-                    fileNamePlusExtension = fileNameWithoutExtension + + "A.mp3";
+                    fileNamePlusExtension = fileNameWithoutExtension + + "A" + audioFileExtension;
 
                 QString sourceFolderFileName = selectedFolderName + fileNameWithoutExtension + mediaType + ".txt";
                 QString targetFolderFileName = selectedFolderName + fileNamePlusExtension;
@@ -365,7 +370,8 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
 //    if (differentFrameRateFound)
 //        ffmpegMappings << " -r " + frameRate; //tbd: consider -filter:v fps=24 (minterpolate instead of dropping or duplicating frames)
 
-    videoFileExtension = ".mp4";
+    videoFileExtension = ".mp4"; //encode always in .mp4
+    audioFileExtension = ".mp3"; //not sure if needed
 
     QString targetFolderFileName = selectedFolderName + fileNameWithoutExtension + videoFileExtension;
 
@@ -524,7 +530,7 @@ QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
 
     if (audioClipsMap.count() > 0)
     {
-        QString targetFolderFileName = selectedFolderName +  fileNameWithoutExtension +  + "A.mp3";
+        QString targetFolderFileName = selectedFolderName +  fileNameWithoutExtension +  + "A" + audioFileExtension;
 
     #ifdef Q_OS_WIN
         targetFolderFileName = targetFolderFileName.replace("/", "\\");
@@ -782,7 +788,12 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
         s("      <out>%1</out>", QString::number(outFrames));
 
     QString AVType;
-    if (fileName.toLower().contains(".mp3"))
+
+    QString fileNameLow = fileName.toLower();
+    int lastIndexOf = fileNameLow.lastIndexOf(".");
+    QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+    if (AGlobal().audioExtensions.contains(extension))
         AVType = "A";
     else if (clipId == "WM") //watermark
         AVType = "W";
@@ -989,7 +1000,11 @@ void AExport::exportShotcut(AJobParams jobParams)
         s("    <property name=\"length\">%1</property>", fileDuration.toString("hh:mm:ss.zzz"));
         s("    <property name=\"resource\">%1</property>", folderName + fileName);
 
-        if (fileName.toLower().contains(".mp3"))
+        QString fileNameLow = fileName.toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().audioExtensions.contains(extension))
         {
             if (audioClipsMap.first() == row || audioClipsMap.last() == row)
             {
@@ -1389,7 +1404,11 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         int frameDuration = AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1;
 
-        if (fileName.toLower().contains(".mp3"))
+        QString fileNameLow = fileName.toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().audioExtensions.contains(extension))
         {
             audioClipsMap[timelineModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
             audioOriginalDuration += frameDuration;
@@ -1512,6 +1531,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         fileNameWithoutExtension += "@" + frameRate;
     }
     videoFileExtension = ""; //assigned later
+    audioFileExtension = "";
 
     bool includingSRT = false;
     if (includingSRT)
@@ -1564,7 +1584,11 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         filesMap[folderName + fileName].counter = filesMap.count() - 1;
         filesMap[folderName + fileName].definitionGenerated = false;
 
-        if (fileName.toLower().contains(".mp3"))
+        QString fileNameLow = fileName.toLower();
+        int lastIndexOf = fileNameLow.lastIndexOf(".");
+        QString extension = fileNameLow.mid(lastIndexOf + 1);
+
+        if (AGlobal().audioExtensions.contains(extension))
         {
             audioFilesMap[folderName + fileName].folderName = folderName;
             audioFilesMap[folderName + fileName].fileName = fileName;
@@ -1611,7 +1635,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
         emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "V" + videoFileExtension);
         if (audioClipsMap.count() > 0)
-            emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "A.mp3");
+            emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "A" + audioFileExtension);
 
         if (includingSRT)
             emit loadClips(parentItem);

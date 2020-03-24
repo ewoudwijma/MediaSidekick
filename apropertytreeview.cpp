@@ -70,15 +70,14 @@ APropertyTreeView::~APropertyTreeView()
     delete frozenTableView;
 }
 
-void APropertyTreeView::onFolderIndexClicked(QModelIndex )//index
+void APropertyTreeView::onFolderSelected(QString folderName)
 {
     setColumnHidden(minimumIndex, !editMode);
     setColumnHidden(deltaIndex, !editMode);
     setColumnHidden(maximumIndex, !editMode);
 
-    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
-//    qDebug()<<"APropertyTreeView::onFolderIndexClicked"<<index.data().toString()<<lastFolder<<editMode;
-    loadModel(nullptr, selectedFolderName);
+//    qDebug()<<"APropertyTreeView::onFolderSelected"<<index.data().toString()<<lastFolder<<editMode;
+    loadModel(nullptr, folderName);
 }
 
 void APropertyTreeView::setCellStyle(QStringList filePathList)
