@@ -6,6 +6,7 @@
 
 #include <QFileSystemModel>
 #include <QFileSystemWatcher>
+#include <QGraphicsItem>
 
 class AGFileSystem: public QObject
 {
@@ -16,22 +17,27 @@ public:
 
     AJobTreeView *jobTreeView;
 
-    void loadMedia(QString folderName, QString fileName);
+    void loadMedia(AJobParams jobParams, QString folderName, QString fileName, bool isNewFile, bool loadMediaInJob);
     int loadMediaTotal = 0;
 
-    void loadFilesAndFolders(QDir dir);
+    void loadFilesAndFolders(QDir dir, AJobParams jobParams);
+    QFileSystemWatcher *fileSystemWatcher;
+
 private slots:
     void onFileChanged(const QString &path);
     void onDirectoryChanged(const QString &path);
 private:
-    QFileSystemWatcher *fileSystemWatcher;
 
     void recursiveFirstFile(QModelIndex parentIndex);
-    void loadClips(QFileInfo fileInfo);
+    void loadClips(QString parentName, QString folderName, QString fileName);
 
+    void loadOrModifyItem(AJobParams jobParams, QString folderName, QString fileName, bool isNewFile, bool loadMediaInJob);
 signals:
-    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta);
-    void addItem(QString parentFileName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
+    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath = QPainterPath());
+    void addItem(QString parentName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
+    void deleteItem(QString mediaType, QString folderName, QString fileName);
+    void jobAddLog(AJobParams jobParams, QString logMessage);
+    void arrangeItems(QGraphicsItem *parentItem = nullptr);
 
 };
 

@@ -4,6 +4,8 @@
 #include <fstream>
 #include <vector>
 
+#include <QDebug>
+
 extern "C"
 {
     #include "libswscale/swscale.h"
@@ -74,7 +76,7 @@ InputVideoFile::InputVideoFile(std::string filename) :
     av_register_all();
 #endif
 
-    av_log_set_level(AV_LOG_QUIET);
+    av_log_set_level(AV_LOG_QUIET); //ewi
 
     lastError_ = avformat_open_input(&formatContext_, filename_.c_str(), nullptr, nullptr);
     if (lastError_ < 0)
@@ -167,8 +169,13 @@ AVFrame *InputVideoFile::GetNextFrame()
         {
             // Begin draining
             draining_ = true;
-            lastError_ = avcodec_send_packet(videoCodecContext_, nullptr);
-            lastError_ = avcodec_send_packet(audioCodecContext_, nullptr);
+
+            if (packet_.stream_index == videoStreamIndex_) //ewi 20200326
+                lastError_ = avcodec_send_packet(videoCodecContext_, nullptr);
+
+            if (packet_.stream_index == audioStreamIndex_) //ewi 20200326
+                lastError_ = avcodec_send_packet(audioCodecContext_, nullptr);
+
             return GetNextDrainFrame();
         }
         av_packet_unref(&packet_);
@@ -179,35 +186,55 @@ AVFrame *InputVideoFile::GetNextFrame()
 
 AVFrame *InputVideoFile::GetNextDrainFrame()
 {
-    lastError_ = avcodec_receive_frame(videoCodecContext_, frame_);
-    if (lastError_ != AVERROR_EOF)
-        return frame_;
-    lastError_ = avcodec_receive_frame(audioCodecContext_, frame_);
-    if (lastError_ != AVERROR_EOF)
-        return frame_;
+    if (packet_.stream_index == videoStreamIndex_) //ewi 20200326
+    {
+        lastError_ = avcodec_receive_frame(videoCodecContext_, frame_);
+
+        if (lastError_ != AVERROR_EOF)
+            return frame_;
+    }
+
+    if (packet_.stream_index == audioStreamIndex_) //ewi 20200326
+    {
+        lastError_ = avcodec_receive_frame(audioCodecContext_, frame_);
+
+        if (lastError_ != AVERROR_EOF)
+            return frame_;
+    }
+
     return nullptr;
 }
 
 VideoInfo InputVideoFile::GetVideoInfo()
 {
     VideoInfo v;
-    if (audioStreamIndex_ > 0) //ewi 20200313: otherwises crashes for video with audio problems (e.g. no audio)
+
+    if (audioStreamIndex_ >= 0) //ewi 20200313: otherwises crashes for video with audio problems (e.g. no audio)
     {
         v.audioBitRate = audioCodecContext_->bit_rate;
         v.audioChannelLayout = audioCodecContext_->channel_layout;
         v.audioSampleRate = audioCodecContext_->sample_rate;
         v.audioTimeBase = audioCodecContext_->time_base;
+        v.audioDuration = formatContext_->streams[audioStreamIndex_]->duration;
     }
-    v.bitRate = static_cast<int>(videoCodecContext_->bit_rate);
-    v.frameRate = formatContext_->streams[videoStreamIndex_]->r_frame_rate;
-    v.height = videoCodecContext_->height;
-    v.pixelFormat = videoCodecContext_->pix_fmt;
-    v.streamTimeBase = formatContext_->streams[videoStreamIndex_]->time_base;
-    v.totalFrames = formatContext_->streams[videoStreamIndex_]->nb_frames;
-    v.videoTimeBase = videoCodecContext_->time_base;
-    v.width = videoCodecContext_->width;
 
-    v.avg_frame_rate = formatContext_->streams[videoStreamIndex_]->avg_frame_rate;  //ewi 20200318
+    if (videoStreamIndex_ >= 0)
+    {
+        v.bitRate = static_cast<int>(videoCodecContext_->bit_rate);
+        v.frameRate = formatContext_->streams[videoStreamIndex_]->r_frame_rate;
+        v.height = videoCodecContext_->height;
+        v.pixelFormat = videoCodecContext_->pix_fmt;
+        v.streamTimeBase = formatContext_->streams[videoStreamIndex_]->time_base;
+        v.totalFrames = formatContext_->streams[videoStreamIndex_]->nb_frames;
+        v.videoTimeBase = videoCodecContext_->time_base;
+        v.width = videoCodecContext_->width;
+
+        v.avg_frame_rate = formatContext_->streams[videoStreamIndex_]->avg_frame_rate;  //ewi 20200318
+        v.videoDuration = formatContext_->streams[videoStreamIndex_]->duration;
+    }
+
+    if (audioStreamIndex_ >= 0 || videoStreamIndex_ >=0)
+        v.duration = formatContext_->duration;
 
     return v;
 }

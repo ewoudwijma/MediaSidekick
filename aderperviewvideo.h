@@ -30,6 +30,10 @@ struct VideoInfo
     int64_t audioBitRate;
     int audioSampleRate;
     uint64_t audioChannelLayout;
+
+    int64_t duration; //ewi 20200326
+    int64_t videoDuration; //ewi 20200326
+    int64_t audioDuration; //ewi 20200326
 };
 
 class InputVideoFile

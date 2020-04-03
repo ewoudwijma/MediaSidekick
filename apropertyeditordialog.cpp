@@ -68,7 +68,7 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
     ui->updateProgressBar->setToolTip(tr("<p><b>Progress bar</b></p>"
                                          "<p><i>Shows progress when updating properties</i></p>"
                                          ));
-    ui->propertyTreeView->setToolTip(tr("<p><b>Property list</b></p>"
+    ui->propertyTreeView->setToolTip(tr("<p><b>Property list by Exiftool</b></p>"
                                      "<p><i>Show the editable properties for the files of the selected folder</i></p>"
                                      "<ul>"
                                         "<li>Only files applying to the <u>filter</u> are shown</li>"
@@ -86,9 +86,9 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
                                         "</ul>"
                                         "<li><u>Status</u>: <u>information properties</u></li>"
                                         "<ul>"
-                                        "<li><u>Suggested name</u>: If suggested name differs from the filename it will be shown (press the rename button to rename the file)</li>"
+                                        "<li><u>Suggested name</u>: Shown, if suggested name differs from the filename (press the rename button to rename the file)</li>"
                                         "</ul>"
-                                        "<li><u>Artists, Keywords and Ratings</u>: <u>derived</u> from the properties in the labels section and will be updated if the corresponding labels property will be updated.</li>"
+                                        "<li><u>Artists, Keywords and Ratings</u>: <u>derived</u> from the properties in the labels section and is updated if the corresponding labels property is updated.</li>"
                                         "</ul>"
                                         "</ul>"
                                      ));
@@ -102,7 +102,7 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
                                     "<li>Green: After updating: The value is succesfully updated to the media file</li>"
                                     "<li>Red: After updating: The value is not updated to the media file. See the Status propery of each file to see what went wrong</li>"
                                     "</ul>"
-                                    "<li><b>Derived values (Artists, Keywords and Ratings)</b>: Derived values are updated so other media viewing tools show the keywords, ratings and artists correctly. E.g. Windows Explorer properties, ACDSee etc. As there is no unified standard (each tool will use their own properties) this will be updated / improved in future releases of ACVC</li>"
+                                    "<li><b>Derived values (Artists, Keywords and Ratings)</b>: Derived values are updated so other media viewing tools show the keywords, ratings and artists correctly. E.g. Windows Explorer properties, ACDSee etc. As there is no unified standard (each tool will use their own properties). (this will be updated / improved in future releases of ACVC)</li>"
                                     "<li>Currently writing to <b>AVI and MP3 files is not supported</b>. The status property will show if this attempted (<b>Rename to suggested names is supported</b>)</li>"
                                     "</ul>").arg(ui->updateButton->text()));
     ui->renameButton->setToolTip(tr("<p><b>%1</b></p>"

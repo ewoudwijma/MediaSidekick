@@ -4,6 +4,7 @@
 #include "aderperviewvideo.h"
 #include "agcliprectangleitem.h"
 
+#include <QDateTime>
 #include <QGraphicsView>
 #include <QMediaPlayer>
 
@@ -18,7 +19,9 @@ static const int clipInIndex = 7;
 static const int clipOutIndex = 8;
 static const int clipTagIndex = 9;
 static const int ffMpegMetaIndex = 10;
-
+static const int exifToolMetaIndex = 11;
+static const int excludedInFilter = 12;
+static const int createDateIndex = 13;
 
 class AGView: public QGraphicsView
 
@@ -26,23 +29,25 @@ class AGView: public QGraphicsView
     Q_OBJECT
     QGraphicsScene *scene;
     QGraphicsItem *rootItem;
-
     bool rightMousePressed = false;
     double _panStartX;
     double _panStartY;
 
-    void folderScan(QGraphicsItem *parentItem, QString mode, QString prefix = "");
-    QString viewMode;
     bool noFileOrClipDescendants(QGraphicsItem *parentItem);
-    QGraphicsItem *drawPoly(QGraphicsItem *parentItem);
+    QGraphicsItem *drawPoly(QGraphicsItem *clipItem);
     void setItemProperties(QGraphicsItem *parentItem, QString mediaType, QString type, QString folderName, QString fileName, int duration, QSize mediaSize = QSize(), int clipIn = 0, int clipOut = 0, QString tag = "");
     QString itemToString(QGraphicsItem *item);
-    void playMedia(QGraphicsItem *mediaItem);
+    void playMedia(QGraphicsRectItem *mediaItem);
     void updateToolTip(QGraphicsItem *item);
+
+    void reParent(QGraphicsItem *parentItem, QString prefix = "");
+
+    QDateTime pseudoCreateDate;
 public:
     AGView(QWidget *parent = nullptr);
-    void addItem(QString parentFileName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
-    QRectF arrangeItems(QGraphicsItem *parentItem);
+    void addItem(QString parentName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
+    void deleteItem(QString mediaType, QString folderName, QString fileName);
+    QRectF arrangeItems(QGraphicsItem *parentItem = nullptr);
     ~AGView();
     void onSearchTextChanged(QString text);
     void clearAll();
@@ -50,14 +55,13 @@ public:
     int loadMediaCompleted = 0;
 
 public slots:
-    void onTimelineView();
-    void onFileView();
-    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize = QSize(), QString ffmpegMeta = "");
+    void onSetView();
+    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize = QSize(), QString ffmpegMeta = "", QPainterPath painterPath = QPainterPath());
     void onCreateClip();
     void onClipItemChanged(QGraphicsItem *clipItem);
     void onClipMouseReleased(QGraphicsItem *clipItem);
-    void onItemClicked(QGraphicsItem *clipItem);
-    void onClipPositionChanged(QGraphicsItem *clipItem, int progress);
+    void onItemClicked(QGraphicsRectItem *rectItem);
+    void onClipPositionChanged(QGraphicsRectItem *rectItem, int progress);
     void onPlayVideoButton(QMediaPlayer *m_player);
     void onMuteVideoButton(QMediaPlayer *m_player);
     void onFastForward(QMediaPlayer *m_player);
@@ -81,9 +85,12 @@ private slots:
     void onMetaDataAvailableChanged(bool available);
     void onSelectionChanged();
     void onPositionChanged(int progress);
+//    void onAudioBufferProbed(QAudioBuffer buffer);
 signals:
     void itemSelected(QGraphicsItem *item);
-    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta);
+    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath = QPainterPath());
+    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
+
 };
 
 #endif // AGVIEW_H

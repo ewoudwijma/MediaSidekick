@@ -70,10 +70,12 @@ int main(int argc, char *argv[])
 #endif
 
     qRegisterMetaType<AJobParams>("AJobParams"); //so signal/slots can use it (jobAddlog)
+    qRegisterMetaType<QPainterPath>("QPainterPath");
+    //otherwise: QObject::connect: Cannot queue arguments of type 'QPainterPath' (Make sure 'QPainterPath' is registered using qRegisterMetaType().)
 
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.4.0");
+    a.setApplicationVersion("0.4.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -211,10 +213,10 @@ Windows 2020-02-20
 
 
 MacOS 2020-02-01
-    - QT Creator run/build
     - Get ffmpeg
         - Get https://ffmpeg.zeranoe.com/builds/macos64/shared/ffmpeg-latest-macos64-shared.zip
         - Get https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip
+        - QT Creator run/build release
         - Script
             - export qtVersion =
             - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_1_clang_64bit-Release

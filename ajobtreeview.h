@@ -24,13 +24,11 @@ public:
     ~AJobTreeView();
 
     QStandardItemModel *jobItemModel;
+    QStringList headerlabels;
 
     void testPopulate();
 
     QStandardItem *createJob(AJobParams jobParams, QString (*functionCall)(AJobParams jobParams), void (*processResult)(AJobParams jobParams, QStringList result)); //no signal/slot as functioncalls not working there
-
-private:
-    QStringList headerlabels;
 
 public:
     void mousePressEvent(QMouseEvent *event);

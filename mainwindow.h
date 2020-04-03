@@ -52,7 +52,7 @@ public slots:
     void onUpdateProgress(int value);
     void onReadyProgress(int result, QString errorString);
     void onShowInStatusBar(QString message, int timeout = 0);
-    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta);
+    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath = QPainterPath());
 private slots:
     void on_actionBlack_theme_triggered();
     void on_actionQuit_triggered();
@@ -179,7 +179,8 @@ private slots:
 
     void on_tabUIWidget_currentChanged(int index);
 
-    void on_spotviewButton_clicked();
+    void on_spotviewDownButton_clicked();
+    void on_spotviewRightButton_clicked();
 
     void on_timelineViewButton_clicked();
 
@@ -220,6 +221,7 @@ private:
     AGFileSystem *agFileSystem;
 
     int countFolders(QString folderName, int depth = 0);
+    void checkAndOpenFolder(QString selectedFolderName);
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);

@@ -45,7 +45,7 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
 
     foreach (QString mediaType, mediaTypeList) //prepare video and audio
     {
-        QFile vidlistFile(selectedFolderName + fileNameWithoutExtension + mediaType + ".txt");
+        QFile vidlistFile(recycleFolderName + fileNameWithoutExtension + mediaType + ".txt");
 //        qDebug()<<"opening vidlistfile"<<vidlistFile;
         if ( vidlistFile.open(QIODevice::WriteOnly) )
         {
@@ -103,19 +103,19 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
 
             if (clipsFound) //at least one file found
             {
-                QString fileNamePlusExtension;
+                QString folderFileNamePlusExtension;
                 if (mediaType == "V")
                 {
                     if (audioClipsMap.count() > 0)
-                        fileNamePlusExtension = fileNameWithoutExtension + "V" + videoFileExtension;
+                        folderFileNamePlusExtension = recycleFolderName + fileNameWithoutExtension + "V" + videoFileExtension;
                     else
-                        fileNamePlusExtension = fileNameWithoutExtension + videoFileExtension;
+                        folderFileNamePlusExtension = selectedFolderName + fileNameWithoutExtension + videoFileExtension;
                 }
                 else
-                    fileNamePlusExtension = fileNameWithoutExtension + + "A" + audioFileExtension;
+                    folderFileNamePlusExtension = recycleFolderName + fileNameWithoutExtension + + "A" + audioFileExtension;
 
-                QString sourceFolderFileName = selectedFolderName + fileNameWithoutExtension + mediaType + ".txt";
-                QString targetFolderFileName = selectedFolderName + fileNamePlusExtension;
+                QString sourceFolderFileName = recycleFolderName + fileNameWithoutExtension + mediaType + ".txt";
+                QString targetFolderFileName = folderFileNamePlusExtension;
 
 #ifdef Q_OS_WIN
                 sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
@@ -133,10 +133,10 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
 //                jobParams.thisObject = this;
                 jobParams.parentItem = childItem;
                 jobParams.folderName = selectedFolderName;
-                jobParams.fileName = fileNamePlusExtension;
+                jobParams.fileName = fileNameWithoutExtension + videoFileExtension;
                 jobParams.action = "FFMpeg lossless " + mediaType;
                 jobParams.command = command;
-                jobParams.parameters["exportFileName"] = fileNamePlusExtension;
+                jobParams.parameters["exportFileName"] = folderFileNamePlusExtension;
                 jobParams.parameters["totalDuration"] = QString::number(AGlobal().frames_to_msec(maxCombinedDurationInFrames));
                 jobParams.parameters["durationMultiplier"] = QString::number(2);
                 jobParams.parameters["startTime"] = QDateTime::currentDateTime().toString();
@@ -180,23 +180,12 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
     QString lastA = "";
     QString audioStreams = "";
 
-    QString recycleFolderName = selectedFolderName + "ACVCRecycleBin/";
     QDir recycleDir(recycleFolderName);
-    if (!recycleDir.exists())
-        recycleDir.mkpath(".");
-    else
+    recycleDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
+    foreach( QString dirItem, recycleDir.entryList() )
     {
-//        if (QSettings().value("clipsDataChanged").toString() == "Yes")
-        {
-            recycleDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
-            foreach( QString dirItem, recycleDir.entryList() )
-            {
-                if (dirItem.contains("Clip"))
-                    recycleDir.remove( dirItem );
-            }
-
-//            QSettings().setValue("clipsDataChanged", "No");
-        }
+        if (dirItem.contains("Clip"))
+            recycleDir.remove( dirItem );
     }
 
     foreach (QString mediaType, mediaTypeList) //prepare video and audio
@@ -233,8 +222,12 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
 
             if (useTrimFiles && mediaType == "V")
             {
+                QString recycleFileExtension;
+                int lastIndex = fileName.lastIndexOf(".");
+                recycleFileExtension = fileName.mid(lastIndex);
+
                 QStandardItem *childItem = nullptr;
-                QString recycleFileName = "Clip" + QString::number(ffmpegFiles.count()) + ".mp4";
+                QString recycleFileName = "Clip" + QString::number(ffmpegFiles.count()) + recycleFileExtension;
                 QFile file (recycleFolderName + recycleFileName);
                 if (!file.exists())
                     emit trimC(parentItem, childItem, folderName, fileName, recycleFolderName, recycleFileName, inTime, outTime.addMSecs(AGlobal().frames_to_msec(1))); //one frame extra in case some more frames needed
@@ -518,7 +511,7 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
 
 QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
 {
-    QString targetFolderFileName = selectedFolderName +  fileNameWithoutExtension + "V" + videoFileExtension;
+    QString targetFolderFileName = recycleFolderName +  fileNameWithoutExtension + "V" + videoFileExtension;
 
 #ifdef Q_OS_WIN
     targetFolderFileName = targetFolderFileName.replace("/", "\\");
@@ -530,7 +523,7 @@ QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
 
     if (audioClipsMap.count() > 0)
     {
-        QString targetFolderFileName = selectedFolderName +  fileNameWithoutExtension +  + "A" + audioFileExtension;
+        QString targetFolderFileName = recycleFolderName +  fileNameWithoutExtension +  + "A" + audioFileExtension;
 
     #ifdef Q_OS_WIN
         targetFolderFileName = targetFolderFileName.replace("/", "\\");
@@ -1433,6 +1426,10 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     }
 
     selectedFolderName = QSettings().value("selectedFolderName").toString();
+    recycleFolderName = selectedFolderName + "ACVCRecycleBin/";
+    QDir recycleDir(recycleFolderName);
+    if (!recycleDir.exists())
+        recycleDir.mkpath(".");
 
     transitionTimeFrames = ptransitionTimeFrames;
 
@@ -1624,18 +1621,26 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
     if (target == "Lossless") //Lossless FFMpeg
     {
-        childItem = losslessVideoAndAudio(parentItem); //assigning videoFileExtension
+        emit releaseMedia(selectedFolderName, fileNameWithoutExtension); //extionsion unknown at this moment but releaseMedia uses contain to check
 
-        emit releaseMedia(selectedFolderName, fileNameWithoutExtension + videoFileExtension);
+        QDir selectedDir(selectedFolderName);
+        selectedDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
+        foreach( QString dirItem, selectedDir.entryList() )
+        {
+            if (dirItem.contains(fileNameWithoutExtension))
+                selectedDir.remove( dirItem );
+        }
+
+        childItem = losslessVideoAndAudio(parentItem); //assigning videoFileExtension
 
         if (audioClipsMap.count() > 0)
             childItem = muxVideoAndAudio(childItem);
 
         emit propertyCopy(childItem, selectedFolderName, videoFilesMap.first().fileName, selectedFolderName, fileNameWithoutExtension + videoFileExtension);
 
-        emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "V" + videoFileExtension);
-        if (audioClipsMap.count() > 0)
-            emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "A" + audioFileExtension);
+//        emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "V" + videoFileExtension);
+//        if (audioClipsMap.count() > 0)
+//            emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "A" + audioFileExtension);
 
         if (includingSRT)
             emit loadClips(parentItem);
@@ -1644,9 +1649,18 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     }
     else if (target == "Encode") //FFMpeg encode
     {
+        emit releaseMedia(selectedFolderName, fileNameWithoutExtension); //extionsion unknown at this moment but releaseMedia uses contain to check
+
+        QDir selectedDir(selectedFolderName);
+        selectedDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
+        foreach( QString dirItem, selectedDir.entryList() )
+        {
+            if (dirItem.contains(fileNameWithoutExtension))
+                selectedDir.remove( dirItem );
+        }
+
         childItem = encodeVideoClips(parentItem); //assigning videoFileExtension
 
-        emit releaseMedia(selectedFolderName, fileNameWithoutExtension + videoFileExtension);
 
         emit propertyCopy(childItem, selectedFolderName, videoFilesMap.first().fileName, selectedFolderName, fileNameWithoutExtension + videoFileExtension);
 

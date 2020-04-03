@@ -885,8 +885,7 @@ void AClipsTableView::onDataChanged(const QModelIndex &topLeft, const QModelInde
 QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
 {
     QString srtFileName;
-//    fileName = QString(mediaFilePath.toString()).replace(".mp4",".srt").replace(".jpg",".srt").replace(".avi",".srt").replace(".wmv",".srt");
-//    fileName.replace(".MP4",".srt").replace(".JPG",".srt").replace(".AVI",".srt").replace(".WMV",".srt");
+
     int lastIndex = fileName.lastIndexOf(".");
     if (lastIndex > -1)
         srtFileName = folderName + fileName.left(lastIndex) + ".srt";

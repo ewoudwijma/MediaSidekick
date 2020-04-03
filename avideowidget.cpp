@@ -238,7 +238,7 @@ void AVideoWidget::onSpinnerPositionChanged(int frames)
 
 void AVideoWidget::onReleaseMedia(QString folderName, QString fileName)
 {
-    if (folderName == selectedFolderName && fileName == selectedFileName)
+    if (folderName == selectedFolderName && selectedFileName.contains(fileName))
     {
 //        qDebug()<<"AVideoWidget::onReleaseMedia"<<folderFileName;
         m_player->stop();

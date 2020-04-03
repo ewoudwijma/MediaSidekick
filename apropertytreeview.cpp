@@ -570,7 +570,7 @@ void APropertyTreeView::setupModel()
         if (column >= firstFileColumnIndex)
         {
             if (editMode)
-                updateSuggestedNames(column); //ok to take it from general as only the model and the column of childindex will be used.
+                updateSuggestedNames(column); //ok to take it from general as only the model and the column of childindex is used.
 
             QString folderFileName = model()->headerData(column, Qt::Horizontal).toString();
             onSetPropertyValue(folderFileName, "Status", "Loaded");
@@ -787,7 +787,7 @@ bool APropertyTreeView::onSetPropertyValue(QString folderFileName, QString prope
 
 void APropertyTreeView::updateSuggestedNames(int column)
 {
-    QModelIndex index = model()->index(0,column); // general top level row. Index will be used to access all variables in row
+    QModelIndex index = model()->index(0,column); // general top level row. Index is used to access all variables in row
     QString folderFileName = model()->headerData(index.column(), Qt::Horizontal).toString();
 
 //    qDebug()<<"APropertyTreeView::updateSuggestedNames"<<fileName<<column <<locationInName<<cameraInName<<artistInName;

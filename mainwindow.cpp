@@ -45,6 +45,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     agFileSystem = new AGFileSystem(this);
     connect(agFileSystem, &AGFileSystem::addItem, ui->graphicsView, &AGView::addItem);
+    connect(agFileSystem, &AGFileSystem::deleteItem, ui->graphicsView, &AGView::deleteItem);
+    connect(agFileSystem, &AGFileSystem::arrangeItems, ui->graphicsView, &AGView::arrangeItems);
+    connect(agFileSystem, &AGFileSystem::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
     connect(ui->graphicsView, &AGView::mediaLoaded, this, &MainWindow::onMediaLoaded);
 
     changeUIProperties();
@@ -72,52 +75,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
                            QString selectedFolderName = QSettings().value("selectedFolderName").toString();
 
-                           int count = countFolders(selectedFolderName);
-                           if (count > 10)
+                           if (selectedFolderName == "")
+                               on_actionOpen_Folder_triggered();
+                           else
                            {
-                               QMessageBox::StandardButton reply;
-                               reply = QMessageBox::question(this, "Open Folder", tr("Folder %1 contains %2 sub folders, loading can take a while. Do you still want to continue?").arg(selectedFolderName, QString::number(count)), QMessageBox::Yes|QMessageBox::No);
-                               if (reply != QMessageBox::Yes)
-                               {
-                                   selectedFolderName = "";
-                                   QSettings().setValue("selectedFolderName", selectedFolderName);
-                               }
+                               checkAndOpenFolder(selectedFolderName);
                            }
-
-                           ui->clipsTableView->onFolderSelected(selectedFolderName);
-                           ui->videoWidget->onFolderSelected(selectedFolderName);
-                           ui->propertyTreeView->onFolderSelected(selectedFolderName);
-                           ui->videoFilesTreeView->onFolderSelected(selectedFolderName);
-                           ui->audioFilesTreeView->onFolderSelected(selectedFolderName);
-                           ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
-                           //tags and mainwindow done by clips
 
 //                           qDebug()<<"contextSensitiveHelpOn"<<QSettings().value("contextSensitiveHelpOn");
                            if (QSettings().value("contextSensitiveHelpOn").toString() == "" || QSettings().value("contextSensitiveHelpOn").toBool())
                                ui->actionContext_Sensitive_Help->setChecked(true);
-
-                           if (selectedFolderName != "")
-                           {
-                               AJobParams jobParams;
-                               jobParams.thisObject = this;
-                               jobParams.parentItem = nullptr;
-                               jobParams.folderName = selectedFolderName;
-                               jobParams.fileName = "All";
-                               jobParams.action = "Load files and folders";
-                               jobParams.parameters["totalDuration"] = QString::number(1000);
-
-                               ui->jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
-                               {
-                                   MainWindow *mainWindow = qobject_cast<MainWindow *>(jobParams.thisObject);
-
-                                   QString folderName = jobParams.folderName;
-
-                                   mainWindow->agFileSystem->loadFilesAndFolders(QDir(folderName));//2019-09-02 Fipre
-
-                                   return QString();
-                               }, nullptr);
-
-                           }
 
                            showUpgradePrompt();
                        });
@@ -311,7 +278,8 @@ void MainWindow::changeUIProperties()
     spinnerLabel = new ASpinnerLabel(ui->filesTabWidget);
 
     ui->timelineViewButton->setEnabled(false);
-    ui->spotviewButton->setEnabled(false);
+    ui->spotviewDownButton->setEnabled(false);
+    ui->spotviewRightButton->setEnabled(false);
     ui->loadMediaProgressBar->setValue(0);
 }
 
@@ -515,6 +483,8 @@ void MainWindow::allConnects()
     agFileSystem->jobTreeView = ui->jobTreeView;
 
     connect(ui->graphicsView, &AGView::itemSelected, this, &MainWindow::onGraphicsItemSelected);
+    connect(ui->graphicsView, &AGView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
+
 
 } //allConnects
 
@@ -591,6 +561,22 @@ void MainWindow::loadSettings()
 
     if (QSettings().value("muteOn").toBool())
         ui->videoWidget->onMute();
+
+    QString viewMode = QSettings().value("viewMode").toString(); //default
+    bool syncNeeded = false;
+    if (viewMode == "")
+    {
+        QSettings().setValue("viewMode", "SpotView");
+        syncNeeded = true;
+    }
+    QString viewDirection = QSettings().value("viewDirection").toString();
+    if (viewDirection == "")
+    {
+        QSettings().setValue("viewDirection", "Down");
+        syncNeeded = true;
+    }
+    if (syncNeeded)
+        QSettings().sync();
 } //loadSettings
 
 void MainWindow::allTooltips()
@@ -604,7 +590,7 @@ void MainWindow::allTooltips()
                                       "<p><i>Select a folder containing video files</i></p>"
                                       "<ul>"
                                       "<li>Select folder: After selecting a folder, the files tab is shown and clips, tags and properties of all files are loaded</li>"
-                                      "<li>Warning: For movie files with more than 100 clips and if more than 100 files with clips are loaded, a warning will be given with the option to skip or cancel.</li>"
+                                      "<li>Warning: For movie files with more than 100 clips and if more than 100 files with clips are loaded, a warning is given with the option to skip or cancel.</li>"
                                       "</ul>"));
 
     ui->folderButton->setToolTip(tr("<p><b>Selected folder</b></p>"
@@ -620,7 +606,7 @@ void MainWindow::allTooltips()
                                      "<ul>"
                                      "<li><b>Trim (*)</b>: Create new video file(s) based on the clips of the video file. Clip and properties are copied</li>"
 //                                   "<li><b>Rename</b>: Rename the file to the suggested file name (go to the properties tab to manage selected file names</li>"
-                                     "<li><b>Archive file(s)</b>: Move the media file and its supporting files (clips / .srt files) to the ACVC recycle bin folder. If files do already exist in the recycle bin, these files will be renamed first with BU (Backup) added to their name</li>"
+                                     "<li><b>Archive file(s)</b>: Move the media file and its supporting files (clips / .srt files) to the ACVC recycle bin folder. If files do already exist in the recycle bin, these files are renamed first, with BU (Backup) added to their name</li>"
                                      "<li><b>Archive clips</b>: Move the clips of the file (.srt file) to the ACVC recycle bin folder</li>"
                                      "<li><b>Remux to mp4 / yuv420 (*)</b>: Put non mp4 videos into a mp4 container (enabling property updates) and convert video to yuv420 (enabling Wideview conversion). Usage example: <a href=\"https://www.fatshark.com/\">Fatshark</a> DVR</li>"
                                      "<li><b>Wideview by Derperview (*)</b>: Perform non-linear stretch of 4:3 video to make it 16:9</li>"
@@ -629,13 +615,13 @@ void MainWindow::allTooltips()
                                           ));
 
     //video
-    ui->videoWidget->setToolTip(tr("<p><b>Media window</b></p>"
-                                   "<p><i>Video and audio will be played here</i></p>"
-                                   "<ul>"
-                                   "<li>Player controls...</li>"
-                                   "<li>Add clips...</li>"
-                                   "</ul>"
-                                ));
+//    ui->videoWidget->setToolTip(tr("<p><b>Media window</b></p>"
+//                                   "<p><i>Video and audio is played here</i></p>"
+//                                   "<ul>"
+//                                   "<li>Player controls...</li>"
+//                                   "<li>Add clips...</li>"
+//                                   "</ul>"
+//                                ));
 
     ui->playButton->setToolTip(tr("<p><b>Play or pause</b></p>"
                               "<p><i>Play or pause the video</i></p>"
@@ -672,7 +658,7 @@ void MainWindow::allTooltips()
     ui->muteButton->setToolTip(tr("<p><b>Mute or unmute</b></p>"
                               "<p><i>Mute or unmute sound (toggle)</i></p>"
                               "<ul>"
-                              "<li>Video files will be muted if selected. Audio files will be unmuted if selected</li>"
+                              "<li>Video files are muted if selected. Audio files are unmuted if selected</li>"
                               "<li>Shortcut mute toggle: %1m</li>"
                               "</ul>").arg(commandControl));
     ui->speedComboBox->setToolTip(tr("<p><b>Speed</b></p>"
@@ -697,7 +683,7 @@ void MainWindow::allTooltips()
     ui->ratingFilterComboBox->setToolTip(tr("<p><b>Ratings</b></p>"
                                               "<p><i>Give a rating to a clip (0 to 5 stars)</i></p>"
                                               "<ul>"
-                                                "<li>Rating filter: Select 0 to 5 stars. All clips with same or higher rating will be shown</li>"
+                                                "<li>Rating filter: Select 0 to 5 stars. All clips with same or higher rating are shown</li>"
                                                 "<li>Rating column: Double click to change the rating (or %1 0 to %1 5 to rate the current clip)</li>"
                                                 "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
                                               "</ul>").arg(commandControl));
@@ -791,7 +777,7 @@ void MainWindow::allTooltips()
                                     ));
 
     //properties
-    ui->propertyTreeView->setToolTip(tr("<p><b>Property list</b></p>"
+    ui->propertyTreeView->setToolTip(tr("<p><b>Property list by Exiftool</b></p>"
                                      "<p><i>Show the properties (Metadata / EXIF data) for files of the selected folder</i></p>"
                                      "<ul>"
                                         "<li>Only properties and files applying to the <b>filters</b> are shown</li>"
@@ -877,13 +863,13 @@ void MainWindow::allTooltips()
     ui->exportSizeComboBox->setToolTip(tr("<p><b>Export video size</b></p>"
                                           "<p><i>The video size of the exported files</i></p>"
                                           "<ul>"
-                                          "<li>Source: if source selected than the video size of the source will be used (see clips window)</li>"
+                                          "<li>Source: if source selected than the video size of the source is used (see clips window)</li>"
                                           "</ul>"));
 
     ui->exportFramerateComboBox->setToolTip(tr("<p><b>Export framerate</b></p>"
                                                  "<p><i>The framerate of the exported files</i></p>"
                                                  "<ul>"
-                                                 "<li>Source: if source selected than the framerate of the source will be used (see clips window)</li>"
+                                                 "<li>Source: if source selected than the framerate of the source is used (see clips window)</li>"
                                                  "</ul>"));
 
     ui->exportVideoAudioSlider->setToolTip(tr("<p><b>Video Audio volume</b></p>"
@@ -921,23 +907,26 @@ void MainWindow::allTooltips()
                                     "<p><b>Scene Actions</p>"
                                     "<ul>"
                                     "<li><b>Scroll Wheel</b>: Scroll up and down</li>"
-                                    "<li><b>CTRL-Scroll Wheel</b>: Zoom-in and -out at current mouse position</li>"
+                                    "<li><b>%1Scroll Wheel</b>: Zoom-in and -out at current mouse position</li>"
                                     "<li><b>Right mouse click and drag</b>: Move around the scene</li>"
                                     "<li><b>Click on item</b>: Select the item. Actions and properties of the item at the right pane.</li>"
                                     "</ul>"
-                                    ));
+                                    ).arg(commandControl));
 
-    ui->spotviewButton->setToolTip(tr("<p><b>Spot view</b></p>"
-                                      "<p><i>Arranges clips below their mediafiles. Focus on spotting of clips in mediafiles</i></p>"
+    ui->spotviewDownButton->setToolTip(tr("<p><b>Spot view</b></p>"
+                                      "<p><i>Arranges clips below their mediafiles. Best for spotting of clips in mediafiles</i></p>"
                                       "<ul>"
-                                      "<li><b>Media file duration line</b>: In spot view mode the size of the media file item will be aligned with the size of the corresponding clips (with a minimum)</li>"
+                                          "<li><b>Down ↓</b>: Media files arranged vertically</li>"
+                                          "<li><b>Right →</b>: Media files arranged horizontally</li>"
+                                          "<li><b>Media file duration line</b>: In spot view mode the size of the media file item is aligned with the size of the corresponding clips (with a minimum)</li>"
                                       "</ul>"));
+    ui->spotviewRightButton->setToolTip(ui->spotviewDownButton->toolTip());
 
     ui->timelineViewButton->setToolTip(tr("<p><b>Timeline view</b></p>"
-                                      "<p><i>Arranges clips next to eachother as they will appear in exports. Focus on export result</i></p>"
+                                      "<p><i>Arranges clips next to eachother as they will appear in exports. Best for preparing export</i></p>"
                                       "<ul>"
                                       "<li><b>Transitions</b>: Clips will overlap if there is a transition time (currently defined in classical view)</li>"
-                                      "<li><b>Media file duration line</b>: In timeline mode the size of the media file item will be the same as the duration line (with a minimum)</li>"
+                                      "<li><b>Media file duration line</b>: In timeline mode the size of the media file item is the same as the duration line (with a minimum)</li>"
                                       "</ul>"));
 
     ui->searchLineEdit->setToolTip(tr("<p><b>Search</b></p>"
@@ -949,8 +938,7 @@ void MainWindow::allTooltips()
     ui->refreshViewButton->setToolTip(tr("<p><b>Refresh</b></p>"
                                       "<p><i>Rebuilds the view</i></p>"
                                       "<ul>"
-                                         "<li><b>File changes</b>: useful in case files are added or deleted, e.g. when export is created</li>"
-                                         "<li><b>Temporary</b>: In a future version, file changes will be notified by ACVC and changes added directly</li>"
+                                         "<li><b>File changes</b>: file changes are notified by ACVC and updated in the view directly</li>"
                                       "</ul>"));
 
     ui->graphicsScrollArea->setToolTip(tr("<p><b>Media Item Actions and Properties</b></p>"
@@ -960,7 +948,7 @@ void MainWindow::allTooltips()
                                           "<li><b>Actions</b>: Hover over buttons for help</li>"
                                           "<li><b>Properties by FFMpeg</b>: Temporary available to compare with Exiftool. Available for Videos FFMpeg tool shows average framerate and framerate. Last one is the framerate if no drops are present</li>"
                                           "<li><b>Properties by QMediaplayer</b>: Temporary available to compare with Exiftool. Available for Audio and Videos after they started playing</li>"
-                                          "<li><b>Properties by Exiftool</b>: See also property tab in classical mode. Properties can also be edited there</li>"
+                                          "<li><b>Properties by Exiftool</b>: See also property tab in classical mode. Properties are also edited there</li>"
                                           "</ul>"));
 } //tooltips
 
@@ -1259,14 +1247,14 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
         if (context == "New Edit")
         {
             requestList.append({context, ui->newTagLineEdit, "Tags", tr("<p>Create tags</p>"
-                                                            "<p><i>Create tags. Drag and drop created tabs to clips. Tags can be used for filtering</i></p>"
+                                                            "<p><i>Create tags. Drag and drop created tabs to clips. Tags are used for filtering</i></p>"
                                                             ), ui->clipsTabWidget, 0});
 
             if (ui->clipsTableView->clipsProxyModel->rowCount() != 0)
                 requestList.append({context, ui->ratingFilterComboBox, "Filters", tr("<p>Select filters</p>"
-                                                        "<p><i>%1 Clips ready to be exported</i></p>"
+                                                        "<p><i>%1 Clips ready for export</i></p>"
                                                         "<ul>"
-                                                        "<li>Use filters (rating, alike, tags, file only) to select clips to be exported</li>"
+                                                        "<li>Use filters (rating, alike, tags, file only) to select clips to export</li>"
                                                         "</ul>").arg(QString::number(ui->clipsTableView->clipsProxyModel->rowCount())), ui->clipsTabWidget, 0});
         }
 
@@ -1285,7 +1273,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
             requestList.append({context, ui->ratingFilterComboBox, "Filters", tr("<p>Select filters</p>"
                                                             "<p><i>%1 Clips available but not selected</i></p>"
                                                             "<ul>"
-                                                            "<li>Use filters (rating, alike, tags, file only) to select clips to be exported</li>"
+                                                            "<li>Use filters (rating, alike, tags, file only) to select clips to export</li>"
                                                             "</ul>").arg(QString::number(ui->clipsTableView->clipsItemModel->rowCount())), ui->clipsTabWidget, 0});
         else //clips selected
         {
@@ -1330,7 +1318,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     {
         if (arg1 == "") //no error
             requestList.append({context, ui->exportFilesTreeView, "Export files",  tr("<p>List of exported files</p>"
-                                                            "<p><i>Exported file can be found here</i></p>"
+                                                            "<p><i>Exported files are found here</i></p>"
                                                             ), ui->filesTabWidget, 1});
         else
             requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
@@ -1343,7 +1331,7 @@ void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
     {
         if (arg1 == "") //no error
             requestList.append({context, ui->exportFilesTreeView, "Wideview result",  tr("<p>List of video or exported files</p>"
-                                                            "<p><i>Created file can be found here (DV added to the filename)</i></p>"
+                                                            "<p><i>Created files are found here (DV added to the filename)</i></p>"
                                                             ), ui->filesTabWidget, 1});
         else
             requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
@@ -1407,7 +1395,7 @@ void MainWindow::onClipsFilterChanged(bool fromFilters)
 
 void MainWindow::onTagFilter1ListViewChanged()
 {
-    qDebug()<<"MainWindow::on_tagFilter1ListView_indexesMoved";
+//    qDebug()<<"MainWindow::on_tagFilter1ListView_indexesMoved";
 
     QString string1 = ui->tagFilter1ListView->modelToString();
 
@@ -1482,7 +1470,7 @@ void MainWindow::on_actionSave_triggered()
             changeCount++;
     }
 
-    ui->statusBar->showMessage(tr("%1 clip changes and %2 deletions will be saved").arg(QString::number(changeCount), QString::number(ui->clipsTableView->nrOfDeletedItems)), 5000);
+    ui->statusBar->showMessage(tr("%1 clip changes and %2 deletions saved").arg(QString::number(changeCount), QString::number(ui->clipsTableView->nrOfDeletedItems)), 5000);
 //        ui->statusBar->showMessage("No clip changes to save", 5000);
 
     ui->clipsTableView->saveModels();
@@ -1501,7 +1489,7 @@ void MainWindow::on_actionIn_triggered()
 
 void MainWindow::on_actionOut_triggered()
 {
-    qDebug()<<"MainWindow::on_actionOut_triggered"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
+//    qDebug()<<"MainWindow::on_actionOut_triggered"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
     ui->videoWidget->onSetOut();
 }
 
@@ -2055,6 +2043,11 @@ void MainWindow::on_filesTabWidget_currentChanged(int index)
 
 void MainWindow::on_tabUIWidget_currentChanged(int index)
 {
+    if (ui->clipsTableView->checkSaveIfClipsChanged())
+    {
+        ui->clipsTableView->saveModels();
+    }
+
     if (QSettings().value("uiTabIndex").toInt() != index)
     {
         QSettings().setValue("uiTabIndex", index);
@@ -2280,8 +2273,8 @@ void MainWindow::on_actionRepeat_context_sensible_help_triggered()
 
 void MainWindow::on_folderButton_clicked()
 {
-    QString folderName = QSettings().value("selectedFolderName").toString();//ui->folderTreeView->directoryModel->fileInfo(ui->folderTreeView->currentIndex()).absoluteFilePath();
-    QDesktopServices::openUrl( QUrl::fromLocalFile( folderName ) );
+    QString selectedFolderName = QSettings().value("selectedFolderName").toString();//ui->folderTreeView->directoryModel->fileInfo(ui->folderTreeView->currentIndex()).absoluteFilePath();
+    QDesktopServices::openUrl( QUrl::fromLocalFile( selectedFolderName ) );
 }
 
 void MainWindow::onDerperviewCompleted(QString errorString)
@@ -2421,7 +2414,7 @@ void MainWindow::on_refreshButton_clicked()
 
 void MainWindow::on_clearJobsTreeButton_clicked()
 {
-    while (ui->jobTreeView->jobItemModel->rowCount()>0)
+    while (ui->jobTreeView->jobItemModel->rowCount() > 0)
         ui->jobTreeView->jobItemModel->takeRow(0);
 }
 
@@ -2454,6 +2447,38 @@ int MainWindow::countFolders(QString folderName, int depth)
     return count;
 }
 
+void MainWindow::checkAndOpenFolder(QString selectedFolderName)
+{
+//    qDebug()<<"MainWindow::checkAndOpenFolder"<<selectedFolderName;
+    int count = countFolders(selectedFolderName);
+
+    if (count > 10)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Open Folder", tr("Folder %1 contains %2 sub folders, loading can take a while. Do you still want to continue?").arg(selectedFolderName, QString::number(count)), QMessageBox::Yes|QMessageBox::No);
+        if (reply != QMessageBox::Yes)
+        {
+            selectedFolderName = "";
+            QSettings().setValue("selectedFolderName", selectedFolderName);
+            QSettings().sync();
+        }
+    }
+
+    if (selectedFolderName != "")
+    {
+        ui->clipsTableView->onFolderSelected(selectedFolderName);
+        ui->videoWidget->onFolderSelected(selectedFolderName);
+        ui->propertyTreeView->onFolderSelected(selectedFolderName);
+        ui->videoFilesTreeView->onFolderSelected(selectedFolderName);
+        ui->audioFilesTreeView->onFolderSelected(selectedFolderName);
+        ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
+        //tags and mainwindow done by clips
+
+        on_refreshViewButton_clicked();
+    }
+
+}
+
 void MainWindow::on_actionOpen_Folder_triggered()
 {
     QFileDialog dialog(this);
@@ -2464,30 +2489,32 @@ void MainWindow::on_actionOpen_Folder_triggered()
 
     if (selectedFolderName != "/")
     {
-        int count = countFolders(selectedFolderName);
-        if (count > 0)
-        {
-            QMessageBox::StandardButton reply;
-            reply = QMessageBox::question(this, "Open Folder", tr("Folder %1 contains %2 sub folders, loading can take a while. Do you still want to continue?").arg(selectedFolderName, QString::number(count)), QMessageBox::Yes|QMessageBox::No);
-            if (reply != QMessageBox::Yes)
-                return;
-        }
-
-//        ui->tabUIWidget->setCurrentIndex(1); // go to the graphical tab
-
-//        ui->folderTreeView->simulateIndexClicked(selectedFolderName);
-
-        ui->clipsTableView->onFolderSelected(selectedFolderName);
-        ui->videoWidget->onFolderSelected(selectedFolderName);
-        ui->propertyTreeView->onFolderSelected(selectedFolderName);
-        ui->videoFilesTreeView->onFolderSelected(selectedFolderName);
-        ui->audioFilesTreeView->onFolderSelected(selectedFolderName);
-        ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
-
         QSettings().setValue("selectedFolderName", selectedFolderName);
         QSettings().sync();
 
-        on_refreshViewButton_clicked();
+        checkAndOpenFolder(selectedFolderName);
+//        int count = countFolders(selectedFolderName);
+//        if (count > 0)
+//        {
+//            QMessageBox::StandardButton reply;
+//            reply = QMessageBox::question(this, "Open Folder", tr("Folder %1 contains %2 sub folders, loading can take a while. Do you still want to continue?").arg(selectedFolderName, QString::number(count)), QMessageBox::Yes|QMessageBox::No);
+//            if (reply != QMessageBox::Yes)
+//                return;
+//        }
+
+////        ui->tabUIWidget->setCurrentIndex(1); // go to the graphical tab
+
+////        ui->folderTreeView->simulateIndexClicked(selectedFolderName);
+
+//        ui->clipsTableView->onFolderSelected(selectedFolderName);
+//        ui->videoWidget->onFolderSelected(selectedFolderName);
+//        ui->propertyTreeView->onFolderSelected(selectedFolderName);
+//        ui->videoFilesTreeView->onFolderSelected(selectedFolderName);
+//        ui->audioFilesTreeView->onFolderSelected(selectedFolderName);
+//        ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
+
+
+//        on_refreshViewButton_clicked();
     }
 }
 
@@ -2554,6 +2581,7 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
 
     QPushButton *zoomToItemButton = new QPushButton(ui->graphicsScrollAreaWidget);
     zoomToItemButton->setText("Zoom to item");
+    zoomToItemButton->setMaximumWidth(200);
     buttonsLayout->addWidget(zoomToItemButton);
     connect(zoomToItemButton, &QPushButton::clicked, [=]()
     {
@@ -2567,6 +2595,7 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     {
         QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollAreaWidget);
         openInExplorerButton->setText("Open in explorer");
+        openInExplorerButton->setMaximumWidth(200);
         buttonsLayout->addWidget(openInExplorerButton);
         connect(openInExplorerButton, &QPushButton::clicked, [=]()
         {
@@ -2597,6 +2626,7 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
 
         QPushButton *openInApplicationButton = new QPushButton(ui->graphicsScrollAreaWidget);
         openInApplicationButton->setText("Open in application");
+        openInApplicationButton->setMaximumWidth(200);
         buttonsLayout->addWidget(openInApplicationButton);
         connect(openInApplicationButton, &QPushButton::clicked, [=]()
         {
@@ -2822,7 +2852,8 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     {
         QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollAreaWidget);
         openInExplorerButton->setText("Open in explorer");
-        mainLayout->addWidget(openInExplorerButton);
+        openInExplorerButton->setMaximumWidth(200);
+        buttonsLayout->addWidget(openInExplorerButton);
         connect(openInExplorerButton, &QPushButton::clicked, [=]()
         {
             QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName) );
@@ -2831,7 +2862,7 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
 //        QPushButton *exportButton = new QPushButton(ui->graphicsScrollAreaWidget);
 //        exportButton->setText("Export");
 //        mainLayout->addWidget(exportButton);
-//        connect(exportButton, &QPushButton::clicked, ui->graphicsView, &AGView::onFileView);
+//        connect(exportButton, &QPushButton::clicked, ui->graphicsView, &AGView::onSpotView);
 
 //        QPushButton *recycleButton = new QPushButton(ui->graphicsWidget);
 //        recycleButton->setText("ACVC RecycleBin");
@@ -2851,13 +2882,14 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     mainLayout->addSpacerItem(spacer);
 }
 
-void MainWindow::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta)
+void MainWindow::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath)
 {
 //    qDebug()<<"MainWindow::onMediaLoaded"<<folderName<<fileName<<ui->graphicsView->loadMediaCompleted << agFileSystem->loadMediaTotal;
     ui->loadMediaProgressBar->setValue(100 * ui->graphicsView->loadMediaCompleted / agFileSystem->loadMediaTotal);
 
-    ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal);
-    ui->spotviewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal);
+    ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "TimelineView");
+    ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down"));
+    ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right"));
 
     if (ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal)
     {
@@ -2867,18 +2899,59 @@ void MainWindow::onMediaLoaded(QString folderName, QString fileName, QImage imag
 }
 
 
-void MainWindow::on_spotviewButton_clicked()
+void MainWindow::on_spotviewDownButton_clicked()
 {
-    ui->graphicsView->onFileView();
+    ui->graphicsView->horizontalScrollBar()->setValue( 0 );
+    ui->graphicsView->verticalScrollBar()->setValue( 0 );
+    ui->graphicsView->scale(1,1);
+
+    QSettings().setValue("viewMode", "SpotView");
+    QSettings().setValue("viewDirection", "Down");
+    QSettings().sync();
+
+    ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "TimelineView");
+    ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down"));
+    ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right"));
+
+    ui->graphicsView->onSetView();
+}
+
+void MainWindow::on_spotviewRightButton_clicked()
+{
+    ui->graphicsView->horizontalScrollBar()->setValue( 0 );
+    ui->graphicsView->verticalScrollBar()->setValue( 0 );
+    ui->graphicsView->scale(1,1);
+
+    QSettings().setValue("viewMode", "SpotView");
+    QSettings().setValue("viewDirection", "Right");
+    QSettings().sync();
+
+    ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "TimelineView");
+    ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down"));
+    ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right"));
+
+    ui->graphicsView->onSetView();
 }
 
 void MainWindow::on_timelineViewButton_clicked()
 {
-    ui->graphicsView->onTimelineView();
+    ui->graphicsView->horizontalScrollBar()->setValue( 0 );
+    ui->graphicsView->verticalScrollBar()->setValue( 0 );
+    ui->graphicsView->scale(1,1);
+
+    QSettings().setValue("viewMode", "TimelineView");
+    QSettings().sync();
+
+    ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "TimelineView");
+    ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down");
+    ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right");
+
+    ui->graphicsView->onSetView();
 }
 
 void MainWindow::on_searchLineEdit_textChanged(const QString &arg1)
 {
+//    qDebug()<<"MainWindow::on_searchLineEdit_textChanged"<<arg1;
     ui->graphicsView->onSearchTextChanged(arg1);
 }
 
@@ -2888,11 +2961,29 @@ void MainWindow::on_refreshViewButton_clicked()
     ui->graphicsView->verticalScrollBar()->setValue( 0 );
     ui->graphicsView->clearAll();
     ui->graphicsView->scale(1,1);
+    ui->graphicsView->loadMediaCompleted = 0;
 
     agFileSystem->loadMediaTotal = 0;
-    ui->graphicsView->loadMediaCompleted = 0;
+    if (agFileSystem->fileSystemWatcher->files().count() > 0)
+        agFileSystem->fileSystemWatcher->removePaths(agFileSystem->fileSystemWatcher->files());
+    if (agFileSystem->fileSystemWatcher->directories().count() > 0)
+        agFileSystem->fileSystemWatcher->removePaths(agFileSystem->fileSystemWatcher->directories());
+
+//    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
+//    selectedFolderName = selectedFolderName.left(selectedFolderName.length()-1);//remove last /
+
+//    if (agFileSystem->fileSystemWatcher->addPath(selectedFolderName))
+//        qDebug()<<"fileSystemWatcher->addPath true"<<selectedFolderName;
+//    else
+//        qDebug()<<"fileSystemWatcher->addPath false"<<selectedFolderName;
+//    if (agFileSystem->fileSystemWatcher->addPath(selectedFolderName))
+//        qDebug()<<"fileSystemWatcher->addPath true"<<selectedFolderName;
+//    else
+//        qDebug()<<"fileSystemWatcher->addPath false"<<selectedFolderName;
+
     ui->timelineViewButton->setEnabled(false);
-    ui->spotviewButton->setEnabled(false);
+    ui->spotviewDownButton->setEnabled(false);
+    ui->spotviewRightButton->setEnabled(false);
     ui->loadMediaProgressBar->setValue(0);
     onGraphicsItemSelected(nullptr);
 
@@ -2910,9 +3001,7 @@ void MainWindow::on_refreshViewButton_clicked()
 
         QString folderName = jobParams.folderName;
 
-        mainWindow->agFileSystem->loadFilesAndFolders(QDir(folderName));//2019-09-02 Fipre
-
-//            mainWindow->ui->graphicsView->arrangeItems(nullptr);
+        mainWindow->agFileSystem->loadFilesAndFolders(QDir(folderName), jobParams);//2019-09-02 Fipre
 
         return QString();
     }, nullptr);

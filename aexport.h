@@ -41,7 +41,8 @@ private:
     QMap<int,int> audioClipsMap;
     QAbstractItemModel *timelineModel;
     int transitionTimeFrames;
-    QString selectedFolderName ;
+    QString selectedFolderName;
+    QString recycleFolderName;
 //    QMap<QString, FileStruct> filesMap;
     QMap<QString, FileStruct> filesMap;
     QMap<QString, FileStruct> videoFilesMap;

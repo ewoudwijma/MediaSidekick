@@ -35,20 +35,24 @@ void AGMediaRectangleItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 
 //    qDebug()<<"emit clipPositionChanged"<<data(clipInIndex).toInt()<<data(clipOutIndex).toInt()<<event->pos()<<draggedWidth<<event->pos().x()/double(draggedWidth);
 
-    if (event->pos().y() > rect().height() * 0.7) //only hover on timeline
+    if(event->modifiers() == Qt::ControlModifier)
     {
-        int clipIn = data(clipInIndex).toInt();
-        int clipOut = data(clipOutIndex).toInt();
-
-        int progress;
-        if (clipOut != 0)
+//        if (event->pos().y() > rect().height() * 0.7) //only hover on timeline
         {
-            progress = clipIn + (clipOut - clipIn) * event->pos().x()/rect().width();
-        }
-        else
-            progress = data(mediaDurationIndex).toInt() * event->pos().x()/rect().width();
+            int clipIn = data(clipInIndex).toInt();
+            int clipOut = data(clipOutIndex).toInt();
 
-        emit clipPositionChanged(this, progress);
+            int progress;
+            if (clipOut != 0)
+            {
+                progress = clipIn + (clipOut - clipIn) * event->pos().x()/rect().width();
+            }
+            else
+                progress = data(mediaDurationIndex).toInt() * event->pos().x()/rect().width();
+
+            emit clipPositionChanged(this, progress);
+        }
+
     }
 
     QGraphicsRectItem::hoverMoveEvent(event);

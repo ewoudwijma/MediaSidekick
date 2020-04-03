@@ -20,8 +20,8 @@ protected:
 
 signals:
 //    void agItemChanged(AGMediaRectangleItem *clipItem);
-    void clipPositionChanged(QGraphicsItem *clipItem, double position);
-    void itemClicked(QGraphicsItem *clipItem);
+    void clipPositionChanged(QGraphicsRectItem *rectItem, double position);
+    void itemClicked(QGraphicsRectItem *rectItem);
 
 private slots:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

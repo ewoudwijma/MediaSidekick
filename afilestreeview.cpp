@@ -100,6 +100,8 @@ void AFilesTreeView::setType(QString type)
         QStringList audioFilters;
         foreach (QString extension, AGlobal().audioExtensions)
             audioFilters << "*." + extension;
+        foreach (QString extension, AGlobal().imageExtensions)
+            audioFilters << "*." + extension;
 
         fileModel->setNameFilters(audioFilters);
     }
@@ -107,6 +109,8 @@ void AFilesTreeView::setType(QString type)
     {
         QStringList exportFilters;
         foreach (QString extension, AGlobal().exportExtensions)
+            exportFilters << "*." + extension;
+        foreach (QString extension, AGlobal().projectExtensions)
             exportFilters << "*." + extension;
 
         QStringList exportMethodAndExtensionFilter;
