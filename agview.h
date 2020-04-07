@@ -43,6 +43,11 @@ class AGView: public QGraphicsView
     void reParent(QGraphicsItem *parentItem, QString prefix = "");
 
     QDateTime pseudoCreateDate;
+    qreal scaleFactor = 1.0 / 100.0;
+
+    QDialog *playerDialog = nullptr;
+    QVideoWidget *dialogVideoWidget;
+    void stopAndDeleteAllPlayers();
 public:
     AGView(QWidget *parent = nullptr);
     void addItem(QString parentName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
@@ -51,12 +56,16 @@ public:
     ~AGView();
     void onSearchTextChanged(QString text);
     void clearAll();
-    void setTextItemsColor(QColor color);
+    void setThemeColors(QColor color);
     int loadMediaCompleted = 0;
 
+    void setScaleFactorAndArrange(qreal scaleFactor);
+    QMediaPlayer *dialogMediaPlayer = nullptr;
+    bool playInDialog;
+    void setPlayInDialog(bool checked);
 public slots:
     void onSetView();
-    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize = QSize(), QString ffmpegMeta = "", QPainterPath painterPath = QPainterPath());
+    void onMediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
     void onCreateClip();
     void onClipItemChanged(QGraphicsItem *clipItem);
     void onClipMouseReleased(QGraphicsItem *clipItem);
@@ -85,10 +94,11 @@ private slots:
     void onMetaDataAvailableChanged(bool available);
     void onSelectionChanged();
     void onPositionChanged(int progress);
-//    void onAudioBufferProbed(QAudioBuffer buffer);
+    //    void onAudioBufferProbed(QAudioBuffer buffer);
+    void onPlayerDialogFinished(int result);
 signals:
     void itemSelected(QGraphicsItem *item);
-    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath = QPainterPath());
+    void mediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
     void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 
 };

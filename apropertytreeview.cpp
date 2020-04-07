@@ -64,7 +64,7 @@ APropertyTreeView::APropertyTreeView(QWidget *parent) : QTreeView(parent)
 
 APropertyTreeView::~APropertyTreeView()
 {
-    qDebug()<<"destructor APropertyTreeView::~APropertyTreeView";
+//    qDebug()<<"destructor APropertyTreeView::~APropertyTreeView";
     disconnect(propertyItemModel, &QStandardItemModel::itemChanged, this, &APropertyTreeView::onPropertyChanged);
 
     delete frozenTableView;

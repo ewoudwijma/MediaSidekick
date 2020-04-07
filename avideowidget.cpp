@@ -120,9 +120,9 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
     if (selectedFileName != fileName)
         selectedFileName = fileName;
 
-//    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().canonicalUrl();
+//    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().request().url();
 
-    if (QUrl::fromLocalFile(folderFileName) != m_player->currentMedia().canonicalUrl()) //another media file
+    if (QUrl::fromLocalFile(folderFileName) != m_player->currentMedia().request().url()) //another media file
     {
 //        qDebug()<<"AVideoWidget::onClipIndexClicked"<<index.data().toString()<<selectedFolderName + selectedFileName;
         oldState = m_player->state();
@@ -253,7 +253,7 @@ void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 
 void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().canonicalUrl()<<m_player->error()<<m_player->errorString();
+    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().request().url()<<m_player->error()<<m_player->errorString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {

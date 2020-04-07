@@ -133,6 +133,10 @@ win32: LIBS += -LD:\ACVC\windows\ffmpeg-latest-win64-dev\lib
 win32: LIBS += -lavcodec -lavformat -lavutil -lswscale #-lavdevice -lavfilter -lpostproc -lswresample
 win32: INCLUDEPATH +=D:\ACVC\windows\ffmpeg-latest-win64-dev\include
 
+win32: LIBS += -LD:\ACVC\windows\SDL2_x86_64-w64-mingw32\lib
+win32: LIBS += -lSDL2
+win32: INCLUDEPATH +=D:\ACVC\windows\SDL2_x86_64-w64-mingw32\include
+
 unix:LIBS += -L/Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-shared/bin
 unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample
 unix:INCLUDEPATH += /Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-dev/include

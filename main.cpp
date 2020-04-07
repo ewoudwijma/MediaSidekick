@@ -70,12 +70,12 @@ int main(int argc, char *argv[])
 #endif
 
     qRegisterMetaType<AJobParams>("AJobParams"); //so signal/slots can use it (jobAddlog)
-    qRegisterMetaType<QPainterPath>("QPainterPath");
+    qRegisterMetaType<QList<int>>("QList<int>");
     //otherwise: QObject::connect: Cannot queue arguments of type 'QPainterPath' (Make sure 'QPainterPath' is registered using qRegisterMetaType().)
 
     a.setOrganizationDomain("actioncamvideocompanion.com");
     a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.4.1");
+    a.setApplicationVersion("0.4.2");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
@@ -219,7 +219,7 @@ MacOS 2020-02-01
         - QT Creator run/build release
         - Script
             - export qtVersion =
-            - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_1_clang_64bit-Release
+            - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_2_clang_64bit-Release
             - cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
 
     - Get exiftool
@@ -235,8 +235,8 @@ MacOS 2020-02-01
         - https://doc-snapshots.qt.io/qt5-5.11/osx-deployment.html
 
      - Make dmg (repeat this step only to create new deployment)
-        - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Release/
-        - /Users/ewoudwijma/Qt/5.14.1/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
+        - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_2_clang_64bit-Release
+        - /Users/ewoudwijma/Qt/5.14.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
         - Add license.txt and symbolic link to applications folder
             - https://www.dragly.org/2012/01/13/deploy-qt-applications-for-mac-os-x/
                 - open DiskUtility
@@ -247,12 +247,14 @@ MacOS 2020-02-01
                     - type cd<space> and drag the desktop icon after this
                     - ln -s /Applications ./Applications
                     - cp $acvc_build_path/../ACVC/license.txt READ_BEFORE_OPENING_ACVC_license.txt
+                    - cd (to unlock the image)
                 - Open DiskUtility
                     - Select image
-                    - Right click: Rename to ACVC vx.y.z (version
+                    - Right click: Rename to ACVC vx.y.z (version)
                     - Eject mounted image
                     - From menu: Images/Convert...
                     - Find created dmg
+                    - Rename to ACVC vx.y.z
                     - Choose Image Format: compressed then Convert. A link will be created on the desktop
 
 General post

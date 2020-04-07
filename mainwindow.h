@@ -52,7 +52,7 @@ public slots:
     void onUpdateProgress(int value);
     void onReadyProgress(int result, QString errorString);
     void onShowInStatusBar(QString message, int timeout = 0);
-    void onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath = QPainterPath());
+    void onMediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
 private slots:
     void on_actionBlack_theme_triggered();
     void on_actionQuit_triggered();
@@ -187,6 +187,10 @@ private slots:
     void on_searchLineEdit_textChanged(const QString &arg1);
 
     void on_refreshViewButton_clicked();
+
+    void on_scaleSlider_valueChanged(int value);
+
+    void on_playerInDialogcheckBox_clicked(bool checked);
 
 private:
     Ui::MainWindow *ui;

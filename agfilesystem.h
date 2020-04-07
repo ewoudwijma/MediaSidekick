@@ -33,7 +33,7 @@ private:
 
     void loadOrModifyItem(AJobParams jobParams, QString folderName, QString fileName, bool isNewFile, bool loadMediaInJob);
 signals:
-    void mediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath = QPainterPath());
+    void mediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
     void addItem(QString parentName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
     void deleteItem(QString mediaType, QString folderName, QString fileName);
     void jobAddLog(AJobParams jobParams, QString logMessage);

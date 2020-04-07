@@ -577,6 +577,18 @@ void MainWindow::loadSettings()
     }
     if (syncNeeded)
         QSettings().sync();
+
+    QSettings().value("playerInDialogcheckBox");
+    if (QSettings().value("playerInDialogcheckBox").toString() == "")
+#ifdef Q_OS_WIN
+        ui->playerInDialogcheckBox->setChecked(false);
+#else
+        ui->playerInDialogcheckBox->setChecked(true);
+#endif
+    else
+        ui->playerInDialogcheckBox->setChecked(QSettings().value("playerInDialogcheckBox").toBool());
+    ui->graphicsView->setPlayInDialog(ui->playerInDialogcheckBox->isChecked());
+
 } //loadSettings
 
 void MainWindow::allTooltips()
@@ -950,6 +962,14 @@ void MainWindow::allTooltips()
                                           "<li><b>Properties by QMediaplayer</b>: Temporary available to compare with Exiftool. Available for Audio and Videos after they started playing</li>"
                                           "<li><b>Properties by Exiftool</b>: See also property tab in classical mode. Properties are also edited there</li>"
                                           "</ul>"));
+    ui->playerInDialogcheckBox->setToolTip(tr("<p><b>Show video in window</b></p>"
+                                              "<p><i>Video can be played in a separate window or at the place where it is located on the screen </i></p>"
+                                              "<ul>"
+                                                 "<li><b>Performace on Mac / OSX</b>: Currently performance on Mac / OSX for <i>at place</i> playing is very bad.</li>"
+                                              "</ul>"));
+    ui->scaleSlider->setToolTip(tr("<p><b>Video duration slider</b></p>"
+                                   "<p><i>Determines the size of the video and audio files displayed on the screen</i></p>"
+                                   ));
 } //tooltips
 
 void MainWindow::on_actionBlack_theme_triggered()
@@ -1017,7 +1037,7 @@ void MainWindow::on_actionBlack_theme_triggered()
             menuItem->setPalette(pal);
     }
 
-    ui->graphicsView->setTextItemsColor(Qt::white);
+    ui->graphicsView->setThemeColors(Qt::white);
 }
 
 void MainWindow::on_actionWhite_theme_triggered()
@@ -1081,7 +1101,7 @@ void MainWindow::on_actionWhite_theme_triggered()
             menuItem->setPalette(pal);
     }
 
-    ui->graphicsView->setTextItemsColor(Qt::black);
+    ui->graphicsView->setThemeColors(Qt::black);
 }
 
 void MainWindow::on_actionAbout_triggered()
@@ -1098,7 +1118,7 @@ void MainWindow::on_actionAbout_triggered()
                "<li><a href=\"https://www.shotcut.org/\">Shotcut</a> Open source video editor (timeline and version check)</li>"
                "<li><a href=\"https://www.ffmpeg.org/\">FFmpeg</a> multimedia format and codec libraries (lossless and encoded previews)</li>"
                "<li><a href=\"https://exiftool.org/\">Exiftool</a> Read, Write and Edit Meta Information (Properties)</li>"
-               "<li><a href=\"https://github.com/banelle/derperview\">Derperview by Banelle</a> Perform non-linear stretch of 4:3 video to make it 16:9. See also <a href=\"https://intofpv.com/t-derperview-a-command-line-superview-alternative>Derperview - A Command Line Superview Alternative</a></li>"
+               "<li><a href=\"https://github.com/banelle/derperview\">Derperview by Banelle</a> Perform non-linear stretch of 4:3 video to make it 16:9. See also <a href=\"https://intofpv.com/t-derperview-a-command-line-superview-alternative\">Derperview - A Command Line Superview Alternative</a></li>"
                "</ul>"
                "<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>"
                "<p>As ACVC may contain bugs, BACKUP your video files before editing!</p>"
@@ -2541,18 +2561,22 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     if (item == nullptr) //clean
         return;
 
-    QGraphicsVideoItem *playerItem = nullptr;
     QMediaPlayer *m_player = nullptr;
-    foreach (QGraphicsItem *childItem, item->childItems())
+    if (!ui->graphicsView->playInDialog)
     {
-        if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
-            playerItem = (QGraphicsVideoItem *)childItem;
+        QGraphicsVideoItem *playerItem = nullptr;
+        foreach (QGraphicsItem *childItem, item->childItems())
+        {
+            if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
+                playerItem = (QGraphicsVideoItem *)childItem;
 
+        }
+    //    qDebug()<<"playerItem"<<playerItem;
+        if (playerItem != nullptr)
+            m_player = (QMediaPlayer *)playerItem->mediaObject();
     }
-//    qDebug()<<"playerItem"<<playerItem;
-    if (playerItem != nullptr)
-        m_player = (QMediaPlayer *)playerItem->mediaObject();
-
+    else
+        m_player = ui->graphicsView->dialogMediaPlayer;
 
     QString folderName = item->data(folderNameIndex).toString();
     QString fileName = item->data(fileNameIndex).toString();
@@ -2577,7 +2601,6 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     mainLayout->addWidget(buttonsGroupBox);
     QVBoxLayout *buttonsLayout = new QVBoxLayout;
     buttonsGroupBox->setLayout(buttonsLayout);
-
 
     QPushButton *zoomToItemButton = new QPushButton(ui->graphicsScrollAreaWidget);
     zoomToItemButton->setText("Zoom to item");
@@ -2882,7 +2905,7 @@ void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
     mainLayout->addSpacerItem(spacer);
 }
 
-void MainWindow::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QPainterPath painterPath)
+void MainWindow::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QList<int> samples)
 {
 //    qDebug()<<"MainWindow::onMediaLoaded"<<folderName<<fileName<<ui->graphicsView->loadMediaCompleted << agFileSystem->loadMediaTotal;
     ui->loadMediaProgressBar->setValue(100 * ui->graphicsView->loadMediaCompleted / agFileSystem->loadMediaTotal);
@@ -3006,4 +3029,17 @@ void MainWindow::on_refreshViewButton_clicked()
         return QString();
     }, nullptr);
 
+}
+
+void MainWindow::on_scaleSlider_valueChanged(int value)
+{
+    ui->graphicsView->setScaleFactorAndArrange(1.0 / (100 - value));
+
+}
+
+void MainWindow::on_playerInDialogcheckBox_clicked(bool checked)
+{
+    QSettings().setValue("playerInDialogcheckBox", checked);
+    QSettings().sync();
+    ui->graphicsView->setPlayInDialog(checked);
 }

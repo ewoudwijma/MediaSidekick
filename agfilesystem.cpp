@@ -41,15 +41,15 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AJobParams jobParams)
         emit addItem("Folder", "Folder", folderName, fileInfo.fileName());
 
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Video");
-        emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Audio");
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Image");
+        emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Audio");
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Export");
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Project");
         emit addItem("Folder", "FileGroup", folderName + fileInfo.fileName() + "/", "Parking");
 
         emit addItem("Video", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
-        emit addItem("Audio", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         emit addItem("Image", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
+        emit addItem("Audio", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         emit addItem("Export", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         emit addItem("Project", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
         emit addItem("Parking", "TimelineGroup", folderName + fileInfo.fileName() + "/", "Timeline");
@@ -494,7 +494,7 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
             AVFrame *frame = input.GetNextFrame();
 
             int frameCounter = 0;
-            while (frame->width == 0 && frame != nullptr)
+            while (frame->width == 0 && frame != nullptr) //audioframes
             {
                 frame = input.GetNextFrame();
                 frameCounter++;
@@ -531,6 +531,13 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
             else
                 myImage = QImage((uchar*)frame->data[0], frame->width, frame->height, frame->linesize[0], QImage::Format_RGB888);
 
+//            while (frame != nullptr)
+//            {
+//                qDebug()<<frameCounter;
+//                frame = input.GetNextFrame();
+//                frameCounter++;
+//            }
+
             int duration;
             QStringList ffMpegMetaString;
             if (videoInfo.avg_frame_rate.num != 0)
@@ -558,7 +565,7 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
     else if (AGlobal().imageExtensions.contains(extension))
     {
         myImage.load(folderName + fileName);
-        emit fileSystem->mediaLoaded(folderName, fileName, myImage, 0 , QSize(myImage.width(), myImage.height()), ""); //as not always image loaded (e.g. png currently)
+        emit fileSystem->mediaLoaded(folderName, fileName, myImage, 0 , QSize(myImage.width(), myImage.height())); //as not always image loaded (e.g. png currently)
     }
     else if (AGlobal().audioExtensions.contains(extension))
     {
@@ -581,8 +588,7 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
 
             AVFrame *frame = input.GetNextFrame();
 
-            QPainterPath painterPath;
-            painterPath.moveTo(0, 0);
+            QList<int> samples;
 
             int counter = 0;
             int progressInMSeconds = 0;
@@ -627,8 +633,11 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
                 //frame->sample_rate=44.100
 
                 if (counter%20 == 0)
-                    painterPath.lineTo((1.0 * progressInMSeconds / durationInMSeconds) * durationInMSeconds / 500.0, frame->extended_data[0][frame->nb_samples / 2]/2.56);
+                {
+//                    qDebug()<<counter<<progressInMSeconds / 100<<durationInMSeconds<<frame->extended_data[0][frame->nb_samples / 2]/2.56;
 //                    painterPath.lineTo((1.0 * progressInMSeconds / durationInMSeconds) * durationInMSeconds / 500.0, sample_total / frame->nb_samples / frame->channels);
+                    samples << frame->extended_data[0][frame->nb_samples / 2]/2.56;
+                }
 
                 counter++;
                 frame = input.GetNextFrame();
@@ -640,7 +649,7 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
 //                qDebug()<<"AGFileSystem::loadMedia frame"<<folderName<<fileName<<videoInfo.audioSampleRate<<videoInfo.audioBitRate<<videoInfo.audioChannelLayout<<videoInfo.audioTimeBase.num << videoInfo.audioTimeBase.den<<videoInfo.duration<<durationInMSeconds;
             //audioTimeBase is like fps
 
-            emit fileSystem->mediaLoaded(folderName, fileName, QImage(), durationInMSeconds , QSize(), "", painterPath); //as not always image loaded (e.g. png currently)
+            emit fileSystem->mediaLoaded(folderName, fileName, QImage(), durationInMSeconds , QSize(), "", samples); //as not always image loaded (e.g. png currently)
 
             input.Dump();
         }
