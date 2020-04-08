@@ -37,7 +37,6 @@ class AGView: public QGraphicsView
     QGraphicsItem *drawPoly(QGraphicsItem *clipItem);
     void setItemProperties(QGraphicsItem *parentItem, QString mediaType, QString type, QString folderName, QString fileName, int duration, QSize mediaSize = QSize(), int clipIn = 0, int clipOut = 0, QString tag = "");
     QString itemToString(QGraphicsItem *item);
-    void playMedia(QGraphicsRectItem *mediaItem);
     void updateToolTip(QGraphicsItem *item);
 
     void reParent(QGraphicsItem *parentItem, QString prefix = "");
@@ -46,7 +45,7 @@ class AGView: public QGraphicsView
     qreal scaleFactor = 1.0 / 100.0;
 
     QDialog *playerDialog = nullptr;
-    QVideoWidget *dialogVideoWidget;
+    QVideoWidget *dialogVideoWidget = nullptr;
     void stopAndDeleteAllPlayers();
 public:
     AGView(QWidget *parent = nullptr);

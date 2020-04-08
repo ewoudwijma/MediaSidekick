@@ -17,6 +17,7 @@
 #include <QAudioProbe>
 #include <QDialog>
 #include <QVBoxLayout>
+#include <QTimer>
 
 #include <qmath.h>
 
@@ -33,32 +34,6 @@ AGView::AGView(QWidget *parent)
 //    QPixmap bgPix(":/images/karton.jpg");
 //    setBackgroundBrush(bgPix);
 
-    playerDialog = new QDialog(this);
-    playerDialog->setWindowTitle("ACVC Media player");
-    playerDialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
-
-    QRect savedGeometry = QSettings().value("Geometry").toRect();
-    savedGeometry.setX(savedGeometry.x() + savedGeometry.width()/4);
-    savedGeometry.setY(savedGeometry.y() + savedGeometry.height()/4);
-    savedGeometry.setWidth(savedGeometry.width()/2);
-    savedGeometry.setHeight(savedGeometry.height()/2);
-    playerDialog->setGeometry(savedGeometry);
-
-    dialogVideoWidget = new QVideoWidget(playerDialog);
-    dialogMediaPlayer = new QMediaPlayer();
-    connect(dialogMediaPlayer, &QMediaPlayer::mediaStatusChanged, this, &AGView::onMediaStatusChanged);
-    connect(dialogMediaPlayer, QOverload<>::of(&QMediaPlayer::metaDataChanged), this, &AGView::onMetaDataChanged);
-    connect(dialogMediaPlayer, &QMediaPlayer::metaDataAvailableChanged, this, &AGView::onMetaDataAvailableChanged);
-    connect(dialogMediaPlayer, &QMediaPlayer::positionChanged, this, &AGView::onPositionChanged);
-    dialogMediaPlayer->setVideoOutput(dialogVideoWidget);
-
-    QVBoxLayout *m_pDialogLayout = new QVBoxLayout(this);
-
-    m_pDialogLayout->addWidget(dialogVideoWidget);
-
-    playerDialog->setLayout(m_pDialogLayout);
-
-    connect(playerDialog, &QDialog::finished, this, &AGView::onPlayerDialogFinished);
 }
 
 AGView::~AGView()
@@ -74,7 +49,8 @@ void AGView::clearAll()
         stopAndDeleteAllPlayers();
     else
     {
-        dialogMediaPlayer->stop();
+        if (dialogMediaPlayer != nullptr)
+            dialogMediaPlayer->stop();
     }
 
     scene->clear();
@@ -116,74 +92,7 @@ void AGView::onSelectionChanged()
 
     if (scene->selectedItems().count() == 1)
     {
-        playMedia((QGraphicsRectItem *)scene->selectedItems().first()); //this first to get m_player in calling itemSelected
         emit itemSelected(scene->selectedItems().first()); //triggers MainWindow::onGraphicsItemSelected
-    }
-}
-
-void AGView::playMedia(QGraphicsRectItem *mediaItem)
-{
-//    qDebug()<<"AGView::playMedia()";
-    if (mediaItem->data(mediaTypeIndex).toString() == "MediaFile")
-    {
-        QString fileNameLow = mediaItem->data(fileNameIndex).toString().toLower();
-        int lastIndexOf = fileNameLow.lastIndexOf(".");
-        QString extension = fileNameLow.mid(lastIndexOf + 1);
-
-        if (AGlobal().videoExtensions.contains(extension) || AGlobal().audioExtensions.contains(extension))
-        {
-            //find videoscreen
-            //if not then create
-            QGraphicsVideoItem *playerItem = nullptr;
-            QGraphicsPixmapItem *pictureItem = nullptr;
-            foreach (QGraphicsItem *childItem, mediaItem->childItems())
-            {
-                if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
-                    playerItem = (QGraphicsVideoItem *)childItem;
-                if (childItem->data(itemTypeIndex).toString().contains("SubPicture"))
-                    pictureItem = (QGraphicsPixmapItem *)childItem;
-            }
-
-            QString folderName = mediaItem->data(folderNameIndex).toString();
-            QString fileName = mediaItem->data(fileNameIndex).toString();
-
-            if (!playInDialog)
-            {
-                if (playerItem == nullptr)
-                {
-    //                mediaItem->setBrush(Qt::darkRed);
-
-                    playerItem = new QGraphicsVideoItem(mediaItem);
-                    playerItem->setSize(QSize(200 * 0.8, 200 * 9 / 16 * 0.8));
-                    playerItem->setPos(mediaItem->boundingRect().height() * 0.1, mediaItem->boundingRect().height() * 0.1);
-
-                    QMediaPlayer *m_player = new QMediaPlayer();
-                    connect(m_player, &QMediaPlayer::mediaStatusChanged, this, &AGView::onMediaStatusChanged);
-                    connect(m_player, QOverload<>::of(&QMediaPlayer::metaDataChanged), this, &AGView::onMetaDataChanged);
-                    connect(m_player, &QMediaPlayer::metaDataAvailableChanged, this, &AGView::onMetaDataAvailableChanged);
-                    connect(m_player, &QMediaPlayer::positionChanged, this, &AGView::onPositionChanged);
-                    m_player->setVideoOutput(playerItem);
-
-                    m_player->setMuted(AGlobal().videoExtensions.contains(extension));
-
-                    m_player->setMedia(QUrl::fromLocalFile(folderName + fileName));
-
-                    setItemProperties(playerItem, mediaItem->data(mediaTypeIndex).toString(), "SubPlayer", folderName, fileName, mediaItem->data(mediaDurationIndex).toInt());
-                }
-            }
-            else
-            {
-                dialogMediaPlayer->setMuted(AGlobal().videoExtensions.contains(extension));
-
-                dialogMediaPlayer->setMedia(QUrl::fromLocalFile(folderName + fileName));
-            }
-
-//            if (AGlobal().videoExtensions.contains(extension) && pictureItem != nullptr) //remove picture as video is taking over
-//            {
-//                scene->removeItem(pictureItem);
-//                delete pictureItem;
-//            }
-        }
     }
 }
 
@@ -774,7 +683,7 @@ void AGView::onItemClicked(QGraphicsRectItem *rectItem)
     if (rectItem->data(mediaTypeIndex) == "Clip")
     {
         mediaItem = (QGraphicsRectItem *)rectItem->focusProxy();
-        playMedia(mediaItem);//load if not already done
+//        playMedia(mediaItem);//load if not already done
     }
     else
         mediaItem = rectItem;
@@ -785,6 +694,9 @@ void AGView::onItemClicked(QGraphicsRectItem *rectItem)
 
     if (AGlobal().videoExtensions.contains(extension) || AGlobal().audioExtensions.contains(extension))
     {
+        QString folderName = mediaItem->data(folderNameIndex).toString();
+        QString fileName = mediaItem->data(fileNameIndex).toString();
+
         if (!playInDialog)
         {
             //find videoscreen
@@ -795,9 +707,29 @@ void AGView::onItemClicked(QGraphicsRectItem *rectItem)
                     playerItem = (QGraphicsVideoItem *)childItem;
             }
 
-            if (playerItem != nullptr)
+            if (playerItem == nullptr)
             {
-                playerItem = (QGraphicsVideoItem *)playerItem;
+//                mediaItem->setBrush(Qt::darkRed);
+
+                playerItem = new QGraphicsVideoItem(mediaItem);
+                playerItem->setSize(QSize(200 * 0.8, 200 * 9 / 16 * 0.8));
+                playerItem->setPos(mediaItem->boundingRect().height() * 0.1, mediaItem->boundingRect().height() * 0.1);
+
+                QMediaPlayer *m_player = new QMediaPlayer();
+                connect(m_player, &QMediaPlayer::mediaStatusChanged, this, &AGView::onMediaStatusChanged);
+                connect(m_player, QOverload<>::of(&QMediaPlayer::metaDataChanged), this, &AGView::onMetaDataChanged);
+                connect(m_player, &QMediaPlayer::metaDataAvailableChanged, this, &AGView::onMetaDataAvailableChanged);
+                connect(m_player, &QMediaPlayer::positionChanged, this, &AGView::onPositionChanged);
+                m_player->setVideoOutput(playerItem);
+
+                m_player->setMuted(AGlobal().videoExtensions.contains(extension));
+
+                m_player->setMedia(QUrl::fromLocalFile(folderName + fileName));
+
+                setItemProperties(playerItem, mediaItem->data(mediaTypeIndex).toString(), "SubPlayer", folderName, fileName, mediaItem->data(mediaDurationIndex).toInt());
+            }
+            else
+            {
                 QMediaPlayer *m_player = (QMediaPlayer *)playerItem->mediaObject();
 
                 if (m_player->state() != QMediaPlayer::PlayingState)
@@ -806,15 +738,55 @@ void AGView::onItemClicked(QGraphicsRectItem *rectItem)
                     m_player->pause();
             }
         }
-        else
+        else  //playInDialog
         {
-            if (!playerDialog->isVisible())
-                playerDialog->show();
+            if (playerDialog == nullptr)
+            {
+                playerDialog = new QDialog(this);
+                playerDialog->setWindowTitle("ACVC Media player");
+            #ifdef Q_OS_MAC
+                playerDialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
+            #endif
 
-            if (dialogMediaPlayer->state() != QMediaPlayer::PlayingState)
-                dialogMediaPlayer->play();
+                QRect savedGeometry = QSettings().value("Geometry").toRect();
+                savedGeometry.setX(savedGeometry.x() + savedGeometry.width()/4);
+                savedGeometry.setY(savedGeometry.y() + savedGeometry.height()/4);
+                savedGeometry.setWidth(savedGeometry.width()/2);
+                savedGeometry.setHeight(savedGeometry.height()/2);
+                playerDialog->setGeometry(savedGeometry);
+
+                dialogVideoWidget = new QVideoWidget(playerDialog);
+                dialogMediaPlayer = new QMediaPlayer();
+                connect(dialogMediaPlayer, &QMediaPlayer::mediaStatusChanged, this, &AGView::onMediaStatusChanged);
+                connect(dialogMediaPlayer, QOverload<>::of(&QMediaPlayer::metaDataChanged), this, &AGView::onMetaDataChanged);
+                connect(dialogMediaPlayer, &QMediaPlayer::metaDataAvailableChanged, this, &AGView::onMetaDataAvailableChanged);
+                connect(dialogMediaPlayer, &QMediaPlayer::positionChanged, this, &AGView::onPositionChanged);
+                dialogMediaPlayer->setVideoOutput(dialogVideoWidget);
+
+                QVBoxLayout *m_pDialogLayout = new QVBoxLayout(this);
+
+                m_pDialogLayout->addWidget(dialogVideoWidget);
+
+                playerDialog->setLayout(m_pDialogLayout);
+
+                connect(playerDialog, &QDialog::finished, this, &AGView::onPlayerDialogFinished);
+
+                playerDialog->show();
+            }
+
+            if (!dialogMediaPlayer->media().request().url().toString().contains(folderName + fileName))
+            {
+                dialogMediaPlayer->setMuted(AGlobal().videoExtensions.contains(extension));
+
+                dialogMediaPlayer->setMedia(QUrl::fromLocalFile(folderName + fileName));
+            }
             else
-                dialogMediaPlayer->pause();
+            {
+                if (dialogMediaPlayer->state() != QMediaPlayer::PlayingState)
+                    dialogMediaPlayer->play();
+                else
+                    dialogMediaPlayer->pause();
+            }
         }
     }
 }
@@ -822,17 +794,23 @@ void AGView::onItemClicked(QGraphicsRectItem *rectItem)
 void AGView::onPlayerDialogFinished(int result)
 {
 //    qDebug()<<"AGView::onPlayerDialogFinished"<<result;
+    if (dialogMediaPlayer != nullptr)
+        dialogMediaPlayer->pause();
+//    delete dialogMediaPlayer;
+//    delete dialogVideoWidget;
 //    delete playerDialog;
-//    playerDialog = nullptr;
-    dialogMediaPlayer->pause();
+    dialogMediaPlayer = nullptr;
+    dialogVideoWidget = nullptr;
+    playerDialog = nullptr;
 }
 
 void AGView::setPlayInDialog(bool checked)
 {
     if (playInDialog && !checked) //from dialog to initem player
     {
-        dialogMediaPlayer->pause();
-        playerDialog->close();
+//        dialogMediaPlayer->pause();
+        if (playerDialog != nullptr)
+            playerDialog->close();
         playInDialog = false;
     }
     if (!playInDialog && checked) //from initem to dialog player
@@ -1139,8 +1117,10 @@ void AGView::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
         if (AGlobal().videoExtensions.contains(extension))
         {
 
-            m_player->play();
-//            m_player->pause();
+            if (m_player->state() != QMediaPlayer::PlayingState)
+                m_player->play();
+            else
+                m_player->pause();
 #ifdef Q_OS_MAC
         QSize s1 = size();
         QSize s2 = s1 + QSize(1, 1);
@@ -1151,7 +1131,10 @@ void AGView::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
         }
         else if (AGlobal().audioExtensions.contains(extension))
         {
-            m_player->play();
+            if (m_player->state() != QMediaPlayer::PlayingState)
+                m_player->play();
+            else
+                m_player->pause();
         }
 
     }
@@ -1227,7 +1210,14 @@ void AGView::onMetaDataChanged()
 {
     QMediaPlayer *m_player = qobject_cast<QMediaPlayer *>(sender());
 
-    QString folderFileName = m_player->media().request().url().toString().replace("file:///", "").replace("file:", "");
+    QString folderFileName = m_player->media().request().url().toString();
+#ifdef Q_OS_WIN
+    folderFileName = folderFileName.replace("file:///", "");
+#else
+    folderFileName = folderFileName.replace("file://", ""); //on MAX / OSX foldername should be /users... not users...
+#endif
+    folderFileName = folderFileName.replace("file:", ""); //for network folders?
+
     int lastIndexOf = folderFileName.lastIndexOf("/");
     QString folderName = folderFileName.left(lastIndexOf + 1);
     QString fileName = folderFileName.mid(lastIndexOf + 1);
@@ -1306,12 +1296,19 @@ void AGView::onPositionChanged(int progress)
     QMediaPlayer *m_player = qobject_cast<QMediaPlayer *>(sender());
     m_player->setProperty("test", "hi");
 
-    QString folderFileName = m_player->media().request().url().toString().replace("file:///", "").replace("file:", "");
+    QString folderFileName = m_player->media().request().url().toString();
+#ifdef Q_OS_WIN
+    folderFileName = folderFileName.replace("file:///", "");
+#else
+    folderFileName = folderFileName.replace("file://", ""); //on MAX / OSX foldername should be /users... not users...
+#endif
+    folderFileName = folderFileName.replace("file:", ""); //for network folders?
+
     int lastIndexOf = folderFileName.lastIndexOf("/");
     QString folderName = folderFileName.left(lastIndexOf + 1);
     QString fileName = folderFileName.mid(lastIndexOf + 1);
 
-//    qDebug()<<"AGView::onPositionChanged"<<fileName<<progress<<m_player->duration();
+//    qDebug()<<"AGView::onPositionChanged"<<fileName<<progress<<m_player->duration()<<m_player->media().request().url().toString();
 
     QGraphicsItem *mediaItem = nullptr;
     foreach (QGraphicsItem *item, scene->items())
