@@ -652,7 +652,7 @@
                   </item>
                   <item>
                    <property name="text">
-                    <string>480p (640 x 480)</string>
+                    <string>480p (858 x 480)</string>
                    </property>
                   </item>
                   <item>
@@ -775,6 +775,9 @@
                   </property>
                   <property name="singleStep">
                    <number>10</number>
+                  </property>
+                  <property name="value">
+                   <number>20</number>
                   </property>
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
@@ -910,16 +913,61 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="refreshViewButton">
+            <widget class="QPushButton" name="reloadViewButton">
              <property name="text">
-              <string>Refresh</string>
+              <string>Reload</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QSlider" name="scaleSlider">
+            <widget class="QSlider" name="mediaFileScaleSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>1000</number>
+             </property>
+             <property name="value">
+              <number>200</number>
+             </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::NoTicks</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="mediaFileScaleLabel">
+             <property name="text">
+              <string>mediaFileScaleLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="clipScaleSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>5000</number>
+             </property>
+             <property name="value">
+              <number>1000</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::NoTicks</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="clipScaleLabel">
+             <property name="text">
+              <string>clipScaleLabel</string>
              </property>
             </widget>
            </item>
@@ -964,45 +1012,6 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-          </widget>
-          <widget class="QWidget" name="graphicsItemWidget" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>1</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_16">
-            <item>
-             <widget class="QScrollArea" name="graphicsScrollArea">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="widgetResizable">
-               <bool>true</bool>
-              </property>
-              <widget class="QWidget" name="graphicsScrollAreaWidget">
-               <property name="geometry">
-                <rect>
-                 <x>0</x>
-                 <y>0</y>
-                 <width>68</width>
-                 <height>580</height>
-                </rect>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-              </widget>
-             </widget>
-            </item>
-           </layout>
           </widget>
          </widget>
         </item>

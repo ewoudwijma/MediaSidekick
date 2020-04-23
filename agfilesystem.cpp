@@ -28,7 +28,9 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AJobParams jobParams)
     if (folderName.right(1) != "/")
         folderName = folderName + "/"; //on windows, in case of D:/
 
-    emit jobAddLog(jobParams, "folderName: " + folderName + " fileName: " + fileInfo.fileName());
+//    qDebug()<<"AGFileSystem::loadFilesAndFolders"<<folderName + fileInfo.fileName();
+
+    emit jobAddLog(jobParams, "loadFilesAndFolders: " + folderName + fileInfo.fileName());
 
     fileSystemWatcher->addPath(folderName + fileInfo.fileName());
 //    if ()
@@ -58,12 +60,11 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AJobParams jobParams)
     else // file  if (parentItem->toolTip().contains("Video"))
     {
         loadOrModifyItem(jobParams, folderName, fileInfo.fileName(), true, false); //loadMedia not in seperate job because here we have already a job running
-
     }
 
     //read subfolders
     dir.setFilter(QDir::Files | QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
-    dir.setSorting(QDir::Name | QDir::LocaleAware); //localeaware to get +99999ms sorted the right way
+    dir.setSorting(QDir::Name | QDir::LocaleAware | QDir::IgnoreCase); //localeaware to get +99999ms sorted the right way
 
     QStringList nameFilters;
     foreach (QString extension, AGlobal().exportExtensions << AGlobal().audioExtensions << AGlobal().imageExtensions << AGlobal().projectExtensions)
@@ -91,16 +92,18 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AJobParams jobParams)
             loadFilesAndFolders(QDir(dir.absolutePath() + "/" + dir.entryList().at(i)), jobParams);
         }
     }
-    if (fileInfo.isDir())
-    {
-//        qDebug()<<"loadfaf arrangeItems"<<dir;
-        emit arrangeItems();
-    }
+//    if (fileInfo.isDir())
+//    {
+//        qDebug()<<"loadfaf arrangeItems isDir"<<dir;
+//        emit arrangeItems();
+//    }
 }
 
 void AGFileSystem::loadOrModifyItem(AJobParams jobParams, QString folderName, QString fileName, bool isNewFile, bool loadMediaInJob)
 {
 //    qDebug()<<"AGFileSystem::loadOrModifyItem jobParams"<<jobParams.folderName<<jobParams.fileName;
+
+    emit jobAddLog(jobParams, "loadOrModifyItem: " + folderName + fileName);
 
     QString fileNameLow = fileName.toLower();
     int lastIndexOf = fileNameLow.lastIndexOf(".");
@@ -143,6 +146,12 @@ void AGFileSystem::loadOrModifyItem(AJobParams jobParams, QString folderName, QS
 //            loadClips("Project", folderName, fileName); //no clips for project files
             emit arrangeItems();
         }
+        else if (extension == "srt")
+        {
+            loadClips("Project", folderName, fileName); //if mediafile does not exists addClip of clip and tags will return (workaround)
+            emit arrangeItems();
+        }
+
         //else  stuff which is outside ACVC
     }
     else
@@ -153,7 +162,6 @@ void AGFileSystem::loadOrModifyItem(AJobParams jobParams, QString folderName, QS
             emit deleteItem("Clip", folderName, fileName); //is .srt
 
             loadClips("Project", folderName, fileName); //if mediafile does not exists addClip of clip and tags will return (workaround)
-
             emit arrangeItems();
         }
     }
@@ -438,8 +446,8 @@ void AGFileSystem::onDirectoryChanged(const QString &path)
 
         if (!fileSystemWatcher->files().contains(filePath) && !fileSystemWatcher->directories().contains(filePath) && !filePath.contains("ACVCRecycleBin"))
         {
-            fileSystemWatcher->addPath(filePath);
-//            if ()
+            bool result = fileSystemWatcher->addPath(filePath);
+//            if (result)
 //                qDebug()<<"AGFileSystem::onDirectoryChanged true addpath - not in watch - file or folder exists (new!) - added in watch"<<filePath;
 //            else
 //                qDebug()<<"AGFileSystem::onDirectoryChanged false addpath - not in watch - file or folder exists (new!) - added in watch"<<filePath;
@@ -457,6 +465,9 @@ void AGFileSystem::onDirectoryChanged(const QString &path)
 void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString fileName, bool isNewFile, bool loadMediaInJob)
 {
 //    qDebug()<<"AGFileSystem::loadMedia"<<folderName<<fileName;
+
+    emit jobAddLog(jobParams, "LoadMedia: " + folderName + fileName);
+
     AGFileSystem *fileSystem = this;
 
     DerperView::VideoInfo videoInfo;
@@ -478,7 +489,7 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
                 errorMessage = tr("Load Media. Error on opening file %1. Permission denied").arg(fileName);
 
             if (jobParams.fileName != "")
-                jobTreeView->onJobAddLog(jobParams, "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
+                emit jobAddLog(jobParams, "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
 
             loadMediaTotal--;
 
@@ -499,6 +510,15 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
                 frame = input.GetNextFrame();
                 frameCounter++;
             }
+
+//            for (int i = 0; i<QSettings().value("frameRate").toInt();) //skip first second
+//            {
+////                qDebug()<<"next frame";
+//                frame = input.GetNextFrame();
+//                if (frame->width != 0 || frame == nullptr)
+//                    i++;
+//            }
+
 
     //                AVPixelFormat pixelFormat;
 
@@ -554,7 +574,9 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
             else
                 duration = 0; //for images
 
-    //                qDebug()<<"AGFileSystem::loadMedia videoinfo"<<duration<<videoInfo.totalFrames << videoInfo.avg_frame_rate.num<<videoInfo.avg_frame_rate.den;
+//            qDebug()<<"AGFileSystem::loadMedia videoinfo"<<duration<<videoInfo.totalFrames << videoInfo.avg_frame_rate.num<<videoInfo.avg_frame_rate.den;
+
+            emit jobAddLog(jobParams, "LoadMedia->mediaLoaded: " + folderName + fileName + " d: " + QString::number(duration) + " s: " + QString::number(videoInfo.width) + "x" + QString::number(videoInfo.height) + " m: " + ffMpegMetaString.join(";"));
 
             emit fileSystem->mediaLoaded(folderName, fileName, myImage, duration , QSize(videoInfo.width,videoInfo.height), ffMpegMetaString.join(";"));
 
@@ -565,6 +587,9 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
     else if (AGlobal().imageExtensions.contains(extension))
     {
         myImage.load(folderName + fileName);
+
+        emit jobAddLog(jobParams, "LoadMedia->mediaLoaded: " + folderName + fileName + " s: " + QString::number(myImage.width()) + "x" + QString::number(myImage.height()));
+
         emit fileSystem->mediaLoaded(folderName, fileName, myImage, 0 , QSize(myImage.width(), myImage.height())); //as not always image loaded (e.g. png currently)
     }
     else if (AGlobal().audioExtensions.contains(extension))
@@ -578,7 +603,7 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
                 errorMessage = tr("Load Media. Error on opening file %1: Permission denied").arg(fileName);
 
             if (jobParams.fileName != "")
-                jobTreeView->onJobAddLog(jobParams, "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
+                emit jobAddLog(jobParams, "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
 
             loadMediaTotal--;
         }
@@ -648,6 +673,8 @@ void AGFileSystem::loadMedia(AJobParams jobParams, QString folderName, QString f
 
 //                qDebug()<<"AGFileSystem::loadMedia frame"<<folderName<<fileName<<videoInfo.audioSampleRate<<videoInfo.audioBitRate<<videoInfo.audioChannelLayout<<videoInfo.audioTimeBase.num << videoInfo.audioTimeBase.den<<videoInfo.duration<<durationInMSeconds;
             //audioTimeBase is like fps
+
+            emit jobAddLog(jobParams, "LoadMedia->mediaLoaded: " + folderName + fileName + " d: " + QString::number(durationInMSeconds) + " s: " + QString::number(samples.count()));
 
             emit fileSystem->mediaLoaded(folderName, fileName, QImage(), durationInMSeconds , QSize(), "", samples); //as not always image loaded (e.g. png currently)
 

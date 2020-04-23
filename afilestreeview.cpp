@@ -332,7 +332,7 @@ void AFilesTreeView::onDerperview()
 
                  }, nullptr);
 
-                 copyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
+                 onCopyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
 
                  emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "WV.mp4");
 
@@ -395,7 +395,7 @@ void AFilesTreeView::onRemux()
 
                  currentItem = onRemux2(parentItem, folderName, fileName);
 
-                 copyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
+                 onCopyClips(currentItem, folderName, fileName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
 
                  emit propertyCopy(currentItem, folderName, fileName, folderName, fileName.left(fileName.lastIndexOf(".")) + "RM.mp4");
 
@@ -415,7 +415,7 @@ void AFilesTreeView::onRemux()
      fileContextMenu->close();
 }
 
-void AFilesTreeView::copyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName)
+void AFilesTreeView::onCopyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName)
 {
     AJobParams jobParams;
     jobParams.parentItem = parentItem;

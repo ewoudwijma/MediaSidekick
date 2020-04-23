@@ -1,8 +1,10 @@
 #ifndef AGVIEW_H
 #define AGVIEW_H
 
+#include "aderperviewmain.h"
 #include "aderperviewvideo.h"
 #include "agcliprectangleitem.h"
+#include "ajobtreeview.h"
 
 #include <QDateTime>
 #include <QGraphicsView>
@@ -23,12 +25,20 @@ static const int exifToolMetaIndex = 11;
 static const int excludedInFilter = 12;
 static const int createDateIndex = 13;
 
+typedef struct {
+    QString folderName;
+    QString fileName;
+    QGraphicsItem *mediaItem = nullptr;
+    QString createDateString;
+} AMediaStruct;
+
+
 class AGView: public QGraphicsView
 
 {
     Q_OBJECT
     QGraphicsScene *scene;
-    QGraphicsItem *rootItem;
+    QGraphicsItem *rootItem = nullptr;
     bool rightMousePressed = false;
     double _panStartX;
     double _panStartY;
@@ -41,12 +51,25 @@ class AGView: public QGraphicsView
 
     void reParent(QGraphicsItem *parentItem, QString prefix = "");
 
-    QDateTime pseudoCreateDate;
-    qreal scaleFactor = 1.0 / 100.0;
+    qreal mediaFileScaleFactor;
+    qreal clipScaleFactor;
 
     QDialog *playerDialog = nullptr;
     QVideoWidget *dialogVideoWidget = nullptr;
     void stopAndDeleteAllPlayers();
+
+    void initPlayer(QGraphicsRectItem *mediaItem);
+
+    QMenu *fileContextMenu =  nullptr;
+
+    ADerperView *derperView;
+    QMap<QString, AMediaStruct> mediaFilesMap;
+
+    void assignCreateDates(QGraphicsItem *mediaItem);
+
+    qreal mediaWidth;
+
+    void filterItem(QGraphicsItem *mediaItem);
 public:
     AGView(QWidget *parent = nullptr);
     void addItem(QString parentName, QString mediaType, QString folderName, QString fileName, int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
@@ -58,17 +81,25 @@ public:
     void setThemeColors(QColor color);
     int loadMediaCompleted = 0;
 
-    void setScaleFactorAndArrange(qreal scaleFactor);
+    void setMediaScaleAndArrange(qreal mediaFileScaleFactor);
     QMediaPlayer *dialogMediaPlayer = nullptr;
     bool playInDialog;
     void setPlayInDialog(bool checked);
+    void setClipScaleAndArrange(qreal mediaFileScaleFactor);
+    void setZoom(int value);
+
+    AJobTreeView *jobTreeView;
+
+    QString searchText = "";
+    bool filtering = false;
+
 public slots:
     void onSetView();
     void onMediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
     void onCreateClip();
     void onClipItemChanged(QGraphicsItem *clipItem);
     void onClipMouseReleased(QGraphicsItem *clipItem);
-    void onItemClicked(QGraphicsRectItem *rectItem);
+    void onItemRightClicked(QPoint pos);
     void onClipPositionChanged(QGraphicsRectItem *rectItem, int progress);
     void onPlayVideoButton(QMediaPlayer *m_player);
     void onMuteVideoButton(QMediaPlayer *m_player);
@@ -95,11 +126,15 @@ private slots:
     void onPositionChanged(int progress);
     //    void onAudioBufferProbed(QAudioBuffer buffer);
     void onPlayerDialogFinished(int result);
+
 signals:
-    void itemSelected(QGraphicsItem *item);
     void mediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
     void getPropertyValue(QString folderFileName, QString key, QVariant *value);
-
+    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
+    void jobAddLog(AJobParams jobParams, QString logMessage);
+    void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
+    void trimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
+    void copyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName);
 };
 
 #endif // AGVIEW_H

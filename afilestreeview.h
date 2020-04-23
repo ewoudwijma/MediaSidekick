@@ -39,7 +39,6 @@ private:
     void loadModel(QUrl folderUrl);
 
     QStandardItem *onRemux2(QStandardItem *parentItem, QString folderName, QString fileName);
-    void copyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName);
 
     ADerperView *derperView;
 
@@ -50,11 +49,12 @@ public slots:
     void onFolderSelected(QString folderName);
     void onStopThreadProcess();
     void onMoveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
+    void onCopyClips(QStandardItem *parentItem, QString folderName, QString fileName, QString targetFileName);
 
 signals:
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
     void releaseMedia(QString folderName, QString fileName);
-    void trimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName);
+    void trimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
     void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);

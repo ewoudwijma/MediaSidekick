@@ -231,6 +231,11 @@ VideoInfo InputVideoFile::GetVideoInfo()
 
         v.avg_frame_rate = formatContext_->streams[videoStreamIndex_]->avg_frame_rate;  //ewi 20200318
         v.videoDuration = formatContext_->streams[videoStreamIndex_]->duration;
+
+//        AVDictionaryEntry *tag = NULL;
+
+//        while ((tag = av_dict_get(formatContext_->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+//            qDebug()<<tag->key<<tag->value;
     }
 
     if (audioStreamIndex_ >= 0 || videoStreamIndex_ >=0)

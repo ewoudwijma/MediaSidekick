@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-#ifdef false
+#ifdef falseQ_OS_WIN
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *tag = NULL;
     int ret;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
  *  - https://www.sslforfree.com/
  *  - cp.ashosting.nl / website beheer / ssl
  *
-$QTmingwFolder = C:\Qt\5.13.2\mingw73_64
+$QTmingwFolder = C:\Qt\5.14.2\mingw73_64
 $QTmingwFolder = C:\Qt\5.14.1\mingw73_64
 
 add to $QTmingwFolder
@@ -148,7 +148,7 @@ Clean install of both QT/Mingw/QtAV and deploy folder
             - https://github.com/wang-bin/QtAV/wiki/Deploy-SDK-Without-Building-QtAV
             - https://forum.qt.io/topic/106288/linker-problem-with-qtav
             - https://github.com/wang-bin/QtAV/wiki/Build-QtAV (not needed, except to get lib_win_x86_64 stuff)
-    - D:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug3\debug\ACVC.exe crashed. (skip these steps next time, see next step)
+    - D:\ACVC\build-ACVC-Desktop_Qt_5_14_2_MinGW_64_bit-Debug3\debug\ACVC.exe crashed. (skip these steps next time, see next step)
         - QtAV: Copy D:\ACVC\QtAV-depends-windows-x86+x64\bin and lib to mingw\bin and \lib (some files alreadt exists eg avcodec 57, skip these)
         - QtAV: Copy D:\ACVC\QtAV-x64-lib\lib_win_x86_64 to mingw\lib (result of compiling C:\Users\ewoud\Downloads\QtAV-master!!!, looks like this should have been added to the release? ask forum!)
     - Still crashing
@@ -160,7 +160,7 @@ Clean install of both QT/Mingw/QtAV and deploy folder
                 - https://github.com/wang-bin/QtAV/wiki/Build-QtAV
         - ACVC starts
     - Qt5OpenGL.dll was not found
-        - copy C:/Qt/5.13.2/mingw73_64/bin/Qt5OpenGLd.dll to deploy... (why not automatic?) -> do this before copy all of deploy
+        - copy C:/Qt/5.14.2/mingw73_64/bin/Qt5OpenGLd.dll to deploy... (why not automatic?) -> do this before copy all of deploy
         - installer/data acvc starts!
         - run acvcinstaller\run.bat to create ACVCInstallerV0.2.2.exe (510 kb?)
 
@@ -178,7 +178,7 @@ Background
    - http://dranger.com/ffmpeg/ffmpegtutorial_all.html
    - https://github.com/leandromoreira/ffmpeg-libav-tutorial#video---what-you-see
 
-   otool -L /Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_13_2_clang_64bit-Debug/ACVC.app/Contents/MacOS/ACVC
+   otool -L /Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_2_clang_64bit-Debug/ACVC.app/Contents/MacOS/ACVC
 
    install_name_tool -change /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/libavcodec.58.dylib "@loader_path/libavcodec.58.dylib" ACVC
 
@@ -204,9 +204,9 @@ Windows 2020-02-20
 
     - Prepare for installer
         - deploy in shell (not powershell...)
-        - C:\Qt\5.13.2\mingw73_64\bin\qtenv2.bat
-        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Debug\debug or cd d:\ACVC\build-ACVC-Desktop_Qt_5_13_2_MinGW_64_bit-Release\release
-        - C:\Qt\5.13.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\ACVC\ACVC\ .
+        - C:\Qt\5.14.2\mingw73_64\bin\qtenv2.bat
+        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_14_2_MinGW_64_bit-Debug\debug or cd d:\ACVC\build-ACVC-Desktop_Qt_5_14_2_MinGW_64_bit-Release\release
+        - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\ACVC\ACVC\ .
 
     - copy all of deploy to installer/data
     - update version in D:\ACVC\ACVCInstaller\run.bat, D:\ACVC\ACVCInstaller\config\config.xml and D:\ACVC\ACVCInstaller\packages\com.actioncamvideocompanion.acvc\meta\package.xml
@@ -218,7 +218,6 @@ MacOS 2020-02-01
         - Get https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip
         - QT Creator run/build release
         - Script
-            - export qtVersion =
             - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_2_clang_64bit-Release
             - cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
 

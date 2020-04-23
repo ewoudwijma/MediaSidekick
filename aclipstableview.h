@@ -57,7 +57,7 @@ public slots:
     void onScrubberOutChanged(QString AV, int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-    void onTrimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName);
+    void onTrimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
     void onLoadClips(QStandardItem *parentItem);

@@ -266,7 +266,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
                     }
                     else if ( propertyName == "Make" || propertyName == "Model" )
                         propertyMap[propertyName] = topLevelItems["Camera"];
-                    else if (propertyName == "Artist")
+                    else if (propertyName == "Artist" || propertyName == "Title")
                         propertyMap[propertyName] = topLevelItems["Labels"];
                     else if (propertyName == "Rating")
                     {
@@ -326,6 +326,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
         propertyMap["Make"] = topLevelItems["Camera"];
         propertyMap["Model"] = topLevelItems["Camera"];
 
+        propertyMap["Title"] = topLevelItems["Labels"];
         propertyMap["Artist"] = topLevelItems["Labels"];
         propertyMap["Rating"] = topLevelItems["Labels"];
         propertyMap["Keywords"] = topLevelItems["Labels"];
@@ -374,7 +375,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 
             bool isEditable = propertyName == "CreateDate" || propertyName == "GeoCoordinate";
             bool isDeltaAndMaximumEditable = isEditable;
-            if (propertyName == "Make" || propertyName == "Model" || propertyName == "Artist" || propertyName == "Rating" || propertyName == "Keywords")
+            if (propertyName == "Make" || propertyName == "Model" || propertyName == "Artist" || propertyName == "Title" || propertyName == "Rating" || propertyName == "Keywords")
             {
                     isEditable = true;
                     isDeltaAndMaximumEditable = false;
@@ -418,7 +419,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
                 sublevelItems.append(new QStandardItem( "ATags" ));
             else if (propertyName == "Rating" || propertyName == "RatingPercent" || propertyName == "SharedUserRating")
                 sublevelItems.append(new QStandardItem( "ARating" ));
-            else if (propertyName == "Make" || propertyName == "Model" || propertyName == "Artist")
+            else if (propertyName == "Make" || propertyName == "Model" || propertyName == "Artist" || propertyName == "Title")
                 sublevelItems.append(new QStandardItem( "QComboBox" ));
             else
                 sublevelItems.append(new QStandardItem( "QString" ));
@@ -1529,7 +1530,7 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
 
 void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget)
 {
-//    qDebug()<<"AExport::onPropertyCopy"<<folderNameSource<<fileNameSource<<folderNameTarget<<fileNameTarget;
+    qDebug()<<"APropertyTreeView::onPropertyCopy"<<folderNameSource<<fileNameSource<<folderNameTarget<<fileNameTarget;
     QString attributeString = "";
     QStringList texts;
     texts << "CreateDate" << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model" << "Director" << "Producer"  << "Publisher";

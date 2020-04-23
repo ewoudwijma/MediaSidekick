@@ -5,7 +5,6 @@
 AGMediaRectangleItem::AGMediaRectangleItem(QGraphicsItem * parent) :
     QGraphicsRectItem( parent)
 {
-
     this->setFlag(QGraphicsItem::ItemIsSelectable);
     this->setAcceptHoverEvents(true);
 }
@@ -25,13 +24,12 @@ QVariant AGMediaRectangleItem::itemChange(GraphicsItemChange change, const QVari
 
 void AGMediaRectangleItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug()<<"AGMediaRectangleItem::mousePressEvent"<<event;
-    emit itemClicked(this);
+    QGraphicsRectItem::mousePressEvent(event); //triggers itemselected
 }
 
 void AGMediaRectangleItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
-//    qDebug()<<"AGMediaRectangleItem::hoverMoveEvent"<<event<<event->pos()<<rect();
+//    qDebug()<<"AGMediaRectangleItem::hoverMoveEvent"<<event<<this->data(fileNameIndex);
 
 //    qDebug()<<"emit clipPositionChanged"<<data(clipInIndex).toInt()<<data(clipOutIndex).toInt()<<event->pos()<<draggedWidth<<event->pos().x()/double(draggedWidth);
 
@@ -43,7 +41,7 @@ void AGMediaRectangleItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
             int clipOut = data(clipOutIndex).toInt();
 
             int progress;
-            if (clipOut != 0)
+            if (clipOut != 0) //if clip
             {
                 progress = clipIn + (clipOut - clipIn) * event->pos().x()/rect().width();
             }

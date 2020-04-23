@@ -44,11 +44,6 @@ MainWindow::MainWindow(QWidget *parent) :
     qApp->installEventFilter(this);
 
     agFileSystem = new AGFileSystem(this);
-    connect(agFileSystem, &AGFileSystem::addItem, ui->graphicsView, &AGView::addItem);
-    connect(agFileSystem, &AGFileSystem::deleteItem, ui->graphicsView, &AGView::deleteItem);
-    connect(agFileSystem, &AGFileSystem::arrangeItems, ui->graphicsView, &AGView::arrangeItems);
-    connect(agFileSystem, &AGFileSystem::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
-    connect(ui->graphicsView, &AGView::mediaLoaded, this, &MainWindow::onMediaLoaded);
 
     changeUIProperties();
 
@@ -281,6 +276,18 @@ void MainWindow::changeUIProperties()
     ui->spotviewDownButton->setEnabled(false);
     ui->spotviewRightButton->setEnabled(false);
     ui->loadMediaProgressBar->setValue(0);
+
+    ui->mediaFileScaleSlider->setStyleSheet("QSlider::sub-page:Horizontal { background-color: #9F2425; }"
+                  "QSlider::add-page:Horizontal { background-color: #333333; }"
+                  "QSlider::groove:Horizontal { background: transparent; height:4px; }"
+                  "QSlider::handle:Horizontal { width:10px; border-radius:5px; background:#9F2425; margin: -5px 0px -5px 0px; }");
+
+    ui->clipScaleSlider->setStyleSheet("QSlider::sub-page:Horizontal { background-color: #249f55; }"
+                  "QSlider::add-page:Horizontal { background-color: #333333; }"
+                  "QSlider::groove:Horizontal { background: transparent; height:4px; }"
+                  "QSlider::handle:Horizontal { width:10px; border-radius:5px; background:#249f55; margin: -5px 0px -5px 0px; }");
+
+//https://forum.qt.io/topic/87256/how-to-set-qslider-handle-to-round/3
 }
 
 void MainWindow::allConnects()
@@ -479,12 +486,23 @@ void MainWindow::allConnects()
 
     connect(ui->positionSpinBox, SIGNAL(valueChanged(int)), ui->videoWidget, SLOT(onSpinnerPositionChanged(int))); //using other syntax not working...
 
+    connect(agFileSystem, &AGFileSystem::addItem, ui->graphicsView, &AGView::addItem);
+    connect(agFileSystem, &AGFileSystem::deleteItem, ui->graphicsView, &AGView::deleteItem);
+    connect(agFileSystem, &AGFileSystem::arrangeItems, ui->graphicsView, &AGView::arrangeItems);
+    connect(agFileSystem, &AGFileSystem::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
     connect(agFileSystem, &AGFileSystem::mediaLoaded, ui->graphicsView, &AGView::onMediaLoaded);
+
     agFileSystem->jobTreeView = ui->jobTreeView;
 
-    connect(ui->graphicsView, &AGView::itemSelected, this, &MainWindow::onGraphicsItemSelected);
+    connect(ui->graphicsView, &AGView::mediaLoaded, this, &MainWindow::onMediaLoaded);
     connect(ui->graphicsView, &AGView::getPropertyValue, ui->propertyTreeView, &APropertyTreeView::onGetPropertyValue);
+    connect(ui->graphicsView, &AGView::moveFilesToACVCRecycleBin, ui->videoFilesTreeView, &AFilesTreeView::onMoveFilesToACVCRecycleBin);
+    connect(ui->graphicsView, &AGView::jobAddLog, ui->jobTreeView, &AJobTreeView::onJobAddLog);
+    connect(ui->graphicsView, &AGView::propertyCopy, ui->propertyTreeView, &APropertyTreeView::onPropertyCopy);
+    connect(ui->graphicsView, &AGView::copyClips, ui->videoFilesTreeView, &AFilesTreeView::onCopyClips);
+    connect(ui->graphicsView, &AGView::trimAll, ui->clipsTableView, &AClipsTableView::onTrimAll);
 
+    ui->graphicsView->jobTreeView = ui->jobTreeView;
 
 } //allConnects
 
@@ -546,10 +564,14 @@ void MainWindow::loadSettings()
 //    qDebug()<<"Set framerate"<<lframeRate;
     ui->clipsFramerateComboBox->setCurrentText(QString::number(lframeRate));
 
-    if (QSettings().value("exportVideoAudioSlider").toString() == "")
-        ui->exportVideoAudioSlider->setValue(20);
-    else
+    if (QSettings().value("exportVideoAudioSlider").toInt() == 0)
+        QSettings().setValue("exportVideoAudioSlider", ui->exportVideoAudioSlider->value()); //default
+
+    if (QSettings().value("exportVideoAudioSlider").toInt() != ui->exportVideoAudioSlider->value())
         ui->exportVideoAudioSlider->setValue(QSettings().value("exportVideoAudioSlider").toInt());
+    else
+        on_exportVideoAudioSlider_valueChanged(QSettings().value("exportVideoAudioSlider").toInt()); //force update of label anyway
+
 
     watermarkFileName = QSettings().value("watermarkFileName").toString();
     watermarkFileNameChanged(watermarkFileName);
@@ -588,6 +610,25 @@ void MainWindow::loadSettings()
     else
         ui->playerInDialogcheckBox->setChecked(QSettings().value("playerInDialogcheckBox").toBool());
     ui->graphicsView->setPlayInDialog(ui->playerInDialogcheckBox->isChecked());
+
+    ui->searchLineEdit->setText(QSettings().value("searchLineEdit").toString());
+    on_searchLineEdit_textChanged(QSettings().value("searchLineEdit").toString());
+
+    if (QSettings().value("mediaFileScaleSlider").toInt() == 0)
+        QSettings().setValue("mediaFileScaleSlider", ui->mediaFileScaleSlider->value()); //default
+
+    if (QSettings().value("mediaFileScaleSlider").toInt() != ui->mediaFileScaleSlider->value())
+        ui->mediaFileScaleSlider->setValue(QSettings().value("mediaFileScaleSlider").toInt());
+    else
+        on_mediaFileScaleSlider_valueChanged(QSettings().value("mediaFileScaleSlider").toInt()); //force update of label anyway
+
+    if (QSettings().value("clipScaleSlider").toInt() == 0)
+        QSettings().setValue("clipScaleSlider", ui->clipScaleSlider->value()); //default
+
+    if (QSettings().value("clipScaleSlider").toInt() != ui->clipScaleSlider->value())
+        ui->clipScaleSlider->setValue(QSettings().value("clipScaleSlider").toInt());
+    else
+        on_clipScaleSlider_valueChanged(QSettings().value("clipScaleSlider").toInt()); //force update of label anyway
 
 } //loadSettings
 
@@ -947,28 +988,22 @@ void MainWindow::allTooltips()
                                       "<li><b>Matching</b>: match on the tags of clips and on filename</li>"
                                       "</ul>"));
 
-    ui->refreshViewButton->setToolTip(tr("<p><b>Refresh</b></p>"
+    ui->reloadViewButton->setToolTip(tr("<p><b>Reload</b></p>"
                                       "<p><i>Rebuilds the view</i></p>"
                                       "<ul>"
                                          "<li><b>File changes</b>: file changes are notified by ACVC and updated in the view directly</li>"
                                       "</ul>"));
 
-    ui->graphicsScrollArea->setToolTip(tr("<p><b>Media Item Actions and Properties</b></p>"
-                                    "<p><i>Show actions and properties for the currently selected media item</i></p>"
-                                          "<ul>"
-                                          "<li><b>Select media file</b>: Select media file in the left view first</li>"
-                                          "<li><b>Actions</b>: Hover over buttons for help</li>"
-                                          "<li><b>Properties by FFMpeg</b>: Temporary available to compare with Exiftool. Available for Videos FFMpeg tool shows average framerate and framerate. Last one is the framerate if no drops are present</li>"
-                                          "<li><b>Properties by QMediaplayer</b>: Temporary available to compare with Exiftool. Available for Audio and Videos after they started playing</li>"
-                                          "<li><b>Properties by Exiftool</b>: See also property tab in classical mode. Properties are also edited there</li>"
-                                          "</ul>"));
     ui->playerInDialogcheckBox->setToolTip(tr("<p><b>Show video in window</b></p>"
                                               "<p><i>Video can be played in a separate window or at the place where it is located on the screen </i></p>"
                                               "<ul>"
                                                  "<li><b>Performace on Mac / OSX</b>: Currently performance on Mac / OSX for <i>at place</i> playing is very bad.</li>"
                                               "</ul>"));
-    ui->scaleSlider->setToolTip(tr("<p><b>Video duration slider</b></p>"
-                                   "<p><i>Determines the size of the video and audio files displayed on the screen</i></p>"
+    ui->mediaFileScaleSlider->setToolTip(tr("<p><b>Media file scale</b></p>"
+                                   "<p><i>Determines the size of the video and audio files based on their duration (pixels per minute)</i></p>"
+                                   ));
+    ui->clipScaleSlider->setToolTip(tr("<p><b>Clip and export scale</b></p>"
+                                   "<p><i>Determines the size of the clips and exported files based on their duration (pixels per minute)</i></p>"
                                    ));
 } //tooltips
 
@@ -2494,7 +2529,7 @@ void MainWindow::checkAndOpenFolder(QString selectedFolderName)
         ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
         //tags and mainwindow done by clips
 
-        on_refreshViewButton_clicked();
+        on_reloadViewButton_clicked();
     }
 
 }
@@ -2534,390 +2569,27 @@ void MainWindow::on_actionOpen_Folder_triggered()
 //        ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
 
 
-//        on_refreshViewButton_clicked();
+//        on_reloadViewButton_clicked();
     }
-}
-
-void MainWindow::onGraphicsItemSelected(QGraphicsItem *item)
-{
-    //remove old items
-    if (ui->graphicsScrollAreaWidget->layout() != nullptr)
-    {
-        QLayout *layout = ui->graphicsScrollAreaWidget->layout();
-
-        QLayoutItem * item;
-        QLayout * sublayout;
-        QWidget * widget;
-        while ((item = layout->takeAt(0))) {
-            if ((sublayout = item->layout()) != 0) {/* do the same for sublayout*/}
-            else if ((widget = item->widget()) != 0) {widget->hide(); delete widget;}
-            else {delete item;}
-        }
-
-        // then finally
-        delete layout;
-    }
-
-    if (item == nullptr) //clean
-        return;
-
-    QMediaPlayer *m_player = nullptr;
-    if (!ui->graphicsView->playInDialog)
-    {
-        QGraphicsVideoItem *playerItem = nullptr;
-        foreach (QGraphicsItem *childItem, item->childItems())
-        {
-            if (childItem->data(itemTypeIndex).toString().contains("SubPlayer"))
-                playerItem = (QGraphicsVideoItem *)childItem;
-
-        }
-    //    qDebug()<<"playerItem"<<playerItem;
-        if (playerItem != nullptr)
-            m_player = (QMediaPlayer *)playerItem->mediaObject();
-    }
-    else
-        m_player = ui->graphicsView->dialogMediaPlayer;
-
-    QString folderName = item->data(folderNameIndex).toString();
-    QString fileName = item->data(fileNameIndex).toString();
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(ui->graphicsScrollAreaWidget);
-
-    QLabel *mediaTypeLabel = new QLabel(ui->graphicsScrollAreaWidget);
-    mediaTypeLabel->setText(item->data(mediaTypeIndex).toString());
-    QFont font;
-    font.setBold(true);
-    mediaTypeLabel->setFont(font);
-    mainLayout->addWidget(mediaTypeLabel);
-    QLabel *folderNameLabel = new QLabel(ui->graphicsScrollAreaWidget);
-    folderNameLabel->setText("Foldername: " + folderName);
-    mainLayout->addWidget(folderNameLabel);
-    QLabel *fileNameLabel = new QLabel(ui->graphicsScrollAreaWidget);
-    fileNameLabel->setText("Filename: " + fileName);
-    mainLayout->addWidget(fileNameLabel);
-
-    QGroupBox *buttonsGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
-    buttonsGroupBox->setTitle("Actions");
-    mainLayout->addWidget(buttonsGroupBox);
-    QVBoxLayout *buttonsLayout = new QVBoxLayout;
-    buttonsGroupBox->setLayout(buttonsLayout);
-
-    QPushButton *zoomToItemButton = new QPushButton(ui->graphicsScrollAreaWidget);
-    zoomToItemButton->setText("Zoom to item");
-    zoomToItemButton->setMaximumWidth(200);
-    buttonsLayout->addWidget(zoomToItemButton);
-    connect(zoomToItemButton, &QPushButton::clicked, [=]()
-    {
-        ui->graphicsView->fitInView(item->boundingRect()|item->childrenBoundingRect(), Qt::KeepAspectRatio);
-    });
-    zoomToItemButton->setToolTip(tr("<p><b>%1</b></p>"
-                                        "<p><i>Zooms in to %2 and it's details</i></p>"
-                                              ).arg(zoomToItemButton->text(), item->data(fileNameIndex).toString()));
-
-    if (item->data(mediaTypeIndex).toString() == "MediaFile")
-    {
-        QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollAreaWidget);
-        openInExplorerButton->setText("Open in explorer");
-        openInExplorerButton->setMaximumWidth(200);
-        buttonsLayout->addWidget(openInExplorerButton);
-        connect(openInExplorerButton, &QPushButton::clicked, [=]()
-        {
-    #ifdef Q_OS_MAC
-                    QStringList args;
-                    args << "-e";
-                    args << "tell application \"Finder\"";
-                    args << "-e";
-                    args << "activate";
-                    args << "-e";
-                    args << "select POSIX file \""+folderName + fileName+"\"";
-                    args << "-e";
-                    args << "end tell";
-                    QProcess::startDetached("osascript", args);
-                #endif
-
-                #ifdef Q_OS_WIN
-                    QStringList args;
-                    args << "/select," << QDir::toNativeSeparators(folderName + fileName);
-                    QProcess::startDetached("explorer", args);
-                #endif
-
-        });
-        openInExplorerButton->setToolTip(tr("<p><b>%1</b></p>"
-                                            "<p><i>Shows the current file or folder (%2) in the explorer of your computer</i></p>"
-                                                  ).arg(openInExplorerButton->text(), item->data(fileNameIndex).toString()));
-
-
-        QPushButton *openInApplicationButton = new QPushButton(ui->graphicsScrollAreaWidget);
-        openInApplicationButton->setText("Open in application");
-        openInApplicationButton->setMaximumWidth(200);
-        buttonsLayout->addWidget(openInApplicationButton);
-        connect(openInApplicationButton, &QPushButton::clicked, [=]()
-        {
-            QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName) );
-        });
-        openInApplicationButton->setToolTip(tr("<p><b>%1</b></p>"
-                                            "<p><i>Shows the current file (%2) in the default application of your computer</i></p>"
-                                                  ).arg(openInApplicationButton->text(), item->data(fileNameIndex).toString()));
-
-
-//        QPushButton *createClip = new QPushButton(ui->graphicsScrollAreaWidget);
-//        createClip->setText("Create Clip");
-//        mainLayout->addWidget(createClip);
-//        connect(createClip, &QPushButton::clicked, ui->graphicsView, &AGView::onCreateClip);
-
-        if (m_player != nullptr)
-        {
-            QGroupBox *vcrControlsGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
-            vcrControlsGroupBox->setTitle("VCR Controls");
-            mainLayout->addWidget(vcrControlsGroupBox);
-            QHBoxLayout *vcrControlsLayout = new QHBoxLayout;
-            vcrControlsGroupBox->setLayout(vcrControlsLayout);
-
-//            QPushButton *skipBackwardButton = new QPushButton(ui->graphicsScrollAreaWidget);
-//            skipBackwardButton->setText("");
-//            skipBackwardButton->setMaximumWidth(skipBackwardButton->height());
-//            skipBackwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSkipBackward));
-//            vcrControlsLayout->addWidget(skipBackwardButton);
-//            connect(skipBackwardButton, &QPushButton::clicked, [=]() {ui->graphicsView->onPlayVideoButton(m_player);});
-
-            QPushButton *seekBackwardButton = new QPushButton(ui->graphicsScrollAreaWidget);
-            seekBackwardButton->setText("");
-            seekBackwardButton->setMaximumWidth(seekBackwardButton->height());
-            seekBackwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekBackward));
-            vcrControlsLayout->addWidget(seekBackwardButton);
-            connect(seekBackwardButton, &QPushButton::clicked, [=]() {ui->graphicsView->onRewind(m_player);});
-
-            QPushButton *playButton = new QPushButton(ui->graphicsScrollAreaWidget);
-            playButton->setText("");
-            playButton->setMaximumWidth(playButton->height());
-            playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-            vcrControlsLayout->addWidget(playButton);
-            connect(playButton, &QPushButton::clicked, [=]() {ui->graphicsView->onPlayVideoButton(m_player);});
-
-            QPushButton *seekForwardButton = new QPushButton(ui->graphicsScrollAreaWidget);
-            seekForwardButton->setText("");
-            seekForwardButton->setMaximumWidth(seekBackwardButton->height());
-            seekForwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekForward));
-            vcrControlsLayout->addWidget(seekForwardButton);
-            connect(seekForwardButton, &QPushButton::clicked, [=]() {ui->graphicsView->onFastForward(m_player);});
-
-            QPushButton *stopButton = new QPushButton(ui->graphicsScrollAreaWidget);
-            stopButton->setText("");
-            stopButton->setMaximumWidth(stopButton->height());
-            stopButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-            vcrControlsLayout->addWidget(stopButton);
-            connect(stopButton, &QPushButton::clicked, [=]() {ui->graphicsView->onStop(m_player);});
-
-            QPushButton *muteButton = new QPushButton(ui->graphicsScrollAreaWidget);
-            muteButton->setText("");
-            muteButton->setMaximumWidth(playButton->height());
-            muteButton->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
-            vcrControlsLayout->addWidget(muteButton);
-            connect(muteButton, &QPushButton::clicked, [=]() {ui->graphicsView->onMuteVideoButton(m_player);});
-
-            QComboBox *speedComboBox = new QComboBox(ui->graphicsScrollAreaWidget);
-            speedComboBox->addItem("-2x");
-            speedComboBox->addItem("-1x");
-            speedComboBox->addItem("1 fps");
-            speedComboBox->addItem("2 fps");
-            speedComboBox->addItem("4 fps");
-            speedComboBox->addItem("8 fps");
-            speedComboBox->addItem("16 fps");
-            speedComboBox->addItem("1x");
-            speedComboBox->addItem("2x");
-            speedComboBox->addItem("4x");
-            speedComboBox->addItem("8x");
-            speedComboBox->addItem("16x");
-
-            speedComboBox->setCurrentText("1x");
-
-            connect(speedComboBox, &QComboBox::currentTextChanged, [=](const QString &arg1)
-            {
-                double playbackRate = arg1.left(arg1.lastIndexOf("x")).toDouble();
-                if (arg1.indexOf(" fps")  > 0)
-                    playbackRate = arg1.left(arg1.lastIndexOf(" fps")).toDouble() / QSettings().value("frameRate").toInt();
-                ui->graphicsView->onSetPlaybackRate(m_player, playbackRate);
-            });
-
-            vcrControlsLayout->addWidget(speedComboBox);
-
-            QSpacerItem *spacer = new QSpacerItem(0,0, QSizePolicy::Expanding, QSizePolicy::Expanding);
-            vcrControlsLayout->addSpacerItem(spacer);
-
-            playButton->setToolTip(tr("<p><b>Play or pause</b></p>"
-                                      "<p><i>Play or pause the video</i></p>"
-                                      ));
-            stopButton->setToolTip(tr("<p><b>Stop the video</b></p>"
-                                        "<p><i>Stop the video</i></p>"
-                                        ));
-
-//            ui->skipForwardButton->setToolTip(tr("<p><b>Go to next or previous clip</b></p>"
-//                                      "<p><i>Go to next or previous clip</i></p>"
-//                                      "<ul>"
-//                                      "<li>Shortcut: %1up and %1down</li>"
-//                                      "</ul>").arg(commandControl));
-//            ui->skipBackwardButton->setToolTip(ui->skipForwardButton->toolTip());
-
-            seekBackwardButton->setToolTip(tr("<p><b>Go to next or previous frame</b></p>"
-                                      "<p><i>Go to next or previous frame</i></p>"
-                                      ));
-            seekForwardButton->setToolTip(ui->seekBackwardButton->toolTip());
-
-            muteButton->setToolTip(tr("<p><b>Mute or unmute</b></p>"
-                                      "<p><i>Mute or unmute sound (toggle)</i></p>"
-                                      ));
-            speedComboBox->setToolTip(tr("<p><b>Speed</b></p>"
-                                         "<p><i>Change the play speed of the video</i></p>"
-                                         "<ul>"
-                                         "<li>Supported speeds are depending on the media file codec installed on your computer</li>"
-                                         "</ul>"));
-
-
-
-        } //m_player != nullptr
-
-
-        if (m_player != nullptr && m_player->availableMetaData().count() > 0)
-        {
-            QGroupBox *metadataGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
-            metadataGroupBox->setTitle("Properties by QMediaPlayer");
-            mainLayout->addWidget(metadataGroupBox);
-            QVBoxLayout *metadataLayout = new QVBoxLayout;
-            metadataGroupBox->setLayout(metadataLayout);
-
-            foreach (QString metadata_key, m_player->availableMetaData())
-            {
-                QLabel *metaDataLabel = new QLabel(metadataGroupBox);
-    //                qDebug()<<"Metadata"<<metadata_key<<m_player->metaData(metadata_key);
-                QVariant meta = m_player->metaData(metadata_key);
-                if (meta.toSize() != QSize())
-                    metaDataLabel->setText(metadata_key + ": " + QString::number( meta.toSize().width()) + " x " + QString::number( meta.toSize().height()));
-                else
-                    metaDataLabel->setText(metadata_key + ": " + meta.toString());
-                metadataLayout->addWidget(metaDataLabel);
-            }
-        }
-
-        QStringList ffMpegMetaList = item->data(ffMpegMetaIndex).toString().split(";");
-
-        if (ffMpegMetaList.count() > 0 && ffMpegMetaList.first() != "")
-        {
-            QGroupBox *ffMpegMetaGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
-            ffMpegMetaGroupBox->setTitle("Properties by FFMpeg");
-            mainLayout->addWidget(ffMpegMetaGroupBox);
-            QVBoxLayout *ffMpegMetaLayout = new QVBoxLayout;
-            ffMpegMetaGroupBox->setLayout(ffMpegMetaLayout);
-
-            foreach (QString keyValuePair, ffMpegMetaList)
-            {
-                QLabel *ffMpegMetaLabel = new QLabel(ffMpegMetaGroupBox);
-                ffMpegMetaLabel->setText(keyValuePair);
-                ffMpegMetaLayout->addWidget(ffMpegMetaLabel);
-            }
-        }
-
-        QGroupBox *parentPropGroupBox = new QGroupBox(ui->graphicsScrollAreaWidget);
-        parentPropGroupBox->setTitle("Properties by Exiftool");
-        mainLayout->addWidget(parentPropGroupBox);
-        QVBoxLayout *parentPropLayout = new QVBoxLayout;
-        parentPropGroupBox->setLayout(parentPropLayout);
-
-        int fileColumnNr = -1;
-        for(int col = 0; col < ui->propertyTreeView->propertyItemModel->columnCount(); col++)
-        {
-          if (ui->propertyTreeView->propertyItemModel->headerData(col, Qt::Horizontal).toString() == folderName + fileName)
-          {
-              fileColumnNr = col;
-          }
-        }
-    //    qDebug()<<"APropertyTreeView::onSetPropertyValue"<<fileName<<fileColumnNr<<propertyName<<propertyItemModel->rowCount();
-
-        if (fileColumnNr != -1)
-        {
-            //get row/ item value
-            for(int rowIndex = 0; rowIndex < ui->propertyTreeView->propertyItemModel->rowCount(); rowIndex++)
-            {
-                QModelIndex topLevelIndex = ui->propertyTreeView->propertyItemModel->index(rowIndex,propertyIndex);
-
-                if (ui->propertyTreeView->propertyItemModel->rowCount(topLevelIndex) > 0)
-                {
-
-                    bool first = true;
-                    QGroupBox *childPropGroupBox = new QGroupBox(parentPropGroupBox);
-                    QVBoxLayout *childPropLayout = new QVBoxLayout;
-
-                    for (int childRowIndex = 0; childRowIndex < ui->propertyTreeView->propertyItemModel->rowCount(topLevelIndex); childRowIndex++)
-                    {
-                        QModelIndex sublevelIndex = ui->propertyTreeView->propertyItemModel->index(childRowIndex,propertyIndex, topLevelIndex);
-                        QString propValue = ui->propertyTreeView->propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex).data().toString();
-
-                        if (propValue != "")
-                        {
-                            if (first)
-                            {
-                                childPropGroupBox->setTitle(topLevelIndex.data().toString());
-                                parentPropLayout->addWidget(childPropGroupBox);
-                                childPropGroupBox->setLayout(childPropLayout);
-
-                                first = false;
-                            }
-
-                            QLabel *metaDataLabel = new QLabel(childPropGroupBox);
-                            metaDataLabel->setText(sublevelIndex.data().toString() + ": " + propValue);
-                            childPropLayout->addWidget(metaDataLabel);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    else if (item->data(mediaTypeIndex).toString() == "Folder")
-    {
-        QPushButton *openInExplorerButton = new QPushButton(ui->graphicsScrollAreaWidget);
-        openInExplorerButton->setText("Open in explorer");
-        openInExplorerButton->setMaximumWidth(200);
-        buttonsLayout->addWidget(openInExplorerButton);
-        connect(openInExplorerButton, &QPushButton::clicked, [=]()
-        {
-            QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName) );
-        });
-
-//        QPushButton *exportButton = new QPushButton(ui->graphicsScrollAreaWidget);
-//        exportButton->setText("Export");
-//        mainLayout->addWidget(exportButton);
-//        connect(exportButton, &QPushButton::clicked, ui->graphicsView, &AGView::onSpotView);
-
-//        QPushButton *recycleButton = new QPushButton(ui->graphicsWidget);
-//        recycleButton->setText("ACVC RecycleBin");
-//        vBoxLayout->addWidget(recycleButton);
-//        connect(recycleButton, &QPushButton::clicked, [=]()
-//        {
-//            QDesktopServices::openUrl( QUrl::fromLocalFile( folderName + fileName + "/ACVCRecycleBin") );
-//        });
-
-    }
-    else if (item->data(mediaTypeIndex).toString() == "Clip")
-    {
-
-    }
-
-    QSpacerItem *spacer = new QSpacerItem(0,0, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    mainLayout->addSpacerItem(spacer);
 }
 
 void MainWindow::onMediaLoaded(QString folderName, QString fileName, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QList<int> samples)
 {
 //    qDebug()<<"MainWindow::onMediaLoaded"<<folderName<<fileName<<ui->graphicsView->loadMediaCompleted << agFileSystem->loadMediaTotal;
-    ui->loadMediaProgressBar->setValue(100 * ui->graphicsView->loadMediaCompleted / agFileSystem->loadMediaTotal);
+
+    qreal percentage = qreal(ui->graphicsView->loadMediaCompleted) / qreal(agFileSystem->loadMediaTotal);
+
+    ui->loadMediaProgressBar->setValue(100 * percentage);
 
     ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "TimelineView");
     ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down"));
     ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right"));
 
-    if (ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal)
+    if (percentage == 1)
     {
 //        qDebug()<<"MainWindow::onMediaLoaded completed"<<agFileSystem->loadMediaCompleted << agFileSystem->loadMediaTotal;
         ui->graphicsView->arrangeItems(nullptr);
+        ui->loadMediaProgressBar->setValue(0);
     }
 }
 
@@ -2966,8 +2638,8 @@ void MainWindow::on_timelineViewButton_clicked()
     QSettings().sync();
 
     ui->timelineViewButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "TimelineView");
-    ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down");
-    ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right");
+    ui->spotviewDownButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down"));
+    ui->spotviewRightButton->setEnabled(ui->graphicsView->loadMediaCompleted == agFileSystem->loadMediaTotal && (QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right"));
 
     ui->graphicsView->onSetView();
 }
@@ -2976,9 +2648,16 @@ void MainWindow::on_searchLineEdit_textChanged(const QString &arg1)
 {
 //    qDebug()<<"MainWindow::on_searchLineEdit_textChanged"<<arg1;
     ui->graphicsView->onSearchTextChanged(arg1);
+
+    if (QSettings().value("searchLineEdit") != arg1)
+    {
+        QSettings().setValue("searchLineEdit", arg1);
+        QSettings().sync();
+    }
+
 }
 
-void MainWindow::on_refreshViewButton_clicked()
+void MainWindow::on_reloadViewButton_clicked()
 {
     ui->graphicsView->horizontalScrollBar()->setValue( 0 );
     ui->graphicsView->verticalScrollBar()->setValue( 0 );
@@ -3008,7 +2687,6 @@ void MainWindow::on_refreshViewButton_clicked()
     ui->spotviewDownButton->setEnabled(false);
     ui->spotviewRightButton->setEnabled(false);
     ui->loadMediaProgressBar->setValue(0);
-    onGraphicsItemSelected(nullptr);
 
     AJobParams jobParams;
     jobParams.thisObject = this;
@@ -3031,10 +2709,17 @@ void MainWindow::on_refreshViewButton_clicked()
 
 }
 
-void MainWindow::on_scaleSlider_valueChanged(int value)
+void MainWindow::on_mediaFileScaleSlider_valueChanged(int value)
 {
-    ui->graphicsView->setScaleFactorAndArrange(1.0 / (100 - value));
+    ui->mediaFileScaleLabel->setText(QString::number(value) + " pix/min");
+//    qDebug()<<"MainWindow::on_mediaFileScaleSlider_valueChanged"<<value;
+    ui->graphicsView->setMediaScaleAndArrange(value); //0-1000 pixels / minute
 
+    if (QSettings().value("mediaFileScaleSlider").toInt() != value)
+    {
+        QSettings().setValue("mediaFileScaleSlider", value);
+        QSettings().sync();
+    }
 }
 
 void MainWindow::on_playerInDialogcheckBox_clicked(bool checked)
@@ -3043,3 +2728,17 @@ void MainWindow::on_playerInDialogcheckBox_clicked(bool checked)
     QSettings().sync();
     ui->graphicsView->setPlayInDialog(checked);
 }
+
+void MainWindow::on_clipScaleSlider_valueChanged(int value)
+{
+    ui->clipScaleLabel->setText(QString::number(value) + " pix/min");
+//    qDebug()<<"MainWindow::on_clipScaleSlider_valueChanged"<<value;
+    ui->graphicsView->setClipScaleAndArrange(value); //0-5000 pixels / minute
+
+    if (QSettings().value("clipScaleSlider").toInt() != value)
+    {
+        QSettings().setValue("clipScaleSlider", value);
+        QSettings().sync();
+    }
+}
+

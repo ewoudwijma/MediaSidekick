@@ -175,8 +175,6 @@ private slots:
 
     void on_actionOpen_Folder_triggered();
 
-    void onGraphicsItemSelected(QGraphicsItem *item);
-
     void on_tabUIWidget_currentChanged(int index);
 
     void on_spotviewDownButton_clicked();
@@ -186,11 +184,13 @@ private slots:
 
     void on_searchLineEdit_textChanged(const QString &arg1);
 
-    void on_refreshViewButton_clicked();
+    void on_reloadViewButton_clicked();
 
-    void on_scaleSlider_valueChanged(int value);
+    void on_mediaFileScaleSlider_valueChanged(int value);
 
     void on_playerInDialogcheckBox_clicked(bool checked);
+
+    void on_clipScaleSlider_valueChanged(int value);
 
 private:
     Ui::MainWindow *ui;

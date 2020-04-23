@@ -449,7 +449,7 @@ void AClipsTableView::onLoadClips(QStandardItem *parentItem)
     }, nullptr);
 }
 
-void AClipsTableView::onTrimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName)
+void AClipsTableView::onTrimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin)
 {
     if (checkSaveIfClipsChanged())
     {
@@ -466,7 +466,7 @@ void AClipsTableView::onTrimAll(QStandardItem *parentItem, QStandardItem *&curre
 
     onTrimF(parentItem, currentItem, folderName, fileName, folderName);
 
-//    if (fileTrimmed)
+    if (moveToBin)
     {
         emit releaseMedia(folderName, fileName);
         emit moveFilesToACVCRecycleBin(currentItem, folderName, fileName);
@@ -1051,7 +1051,7 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
         return;
 
     dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
-    dir.setSorting(QDir::Name | QDir::LocaleAware); //localeaware to get +99999ms sorted the right way
+    dir.setSorting(QDir::Name | QDir::LocaleAware | QDir::IgnoreCase); //localeaware to get +99999ms sorted the right way
     QStringList dirList = dir.entryList();
 
     for (int i=0; i < dirList.size(); ++i)

@@ -383,7 +383,7 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
 //    foreach (QString ffmpegMapping, ffmpegMappings)
 //        qDebug()<<"ffmpegMapping"<<ffmpegMapping;
 
-    QString command = "ffmpeg " + ffmpegFiles.join(" ") + " -filter_complex \"" + ffmpegClips.join(";") + ";" + ffmpegCombines.join(";") + "\" " + ffmpegMappings.join(" ");
+    QString command = "ffmpeg " + ffmpegFiles.join(" ") + " -filter_complex \"" + ffmpegClips.join(";") + (ffmpegCombines.count()>0?";":"") + ffmpegCombines.join(";") + "\" " + ffmpegMappings.join(" ");
 
 //    qDebug()<<"command"<<command;
 
@@ -1453,6 +1453,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
 
 
     QString targetSize;
+    videoWidth = "";
     if (ptargetSize.contains("240p")) //3:4
     {
         targetSize = "240p";
@@ -1468,7 +1469,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     else if (ptargetSize.contains("480p"))
     {
         targetSize = "480p";
-//        videoWidth = "640"; //853 or 858
+        videoWidth = "858"; //not 853
         videoHeight = "480";
     }
     else if (ptargetSize.contains("720p"))//9:16
@@ -1509,7 +1510,10 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     }
 
     if (sourceHeight.toDouble() != 0)
-        videoWidth = QString::number(int(videoHeight.toDouble() * sourceWidth.toDouble() / sourceHeight.toDouble())); //maintain aspect ratio
+    {
+        if (videoWidth == "") //480p is not exactly so hardcoded to 858
+            videoWidth = QString::number(int(videoHeight.toDouble() * sourceWidth.toDouble() / sourceHeight.toDouble() / 2.0) * 2); //maintain aspect ratio. Should be dividable by 2
+    }
     else
         videoWidth = sourceWidth.toDouble();
 
