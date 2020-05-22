@@ -246,7 +246,7 @@ bool AClipsItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, c
     }
     else if (event->type() == QEvent::KeyPress || event->type() == QEvent::MouseButtonDblClick)
     {
-        emit onStartEditing(index);
+//        emit onStartEditing(index);
 //        QStandardItemModel *modelS = qobject_cast<QStandardItemModel*>(model);
 //        QStandardItem *item = modelS->itemFromIndex(index);
 //        qDebug()<<"Item"<<item->data()<<index.data();

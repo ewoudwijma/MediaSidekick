@@ -68,7 +68,7 @@ QStandardItem *AExport::losslessVideoAndAudio(QStandardItem *parentItem)
                 int lastIndexOf = fileNameLow.lastIndexOf(".");
                 QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-                if ((mediaType == "V" && AGlobal().videoExtensions.contains(extension)) || (mediaType == "A" && AGlobal().audioExtensions.contains(extension))) //if video then video files, if audio then audio files
+                if ((mediaType == "V" && AGlobal().videoExtensions.contains(extension, Qt::CaseInsensitive)) || (mediaType == "A" && AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))) //if video then video files, if audio then audio files
                 {
                     int lastIndex = fileName.lastIndexOf(".");
                     if (mediaType == "V" && videoFileExtension == "")
@@ -433,82 +433,6 @@ QStandardItem *AExport::encodeVideoClips(QStandardItem *parentItem)
 
 } //encodeVideoClips
 
-//void AExport::processOutput(QMap<QString, QString> parameters, QString result, int percentageStart, int percentageDelta)
-//{
-////    qDebug()<<"AExport::processOutput"<<result<<percentageStart<<percentageDelta;
-
-//    if (!result.contains("Non-monotonous DTS in output stream")) //only warning, sort out later
-//        emit addToJob(parameters["processId"], result);
-
-//    foreach (QString resultLine, result.split("\n"))
-//    {
-//        if (resultLine.contains("Could not")  || resultLine.contains("Invalidxx") || resultLine.contains("No such file or directory"))
-//            processError = resultLine;
-//    }
-
-//    int timeIndex = result.indexOf("time=");
-//    if (timeIndex > 0)
-//    {
-//        QString timeString = result.mid(timeIndex + 5, 11) + "0";
-//        QTime time = QTime::fromString(timeString,"HH:mm:ss.zzz");
-//        if (parameters["totalDuration"].toInt() == 0)
-//            qDebug()<<"PROGRAMMING ERROR totalDuration SHOULD NOT BE 0";
-//        else
-//            emit updateProgress(percentageStart + percentageDelta * time.msecsSinceStartOfDay() / parameters["totalDuration"].toInt());
-//    }
-//}
-
-//void AExport::processFinished(QMap<QString, QString> parameters)
-//{
-//    qDebug()<<"AExport::processFinished"<<parameters["exportFileName"];
-//    //check successful
-
-//    if (parameters["exportFileName"] != "")
-//    {
-//        QString errorMessage = "OK";
-
-//        QFile file(currentDirectory + parameters["exportFileName"]);
-//        if (file.exists())
-//        {
-//            QDateTime changeTime = QFileInfo(currentDirectory + parameters["exportFileName"]).metadataChangeTime();
-//            QDateTime currentTime = QDateTime::fromString(parameters["startTime"]);
-
-//            qDebug()<<"  AExport::processFinished changetime"<<changeTime<<currentTime;
-
-//            if (changeTime.secsTo(currentTime) > 0) // changetime always later then starttime
-//                errorMessage = "File " + parameters["exportFileName"] + " created before this job";
-//            else if (file.size() < 100)
-//                errorMessage = "File possibly corrupted as size is smaller then 100 bytes: " + parameters["exportFileName"] + " " + QString::number(file.size()) + " bytes";
-//        }
-//        else
-//            errorMessage = "File " + parameters["exportFileName"] + " not created";
-
-//        if (errorMessage != "OK")
-//        {
-//            if (processError != "")
-//            {
-//                emit addToJob(parameters["processId"], errorMessage + "\n");
-//                emit addToJob(parameters["processId"], processError);
-//            }
-//            else
-//            {
-//                processError = errorMessage;
-//                emit addToJob(parameters["processId"], errorMessage);
-//            }
-//        }
-//        else
-//        {
-//            emit addToJob(parameters["processId"], "Completed");
-//            processError = "";
-//        }
-
-//        if (processError != "")
-//            emit readyProgress(1, "Export error (go to Jobs for details): " + processError);
-//        else
-//            emit readyProgress(0, "");
-//    }
-//}
-
 QStandardItem * AExport::muxVideoAndAudio(QStandardItem *parentItem)
 {
     QString targetFolderFileName = recycleFolderName +  fileNameWithoutExtension + "V" + videoFileExtension;
@@ -786,7 +710,7 @@ void AExport::addPremiereClipitem(QString clipId, QString folderName, QString fi
     int lastIndexOf = fileNameLow.lastIndexOf(".");
     QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-    if (AGlobal().audioExtensions.contains(extension))
+    if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
         AVType = "A";
     else if (clipId == "WM") //watermark
         AVType = "W";
@@ -971,7 +895,7 @@ void AExport::exportShotcut(AJobParams jobParams)
     emit jobAddLog(jobParams, QString("Generating %1").arg(fileName));
 
     s("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-    s("<mlt LC_NUMERIC=\"C\" version=\"6.17.0\" title=\"Shotcut v19.10.20 by ACVC v%1\" producer=\"main_bin\">", qApp->applicationVersion());
+    s("<mlt LC_NUMERIC=\"C\" version=\"6.17.0\" title=\"Shotcut v19.10.20 by Media Sidekick v%1\" producer=\"main_bin\">", qApp->applicationVersion());
     s("  <profile description=\"automatic\" width=\"%1\" height=\"%2\" progressive=\"1\" sample_aspect_num=\"1\" sample_aspect_den=\"1\" display_aspect_num=\"%1\" display_aspect_den=\"%2\" frame_rate_num=\"%3\" frame_rate_den=\"1\"/>", videoWidth, videoHeight, frameRate);
 
     emit jobAddLog(jobParams, "Producers");
@@ -997,7 +921,7 @@ void AExport::exportShotcut(AJobParams jobParams)
         int lastIndexOf = fileNameLow.lastIndexOf(".");
         QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-        if (AGlobal().audioExtensions.contains(extension))
+        if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
         {
             if (audioClipsMap.first() == row || audioClipsMap.last() == row)
             {
@@ -1224,7 +1148,7 @@ void AExport::exportShotcut(AJobParams jobParams)
         s("  </playlist>");
     }
 
-    s("  <tractor id=\"tractor%1\" title=\"Shotcut v19.10.20 by ACVC v%2\">", "Main", qApp->applicationVersion());
+    s("  <tractor id=\"tractor%1\" title=\"Shotcut v19.10.20 by Media Sidekick v%2\">", "Main", qApp->applicationVersion());
     s("    <property name=\"shotcut\">1</property>");
     s("    <track producer=\"\"/>");
 
@@ -1401,7 +1325,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         int lastIndexOf = fileNameLow.lastIndexOf(".");
         QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-        if (AGlobal().audioExtensions.contains(extension))
+        if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
         {
             audioClipsMap[timelineModel->index(row, orderAfterMovingIndex).data().toInt()] = row;
             audioOriginalDuration += frameDuration;
@@ -1426,7 +1350,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
     }
 
     selectedFolderName = QSettings().value("selectedFolderName").toString();
-    recycleFolderName = selectedFolderName + "ACVCRecycleBin/";
+    recycleFolderName = selectedFolderName + "MSKRecycleBin/";
     QDir recycleDir(recycleFolderName);
     if (!recycleDir.exists())
         recycleDir.mkpath(".");
@@ -1589,7 +1513,7 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
         int lastIndexOf = fileNameLow.lastIndexOf(".");
         QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-        if (AGlobal().audioExtensions.contains(extension))
+        if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
         {
             audioFilesMap[folderName + fileName].folderName = folderName;
             audioFilesMap[folderName + fileName].fileName = fileName;
@@ -1641,10 +1565,6 @@ void AExport::exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, Q
             childItem = muxVideoAndAudio(childItem);
 
         emit propertyCopy(childItem, selectedFolderName, videoFilesMap.first().fileName, selectedFolderName, fileNameWithoutExtension + videoFileExtension);
-
-//        emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "V" + videoFileExtension);
-//        if (audioClipsMap.count() > 0)
-//            emit moveFilesToACVCRecycleBin(childItem, selectedFolderName, fileNameWithoutExtension + "A" + audioFileExtension);
 
         if (includingSRT)
             emit loadClips(parentItem);

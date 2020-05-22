@@ -314,7 +314,7 @@ void APropertyEditorDialog::on_renameButton_clicked()
             int lastIndexOf = fileNameLow.lastIndexOf(".");
             QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-            if (!AGlobal().projectExtensions.contains(extension))
+            if (!AGlobal().projectExtensions.contains(extension, Qt::CaseInsensitive))
             {
                 QVariant *suggestedFolderFileName = new QVariant();
 

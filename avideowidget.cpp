@@ -120,7 +120,7 @@ void AVideoWidget::onClipIndexClicked(QModelIndex index)
     if (selectedFileName != fileName)
         selectedFileName = fileName;
 
-//    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().request().url();
+//    qDebug()<<"AVideoWidget::onClipIndexClicked"<<QUrl::fromLocalFile(folderFileName)<<m_player->media().request().url().path();
 
     if (QUrl::fromLocalFile(folderFileName) != m_player->currentMedia().request().url()) //another media file
     {
@@ -150,7 +150,7 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
     int lastIndexOf = fileNameLow.lastIndexOf(".");
     QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-    if (AGlobal().audioExtensions.contains(extension))
+    if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
         m_scrubber->setAudioOrVideo("A");
     else
         m_scrubber->setAudioOrVideo("V");
@@ -177,7 +177,7 @@ void AVideoWidget::onClipsChangedToVideo(QAbstractItemModel *itemModel)
             int lastIndexOf = fileNameLow.lastIndexOf(".");
             QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-            if (AGlobal().audioExtensions.contains(extension))
+            if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
                 AV = "A";
             else
                 AV = "V";
@@ -253,7 +253,7 @@ void AVideoWidget::onPlayerStateChanged(QMediaPlayer::State state)
 
 void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
 {
-    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().request().url()<<m_player->error()<<m_player->errorString();
+//    qDebug()<<"AVideoWidget::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().request().url().path()<<m_player->error()<<m_player->errorString();
 
 //    if (status == QMediaPlayer::BufferedMedia)
 //    {
@@ -284,7 +284,7 @@ void AVideoWidget::onMediaStatusChanged(QMediaPlayer::MediaStatus status)//
             if (fileNameLow.contains(exportMethod))
                 exportFileFound = true;
 
-        if (AGlobal().audioExtensions.contains(extension) || exportFileFound)
+        if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive) || exportFileFound)
             m_player->setVolume(100);
         else
             m_player->setVolume(sourceVideoVolume);
@@ -439,7 +439,7 @@ void AVideoWidget::setSourceVideoVolume(int volume)
         if (fileNameLow.contains(exportMethod))
             exportFileFound = true;
 
-    if (!(AGlobal().audioExtensions.contains(extension) || exportFileFound))
+    if (!(AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive) || exportFileFound))
         m_player->setVolume(volume);
 }
 
@@ -506,7 +506,7 @@ void AVideoWidget::onSetIn(int frames)
     int lastIndexOf = fileNameLow.lastIndexOf(".");
     QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-    if (AGlobal().audioExtensions.contains(extension))
+    if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
             AV = "A";
     else
             AV = "V";

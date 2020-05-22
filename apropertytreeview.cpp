@@ -159,7 +159,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
     jobParams.folderName = folderName;
     jobParams.fileName = "All";
     jobParams.action = "Load properties";
-    jobParams.command = "exiftool -r -s -c \"%02.6f\" \"" + folderName + "\"";
+    jobParams.command = "exiftool -api largefilesupport=1 -r -s -c \"%02.6f\" \"" + folderName + "\"";
     jobParams.parameters["totalDuration"] = QString::number(1000);
 
     jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
@@ -1530,7 +1530,7 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
 
 void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget)
 {
-    qDebug()<<"APropertyTreeView::onPropertyCopy"<<folderNameSource<<fileNameSource<<folderNameTarget<<fileNameTarget;
+//    qDebug()<<"APropertyTreeView::onPropertyCopy"<<folderNameSource<<fileNameSource<<folderNameTarget<<fileNameTarget;
     QString attributeString = "";
     QStringList texts;
     texts << "CreateDate" << "GPSLongitude" << "GPSLatitude" << "GPSAltitude" << "GPSAltitudeRef" << "Make" << "Model" << "Director" << "Producer"  << "Publisher";

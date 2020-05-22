@@ -22,7 +22,7 @@ public:
                       const QModelIndex &index) const override;
     bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) override;
 signals:
-    void onStartEditing(QModelIndex);
+//    void onStartEditing(QModelIndex);
 //    void spinnerChanged(STimeSpinBox *timeSpinBox);
 private slots:
     void commitAndCloseEditor();

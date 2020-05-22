@@ -1,5 +1,6 @@
 #include "agcliprectangleitem.h"
 
+#include "agcliprectitem.h"
 #include "aglobal.h"
 #include "agview.h"
 
@@ -66,9 +67,11 @@ void AGClipRectangleItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     qDebug()<<"AGClipRectangleItem::mousePressEvent"<<event;
 
+    AGClipRectItem *clipItem = (AGClipRectItem *)this;
+
     mDragStartPosition = QCursor::pos();
-    originalClipIn = data(clipInIndex).toInt();
-    originalClipOut = data(clipOutIndex).toInt();
+    originalClipIn = clipItem->clipIn;
+    originalClipOut = clipItem->clipOut;
     QGraphicsRectItem::mousePressEvent(event);
 }
 
@@ -89,26 +92,28 @@ void AGClipRectangleItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         this->setFlag(QGraphicsItem::ItemIsMovable, false);
 //        double multiplier = (mDragEndPosition.x()-mDragStartPosition.x())/rect().width();
 
+        AGClipRectItem *clipItem = (AGClipRectItem *)this;
+
         if (rightDragZone || midDragZone)
         {
             draggedWidth = rect().width() + mDragEndPosition.x() - mDragStartPosition.x();
 
-            setData(clipOutIndex, draggedWidth/rect().width() * originalClipOut);
+            clipItem->clipOut = draggedWidth/rect().width() * originalClipOut;
 
-            setData(mediaDurationIndex, data(clipOutIndex).toInt() - data(clipInIndex).toInt());
+            setData(mediaDurationIndex, clipItem->clipOut - clipItem->clipIn);
 
-            qDebug()<<"AGClipRectangleItem::mouseMoveEvent right"<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_time(originalClipOut)<<AGlobal().msec_to_time(data(clipOutIndex).toInt());
+            qDebug()<<"AGClipRectangleItem::mouseMoveEvent right"<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_time(originalClipOut)<<AGlobal().msec_to_time(clipItem->clipOut);
         }
 
         if (leftDragZone || midDragZone)
         {
             draggedX = rect().x() + mDragEndPosition.x() - mDragStartPosition.x();
 
-            setData(clipInIndex, originalClipIn + draggedX/rect().width() * (originalClipOut - originalClipIn));
+            clipItem->clipIn = originalClipIn + draggedX/rect().width() * (originalClipOut - originalClipIn);
 
-            setData(mediaDurationIndex, data(clipOutIndex).toInt() - data(clipInIndex).toInt());
+            setData(mediaDurationIndex, clipItem->clipOut - clipItem->clipIn);
 
-            qDebug()<<"AGClipRectangleItem::mouseMoveEvent left"<<draggedX<<draggedX/rect().width()<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_time(data(clipInIndex).toInt())<<AGlobal().msec_to_time(data(mediaDurationIndex).toInt());
+            qDebug()<<"AGClipRectangleItem::mouseMoveEvent left"<<draggedX<<draggedX/rect().width()<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_time(clipItem->clipIn)<<AGlobal().msec_to_time(data(mediaDurationIndex).toInt());
         }
 
         emit agItemChanged(this); //draws poly based on clipin and clipout
@@ -167,17 +172,19 @@ void AGClipRectangleItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
     }
     }
 
+    AGClipRectItem *clipItem = (AGClipRectItem *)this;
+
     if (originalClipOut == 0) //MediaFile Base
     {
         qDebug()<<"clip mediaDurationIndex"<<data(mediaDurationIndex);
-        setData(clipOutIndex, data(mediaDurationIndex));
+        clipItem->clipOut = data(mediaDurationIndex).toInt();
         originalClipOut = data(mediaDurationIndex).toInt();
     }
 
 
 
-    qDebug()<<"emit clipPositionChanged"<<data(clipInIndex).toInt()<<data(clipOutIndex).toInt()<<event->pos()<<draggedWidth<<event->pos().x()/double(draggedWidth);
-    emit clipPositionChanged(this, data(clipInIndex).toInt() + (data(clipOutIndex).toInt() - data(clipInIndex).toInt()) * event->pos().x()/double(draggedWidth));
+    qDebug()<<"emit hoverPositionChanged"<<clipItem->clipIn<<clipItem->clipOut<<event->pos()<<draggedWidth<<event->pos().x()/double(draggedWidth);
+    emit hoverPositionChanged(this, clipItem->clipIn + (clipItem->clipOut - clipItem->clipIn) * event->pos().x()/double(draggedWidth));
 
     QGraphicsRectItem::hoverMoveEvent(event);
 }

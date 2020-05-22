@@ -53,8 +53,8 @@ AJobTreeView::AJobTreeView(QWidget *parent) : QTreeView(parent)
     connect (process, SIGNAL(readyReadStandardOutput()), this, SLOT(processOutput()));  // connect process signals with your code
     connect (process, SIGNAL(readyReadStandardError()), this, SLOT(processOutput()));  // same here
 
-    connect(process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcessFinished(int, QProcess::ExitStatus))); //not working with 'clean notation'
-//    connect(process, &QProcess::finished, this, &AJobTreeView::onProcessFinished);
+//    connect(process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcessFinished(int, QProcess::ExitStatus))); //not working with 'clean notation'
+    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &AJobTreeView::onProcessFinished);
     connect(process, &QProcess::errorOccurred, this, &AJobTreeView::onProcessErrorOccurred);
 
     jobThread = new AJobThread(this);
@@ -66,6 +66,7 @@ AJobTreeView::AJobTreeView(QWidget *parent) : QTreeView(parent)
 
 AJobTreeView::~AJobTreeView()
 {
+//     qDebug()<<"AJobTreeView::~AJobTreeView()";
 //    jobThread->quit();
 //    jobThread->wait();
 }
@@ -421,7 +422,7 @@ void AJobTreeView::processOutput()
 
 void AJobTreeView::onProcessFinished(int exitCode , QProcess::ExitStatus exitStatus)
 {
-//    qDebug()<<"AJobTreeView::onProcessFinished"<<exitCode << exitStatus;
+    qDebug()<<"AJobTreeView::onProcessFinished"<<exitCode << exitStatus;
     if (exitStatus == QProcess::NormalExit)
     {
         if (exitCode == 0)

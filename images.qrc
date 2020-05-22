@@ -1,16 +1,15 @@
 <RCC>
     <qresource prefix="/">
-        <file>acvclogosquare.png</file>
-        <file>acvclogo.png</file>
-        <file>acvc.ico</file>
+        <file>MediaSidekick.ico</file>
         <file>Spinner.gif</file>
-        <file>acvc.icns</file>
+        <file>MediaSidekick.icns</file>
         <file>musicnote.png</file>
         <file>movie.png</file>
         <file>images/karton.jpg</file>
         <file>images/shotcut-logo-320x320.png</file>
         <file>images/adobepremiereicon.png</file>
-        <file>images/ACVCFolder.png</file>
+        <file>images/Folder.png</file>
         <file>images/MovieStrip.PNG</file>
+        <file>images/testbeeld.png</file>
     </qresource>
 </RCC>

@@ -73,12 +73,12 @@ int main(int argc, char *argv[])
     qRegisterMetaType<QList<int>>("QList<int>");
     //otherwise: QObject::connect: Cannot queue arguments of type 'QPainterPath' (Make sure 'QPainterPath' is registered using qRegisterMetaType().)
 
-    a.setOrganizationDomain("actioncamvideocompanion.com");
-    a.setApplicationName("ACVC");
-    a.setApplicationVersion("0.4.2");
+    a.setOrganizationDomain("mediasidekick.org");
+    a.setApplicationName("Media Sidekick");
+    a.setApplicationVersion("0.4.4");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
-    //C:\Users\<user>\AppData\Roaming\actioncamvideocompanion.com
+    //C:\Users\<user>\AppData\Roaming\mediasidekick.org
 
     if (QSettings().value("frameRate").toInt() == 0)
     {
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
         qDebug()<<"frameRate"<<QSettings().value("frameRate")<<QSettings().value("frameRate").toInt();
     }
 
-    QPixmap pixmap(":/acvc.ico");
+    QPixmap pixmap(":/MediaSidekick.ico");
     QSplashScreen *splash = new QSplashScreen(pixmap);
 
     //    splash.set
@@ -122,9 +122,10 @@ int main(int argc, char *argv[])
 /*
  *
  * Certificate:
- *  - https://www.sslforfree.com/
- *  - cp.ashosting.nl / website beheer / ssl
- *
+ *  - https://www.sslforfree.com / mediasidekick.org / manual verification / download / copy certificate and private key
+ *  - cp.ashosting.nl / website beheer / website configuratie / ssl / paste certificate and private key
+ *  - ftp downloaded files / upload
+
 $QTmingwFolder = C:\Qt\5.14.2\mingw73_64
 $QTmingwFolder = C:\Qt\5.14.1\mingw73_64
 
@@ -132,7 +133,7 @@ add to $QTmingwFolder
 
 
     - make sure bin, include and lib exists
-            storing C:\Users\ewoud\OneDrive\Documents\ACVC project\ACVC support files\additional\Win for the time being
+            storing C:\Users\ewoud\OneDrive\Documents\Media Sidekick project\Media Sidekick support files\additional\Win for the time being
 
 and more... (temp?)
     - lib_win_x86_64 contents in the main folder
@@ -158,10 +159,10 @@ Clean install of both QT/Mingw/QtAV and deploy folder
                 LIBS += -lQtAVd1 -lQtAVWidgetsd1 # -lQt5AV  -lQt5AVWidgets
                 - https://github.com/wang-bin/QtAV/issues/1193
                 - https://github.com/wang-bin/QtAV/wiki/Build-QtAV
-        - ACVC starts
+        - Media Sidekick starts
     - Qt5OpenGL.dll was not found
         - copy C:/Qt/5.14.2/mingw73_64/bin/Qt5OpenGLd.dll to deploy... (why not automatic?) -> do this before copy all of deploy
-        - installer/data acvc starts!
+        - installer/data Media Sidekick starts!
         - run acvcinstaller\run.bat to create ACVCInstallerV0.2.2.exe (510 kb?)
 
 
@@ -194,22 +195,22 @@ Windows 2020-02-20
         - https://exiftool.org/: download zip, remove -k
 
     - create deploy folder (otherwise crash)
-        - Copy contents of D:\ACVC\windows\ffmpeg-latest-win64-shared\bin to debug or release folder (avcodec 58)
+        - Copy contents of D:\MediaSidekick\windows\ffmpeg-latest-win64-shared\bin to debug or release folder (avcodec 58)
 
-    - ACVC exiftool and others missing
-        - Copy D:\ACVC\ACVC support files\additional\exiftool.exe
-        - D:\ACVC\ACVC support files\additional\scripts to debug or release folder
-        - D:\ACVC\ACVC support files\additional\ACVC.ico to debug or release folder
-        - D:\ACVC\ACVC support files\additional\ACVC.icns to debug or release folder
+    - Media Sidekick exiftool and others missing
+        - Copy D:\MediaSidekick\MediaSidekick support files\additional\exiftool.exe
+        - D:\MediaSidekick\MediaSidekick support files\additional\scripts to debug or release folder
+        - D:\MediaSidekick\MediaSidekick support files\additional\MediaSidekick.ico to debug or release folder
+        - D:\MediaSidekick\MediaSidekick support files\additional\MediaSidekick.icns to debug or release folder
 
     - Prepare for installer
         - deploy in shell (not powershell...)
         - C:\Qt\5.14.2\mingw73_64\bin\qtenv2.bat
-        - cd d:\ACVC\build-ACVC-Desktop_Qt_5_14_2_MinGW_64_bit-Debug\debug or cd d:\ACVC\build-ACVC-Desktop_Qt_5_14_2_MinGW_64_bit-Release\release
-        - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\ACVC\ACVC\ .
+        - cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Debug\debug or cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Release\release
+        - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\MediaSidekick\MediaSidekick\ .
 
     - copy all of deploy to installer/data
-    - update version in D:\ACVC\ACVCInstaller\run.bat, D:\ACVC\ACVCInstaller\config\config.xml and D:\ACVC\ACVCInstaller\packages\com.actioncamvideocompanion.acvc\meta\package.xml
+    - update version in D:\MediaSidekick\MediaSidekickInstaller\run.bat, D:\MediaSidekick\MediaSidekickInstaller\config\config.xml and D:\MediaSidekick\MediaSidekickInstaller\packages\org.mediasidekick.msk\meta\package.xml
 
 
 MacOS 2020-02-01
@@ -257,5 +258,12 @@ MacOS 2020-02-01
                     - Choose Image Format: compressed then Convert. A link will be created on the desktop
 
 General post
-    - Update version.json on actioncamvideocompanion.com
+    - Update version.json on mediasidekick.org
+
+
+Name
+    - https://pixabay.com/illustrations/media-audio-photo-video-mobile-3856203/
+    - https://pixabay.com/users/fsm-team-8829724/?tab=about
+    - https://www.free-stock-music.com/
+    - https://pixabay.com/service/license/
 */

@@ -57,13 +57,11 @@ public slots:
     void onScrubberOutChanged(QString AV, int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-    void onTrimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
     void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
     void onLoadClips(QStandardItem *parentItem);
     void onTrimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget, QTime inTime, QTime outTime);
 
-    void onTrimF(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget);
 private slots:
     void onIndexClicked(QModelIndex index);
     void onClipRightClickMenu(const QPoint &point);
@@ -72,9 +70,9 @@ private slots:
 
     void onIndexActivated(QModelIndex index);
     void onSectionEntered(int logicalIndex);
+
 signals:
     void clipIndexClicked(QModelIndex index);
-    void clipAdded(QModelIndex clipInIndex);
     void clipsChangedToVideo(QAbstractItemModel *itemModel);
     void clipsChangedToTimeline(AClipsSortFilterProxyModel *clipProxyModel);
     void folderSelectedItemModel(QAbstractItemModel *itemModel);
@@ -86,8 +84,6 @@ signals:
     void setOut(int frames);
     void frameRateChanged(int frameRate);
     void propertiesLoaded();
-    void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
-    void moveFilesToACVCRecycleBin(QStandardItem *parentItem, QString folderName, QString fileName, bool supportingFilesOnly = false);
     void showInStatusBar(QString message, int timeout);
     void releaseMedia(QString folderName, QString fileName);
 

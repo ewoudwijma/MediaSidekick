@@ -20,7 +20,7 @@ win32: QT += winextras
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = ACVC
+TARGET = MediaSidekick
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -49,11 +49,16 @@ SOURCES += \
         afilessortfilterproxymodel.cpp \
         afilestreeview.cpp \
         agcliprectangleitem.cpp \
+        agcliprectitem.cpp \
         ageocoding.cpp \
         agfilesystem.cpp \
+        agfolderrectitem.cpp \
         aglobal.cpp \
-        agmediarectangleitem.cpp \
+        agmediafilerectitem.cpp \
+        agprocessthread.cpp \
+        agtagtextitem.cpp \
         agview.cpp \
+        agviewrectitem.cpp \
         ajobitemdelegate.cpp \
         ajobthread.cpp \
         ajobtreeview.cpp \
@@ -88,11 +93,16 @@ HEADERS += \
         afilessortfilterproxymodel.h \
         afilestreeview.h \
         agcliprectangleitem.h \
+        agcliprectitem.h \
         ageocoding.h \
         agfilesystem.h \
+        agfolderrectitem.h \
         aglobal.h \
-        agmediarectangleitem.h \
+        agmediafilerectitem.h \
+        agprocessthread.h \
+        agtagtextitem.h \
         agview.h \
+        agviewrectitem.h \
         ajobitemdelegate.h \
         ajobthread.h \
         ajobtreeview.h \
@@ -122,20 +132,20 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-win32:RC_ICONS += acvc.ico
-unix:ICON = acvc.icns
+win32:RC_ICONS += MediaSidekick.ico
+unix:ICON = MediaSidekick.icns
 
 RESOURCES += \
     images.qrc \
     qml.qrc
 
-win32: LIBS += -LD:\ACVC\windows\ffmpeg-latest-win64-dev\lib
+win32: LIBS += -LD:\MediaSidekick\windows\ffmpeg-latest-win64-dev\lib
 win32: LIBS += -lavcodec -lavformat -lavutil -lswscale #-lavdevice -lavfilter -lpostproc -lswresample
-win32: INCLUDEPATH +=D:\ACVC\windows\ffmpeg-latest-win64-dev\include
+win32: INCLUDEPATH +=D:\MediaSidekick\windows\ffmpeg-latest-win64-dev\include
 
-win32: LIBS += -LD:\ACVC\windows\SDL2_x86_64-w64-mingw32\lib
+win32: LIBS += -LD:\MediaSidekick\windows\SDL2_x86_64-w64-mingw32\lib
 win32: LIBS += -lSDL2
-win32: INCLUDEPATH +=D:\ACVC\windows\SDL2_x86_64-w64-mingw32\include
+win32: INCLUDEPATH +=D:\MediaSidekick\windows\SDL2_x86_64-w64-mingw32\include
 
 unix:LIBS += -L/Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-shared/bin
 unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample

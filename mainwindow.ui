@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ACVC - Action Cam Video Companion</string>
+   <string>Media Sidekick</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -21,11 +21,277 @@
        <enum>QTabWidget::South</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
-      <widget class="QWidget" name="tabClassical">
+      <widget class="QWidget" name="tabMedia">
        <attribute name="title">
-        <string>Classical</string>
+        <string>Media</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QWidget" name="graphicsViewWidget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_10">
+           <item>
+            <widget class="QPushButton" name="spotviewReturnButton">
+             <property name="text">
+              <string>Spot view ↵</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="spotviewDownButton">
+             <property name="text">
+              <string>Spot view ↓</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="spotviewRightButton">
+             <property name="text">
+              <string>Spot view →</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="timelineViewButton">
+             <property name="text">
+              <string>Timeline view</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="orderByDateButton">
+             <property name="text">
+              <string>Date ↓</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="orderByNameButton">
+             <property name="text">
+              <string>Name ↓</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="searchLineEdit">
+             <property name="placeholderText">
+              <string>search</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_3">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="reloadViewButton">
+             <property name="text">
+              <string>Reload</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_4">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="mediaFileScaleSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>1000</number>
+             </property>
+             <property name="value">
+              <number>200</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::NoTicks</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="mediaFileScaleLabel">
+             <property name="text">
+              <string>mediaFileScaleLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="clipScaleSlider">
+             <property name="minimum">
+              <number>10</number>
+             </property>
+             <property name="maximum">
+              <number>5000</number>
+             </property>
+             <property name="value">
+              <number>1000</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::NoTicks</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="clipScaleLabel">
+             <property name="text">
+              <string>clipScaleLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_5">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="playerInDialogcheckBox">
+             <property name="text">
+              <string>player in window</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSplitter" name="verticalGraphicalSplitter">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <widget class="AGView" name="graphicsView">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>250</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabProperties">
+       <attribute name="title">
+        <string>Properties</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_11">
+          <item>
+           <widget class="QLineEdit" name="filterColumnsLineEdit">
+            <property name="placeholderText">
+             <string>filter files</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="propertyEditorPushButton">
+            <property name="text">
+             <string>Editor</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="propertyDiffCheckBox">
+            <property name="text">
+             <string>Diff</string>
+            </property>
+            <property name="tristate">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="refreshButton">
+            <property name="text">
+             <string>Refresh</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_12">
+          <item>
+           <widget class="QLineEdit" name="propertyFilterLineEdit">
+            <property name="placeholderText">
+             <string>filter properties</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="APropertyTreeView" name="propertyTreeView"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabClipEditor">
+       <attribute name="title">
+        <string>Clip editor</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_8">
         <item>
@@ -49,13 +315,6 @@
               <string>Files</string>
              </attribute>
              <layout class="QVBoxLayout" name="verticalLayout_5">
-              <item>
-               <widget class="QPushButton" name="folderButton">
-                <property name="text">
-                 <string>folderButton</string>
-                </property>
-               </widget>
-              </item>
               <item>
                <widget class="QLabel" name="label_9">
                 <property name="text">
@@ -220,7 +479,7 @@
               <enum>QTabWidget::South</enum>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="tab_clips">
               <attribute name="title">
@@ -356,78 +615,6 @@
                </item>
               </layout>
              </widget>
-             <widget class="QWidget" name="tab_properties">
-              <attribute name="title">
-               <string>Properties</string>
-              </attribute>
-              <layout class="QVBoxLayout" name="verticalLayout_7">
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_2">
-                 <item>
-                  <widget class="QLineEdit" name="filterColumnsLineEdit">
-                   <property name="text">
-                    <string/>
-                   </property>
-                   <property name="placeholderText">
-                    <string>filter files</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="propertyEditorPushButton">
-                   <property name="text">
-                    <string>Editor</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="propertyDiffCheckBox">
-                   <property name="text">
-                    <string>Diff</string>
-                   </property>
-                   <property name="tristate">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="refreshButton">
-                   <property name="text">
-                    <string>Refresh</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_3">
-                 <item>
-                  <widget class="QLineEdit" name="propertyFilterLineEdit">
-                   <property name="placeholderText">
-                    <string>filter properties</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_3">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <widget class="APropertyTreeView" name="propertyTreeView"/>
-               </item>
-              </layout>
-             </widget>
              <widget class="QWidget" name="tabJobTree">
               <attribute name="title">
                <string>Job tree</string>
@@ -510,24 +697,6 @@
                    <bool>true</bool>
                   </property>
                  </widget>
-                </item>
-                <item>
-                 <layout class="QFormLayout" name="formLayout">
-                  <item row="0" column="0">
-                   <widget class="QLabel" name="label_10">
-                    <property name="text">
-                     <string>Increment</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="0" column="1">
-                   <widget class="QSlider" name="incrementSlider">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
                 </item>
                </layout>
               </widget>
@@ -862,161 +1031,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tabGraphical">
-       <attribute name="title">
-        <string>Graphical</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QWidget" name="graphicsViewWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_10">
-           <item>
-            <widget class="QPushButton" name="spotviewDownButton">
-             <property name="text">
-              <string>Spot view ↓</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="spotviewRightButton">
-             <property name="text">
-              <string>Spot view →</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="timelineViewButton">
-             <property name="text">
-              <string>Timeline view</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="searchLineEdit">
-             <property name="placeholderText">
-              <string>search</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="loadMediaProgressBar">
-             <property name="value">
-              <number>24</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="reloadViewButton">
-             <property name="text">
-              <string>Reload</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="mediaFileScaleSlider">
-             <property name="minimum">
-              <number>10</number>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-             <property name="value">
-              <number>200</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickPosition">
-              <enum>QSlider::NoTicks</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="mediaFileScaleLabel">
-             <property name="text">
-              <string>mediaFileScaleLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="clipScaleSlider">
-             <property name="minimum">
-              <number>10</number>
-             </property>
-             <property name="maximum">
-              <number>5000</number>
-             </property>
-             <property name="value">
-              <number>1000</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickPosition">
-              <enum>QSlider::NoTicks</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="clipScaleLabel">
-             <property name="text">
-              <string>clipScaleLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="playerInDialogcheckBox">
-             <property name="text">
-              <string>player in window</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSplitter" name="verticalGraphicalSplitter">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <widget class="AGView" name="graphicsView">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>250</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
    </layout>
@@ -1042,19 +1056,17 @@
     <property name="title">
      <string>&amp;Help</string>
     </property>
-    <addaction name="actionHelp"/>
+    <addaction name="actionWhatIsNew"/>
     <addaction name="actionCheck_for_updates"/>
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
     <addaction name="actionAbout_Qt"/>
     <addaction name="separator"/>
     <addaction name="actionTooltips"/>
-    <addaction name="actionContext_Sensitive_Help"/>
-    <addaction name="actionRepeat_context_sensible_help"/>
     <addaction name="separator"/>
     <addaction name="actionDonate"/>
     <addaction name="actionDebug_mode"/>
-    <addaction name="actionGithub_ACVC_Issues"/>
+    <addaction name="actionGithub_MSK_Issues"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -1129,7 +1141,6 @@
    <addaction name="action5_stars"/>
    <addaction name="actionAlike"/>
    <addaction name="separator"/>
-   <addaction name="actionRepeat_context_sensible_help"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionQuit">
@@ -1342,7 +1353,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset>
      <normaloff>:/acvc.ico</normaloff>:/acvc.ico</iconset>
    </property>
    <property name="text">
@@ -1352,14 +1363,17 @@
     <string>Ctrl+S</string>
    </property>
   </action>
-  <action name="actionHelp">
+  <action name="actionWhatIsNew">
    <property name="text">
-    <string>Help</string>
+    <string>What is new</string>
+   </property>
+   <property name="toolTip">
+    <string>What is new</string>
    </property>
   </action>
-  <action name="actionGithub_ACVC_Issues">
+  <action name="actionGithub_MSK_Issues">
    <property name="text">
-    <string>Github ACVC Issues</string>
+    <string>Github Media Sidekick Issues</string>
    </property>
   </action>
   <action name="actionMute">
@@ -1376,25 +1390,6 @@
    </property>
    <property name="text">
     <string>Tooltips</string>
-   </property>
-  </action>
-  <action name="actionContext_Sensitive_Help">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Context sensitive help</string>
-   </property>
-  </action>
-  <action name="actionRepeat_context_sensible_help">
-   <property name="text">
-    <string>Next context sensible help message</string>
-   </property>
-   <property name="toolTip">
-    <string>Next context sensible help message</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionOpen_Folder">
@@ -1472,8 +1467,6 @@
    <header>agview.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="images.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

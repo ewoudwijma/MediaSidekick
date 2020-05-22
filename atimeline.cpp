@@ -149,7 +149,7 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
         int lastIndexOf = fileNameLow.lastIndexOf(".");
         QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-        if (AGlobal().videoExtensions.contains(extension))
+        if (AGlobal().videoExtensions.contains(extension, Qt::CaseInsensitive))
         {
             videoOriginalDuration += frameDuration;
             videoCountNrOfClips++;
@@ -205,7 +205,7 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
             int lastIndexOf = fileNameLow.lastIndexOf(".");
             QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-            if ((AGlobal().audioExtensions.contains(extension) && mediaType == "A") || (AGlobal().videoExtensions.contains(extension) && mediaType == "V"))
+            if ((AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive) && mediaType == "A") || (AGlobal().videoExtensions.contains(extension, Qt::CaseInsensitive) && mediaType == "V"))
             {
                 QTime inTime = QTime::fromString(itemModel->index(row,inIndex).data().toString(),"HH:mm:ss.zzz");
                 QTime outTime = QTime::fromString(itemModel->index(row,outIndex).data().toString(),"HH:mm:ss.zzz");
@@ -233,7 +233,7 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
                 int lastIndexOf = fileNameLow.lastIndexOf(".");
                 QString extension = fileNameLow.mid(lastIndexOf + 1);
 
-                if (AGlobal().audioExtensions.contains(extension))
+                if (AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive))
                     AV = "A";
                 else
                     AV = "V";

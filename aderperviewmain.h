@@ -16,7 +16,7 @@ public:
     bool processStopped = false;
 
 signals:
-    void processOutput(QString output);
+    void processOutput(QString event, QString output);
 
 public slots:
     void onStopThreadProcess();

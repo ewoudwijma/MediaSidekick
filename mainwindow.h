@@ -42,17 +42,56 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    Ui::MainWindow *ui;
+
+    QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
+    QWidget *graphWidget1, *graphWidget2, *graphicsWidget;
+    QString transitionValueChangedBy;
+    QString positionValueChangedBy;
+    QNetworkAccessManager m_network;
+    int positiondialOldValue;
+
+    QString watermarkFileName = "";
+
+    void allConnects();
+    void allTooltips();
+    void loadSettings();
+    void changeUIProperties();
+    bool checkExit();
+
+    void createContextSensitiveHelp(QString eventName, QString arg1 = "");
+    void showContextSensitiveHelp(int index);
+
+    QList<AContextSensitiveHelpRequest> requestList;
+    int currentRequestNumber;
+
+#ifdef Q_OS_WIN
+    QWinTaskbarButton *taskbarButton;
+#endif
+
+    APropertyEditorDialog *propertyEditorDialog;
+
+    AGFileSystem *agFileSystem;
+
+    int countFolders(QString folderName, int depth = 0);
+    void checkAndOpenFolder(QString selectedFolderName);
+
+    QString latestVersionURL = "";
+
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
     void closeEvent(QCloseEvent *event);
+
+    QList<AGProcessAndThread *> processes;
+
 public slots:
     void onInitProgress();
     void onUpdateProgress(int value);
     void onReadyProgress(int result, QString errorString);
     void onShowInStatusBar(QString message, int timeout = 0);
-    void onMediaLoaded(QString folderName, QString fileName, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
+
 private slots:
     void on_actionBlack_theme_triggered();
     void on_actionQuit_triggered();
@@ -105,10 +144,10 @@ private slots:
     void on_filesTabWidget_currentChanged(int index);
     void on_actionDonate_triggered();
     void on_actionCheck_for_updates_triggered();
-    void on_actionHelp_triggered();
+    void on_actionWhatIsNew_triggered();
     void on_watermarkButton_clicked();
 
-    void on_actionGithub_ACVC_Issues_triggered();
+    void on_actionGithub_MSK_Issues_triggered();
 
     void onCreateNewEdit();
     void on_actionMute_triggered();
@@ -145,11 +184,11 @@ private slots:
     void on_speedComboBox_currentTextChanged(const QString &arg1);
     void onExportCompleted(QString error);
 
-    void on_actionContext_Sensitive_Help_changed();
+//    void on_actionContext_Sensitive_Help_changed();
 
     void on_actionTooltips_changed();
 
-    void on_actionRepeat_context_sensible_help_triggered();
+//    void on_actionRepeat_context_sensible_help_triggered();
 
     void onPlayerStateChanged(QMediaPlayer::State state);
     void onMutedChanged(bool muted);
@@ -157,7 +196,6 @@ private slots:
 
     void onTagFilter1ListViewChanged();
     void onTagFilter2ListViewChanged();
-    void on_folderButton_clicked();
 
     void on_progressBar_valueChanged(int value);
 
@@ -170,7 +208,6 @@ private slots:
     void on_refreshButton_clicked();
 
     void onPropertyEditorDialogFinished(int result);
-    void onDerperviewCompleted(QString errorString);
     void on_clearJobsTreeButton_clicked();
 
     void on_actionOpen_Folder_triggered();
@@ -179,6 +216,7 @@ private slots:
 
     void on_spotviewDownButton_clicked();
     void on_spotviewRightButton_clicked();
+    void on_spotviewReturnButton_clicked();
 
     void on_timelineViewButton_clicked();
 
@@ -192,40 +230,12 @@ private slots:
 
     void on_clipScaleSlider_valueChanged(int value);
 
-private:
-    Ui::MainWindow *ui;
+    void on_orderByDateButton_clicked();
 
-    QMetaObject::Connection myConnect(const QObject *sender, const QMetaMethod &signal, const QObject *receiver, const QMetaMethod &method, Qt::ConnectionType type);
-    QWidget *graphWidget1, *graphWidget2, *graphicsWidget;
-    QString transitionValueChangedBy;
-    QString positionValueChangedBy;
-    QNetworkAccessManager m_network;
-    int positiondialOldValue;
+    void on_orderByNameButton_clicked();
 
-    QString watermarkFileName = "";
+    void onExportClips(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin);
 
-    void allConnects();
-    void allTooltips();
-    void loadSettings();
-    void changeUIProperties();
-    bool checkExit();
-
-    void createContextSensitiveHelp(QString eventName, QString arg1 = "");
-    void showContextSensitiveHelp(int index);
-
-    QList<AContextSensitiveHelpRequest> requestList;
-    int currentRequestNumber;
-
-#ifdef Q_OS_WIN
-    QWinTaskbarButton *taskbarButton;
-#endif
-
-    APropertyEditorDialog *propertyEditorDialog;
-
-    AGFileSystem *agFileSystem;
-
-    int countFolders(QString folderName, int depth = 0);
-    void checkAndOpenFolder(QString selectedFolderName);
 signals:
     void propertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);

@@ -34,7 +34,7 @@ protected:
 signals:
     void agItemChanged(QGraphicsItem *clipItem);
     void agMouseReleased(QGraphicsItem *clipItem);
-    void clipPositionChanged(QGraphicsItem *clipItem, double position);
+    void hoverPositionChanged(QGraphicsItem *clipItem, double position);
 
 private slots:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
