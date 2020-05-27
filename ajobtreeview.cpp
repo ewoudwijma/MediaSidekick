@@ -354,7 +354,7 @@ void AJobTreeView::ExecuteNextProcess()
             if (jobQueue.first().functionCall != nullptr)
             {
                 somethingStarted = true;
-                if (true)//jobQueue.first().jobParams.action.contains("ACVC"))
+                if (true)//jobQueue.first().jobParams.action.contains("MSK"))
                 {
                     jobThread->jobParams = jobQueue.first().jobParams;
                     jobThread->functionCall = jobQueue.first().functionCall;

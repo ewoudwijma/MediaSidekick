@@ -981,10 +981,10 @@ void MainWindow::allTooltips()
                                                  "<li><b>Performace on Mac / OSX</b>: Currently performance on Mac / OSX for <i>at place</i> playing is very bad.</li>"
                                               "</ul>"));
     ui->mediaFileScaleSlider->setToolTip(tr("<p><b>Media file scale</b></p>"
-                                   "<p><i>Determines the size of the video and audio files based on their duration (pixels per minute)</i></p>"
+                                   "<p><i>Sets the size of the video and audio files based on their duration (pixels per minute)</i></p>"
                                    ));
     ui->clipScaleSlider->setToolTip(tr("<p><b>Clip and export scale</b></p>"
-                                   "<p><i>Determines the size of the clips and exported files based on their duration (pixels per minute)</i></p>"
+                                   "<p><i>Sets the size of the clips and exported files based on their duration (pixels per minute)</i></p>"
                                    ));
 
     ui->tabUIWidget->setTabToolTip(0, ui->graphicsView->toolTip());
@@ -1118,7 +1118,7 @@ void MainWindow::on_actionAbout_triggered()
                "</ul>"
                "<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>"
                "<p>As Media Sidekick may contain bugs, BACKUP your video files before editing!</p>"
-               "<p>Media Sidekick issuetracker on GitHub <a href=\"https://github.com/ewoudwijma/ActionCamVideoCompanion/issues\">GitHub Media Sidekick issues</a></p>"
+               "<p>Media Sidekick issuetracker on GitHub <a href=\"https://github.com/ewoudwijma/MediaSidekick/issues\">GitHub Media Sidekick issues</a></p>"
                "<p>Media Sidekick is created by <a href=\"https://nl.linkedin.com/in/ewoudwijma\">Ewoud Wijma</a>.</p>"
                ).arg(qApp->applicationVersion()));
 }
@@ -2151,7 +2151,7 @@ void MainWindow::watermarkFileNameChanged(QString newFileName)
 
 void MainWindow::on_actionGithub_MSK_Issues_triggered()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/ewoudwijma/ActionCamVideoCompanion/issues"));
+    QDesktopServices::openUrl(QUrl("https://github.com/ewoudwijma/MediaSidekick/issues"));
 }
 
 void MainWindow::on_actionMute_triggered()

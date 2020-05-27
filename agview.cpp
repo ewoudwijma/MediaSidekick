@@ -54,44 +54,77 @@ AGView::~AGView()
 void AGView::clearAll()
 {
 //    qDebug()<<"AGView::clearAll";
-    if (!playInDialog)
-        stopAndDeletePlayers();
-    else
-    {
-        if (dialogMediaPlayer != nullptr)
-            dialogMediaPlayer->stop();
-    }
+    stopAndDeletePlayers();
 
     scene->clear();
 }
 
 void AGView::stopAndDeletePlayers(QFileInfo fileInfo)
 {
+    QUrl deletedPlayerUrl = QUrl();
+
+    if (playInDialog)
+    {
+        if (dialogMediaPlayer != nullptr)
+        {
+            if (fileInfo.absoluteFilePath() == "" || dialogMediaPlayer->media().request().url().path().contains(fileInfo.absoluteFilePath()))
+            {
+                qDebug()<<"Delete dialogMediaPlayer"<<dialogMediaPlayer->media().request().url().path();
+
+                deletedPlayerUrl = dialogMediaPlayer->media().request().url().path();
+                delete dialogMediaPlayer;
+                dialogMediaPlayer = nullptr;
+
+                if (dialogVideoWidget != nullptr)
+                {
+                    qDebug()<<"Delete dialogVideoWidget"<<deletedPlayerUrl.toString();
+                    delete dialogVideoWidget;
+                    dialogVideoWidget = nullptr;
+                }
+                if (playerDialog != nullptr)
+                    playerDialog->close();
+            }
+        }
+    }
+    //playInDialog first as it kills also the player reference of the mediaitem
+
     foreach (QGraphicsItem *item, scene->items())
     {
         if (item->data(mediaTypeIndex).toString() == "MediaFile" && item->data(itemTypeIndex).toString() == "Base")
         {
             AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
-            if (fileInfo == QFileInfo() || mediaItem->fileInfo == fileInfo)
+
+            if (mediaItem->progressRectItem != nullptr)
+                qDebug()<<"stopAndDeletePlayers media1"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem<<(fileInfo.absoluteFilePath() == "")<<( mediaItem->fileInfo == fileInfo)<<fileInfo.absoluteFilePath();
+            if (fileInfo.absoluteFilePath() == "" || mediaItem->fileInfo == fileInfo)
             {
-                AGMediaFileRectItem *mediaFile = (AGMediaFileRectItem *)item;
+                if (mediaItem->progressRectItem != nullptr)
+                    qDebug()<<"stopAndDeletePlayers media2"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem;
 
-                if (mediaFile->m_player != nullptr)
+                if (mediaItem->m_player != nullptr)
                 {
-                    delete mediaFile->m_player;
-                    mediaFile->m_player = nullptr;
+                    if (!deletedPlayerUrl.toString().contains(mediaItem->fileInfo.absoluteFilePath())) //already deleted above
+                    {
+                        qDebug()<<"Delete mediaFile->m_player"<<mediaItem->fileInfo.absoluteFilePath();
+                        delete mediaItem->m_player;
+                    }
+                    mediaItem->m_player = nullptr;
                 }
 
-                if (mediaFile->playerItem != nullptr)
+                if (mediaItem->playerItem != nullptr)
                 {
-                    delete mediaFile->playerItem;
-                    mediaFile->playerItem = nullptr;
+                    qDebug()<<"Delete mediaFile->playerItem"<<mediaItem->fileInfo.absoluteFilePath();
+                    delete mediaItem->playerItem;
+                    mediaItem->playerItem = nullptr;
                 }
 
-                if (mediaFile->progressRectItem != nullptr)
+                if (mediaItem->progressRectItem != nullptr)
+                    qDebug()<<"stopAndDeletePlayers media3"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem;
+                if (mediaItem->progressRectItem != nullptr)
                 {
-                    delete mediaFile->progressRectItem;
-                    mediaFile->progressRectItem = nullptr;
+                    qDebug()<<"Delete mediaFile->progressRectItem"<<fileInfo.fileName();
+                    delete mediaItem->progressRectItem;
+                    mediaItem->progressRectItem = nullptr;
                 }
             }
         }
@@ -375,19 +408,7 @@ void AGView::onDeleteItem(QString mediaType, QFileInfo fileInfo)
 
             if (viewItem->fileInfo.absolutePath() == fileInfo.absolutePath() && matchOnFile)
             {
-                if (mediaType == "MediaItem")
-                {
-                    AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
-                    if (!playInDialog)
-                    {
-                        if (mediaItem->m_player != nullptr)
-                        {
-        //                        m_player->stop();
-                            delete mediaItem->m_player;
-                            mediaItem->m_player = nullptr;
-                        }
-                    }
-                }
+                stopAndDeletePlayers(fileInfo);
 
     //            qDebug()<<"  Item"<<itemToString(item)<<item;
     //            scene->removeItem(item);
@@ -491,18 +512,14 @@ void AGView::setPlayInDialog(bool checked)
 {
     if (playInDialog && !checked) //from dialog to in-item player
     {
-//        dialogMediaPlayer->pause();
         stopAndDeletePlayers(); //delete progresslines
-        if (playerDialog != nullptr)
-            playerDialog->close();
         playInDialog = false;
     }
+
     if (!playInDialog && checked) //from initem to dialog player
     {
-        //close all players
         stopAndDeletePlayers();
         playInDialog = true;
-//        playMedia((QGraphicsRectItem *)scene->selectedItems().first());
     }
 }
 
@@ -514,7 +531,7 @@ void AGView::onHoverPositionChanged(QGraphicsRectItem *rectItem, int progress)
     else if (rectItem->data(mediaTypeIndex).toString() == "MediaFile")
         mediaItem = (AGMediaFileRectItem *)rectItem;
 
-//    qDebug()<<"AGView::onHoverPositionChanged"<<mediaItem->itemToString()<<progress<<mediaItem->progressLineItem;
+//    qDebug()<<"AGView::onHoverPositionChanged"<<mediaItem->itemToString()<<progress<<mediaItem->progressRectItem;
 
     int duration = 0;
     if (!playInDialog)

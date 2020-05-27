@@ -21,7 +21,7 @@
        <enum>QTabWidget::South</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabMedia">
        <attribute name="title">
@@ -1353,8 +1353,8 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset>
-     <normaloff>:/acvc.ico</normaloff>:/acvc.ico</iconset>
+    <iconset resource="images.qrc">
+     <normaloff>:/MediaSidekick.ico</normaloff>:/MediaSidekick.ico</iconset>
    </property>
    <property name="text">
     <string>Save</string>
@@ -1467,6 +1467,8 @@
    <header>agview.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="images.qrc"/>
+ </resources>
  <connections/>
 </ui>

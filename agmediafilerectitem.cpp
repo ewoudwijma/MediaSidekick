@@ -202,7 +202,7 @@ void AGMediaFileRectItem::onMediaFileChanged()
         qDebug()<<"AGMediaFileRectItem::onMediaFileChanged thread problem"<<fileInfo.fileName();
 
     AGProcessAndThread *process = new AGProcessAndThread(this);
-    process->command("Load Media", [=]()
+    process->command("Load Media " + fileInfo.fileName(), [=]()
     {
 //        qDebug()<<"thread start"<<process->name<<qApp->thread()<<this->thread()<<QThread::currentThread();
 
@@ -1188,24 +1188,8 @@ void AGMediaFileRectItem::onStop(QMediaPlayer *m_player)
 {
     qDebug()<<"AGMediaFileRectItem::onStop"<<m_player->media().request().url().path();
 
-//    QString folderFileName = m_player->media().request().url().path();
-//    int lastIndexOf = folderFileName.lastIndexOf("/");
-//    QString folderName = folderFileName.left(lastIndexOf + 1);
-//    QString fileName = folderFileName.mid(lastIndexOf + 1);
-
     AGView *view = (AGView *)scene()->views().first();
-
-    if (!view->playInDialog)
-    {
-        view->stopAndDeletePlayers(fileInfo);
-//        delete m_player;
-    }
-    else
-        view->dialogMediaPlayer->setMedia(QMediaContent());
-
-//    delete playerItem;
-
-
+    view->stopAndDeletePlayers(fileInfo);
 }
 
 void AGMediaFileRectItem::onMute(QMediaPlayer *m_player)
@@ -1271,7 +1255,6 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
                 qDebug()<<"setMedia"<<fileInfo.absoluteFilePath();
                 m_player->setMedia(QUrl::fromLocalFile(fileInfo.absoluteFilePath()));
             }
-
             else
             {
                 m_player->setProperty("startPlaying", startPlaying?"true":"false");
@@ -1285,12 +1268,15 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
         }
         else  //playInDialog
         {
+            if (view->dialogMediaPlayer != nullptr && !view->dialogMediaPlayer->media().request().url().path().contains(fileInfo.absoluteFilePath()))
+                view->stopAndDeletePlayers();
+
             if (view->playerDialog == nullptr)
             {
                 view->playerDialog = new QDialog(view);
                 view->playerDialog->setWindowTitle("Media Sidekick Media player");
             #ifdef Q_OS_MAC
-                playerDialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
+                view->playerDialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
             #endif
 
                 QRect savedGeometry = QSettings().value("Geometry").toRect();
@@ -1317,19 +1303,26 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
                 connect(view->playerDialog, &QDialog::finished, view, &AGView::onPlayerDialogFinished);
 
                 view->playerDialog->show();
+
+                m_player = view->dialogMediaPlayer;
             }
 
+            //if dialogMediaPlayer is not already the current file, make it the current file, otherwise toggle
             if (!view->dialogMediaPlayer->media().request().url().path().contains(fileInfo.absoluteFilePath()))
             {
+
                 view->dialogMediaPlayer->setMuted(AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive));
 
                 view->dialogMediaPlayer->setProperty("startPlaying", startPlaying?"true":"false");
 
-                qDebug()<<"setMedia"<<fileInfo.absoluteFilePath();
+                qDebug()<<"initPlayer setMedia"<<fileInfo.absoluteFilePath();
                 view->dialogMediaPlayer->setMedia(QUrl::fromLocalFile(fileInfo.absoluteFilePath()));
+
+                m_player = view->dialogMediaPlayer;
             }
             else
             {
+                qDebug()<<"initPlayer toggle play pause"<<fileInfo.absoluteFilePath();
                 if (view->dialogMediaPlayer->state() != QMediaPlayer::PlayingState)
                     view->dialogMediaPlayer->play();
                 else
@@ -1355,12 +1348,12 @@ void AGMediaFileRectItem::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
         {
 
             m_player->play();
-    #ifdef Q_OS_MAC
-            QSize s1 = size();
-            QSize s2 = s1 + QSize(1, 1);
-            resize(s2);// enlarge by one pixel
-            resize(s1);// return to original size
-    #endif
+//    #ifdef Q_OS_MAC
+//            QSize s1 = size();
+//            QSize s2 = s1 + QSize(1, 1);
+//            resize(s2);// enlarge by one pixel
+//            resize(s1);// return to original size
+//    #endif
 
             qDebug()<<"onMediaStatusChanged toggle play pause"<<m_player->media().request().url().path()<<m_player->state()<<m_player->property("startPlaying");
             if (m_player->property("startPlaying") != "true")

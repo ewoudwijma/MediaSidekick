@@ -102,7 +102,7 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
                                     "<li>Green: After updating: The value is succesfully updated to the media file</li>"
                                     "<li>Red: After updating: The value is not updated to the media file. See the Status propery of each file to see what went wrong</li>"
                                     "</ul>"
-                                    "<li><b>Derived values (Artists, Keywords and Ratings)</b>: Derived values are updated so other media viewing tools show the keywords, ratings and artists correctly. E.g. Windows Explorer properties, ACDSee etc. As there is no unified standard (each tool will use their own properties). (this will be updated / improved in future releases of ACVC)</li>"
+                                    "<li><b>Derived values (Artists, Keywords and Ratings)</b>: Derived values are updated so other media viewing tools show the keywords, ratings and artists correctly. E.g. Windows Explorer properties, ACDSee etc. As there is no unified standard (each tool will use their own properties). (this will be updated / improved in future releases of Media Sidekick)</li>"
                                     "<li>Currently writing to <b>AVI and MP3 files is not supported</b>. The status property will show if this attempted (<b>Rename to suggested names is supported</b>)</li>"
                                     "</ul>").arg(ui->updateButton->text()));
     ui->renameButton->setToolTip(tr("<p><b>%1</b></p>"

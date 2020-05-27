@@ -2,6 +2,10 @@
 
 #include <QDebug>
 
+#ifdef Q_OS_MAC
+#include <QApplication>
+#endif
+
 AGProcessAndThread::AGProcessAndThread(QObject *parent):
     QObject(parent)
 {
@@ -40,7 +44,7 @@ void AGProcessAndThread::kill()
     }
 }
 
-void AGProcessAndThread::command(QString name, const QString &commandString)
+void AGProcessAndThread::command(QString name, QString commandString)
 {
     process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
@@ -86,7 +90,8 @@ void AGProcessAndThread::command(QString name, const QString &commandString)
     execPath = qApp->applicationDirPath() + "/";
 #endif
 
-    process->setProgram(execPath + commandString);
+    this->commandString = execPath + commandString;
+//    process->setProgram(execPath + commandString); //does not work in MacOS
 //    process->start(execPath + commandString);
 }
 
@@ -116,7 +121,7 @@ void AGProcessAndThread::command(QString name, std::function<void ()> commandFun
 void AGProcessAndThread::start()
 {
     if (process != nullptr)
-        process->start();
+        process->start(commandString);
     if (jobThread != nullptr)
         jobThread->start();
 }

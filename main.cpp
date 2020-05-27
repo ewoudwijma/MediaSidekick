@@ -188,6 +188,12 @@ General pre
 
 Windows 2020-02-20
 
+    - Prepare for installer
+        - deploy in shell (not powershell...)
+        - C:\Qt\5.14.2\mingw73_64\bin\qtenv2.bat
+        - cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Debug\debug or cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Release\release
+        - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\MediaSidekick\MediaSidekick\ .
+
     - get latest version of ffmpeg:
         - https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-latest-win64-dev.zip
         - https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-latest-win64-shared.zip
@@ -203,12 +209,6 @@ Windows 2020-02-20
         - D:\MediaSidekick\MediaSidekick support files\additional\MediaSidekick.ico to debug or release folder
         - D:\MediaSidekick\MediaSidekick support files\additional\MediaSidekick.icns to debug or release folder
 
-    - Prepare for installer
-        - deploy in shell (not powershell...)
-        - C:\Qt\5.14.2\mingw73_64\bin\qtenv2.bat
-        - cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Debug\debug or cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Release\release
-        - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\MediaSidekick\MediaSidekick\ .
-
     - copy all of deploy to installer/data
     - update version in D:\MediaSidekick\MediaSidekickInstaller\run.bat, D:\MediaSidekick\MediaSidekickInstaller\config\config.xml and D:\MediaSidekick\MediaSidekickInstaller\packages\org.mediasidekick.msk\meta\package.xml
 
@@ -219,15 +219,15 @@ MacOS 2020-02-01
         - Get https://ffmpeg.zeranoe.com/builds/macos64/dev/ffmpeg-latest-macos64-dev.zip
         - QT Creator run/build release
         - Script
-            - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_2_clang_64bit-Release
-            - cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $acvc_build_path/ACVC.app/Contents/MACOS
+            - export MediaSidekick_build_path=/Users/ewoudwijma/Movies/build-MediaSidekick-Desktop_Qt_5_14_2_clang_64bit-Release
+            - cp ~/Downloads/ffmpeg-latest-macos64-shared/bin/* $MediaSidekick_build_path/MediaSidekick.app/Contents/MACOS
 
     - Get exiftool
         - Get https://exiftool.org/ExifTool-xx.yy.dmg from https://exiftool.org/
         - Install dmg / pkg
         - Script
-            cp -r /usr/local/bin/lib $acvc_build_path/ACVC.app/Contents/MACOS/lib
-            cp /usr/local/bin/exiftool $acvc_build_path/ACVC.app/Contents/MACOS
+            cp -r /usr/local/bin/lib $MediaSidekick_build_path/MediaSidekick.app/Contents/MACOS/lib
+            cp /usr/local/bin/exiftool $MediaSidekick_build_path/MediaSidekick.app/Contents/MACOS
 
     - macdeployqt
         - https://doc.qt.io/qt-5/macos-deployment.html
@@ -235,8 +235,8 @@ MacOS 2020-02-01
         - https://doc-snapshots.qt.io/qt5-5.11/osx-deployment.html
 
      - Make dmg (repeat this step only to create new deployment)
-        - export acvc_build_path=/Users/ewoudwijma/Movies/build-ACVC-Desktop_Qt_5_14_2_clang_64bit-Release
-        - /Users/ewoudwijma/Qt/5.14.2/clang_64/bin/macdeployqt $acvc_build_path/ACVC.app -qmldir=/Users/ewoudwijma/Movies/ACVC/ -dmg -always-overwrite
+        - export MediaSidekick_build_path=/Users/ewoudwijma/Movies/build-MediaSidekick-Desktop_Qt_5_14_2_clang_64bit-Release
+        - /Users/ewoudwijma/Qt/5.14.2/clang_64/bin/macdeployqt $MediaSidekick_build_path/MediaSidekick.app -qmldir=/Users/ewoudwijma/Movies/MediaSidekick/ -dmg -always-overwrite
         - Add license.txt and symbolic link to applications folder
             - https://www.dragly.org/2012/01/13/deploy-qt-applications-for-mac-os-x/
                 - open DiskUtility
@@ -246,15 +246,15 @@ MacOS 2020-02-01
                 - Open terminal
                     - type cd<space> and drag the desktop icon after this
                     - ln -s /Applications ./Applications
-                    - cp $acvc_build_path/../ACVC/license.txt READ_BEFORE_OPENING_ACVC_license.txt
+                    - cp $MediaSidekick_build_path/../MediaSidekick/license.txt READ_BEFORE_OPENING_MediaSidekick_license.txt
                     - cd (to unlock the image)
                 - Open DiskUtility
                     - Select image
-                    - Right click: Rename to ACVC vx.y.z (version)
+                    - Right click: Rename to MediaSidekick vx.y.z (version)
                     - Eject mounted image
                     - From menu: Images/Convert...
                     - Find created dmg
-                    - Rename to ACVC vx.y.z
+                    - Rename to MediaSidekick vx.y.z
                     - Choose Image Format: compressed then Convert. A link will be created on the desktop
 
 General post

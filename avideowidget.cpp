@@ -34,7 +34,7 @@ AVideoWidget::AVideoWidget(QWidget *parent) : QVideoWidget(parent)
 //    auto pal = palette();
 
 //    // Sets the brush pixmap to pixmap. The style is set to Qt::TexturePattern.
-//    pal.setBrush(QPalette::Window, QBrush(QPixmap (":/acvclogo.png")));
+//    pal.setBrush(QPalette::Window, QBrush(QPixmap (":/msklogo.png")));
 //    setAutoFillBackground(true);
 //    setPalette(pal);
 

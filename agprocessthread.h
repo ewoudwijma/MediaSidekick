@@ -10,6 +10,8 @@ class AGProcessAndThread: public QObject
 {
     Q_OBJECT
 
+    QString commandString;
+
 public:
     AGProcessAndThread(QObject *parent = nullptr);
     ~AGProcessAndThread();
@@ -19,7 +21,7 @@ public:
 
     QStringList log;
 
-    void command(QString name, const QString &commandString);
+    void command(QString name, QString commandString);
     void command(QString name, std::function<void ()> commandFunction);
 
     QString name;
