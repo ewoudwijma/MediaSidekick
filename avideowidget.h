@@ -84,7 +84,6 @@ signals:
     void durationChanged(int duration);
     void scrubberInChanged(QString AV, int row, int in);
     void scrubberOutChanged(QString AV, int row, int out);
-    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 //    void fpsChanged(int fps);
     void createNewEdit(int frames);
 

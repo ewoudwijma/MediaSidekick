@@ -1,3 +1,4 @@
+#include "agprocessthread.h"
 #include "apropertyitemdelegate.h"
 #include "apropertytreeview.h"
 #include "astarrating.h"
@@ -12,6 +13,10 @@
 #include <QGeoCoordinate>
 #include <QTimer>
 #include <QApplication>
+#include <QKeyEvent>
+#include <QDialog>
+#include <QTextBrowser>
+#include <QVBoxLayout>
 
 APropertyTreeView::APropertyTreeView(QWidget *parent) : QTreeView(parent)
 {
@@ -70,16 +75,6 @@ APropertyTreeView::~APropertyTreeView()
     delete frozenTableView;
 }
 
-void APropertyTreeView::onFolderSelected(QString folderName)
-{
-    setColumnHidden(minimumIndex, !editMode);
-    setColumnHidden(deltaIndex, !editMode);
-    setColumnHidden(maximumIndex, !editMode);
-
-//    qDebug()<<"APropertyTreeView::onFolderSelected"<<index.data().toString()<<lastFolder<<editMode;
-    loadModel(nullptr, folderName);
-}
-
 void APropertyTreeView::setCellStyle(QStringList filePathList)
 {
 //    qDebug()<<"APropertyTreeView::setCellStyle"<<filePathList<<propertyProxyModel->rowCount();
@@ -97,22 +92,27 @@ void APropertyTreeView::setCellStyle(QStringList filePathList)
             for (int childColumn = 0; childColumn < propertyProxyModel->columnCount(parentIndex); childColumn++)
             {
                 QModelIndex childIndex = propertyProxyModel->index(childRow, childColumn, parentIndex);
-                QVariant folderFileName = propertyItemModel->headerData(childColumn, Qt::Horizontal);
 
                 if (propertyProxyModel->index(childRow, diffIndex, parentIndex).data().toBool() && childColumn == propertyIndex) //&& childIndex.data(Qt::FontRole) != boldFont)
                 {
                     propertyProxyModel->setData(childIndex, boldFont, Qt::FontRole);
                 }
-                if (filePathList.join(",").contains(folderFileName.toString()))
+
+                if (childColumn >= firstFileColumnIndex)
                 {
-//                    qDebug()<<"APropertyTreeView::setCellStyle"<<parentRow<<childRow<<filePathList<<folderFileName.toString();
-                    propertyProxyModel->setData(childIndex,  QVariant(palette().highlight()) , Qt::BackgroundRole);
-                    if (childRow == 0 && parentIndex.row() == 0) //first item of first toplevelitem (createdate within general)
-                        scrollToIndex = childIndex;
-                }
-                else if (childIndex.data(Qt::BackgroundRole) == QVariant(palette().highlight()))
-                {
-                    propertyProxyModel->setData(childIndex,  QVariant(palette().base()) , Qt::BackgroundRole);
+                    QString folderFileName = filesMap[childColumn - firstFileColumnIndex];
+
+                    if (filePathList.join(",").contains(folderFileName))
+                    {
+    //                    qDebug()<<"APropertyTreeView::setCellStyle"<<parentRow<<childRow<<filePathList<<folderFileName.toString();
+                        propertyProxyModel->setData(childIndex,  QVariant(palette().highlight()) , Qt::BackgroundRole);
+                        if (childRow == 0 && parentIndex.row() == 0) //first item of first toplevelitem (createdate within general)
+                            scrollToIndex = childIndex;
+                    }
+                    else if (childIndex.data(Qt::BackgroundRole) == QVariant(palette().highlight()))
+                    {
+                        propertyProxyModel->setData(childIndex,  QVariant(palette().base()) , Qt::BackgroundRole);
+                    }
                 }
             }
         }
@@ -140,7 +140,7 @@ void APropertyTreeView::onClipIndexClicked(QModelIndex index)
     setCellStyle(selectedFileNames);
 }
 
-void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
+void APropertyTreeView::loadModel(QString folderName)
 {
     isLoading = true;
 
@@ -151,227 +151,137 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
         setColumnWidth(maximumIndex, columnWidth(propertyIndex) * 1.0);
     }
 
-//    qDebug()<<"APropertyTreeView::loadModel"<<folderName<<jobTreeView;
+//    qDebug()<<"APropertyTreeView::loadModel"<<folderName;
 
-    AJobParams jobParams;
-    jobParams.thisObject = this;
-    jobParams.parentItem = parentItem;
-    jobParams.folderName = folderName;
-    jobParams.fileName = "All";
-    jobParams.action = "Load properties";
-    jobParams.command = "exiftool -api largefilesupport=1 -r -s -c \"%02.6f\" \"" + folderName + "\"";
-    jobParams.parameters["totalDuration"] = QString::number(1000);
+    propertyItemModel->removeRows(0, propertyItemModel->rowCount());
+    while (propertyItemModel->columnCount() > firstFileColumnIndex) //remove old columns
+        propertyItemModel->removeColumn(propertyItemModel->columnCount() - 1);
 
-    jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
+    //create topLevelItems
+    QStringList toplevelPropertyNames;
+//    toplevelPropertyNames << "001 - General" << "002 - Video" << "003 - Audio" << "004 - Location" << "005 - Camera" << "006 - Labels" << "007 - Status" << "008 - Media" << "009 - File" << "010 - Date" << "011 - Artists" << "012 - Keywords" << "013 - Ratings"<< "099 - Other";
+    toplevelPropertyNames << "General" << "Video" << "Audio" << "Location" << "Camera" << "Labels" << "Status" << "Media" << "File" << "Date" << "Artists" << "Keywords" << "Ratings"<< "Other";
+
+    QMap<QString, QStandardItem *> topLevelItems;
+    for (int i = 0; i < toplevelPropertyNames.count(); i++)
     {
-//        if (jobParams.parameters["errorMessage"] != "")
-//            return;
-        APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisObject);
-//        qDebug()<<"Load properties done"<<propertyTreeView<<jobParams.parameters<<result.count();
+        QStandardItem *topLevelItem =  new QStandardItem( toplevelPropertyNames[i] );
+        topLevelItem->setEditable(false);
+        propertyItemModel->setItem(i, propertyIndex,topLevelItem);
+        topLevelItems[toplevelPropertyNames[i]] = topLevelItem;
+    }
 
-        propertyTreeView->propertyItemModel->removeRows(0, propertyTreeView->propertyItemModel->rowCount());
-        while (propertyTreeView->propertyItemModel->columnCount() > firstFileColumnIndex) //remove old columns
-            propertyTreeView->propertyItemModel->removeColumn(propertyTreeView->propertyItemModel->columnCount() - 1);
+//    QMap<QString, QMap<QString, QString>> valueMap;
+//    QMap<QString, QStandardItem *> propertyMap;
 
-        //create topLevelItems
-        QStringList toplevelPropertyNames;
+    //            process->onProcessOutput("output", "add all files as labels");
+    QStringList headerLabels = QStringList() << "Property" << "Minimum" << "Delta" << "Maximum" << "Type" << "Diff";
 
-        toplevelPropertyNames << "General" << "Video" << "Audio" << "Location" << "Camera" << "Labels" << "Status" << "Media" << "File" << "Date" << "Artists" << "Keywords" << "Ratings"<< "Other";
-
-        QMap<QString, QStandardItem *> topLevelItems;
-        for (int i = 0; i < toplevelPropertyNames.count(); i++)
+    filesMap.clear();
+    //get the files
+    {
+        QMapIterator<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> category2Iterator(exiftoolMap);
+        while (category2Iterator.hasNext())
         {
-            QStandardItem *topLevelItem =  new QStandardItem( toplevelPropertyNames[i] );
-            topLevelItem->setEditable(false);
-            propertyTreeView->propertyItemModel->setItem(i, propertyIndex,topLevelItem);
-            topLevelItems[toplevelPropertyNames[i]] = topLevelItem;
-        }
-
-        QString folderFileName;
-//        QUrl folderFileURL;
-
-        QMap<QString, QMap<QString, QString>> valueMap;
-        QMap<QString, QString> fileMap;
-        QMap<QString, QStandardItem *> propertyMap;
-
-        for (int resultIndex = 0; resultIndex < result.count(); resultIndex++)
-        {
-            int indexOf = result[resultIndex].indexOf("======== "); //next file
-            if (indexOf > -1)//next file found
+            category2Iterator.next();
+            QMapIterator<QString, QMap<QString, ExifToolValueStruct>> property2Iterator(category2Iterator.value());
+            while (property2Iterator.hasNext())
             {
-                folderFileName = result[resultIndex].mid(indexOf+9);
-//                folderFileURL = QUrl(folderFileName);
-
-                emit propertyTreeView->jobAddLog(jobParams, "Processing " + folderFileName);
+                property2Iterator.next();
+                if (!filesMap.contains(property2Iterator.value().first().absoluteFilePath))
+                    filesMap << property2Iterator.value().first().absoluteFilePath;
             }
-            else
-            {
-                int pos = result[resultIndex].indexOf(":");
-                QString propertyName = result[resultIndex].left(pos).trimmed();
-                QString valueString = result[resultIndex].mid(pos+1).trimmed();
+        }
+        foreach (QString folderFileName, filesMap)
+        {
+            int lastIndexOf = folderFileName.lastIndexOf("/");
+            headerLabels << folderFileName.mid(lastIndexOf + 1);
+        }
+    }
+    propertyItemModel->setHorizontalHeaderLabels(headerLabels);
 
-
-                if (propertyName == "MIMEType")
-                {
-                    if (valueString.contains("video") || valueString.contains("image") || (valueString.contains("audio")))
-                    {
-                        fileMap[folderFileName] = "MediaFile";
-//                        qDebug()<<"MediaFile"<<folderFileName<<valueString;
-                    }
-                    else
-                    {
-                        fileMap[folderFileName] = "OtherTypeOfFile";
-//                        qDebug()<<"OtherTypeOfFile"<<folderFileName<<valueString;
-                    }
-                }
-
-                if (fileMap[folderFileName] == "" || fileMap[folderFileName] == "MediaFile") //not identied yet or identified as media
-                {
-                    valueMap[propertyName][folderFileName] = valueString; //sets the value
-
-                    //assign to topLevel
-                    if (propertyName == "CreateDate")//|| propertyName == "SuggestedName"
-                        propertyMap[propertyName] = topLevelItems["General"];
-                    else if (propertyName == "Directory")
-                        propertyMap[propertyName] = topLevelItems["Status"];
-                    else if ( propertyName == "GPSLatitude" || propertyName == "GPSLongitude" || propertyName == "GPSAltitude")
-                    {
-                        propertyMap["GeoCoordinate"] = topLevelItems["Location"];
-
-                        //change value for Geo data
-                        QStringList positiveValues = QStringList() << " m Above Sea Level" << " N" << " E";
-                        QStringList negativeValues = QStringList() << " m Below Sea Level" << " S" << " W";
-
-                        foreach (QString value, positiveValues)
-                            if (valueString.contains(value))
-                                valueString = QString::number(valueString.left(valueString.length() - value.length()).toDouble());
-
-                        foreach (QString value, negativeValues)
-                            if (valueString.contains(value))
-                                valueString = QString::number(-valueString.left(valueString.length() - value.length()).toDouble());
-
-                        //init if not done
-                        if (valueMap["GeoCoordinate"][folderFileName] == "")
-                            valueMap["GeoCoordinate"][folderFileName] = ";;";
-
-                        QStringList geoStringList = valueMap["GeoCoordinate"][folderFileName].split(";");
-                        if (propertyName == "GPSLatitude")
-                            geoStringList[0] = valueString;
-                        else if (propertyName == "GPSLongitude")
-                            geoStringList[1] = valueString;
-                        else if (propertyName == "GPSAltitude")
-                            geoStringList[2] = valueString;
-
-                        valueMap["GeoCoordinate"][folderFileName] = geoStringList.join(";"); //sets the value
-                    }
-                    else if ( propertyName == "Make" || propertyName == "Model" )
-                        propertyMap[propertyName] = topLevelItems["Camera"];
-                    else if (propertyName == "Artist" || propertyName == "Title")
-                        propertyMap[propertyName] = topLevelItems["Labels"];
-                    else if (propertyName == "Rating")
-                    {
-                        propertyMap[propertyName] = topLevelItems["Labels"];
-                    }
-                    else if (propertyName == "Keywords")
-                    {
-                        propertyMap[propertyName] = topLevelItems["Labels"];
-                        valueMap[propertyName][folderFileName] = valueMap[propertyName][folderFileName].replace(",", ";"); //sets the value
-                    }
-                    else if (propertyName == "RatingPercent" || propertyName == "SharedUserRating") //video
-                    {
-//                        qDebug()<<"SharedUserRating"<<valueString;
-                        propertyMap[propertyName] = topLevelItems["Ratings"];
-                        if (valueString.toInt() == 1 ) //== 1)
-                            valueMap[propertyName][folderFileName] = "1";
-                        else if (valueString.toInt() ==25)// == 25)
-                            valueMap[propertyName][folderFileName] = "2";
-                        else if (valueString.toInt() ==50)//== 50)
-                            valueMap[propertyName][folderFileName] = "3";
-                        else if (valueString.toInt() ==75)// 75)
-                            valueMap[propertyName][folderFileName] = "4";
-                        else if (valueString.toInt() ==99)//== 99)
-                            valueMap[propertyName][folderFileName] = "5";
-                    }
-
-                    else if (propertyName.contains("Rating"))
-                        propertyMap[propertyName] = topLevelItems["Ratings"];
-                    else if (propertyName.contains("Keyword") || propertyName == "Category" || propertyName == "Comment" || propertyName == "Subject")
-                        propertyMap[propertyName] = topLevelItems["Keywords"];
-                    else if ( propertyName == "Director" || propertyName == "Producer" || propertyName == "Publisher" || propertyName == "Creator" || propertyName == "Writer" || propertyName.contains("Author")|| propertyName == "ContentDistributor")
-                        propertyMap[propertyName] = topLevelItems["Artists"];
-                    else // if (!propertyTreeView->editMode)
-                    {
-                        if (propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "CompressorID" || propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "VideoFrameRate" || propertyName == "AvgBitrate" || propertyName == "BitDepth" )
-                            propertyMap[propertyName] = topLevelItems["Video"];
-                        else if (propertyName.contains("Audio"))
-                            propertyMap[propertyName] = topLevelItems["Audio"];
-                        else if (propertyName.contains("Duration") || propertyName.contains("Image") || propertyName.contains("Video") || propertyName.contains("Compressor") || propertyName == "TrackDuration" )
-                            propertyMap[propertyName] = topLevelItems["Media"];
-                        else if (propertyName.contains("File") || propertyName.contains("Directory"))
-                            propertyMap[propertyName] = topLevelItems["File"];
-                        else if (propertyName.contains("Date"))
-                            propertyMap[propertyName] = topLevelItems["Date"];
-                        else
-                            propertyMap[propertyName] = topLevelItems["Other"];
-                    }
-                } //mediafiles
-            } //if nextfile
-        } //for resultIndex
+    foreach (QString folderFileName, filesMap)
+    {
 
         //add mandatory properties if no values occured for this in above for loop
-        propertyMap["CreateDate"] = topLevelItems["General"];
 
-        propertyMap["GeoCoordinate"] = topLevelItems["Location"];
+        //toplevelPropertyNames << "001 - General" << "002 - Video" << "003 - Audio" << "004 - Location" << "005 - Camera" << "006 - Labels" << "007 - Status" << "008 - Media" << "009 - File" << "010 - Date" << "011 - Artists" << "012 - Keywords" << "013 - Ratings"<< "099 - Other";
+        QStringList categoryProperyList = QStringList()<<"001 - General;CreateDate"
+                                                      <<"004 - Location;GeoCoordinate"
+                                                     <<"005 - Camera;Make"
+                                                    <<"005 - Camera;Model"
+                                                   <<"006 - Labels;Title"
+                                                  <<"006 - Labels;Artist"
+                                                 <<"006 - Labels;Rating"
+                                                <<"006 - Labels;Keywords"
+                                               <<"007 - Status;SuggestedName"
+                                              <<"007 - Status;Status"
+                                             <<"011 - Artists;Author"
+                                            <<"011 - Artists;Creator"
+                                           <<"011 - Artists;XPAuthor"
+                                          <<"012 - Keywords;LastKeywordIPTC"
+                                         <<"012 - Keywords;LastKeywordXMP"
+                                        <<"012 - Keywords;Subject"
+                                       <<"012 - Keywords;XPKeywords"
+                                      <<"012 - Keywords;Comment"
+                                     <<"012 - Keywords;Category"
+                                    <<"013 - Ratings;RatingPercent"
+                                   <<"013 - Ratings;SharedUserRating"
+                                                       ;
 
-        propertyMap["Make"] = topLevelItems["Camera"];
-        propertyMap["Model"] = topLevelItems["Camera"];
-
-        propertyMap["Title"] = topLevelItems["Labels"];
-        propertyMap["Artist"] = topLevelItems["Labels"];
-        propertyMap["Rating"] = topLevelItems["Labels"];
-        propertyMap["Keywords"] = topLevelItems["Labels"];
-
-        propertyMap["SuggestedName"] = topLevelItems["Status"];
-        propertyMap["Status"] = topLevelItems["Status"];
-
-        propertyMap["Author"] = topLevelItems["Artists"];
-        propertyMap["Creator"] = topLevelItems["Artists"];
-        propertyMap["XPAuthor"] = topLevelItems["Artists"];
-
-        propertyMap["LastKeywordIPTC"] = topLevelItems["Keywords"];
-        propertyMap["LastKeywordXMP"] = topLevelItems["Keywords"];
-        propertyMap["Subject"] = topLevelItems["Keywords"];
-        propertyMap["XPKeywords"] = topLevelItems["Keywords"];
-        propertyMap["Comment"] = topLevelItems["Keywords"];
-        propertyMap["Category"] = topLevelItems["Keywords"];
-
-        propertyMap["RatingPercent"] = topLevelItems["Ratings"];
-        propertyMap["SharedUserRating"] = topLevelItems["Ratings"];
-
-        QMapIterator<QString, QString> fileIterator(fileMap);
-        QStringList headerLabels = QStringList() << "Property" << "Minimum" << "Delta" << "Maximum" << "Type" << "Diff";
-
-        emit propertyTreeView->jobAddLog(jobParams, "add all files as labels");
-
-        while (fileIterator.hasNext()) //add all files as labels
+        foreach (QString categoryPropery, categoryProperyList)
         {
-            fileIterator.next();
-            QString folderFileName = fileIterator.key();
+            QString categoryName = categoryPropery.split(";")[0];
+            QString propertyName = categoryPropery.split(";")[1];
 
-            if (fileMap[folderFileName] == "MediaFile")
+            ExifToolValueStruct exifToolValueStruct = exiftoolMap[categoryName][propertyName][folderFileName];
+
+            if (exifToolValueStruct.categoryName == "")
             {
-                headerLabels << folderFileName;
+                exifToolValueStruct.categoryName = categoryName;
+                exifToolValueStruct.propertyName = propertyName;
+                exifToolValueStruct.absoluteFilePath = folderFileName;
+                exifToolValueStruct.propertySortOrder = QString::number(exiftoolMap[categoryName].count()).rightJustified(3, '0');
+
+                exiftoolMap[categoryName][propertyName][folderFileName] = exifToolValueStruct;
             }
         }
-        propertyTreeView->propertyItemModel->setHorizontalHeaderLabels(headerLabels);
+    }
 
-        emit propertyTreeView->jobAddLog(jobParams, "add all properties");
+    QMapIterator<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> category2Iterator(exiftoolMap);
+    while (category2Iterator.hasNext())
+    {
+        category2Iterator.next();
 
-        QMapIterator<QString, QStandardItem *> propertyIterator(propertyMap);
-        while (propertyIterator.hasNext()) //all labels
+//        qDebug()<<"categoryIterator.key()"<<category2Iterator.key();
+        QString categoryKey = category2Iterator.key().split(" - ")[1];
+
+        QList<QMap<QString, ExifToolValueStruct>> propertyListSorted;
+
+        //sort propertyList
         {
-            propertyIterator.next();
-            QString propertyName = propertyIterator.key();
+            QMapIterator<QString, QMap<QString, ExifToolValueStruct>> property2Iterator(category2Iterator.value());
+            while (property2Iterator.hasNext())
+            {
+                property2Iterator.next();
+                propertyListSorted.append(property2Iterator.value());
+            }
+
+            std::sort(propertyListSorted.begin(), propertyListSorted.end(), [](QMap<QString, ExifToolValueStruct> v1, QMap<QString, ExifToolValueStruct> v2)->bool
+            {
+                ExifToolValueStruct vv1 = v1.first();
+                ExifToolValueStruct vv2 = v2.first();
+                return vv1.propertySortOrder<vv2.propertySortOrder;
+            });
+        }
+
+        QList<QMap<QString, ExifToolValueStruct>>::iterator property2Iterator;
+        for (property2Iterator = propertyListSorted.begin(); property2Iterator != propertyListSorted.end(); ++property2Iterator)
+        {
+            QString propertyName = property2Iterator->first().propertyName; //split...
+            QMap<QString, ExifToolValueStruct> filesValueMap = *property2Iterator;
+
+//            qDebug()<<"  propertyName"<<propertyName;
 
             bool isEditable = propertyName == "CreateDate" || propertyName == "GeoCoordinate";
             bool isDeltaAndMaximumEditable = isEditable;
@@ -393,7 +303,7 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 
                 if (propertyName == "Rating" || propertyName == "RatingPercent" || propertyName == "SharedUserRating")
                 {
-//                    qDebug()<<"Rating"<<i;
+    //                    qDebug()<<"Rating"<<i;
                     item = new QStandardItem;
                     QVariant starVar = QVariant::fromValue(AStarRating(0));
                     item->setData(starVar, Qt::EditRole);
@@ -427,52 +337,52 @@ void APropertyTreeView::loadModel(QStandardItem *parentItem, QString folderName)
 
             sublevelItems.append(new QStandardItem( "false" )); //diff
 
-            bool valueFound = false; //in case label is added by a non media file
+            //calculate diff
 
+            bool valueFound = false; //in case label is added by a non media file
             QString previousValue = "";
 
-            QMapIterator<QString, QString> fileIterator(fileMap);
-            while (fileIterator.hasNext()) //all files add the label values
+            foreach (QString folderFileName, filesMap)
             {
-                fileIterator.next();
-                QString folderFileName = fileIterator.key();
+                QString value = filesValueMap[folderFileName].value;
 
-                if (fileMap[folderFileName] == "MediaFile") // only add for mediafiles
+//                qDebug()<<"    filesIterator.key()"<<folderFileName << value;
+
+                QStandardItem *item;
+
+                if (propertyName == "Rating" || propertyName == "RatingPercent" || propertyName == "SharedUserRating")
                 {
-                    QString value = valueMap[propertyName][folderFileName];
-                    QStandardItem *item;
-
-                    if (propertyName == "Rating" || propertyName == "RatingPercent" || propertyName == "SharedUserRating")
-                    {
-                        item = new QStandardItem;
-                        QVariant starVar = QVariant::fromValue(AStarRating(value.toInt()));
-                        item->setData(starVar, Qt::EditRole);
-                    }
-                    else
-                    {
-                        item = new QStandardItem(value);
-
-                    }
-                    sublevelItems.append(item);
-
-                    valueFound = valueFound || value != "";
-                    if (previousValue != "" && value != "" && value != previousValue) //diff
-                        sublevelItems[diffIndex] = new QStandardItem("true");
-
-                    previousValue = value;
+                    item = new QStandardItem;
+                    QVariant starVar = QVariant::fromValue(AStarRating(value.toInt()));
+                    item->setData(starVar, Qt::EditRole);
                 }
-            }
+                else
+                {
+                    item = new QStandardItem(value);
 
-            propertyIterator.value()->appendRow(sublevelItems);
-        } // all labels
+                }
+                sublevelItems.append(item);
 
-        emit propertyTreeView->jobAddLog(jobParams, "Update suggested names");
+                valueFound = valueFound || value != "";
+                if (previousValue != "" && value != "" && value != previousValue) //diff
+                    sublevelItems[diffIndex] = new QStandardItem("true");
 
-        propertyTreeView->setupModel();
+                previousValue = value;
+            } //files
 
-        emit propertyTreeView->jobAddLog(jobParams, "Success");
-    });
+            topLevelItems[categoryKey]->appendRow(sublevelItems); //toplevelItem/category
+        } //property
+    } //category
 
+//            process->onProcessOutput("output", "add all properties");
+
+
+//            process->onProcessOutput("output", "Update suggested names");
+
+//    qDebug()<<"filesMap.count()"<<filesMap.count();
+    setupModel();
+
+//            process->onProcessOutput("output", "Success");
 } //loadmodel
 
 void APropertyTreeView::initModel(QStandardItemModel *itemModel)
@@ -573,7 +483,8 @@ void APropertyTreeView::setupModel()
             if (editMode)
                 updateSuggestedNames(column); //ok to take it from general as only the model and the column of childindex is used.
 
-            QString folderFileName = model()->headerData(column, Qt::Horizontal).toString();
+//            qDebug()<<"filesMap - setUpModel"<<column - firstFileColumnIndex<<filesMap;
+            QString folderFileName = filesMap[column - firstFileColumnIndex];
             onSetPropertyValue(folderFileName, "Status", "Loaded");
             if (editMode)
                 setColumnWidth(column, columnWidth(propertyIndex) * 1.0);
@@ -715,15 +626,10 @@ void APropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdi
 
 QModelIndex APropertyTreeView::findIndex(QString folderFileName, QString propertyName)
 {
-    int fileColumnNr = -1;
-    for(int col = 0; col < propertyItemModel->columnCount(); col++)
-    {
-      if (propertyItemModel->headerData(col, Qt::Horizontal).toString() == folderFileName)
-      {
-          fileColumnNr = col;
-      }
-    }
-//    qDebug()<<"APropertyTreeView::onSetPropertyValue"<<fileName<<fileColumnNr<<propertyName<<propertyItemModel->rowCount();
+    int fileColumnNr = filesMap.indexOf(folderFileName);
+
+    if (folderFileName == "Minimum") //APropertyEditorDialog::onGeoCodingFinished
+        fileColumnNr = 1 - firstFileColumnIndex;
 
     if (fileColumnNr != -1)
     {
@@ -738,7 +644,7 @@ QModelIndex APropertyTreeView::findIndex(QString folderFileName, QString propert
 
                 if (sublevelIndex.data().toString() == propertyName)
                 {
-                    return propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex);
+                    return propertyItemModel->index(childRowIndex, fileColumnNr + firstFileColumnIndex, topLevelIndex);
                 }
             }
 
@@ -750,7 +656,7 @@ QModelIndex APropertyTreeView::findIndex(QString folderFileName, QString propert
 
 bool APropertyTreeView::onGetPropertyValue(QString folderFileName, QString propertyName, QVariant *value)
 {
-//    qDebug()<<"APropertyTreeView::onGetPropertyValue"<<folderFileName<<propertyName;
+//    qDebug()<< metaObject()->className()<<__func__<<folderFileName<<propertyName;
     QModelIndex index = findIndex(folderFileName, propertyName);
 
     if (index != QModelIndex())
@@ -769,7 +675,7 @@ bool APropertyTreeView::onGetPropertyValue(QString folderFileName, QString prope
 
 bool APropertyTreeView::onSetPropertyValue(QString folderFileName, QString propertyName, QVariant value, int role)
 {
-//     qDebug()<<"APropertyTreeView::onSetPropertyValue"<<fileName<<propertyName<<value;
+//     qDebug()<<"APropertyTreeView::onSetPropertyValue"<<folderFileName<<propertyName<<value;
     QModelIndex index = findIndex(folderFileName, propertyName);
 
     if (index != QModelIndex())
@@ -789,7 +695,6 @@ bool APropertyTreeView::onSetPropertyValue(QString folderFileName, QString prope
 void APropertyTreeView::updateSuggestedNames(int column)
 {
     QModelIndex index = model()->index(0,column); // general top level row. Index is used to access all variables in row
-    QString folderFileName = model()->headerData(index.column(), Qt::Horizontal).toString();
 
 //    qDebug()<<"APropertyTreeView::updateSuggestedNames"<<fileName<<column <<locationInName<<cameraInName<<artistInName;
 
@@ -862,27 +767,34 @@ void APropertyTreeView::updateSuggestedNames(int column)
                 suggestedName += " " + artist;
         }
 
-        int pos = folderFileName.indexOf("+"); //first +
-        int extPos = folderFileName.lastIndexOf(".");
-        QString msString = "";
-        if (pos > 0)
+        if (index.column() >= firstFileColumnIndex)
         {
-            msString = folderFileName.mid(pos, extPos - pos);
-//            qDebug()<<"msString"<<msString;
-            suggestedName += " " + msString;
+//            qDebug()<<"filesMap - updateSug"<<index.column() - firstFileColumnIndex<<filesMap.count();
+            QString folderFileName = filesMap[index.column() - firstFileColumnIndex];
+
+            int pos = folderFileName.indexOf("+"); //first +
+            int extPos = folderFileName.lastIndexOf(".");
+            QString msString = "";
+            if (pos > 0)
+            {
+                msString = folderFileName.mid(pos, extPos - pos);
+    //            qDebug()<<"msString"<<msString;
+                suggestedName += " " + msString;
+            }
+
+            //        qDebug()<<"APropertyTreeView::updateSuggestedNames"<<suggestedName;
+
+                    if (folderFileName.mid(0,extPos) == suggestedName)
+                        propertyProxyModel->setData(suggestedNameIndex, "", Qt::EditRole);
+                    else
+                        propertyProxyModel->setData(suggestedNameIndex, suggestedName, Qt::EditRole);
+
+            //            if (!fileName.contains(suggestedName + "."))
+            //                propertyItemModel->setData(suggestedNameIndex, QBrush("#FF4500"), Qt::ForegroundRole); //orange
+            //            else
+            //                propertyItemModel->setData(suggestedNameIndex, QVariant(palette().windowText()), Qt::ForegroundRole); //orange
         }
 
-//        qDebug()<<"APropertyTreeView::updateSuggestedNames"<<suggestedName;
-
-        if (folderFileName.mid(0,extPos) == suggestedName)
-            propertyProxyModel->setData(suggestedNameIndex, "", Qt::EditRole);
-        else
-            propertyProxyModel->setData(suggestedNameIndex, suggestedName, Qt::EditRole);
-
-//            if (!fileName.contains(suggestedName + "."))
-//                propertyItemModel->setData(suggestedNameIndex, QBrush("#FF4500"), Qt::ForegroundRole); //orange
-//            else
-//                propertyItemModel->setData(suggestedNameIndex, QVariant(palette().windowText()), Qt::ForegroundRole); //orange
     }
 } //updateSuggestedNames
 
@@ -913,13 +825,15 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
 
             if (index.column() >= firstFileColumnIndex) //updating individual files
             {
-                QString folderFileName =  index.model()->headerData(index.column(), Qt::Horizontal).toString();
+//                qDebug()<<"filesMap - onPropC"<<index.column() - firstFileColumnIndex;
+                QString folderFileName = filesMap[index.column() - firstFileColumnIndex];
 
                 QVariant brush;
                 if (index.parent().data().toString() == "Status")
                 {
                     if (propertyName == "Status")
                     {
+//                        qDebug()<<"index.data()"<<folderFileName<<index.data().toString();
                         if (index.data().toString() == "Changed")
                             brush = QBrush(QColor(255, 140, 0, 50)); //orange causes recursive call
                         else if (index.data().toString().contains("1 image files updated"))
@@ -1280,7 +1194,7 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
 
         QString command = "exiftool";
 
-//        qDebug()<<"APropertyTreeView::saveChanges"<<propertyNames.count()<<values.count();
+//        qDebug()<<"APropertyTreeView::saveChanges"<<propertyNames.count()<<values.count()<<folderFileName;
 
         for (int i=0; i<propertyNames.count(); i++)
             command += " -" + propertyNames[i] + "=" + values[i];
@@ -1292,63 +1206,62 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
         else
             onSetPropertyValue(folderFileName, "Status", command);
 
-        AJobParams jobParams;
-        jobParams.thisObject = this;
-        jobParams.folderName =  folderName;
-        jobParams.fileName = fileName;
-        jobParams.action = "Update properties";
-        jobParams.command = command;
-        jobParams.parameters["propertyNames"] = propertyNames.join(";");
-        jobParams.parameters["totalDuration"] = QString::number(2000);
+        AGProcessAndThread *process = new AGProcessAndThread(this);
+        process->command("Update Properties " + fileName, command);
 
-        jobTreeView->createJob(jobParams, nullptr, [] (AJobParams jobParams, QStringList result)
+    //    processes<<process;
+    //    connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
+        connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
         {
-            qDebug()<<"APropertyTreeView::saveChanges"<<result.join("\n");
-            APropertyTreeView *propertyTreeView = qobject_cast<APropertyTreeView *>(jobParams.thisObject);
+            //this is executed in the created thread!
 
-            QString resultJoin = result.join(" ").trimmed();
-
-            propertyTreeView->onSetPropertyValue(jobParams.folderName + jobParams.fileName, "Status", resultJoin);//color done in propertychanged
-
-            QStringList propertyNames = jobParams.parameters["propertyNames"].split(";");
-            foreach (QString propertyName, propertyNames)
+            if (event == "finished")
             {
-//                qDebug()<<"savechanges colorChanged" <<propertyName;
+//                qDebug()<<"APropertyTreeView::saveChanges"<<result.join("\n");
 
-                QString propName;
-                if (propertyName.contains("GPS"))
-                    propName = "GeoCoordinate";
-                else
-                    propName = propertyName;
+                QString resultJoin = process->log.join(" ").trimmed();
 
-                propertyTreeView->colorChanged = "yes";
-                if (!resultJoin.contains("1 image files updated") || resultJoin.contains(propertyName)) //property mentioned in error message
-                    propertyTreeView->onSetPropertyValue(jobParams.folderName + jobParams.fileName, propName, QBrush(QColor(255, 140, 0, 50)), Qt::BackgroundRole); //orange
-                else
-                    propertyTreeView->onSetPropertyValue(jobParams.folderName + jobParams.fileName, propName, QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole); //darkgreen
-            }
+                onSetPropertyValue(folderName + fileName, "Status", resultJoin);//color done in propertychanged
 
-//            qDebug()<<"propertyTreeView->progressBar"<<propertyNames.count()<<propertyTreeView->changedIndexesMap.count()<<100.0 / (propertyTreeView->changedIndexesMap.count())<<propertyTreeView->progressBar->value();
-            propertyTreeView->progressBar->setValue(propertyTreeView->progressBar->value() + 100.0 / propertyTreeView->changedIndexesMap.count());
+                foreach (QString propertyName, propertyNames)
+                {
+    //                qDebug()<<"savechanges colorChanged" <<propertyName;
 
-            if (propertyTreeView->progressBar->value() > 99)
-            {
-                propertyTreeView->progressBar->setValue(100);
-                propertyTreeView->progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
-                propertyTreeView->changedIndexesMap.clear();
-                propertyTreeView->spinnerLabel->stop();
+                    QString propName;
+                    if (propertyName.contains("GPS"))
+                        propName = "GeoCoordinate";
+                    else
+                        propName = propertyName;
+
+                    colorChanged = "yes";
+                    if (!resultJoin.contains("1 image files updated") || resultJoin.contains(propertyName)) //property mentioned in error message
+                        onSetPropertyValue(folderName + fileName, propName, QBrush(QColor(255, 140, 0, 50)), Qt::BackgroundRole); //orange
+                    else
+                        onSetPropertyValue(folderName + fileName, propName, QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole); //darkgreen
+                }
+
+    //            qDebug()<<"progressBar"<<propertyNames.count()<<changedIndexesMap.count()<<100.0 / (changedIndexesMap.count())<<progressBar->value();
+                progressBar->setValue(progressBar->value() + 100.0 / changedIndexesMap.count());
+
+                if (progressBar->value() > 99)
+                {
+                    progressBar->setValue(100);
+                    progressBar->setStyleSheet("QProgressBar::chunk {background: green}");
+                    changedIndexesMap.clear();
+                    spinnerLabel->stop();
+                }
             }
         });
 
+        process->start();
     }//files
 
 } //saveChanges
 
-void APropertyTreeView::onloadProperties(QStandardItem *parentItem)
+void APropertyTreeView::onloadProperties()
 {
-    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
-//    qDebug()<<"APropertyTreeView::onloadProperties"<<lastFolder;
-    loadModel(parentItem, selectedFolderName);
+//    qDebug()<<"APropertyTreeView::onloadProperties"<<selectedFolderName<<exiftoolMap.count();
+    loadModel(QSettings().value("selectedFolderName").toString());
 }
 
 void APropertyTreeView::onPropertyColumnFilterChanged(QString filter)
@@ -1549,15 +1462,54 @@ void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folder
         targetFolderFileName = targetFolderFileName.replace("/", "\\");
     #endif
 
-        AJobParams jobParams;
-        jobParams.thisObject = this;
-        jobParams.parentItem = parentItem;
-        jobParams.folderName = folderNameSource;
-        jobParams.fileName = fileNameTarget;
-        jobParams.action = "Copy properties";
-        jobParams.command = "exiftool" + attributeString + " -overwrite_original \"" + targetFolderFileName + "\"";
-        jobParams.parameters["totalDuration"] = QString::number(1000);
+        AGProcessAndThread *process = new AGProcessAndThread(this);
+        process->command("Copy Properties " + fileNameSource, "exiftool" + attributeString + " -overwrite_original \"" + targetFolderFileName + "\"");
 
-        jobTreeView->createJob(jobParams, nullptr, nullptr);
+    //    processes<<process;
+    //    connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
+        connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
+        {
+            //this is executed in the created thread!
+
+            if (event == "finished")
+            {
+                qDebug()<<process->name + " finished";
+            }
+        });
+
+        process->start();
     }
 }
+
+void APropertyTreeView::mousePressEvent(QMouseEvent *event)
+{
+    QModelIndex index = indexAt(event->pos());
+    if (event->button() == Qt::RightButton && (index.column() > 0 || event->pos().x() > 50) && index.data().toString() != "") //only show if an item is clicked on
+    {
+        QDialog *dialog = new QDialog(this);
+        dialog->setWindowTitle("Log details of " + index.data().toString());
+
+        QRect savedGeometry = QSettings().value("Geometry").toRect();
+        savedGeometry.setX(savedGeometry.x() + savedGeometry.width()/4);
+        savedGeometry.setY(savedGeometry.y() + savedGeometry.height()/4);
+        savedGeometry.setWidth(savedGeometry.width()/2);
+        savedGeometry.setHeight(savedGeometry.height()/2);
+        dialog->setGeometry(savedGeometry);
+
+        QTextBrowser *textBrowser = new QTextBrowser(dialog);
+        textBrowser->setWordWrapMode(QTextOption::NoWrap);
+        textBrowser->setText(index.data().toString());
+
+        QVBoxLayout *m_pDialogLayout = new QVBoxLayout(this);
+
+        m_pDialogLayout->addWidget(textBrowser);
+
+        dialog->setLayout(m_pDialogLayout);
+
+        dialog->show();
+    }
+    else
+        QTreeView::mousePressEvent(event); //expand and collapse
+
+}
+

@@ -75,8 +75,9 @@ void AFilesTreeView::setType(QString type)
         QStringList exportMethodAndExtensionFilter;
         foreach (QString exportMethod, AGlobal().exportMethods)
             foreach (QString exportFilter, exportFilters)
-                exportMethodAndExtensionFilter <<exportMethod + exportFilter;
+                exportMethodAndExtensionFilter <<"*" + exportMethod + exportFilter;
 //        filters <<"Lossless*.*"<<"Encode*.*"<<"shotcut*.*"<<"Premiere*.*";
+//        qDebug()<<"exportMethodAndExtensionFilter"<<exportMethodAndExtensionFilter;
         fileModel->setNameFilters(exportMethodAndExtensionFilter);
     }
 }

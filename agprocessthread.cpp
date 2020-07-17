@@ -1,6 +1,10 @@
 #include "agprocessthread.h"
 
 #include <QDebug>
+#include <QApplication>
+#include <QWidget>
+#include <QWinTaskbarProgress>
+#include <QTimer>
 
 #ifdef Q_OS_MAC
 #include <QApplication>
@@ -9,6 +13,11 @@
 AGProcessAndThread::AGProcessAndThread(QObject *parent):
     QObject(parent)
 {
+#ifdef Q_OS_WINxxx
+    taskbarButton = new QWinTaskbarButton(this);
+    taskbarButton->setWindow(((QWidget *)parent)->windowHandle());
+//       taskbarButton->setOverlayIcon(QIcon(":/loading.png"));
+#endif
 }
 
 AGProcessAndThread::~AGProcessAndThread()
@@ -57,33 +66,33 @@ void AGProcessAndThread::command(QString name, QString commandString)
 
         foreach (QString outputString, outputStringList)
         {
-            onProcessOutput("output", outputString);
+            addProcessLog("output", outputString);
         }
     });
 
     connect (process, &QProcess::readyReadStandardError, [=]()
     {
         QString outputString = process->readAllStandardError();
-        onProcessOutput("output", outputString);
+        addProcessLog("output", outputString);
     });
 
     connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error)
     {
         QString outputString = "Error " + QString::number(error) + ": " + process->errorString();
-        onProcessOutput("error", outputString);
+        addProcessLog("error", outputString);
     });
 
     connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus)
     {
         QString outputString = "Finished " + QString::number(exitCode) + ": " + exitStatus;
-        onProcessOutput("finished", outputString);
+        addProcessLog("finished", outputString);
     });
 
 
     this->name = name;
     log.clear();
 
-    log << commandString;
+//    log << commandString;
 
     QString execPath = "";
 #ifdef Q_OS_MAC
@@ -105,13 +114,13 @@ void AGProcessAndThread::command(QString name, std::function<void ()> commandFun
     connect(jobThread, &QThread::started, [=]()
     {
         QString outputString = "started";
-        onProcessOutput("started", outputString);
+        addProcessLog("started", outputString);
     });
 
     connect(jobThread, &QThread::finished, [=]()
     {
         QString outputString = "finished";
-        onProcessOutput("finished", outputString);
+        addProcessLog("finished", outputString);
     });
 
     this->name = name;
@@ -121,12 +130,15 @@ void AGProcessAndThread::command(QString name, std::function<void ()> commandFun
 void AGProcessAndThread::start()
 {
     if (process != nullptr)
+    {
         process->start(commandString);
+        addProcessLog("started", commandString);
+    }
     if (jobThread != nullptr)
         jobThread->start();
 }
 
-void AGProcessAndThread::onProcessOutput(QString event, QString outputString)
+void AGProcessAndThread::addProcessLog(QString event, QString outputString)
 {
     QTime time = QTime();
 
@@ -138,7 +150,30 @@ void AGProcessAndThread::onProcessOutput(QString event, QString outputString)
         time = QTime::fromString(timeString,"HH:mm:ss.zzz");
     }
     log << outputString;
-    emit processOutput(time, event, outputString);
+//    qDebug()<<"outputString"<<outputString;
+
+#ifdef Q_OS_WINxxx
+    QWinTaskbarProgress *progress = taskbarButton->progress();
+    progress->setVisible(true);
+    progress->setValue(time.msecsSinceStartOfDay() / totalTime.msecsSinceStartOfDay());
+
+    if (event == "error")
+    {
+        progress->setVisible(false);
+    }
+    if (event == "finished")
+    {
+        progress->stop();
+
+        QTimer::singleShot(5000, this, [progress]()->void //timer needed to show first message
+        {
+                               progress->resume();
+                               progress->setVisible(false);
+        });
+    }
+#endif
+
+    emit processOutput(time, totalTime, event, outputString);
 }
 
 //void AGProcessAndThread::start(QString name, const QString &commandString)

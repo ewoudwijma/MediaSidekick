@@ -28,7 +28,7 @@ void AClipsItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &op
 
     QWidget *widget = nullptr;
 
-    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *spinBox = new STimeSpinBox();
         QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
@@ -115,7 +115,7 @@ QWidget *AClipsItemDelegate::createEditor(QWidget *parent,
     {
         return nullptr;
     }
-    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox *editor = new STimeSpinBox(parent);
 
@@ -148,9 +148,9 @@ QWidget *AClipsItemDelegate::createEditor(QWidget *parent,
 void AClipsItemDelegate::setEditorData(QWidget *editor,
                                  const QModelIndex &index) const
 {
-    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
-        qDebug()<<"AClipsItemDelegate::setEditorData"<<index.row()<<index.column()<<index.data();
+//        qDebug()<<"AClipsItemDelegate::setEditorData"<<index.row()<<index.column()<<index.data();
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
         QTime time = QTime::fromString(index.data().toString(),"HH:mm:ss.zzz");
         spinBox->setValue(AGlobal().msec_to_frames(time.msecsSinceStartOfDay()));
@@ -170,7 +170,7 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
     }
     else if (index.data().canConvert<AStarRating>())
     {
-        qDebug()<<"setEditorData"<<index.row()<<index.column()<<index.data();
+//        qDebug()<<"setEditorData"<<index.row()<<index.column()<<index.data();
         AStarRating starRating = qvariant_cast<AStarRating>(index.data());
         AStarEditor *starEditor = qobject_cast<AStarEditor *>(editor);
         starEditor->setStarRating(starRating);
@@ -182,12 +182,12 @@ void AClipsItemDelegate::setEditorData(QWidget *editor,
 void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                 const QModelIndex &index) const
 {
-    qDebug()<<"setModelData"<<editor<<model<<index.data();
+//    qDebug()<<"setModelData"<<editor<<model<<index.data();
     model->setData(model->index(index.row(), changedIndex), "yes");
-    if (index.column() == fileDurationIndex || index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
+    if (index.column() == inIndex || index.column() == outIndex || index.column() == durationIndex)
     {
         STimeSpinBox* spinBox = qobject_cast<STimeSpinBox*>(editor);
-        qDebug()<<"AClipsItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
+//        qDebug()<<"AClipsItemDelegate::setModelData"<<index.row()<<index.column()<<index.data().toString()<<spinBox->value();
         QTime time = QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(spinBox->value()));
         model->setData(index, time.toString("HH:mm:ss.zzz"));
     }
@@ -217,7 +217,7 @@ void AClipsItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
 QSize AClipsItemDelegate::sizeHint(const QStyleOptionViewItem &option,
                              const QModelIndex &index) const
 {
-    qDebug()<<"sizeHint"<<index.row()<<index.column()<<index.data();
+//    qDebug()<<"sizeHint"<<index.row()<<index.column()<<index.data();
     if (index.column() == inIndex)
     {
         return QSize(200,200);
@@ -240,7 +240,7 @@ bool AClipsItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, c
     if (index.column() == alikeIndex && event->type() == QEvent::MouseButtonRelease && false)
     {
         bool value = index.data( ).toBool();
-        qDebug()<<"editorEvent"<<index.row()<<index.column()<<index.data()<<event->type()<<value;
+//        qDebug()<<"editorEvent"<<index.row()<<index.column()<<index.data()<<event->type()<<value;
         model->setData(index, !value);
         return true;
     }

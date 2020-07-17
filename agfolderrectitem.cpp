@@ -1,17 +1,18 @@
 #include "agfolderrectitem.h"
 
-#include <QPen>
-
 #include <QDesktopServices>
 
 #include "agview.h" //for the constants
+#include "apropertyeditordialog.h"
+#include "apropertytreeview.h"
+#include "aexport.h"
 
-#include <QDialog>
+#include <QPushButton>
 #include <QSettings>
-#include <QStyle>
-#include <QTabWidget>
 #include <QTextBrowser>
 #include <QVBoxLayout>
+
+#include <qmath.h>
 
 AGFolderRectItem::AGFolderRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     AGViewRectItem(parent, fileInfo)
@@ -48,98 +49,228 @@ void AGFolderRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
 {
     fileContextMenu->clear();
 
-    fileContextMenu->addAction(new QAction("Zoom to item",fileContextMenu));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
-    {
-        view->fitInView(boundingRect()|childrenBoundingRect(), Qt::KeepAspectRatio);
-    });
-    fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
-                                        "<p><i>Zooms in to %2 and it's details</i></p>"
-                                              ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName()));
+    AGViewRectItem::onItemRightClicked(view, pos);
 
-    fileContextMenu->addSeparator();
-
-    fileContextMenu->addAction(new QAction("Export",fileContextMenu));
+    fileContextMenu->addAction(new QAction("Property manager",fileContextMenu));
     fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
-        //for each folder
-        //for each timeline in folder
-        //for each file in folder
-        //for each clip in timeline
-    });
+        QDialog *propertyViewerDialog = new QDialog();
 
-    fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
-                                        "<p><i>To be done (%2)</i></p>"
-                                              ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName())); //not effective!
+        propertyViewerDialog->setWindowTitle("Media Sidekick Property viewer");
 
-    fileContextMenu->addSeparator();
-
-    fileContextMenu->addAction(new QAction("Open in explorer",fileContextMenu));
-    fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
-    {
-        QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absoluteFilePath()) );
-    });
-
-    fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
-                                        "<p><i>Shows the current file or folder %2 in the explorer of your computer</i></p>"
-                                              ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName())); //not effective!
-
-    fileContextMenu->addSeparator();
-
-    fileContextMenu->addAction(new QAction("Properties",fileContextMenu));
-    fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/MediaSidekick.ico"))));
-    connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
-    {
-        QDialog * propertiesDialog = new QDialog(view);
-        propertiesDialog->setWindowTitle("Media Sidekick Properties");
-    #ifdef Q_OS_MAC
-        propertiesDialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
-    #endif
+        propertyViewerDialog->setWindowFlags( propertyViewerDialog->windowFlags() |  Qt::WindowMaximizeButtonHint);
 
         QRect savedGeometry = QSettings().value("Geometry").toRect();
-        savedGeometry.setX(savedGeometry.x() + savedGeometry.width()/4);
-        savedGeometry.setY(savedGeometry.y() + savedGeometry.height()/4);
-        savedGeometry.setWidth(savedGeometry.width()/2);
-        savedGeometry.setHeight(savedGeometry.height()/2);
-        propertiesDialog->setGeometry(savedGeometry);
+        savedGeometry.setX(savedGeometry.x() + savedGeometry.width() * .05);
+        savedGeometry.setY(savedGeometry.y() + savedGeometry.height() * .05);
+        savedGeometry.setWidth(savedGeometry.width() * .9);
+        savedGeometry.setHeight(savedGeometry.height() * .9);
+        propertyViewerDialog->setGeometry(savedGeometry);
 
-        QVBoxLayout *mainLayout = new QVBoxLayout(propertiesDialog);
-        QTabWidget *tabWidget = new QTabWidget(propertiesDialog);
-        mainLayout->addWidget(tabWidget);
+        QVBoxLayout *mainLayout = new QVBoxLayout(propertyViewerDialog);
 
-        QTabWidget *subTabWidget = new QTabWidget(tabWidget);
-        tabWidget->addTab(subTabWidget, "Jobs");
+        QHBoxLayout *filesLayout = new QHBoxLayout();
+        mainLayout->addLayout(filesLayout);
 
-        foreach (AGProcessAndThread *process, processes)
+        QLineEdit *filterFilesLineEdit = new QLineEdit();
+        filterFilesLineEdit->setPlaceholderText("filter files...");
+        filesLayout->addWidget(filterFilesLineEdit);
+
+        QPushButton *editorButton = new QPushButton();
+        editorButton->setText("Editor");
+        filesLayout->addWidget(editorButton);
+
+        QCheckBox *diffCheckBox = new QCheckBox();
+        diffCheckBox->setText("Diff");
+        diffCheckBox->setTristate(true);
+        diffCheckBox->setCheckState(Qt::PartiallyChecked);
+        filesLayout->addWidget(diffCheckBox);
+
+        QPushButton *refreshButton = new QPushButton();
+        refreshButton->setText("Refresh");
+        filesLayout->addWidget(refreshButton);
+
+        filesLayout->addStretch();
+
+        QHBoxLayout *propertiesLayout = new QHBoxLayout();
+        mainLayout->addLayout(propertiesLayout);
+
+        QLineEdit *filterPropertiesLineEdit = new QLineEdit();
+        filterPropertiesLineEdit->setPlaceholderText("filter properties...");
+        propertiesLayout->addWidget(filterPropertiesLineEdit);
+
+        APropertyTreeView *propertyTreeView = new APropertyTreeView();
+
+        //properties
+//        propertyTreeView->setToolTip(tr("<p><b>Property list by Exiftool</b></p>"
+//                                         "<p><i>Show the properties (Metadata / EXIF data) for files of the selected folder</i></p>"
+//                                         "<ul>"
+//                                            "<li>Only properties and files applying to the <b>filters</b> are shown</li>"
+//                                            "<ul>"
+//                                            "<li><b>Filter files</b>: only the columns matching are shown</li>"
+//                                            "<li><b>Filter properties</b>: only the rows matching are shown</li>"
+//                                            "<li><b>Diff</b>: show only properties which differs between the files, are equal or both</li>"
+//                                            "</ul>"
+//                                            "<li>Properties belonging to the <b>selected file</b> are highlighted in blue</li>"
+//                                         "</ul>"
+//                                         ));
+
+        editorButton->setToolTip(tr("<p><b>Property editor</b></p>"
+                                                    "<p><i>Opens a new window to edit properties</i></p>"
+                                                    ));
+
+        filterPropertiesLineEdit->setToolTip(tr("<p><b>Property filters</b></p>"
+                                                  "<p><i>Filters on properties or files shown</i></p>"
+                                                  "<ul>"
+                                                  "<li>Enter text to filter on properties. E.g. date shows all the date properties</li>"
+                                                  "</ul>"));
+        filterFilesLineEdit->setToolTip(filterPropertiesLineEdit->toolTip());
+
+        diffCheckBox->setToolTip(tr("<p><b>Diff</b></p>"
+                                                "<p><i>Determines which properties are shown based on if they are different or the same accross the movie files</i></p>"
+                                                "<ul>"
+                                                "<li>Unchecked: Only properties which are the same for all files</li>"
+                                                "<li>Checked: Only properties which are different between files</li>"
+                                                "<li>Partially checked (default): All properties</li>"
+                                                "</ul>"));
+        refreshButton->setToolTip(tr("<p><b>Refresh</b></p>"
+                                         "<p><i>Reloads all the properties</i></p>"
+                                         ));
+
+        connect(filterPropertiesLineEdit, &QLineEdit::textChanged, [=]
         {
-            QTextBrowser *textBrowser = new QTextBrowser(subTabWidget);
-            textBrowser->setWordWrapMode(QTextOption::NoWrap);
-            textBrowser->setText(process->log.join("\n"));
-            subTabWidget->insertTab(0, textBrowser, process->name);
+            propertyTreeView->onPropertyFilterChanged(filterPropertiesLineEdit, diffCheckBox);
+        });
+
+        connect(diffCheckBox, &QCheckBox::clicked, [=]
+        {
+            propertyTreeView->onPropertyFilterChanged(filterPropertiesLineEdit, diffCheckBox);
+        });
+
+        connect(filterFilesLineEdit, &QLineEdit::textChanged, [=]
+        {
+            propertyTreeView->onPropertyColumnFilterChanged(filterFilesLineEdit->text());
+        });
+
+        connect(editorButton, &QPushButton::clicked, [=]
+        {
+//            statusBar->showMessage("Opening editor window", 5000);
+
+//            videoWidget->onReleaseMedia(videoWidget->selectedFolderName, videoWidget->selectedFileName);
+//            spinnerLabel->start();
+
+            APropertyEditorDialog *propertyEditorDialog = new APropertyEditorDialog();
+
+            QRect savedGeometry = QSettings().value("Geometry").toRect();
+            savedGeometry.setX(savedGeometry.x() + savedGeometry.width() * .05);
+            savedGeometry.setY(savedGeometry.y() + savedGeometry.height() * .05);
+            savedGeometry.setWidth(savedGeometry.width() * .9);
+            savedGeometry.setHeight(savedGeometry.height() * .9);
+            propertyEditorDialog->setGeometry(savedGeometry);
+
+        //    propertyEditorDialog->propertyItemModel = propertyTreeView->propertyItemModel;
+
+//            connect(propertyEditorDialog, &APropertyEditorDialog::releaseMedia, videoWidget, &AVideoWidget::onReleaseMedia);
+            connect(propertyEditorDialog, &APropertyEditorDialog::loadProperties, propertyTreeView, &APropertyTreeView::onloadProperties);
+
+//            connect(this, &MainWindow::propertiesLoaded, propertyEditorDialog, &APropertyEditorDialog::onPropertiesLoaded);
+
+            propertyEditorDialog->setProperties(propertyTreeView->propertyItemModel, propertyTreeView->filesMap);
+
+//            spinnerLabel->stop();
+
+            propertyEditorDialog->setWindowModality(Qt::NonModal);
+
+            propertyEditorDialog->show();
+        });
+
+        connect(refreshButton, &QPushButton::clicked, [=]
+        {
+            propertyTreeView->onloadProperties();
+        });
+
+        foreach (QGraphicsItem *item, scene()->items())
+        {
+            if (item->data(mediaTypeIndex).toString() == "MediaFile" && item->data(itemTypeIndex).toString() == "Base") // && item->data(itemTypeIndex).toString() == "Base"
+            {
+                AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
+
+                QMapIterator<QString, QMap<QString, ExifToolValueStruct>> categoryIterator(mediaItem->exiftoolMap);
+                while (categoryIterator.hasNext()) //for each category
+                {
+                    categoryIterator.next();
+
+                    foreach (ExifToolValueStruct exifToolValueStruct, categoryIterator.value()) //for each property
+                    {
+                        propertyTreeView->exiftoolMap[categoryIterator.key()][exifToolValueStruct.propertyName][mediaItem->fileInfo.absoluteFilePath()] = exifToolValueStruct;
+                    }
+                }
+            }
         }
-        subTabWidget->setCurrentIndex(0);
+
+        propertyTreeView->onloadProperties();
+
+        mainLayout->addWidget(propertyTreeView);
+
+        propertyViewerDialog->setWindowModality(Qt::NonModal);
+
+        propertyViewerDialog->show();
+
+    });
+
+    fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
+                                        "<p><i>Property manager for %2</i></p>"
+                                              ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName())); //not effective!
 
 
-//        if (data(logIndex).toString() != "")
+//    fileContextMenu->addAction(new QAction("Property editor",fileContextMenu));
+//    fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
+//    connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+//    {
+//        APropertyEditorDialog *propertyEditorDialog = new APropertyEditorDialog();
+
+//        QRect savedGeometry = QSettings().value("Geometry").toRect();
+//        savedGeometry.setX(savedGeometry.x() + savedGeometry.width() * .05);
+//        savedGeometry.setY(savedGeometry.y() + savedGeometry.height() * .05);
+//        savedGeometry.setWidth(savedGeometry.width() * .9);
+//        savedGeometry.setHeight(savedGeometry.height() * .9);
+//        propertyEditorDialog->setGeometry(savedGeometry);
+
+//    //    propertyEditorDialog->propertyItemModel = ui->propertyTreeView->propertyItemModel;
+
+////        connect(propertyEditorDialog, &APropertyEditorDialog::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia);
+
+////        connect(propertyEditorDialog, &APropertyEditorDialog::finished, this, &MainWindow::onPropertyEditorDialogFinished);
+
+////        connect(this, &MainWindow::propertiesLoaded, propertyEditorDialog, &APropertyEditorDialog::onPropertiesLoaded);
+
+////        propertyEditorDialog->setProperties(ui->propertyTreeView->propertyItemModel);
+
+//        foreach (QGraphicsItem *item, scene()->items())
 //        {
-//            QTextBrowser *textBrowser = new QTextBrowser(tabWidget);
-//            textBrowser->setWordWrapMode(QTextOption::NoWrap);
-//            textBrowser->setText(data(logIndex).toString());
-//            tabWidget->addTab(textBrowser, "Log");
+//            if (item->data(mediaTypeIndex).toString() == "MediaFile" && item->data(itemTypeIndex).toString() == "Base") // && item->data(itemTypeIndex).toString() == "Base"
+//            {
+//                AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
+
+//                propertyEditorDialog->exifToolMap[mediaItem->fileInfo.absoluteFilePath()] = mediaItem->exiftoolMap;
+//            }
 //        }
+//        propertyEditorDialog->onLoadProperties();
 
-        propertiesDialog->show();
+//        propertyEditorDialog->setWindowModality(Qt::NonModal);
 
-        fileContextMenu->actions().last()->setToolTip(tr("<p><b>Properties</b></p>"
-                                        "<p><i>Show properties for the currently selected folder</i></p>"
-                                              "<ul>"
-                                              "<li><b>Log</b>: Show the output of folder processes (e.g. load all items, export)</li>"
-                                              "</ul>"));
+//        propertyEditorDialog->show();
 
-    }  );
+//    });
+
+//    fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
+//                                        "<p><i>Property editor work in progress for %2</i></p>"
+//                                              ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName())); //not effective!
+
+
 
     QPointF map = view->mapToGlobal(QPoint(pos.x()+10, pos.y()));
     fileContextMenu->popup(QPoint(map.x(), map.y()));
 }
+

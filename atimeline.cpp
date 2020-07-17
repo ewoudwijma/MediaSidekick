@@ -64,7 +64,6 @@ ATimeline::ATimeline(QWidget *parent) : QWidget(parent)
     spacer->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
     toolbar->addWidget(spacer);
 
-    transitiontime = 0;
     transitiontimeLastGood = -1;
 
     QTimer::singleShot(0, this, [this]()->void
@@ -169,12 +168,12 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
     if (audioCountNrOfClips == 0)
         maxAudioDuration = 0;
     else
-        maxAudioDuration = audioOriginalDuration - transitiontime * (audioCountNrOfClips-1);
+        maxAudioDuration = audioOriginalDuration - QSettings().value("transitionTime").toInt() * (audioCountNrOfClips-1);
 
     if (videoCountNrOfClips == 0)
         maxVideoDuration = 0;
     else
-        maxVideoDuration = videoOriginalDuration - transitiontime * (videoCountNrOfClips-1);
+        maxVideoDuration = videoOriginalDuration - QSettings().value("transitionTime").toInt() * (videoCountNrOfClips-1);
 
     maxCombinedDuration = qMax(maxVideoDuration, maxAudioDuration);
 
@@ -222,7 +221,7 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
                 }
                 else
                 {
-                    inpoint = previousOut - transitiontime;
+                    inpoint = previousOut - QSettings().value("transitionTime").toInt();
                     outpoint = inpoint + clipduration;
                 }
 
@@ -264,7 +263,7 @@ void ATimeline::onClipsChangedToTimeline(QAbstractItemModel *itemModel)
     }
     else
     {
-        transitiontimeLastGood = transitiontime;
+        transitiontimeLastGood = QSettings().value("transitionTime").toInt();
     }
 
     m_scrubber->setScale(AGlobal().frames_to_msec(maxCombinedDuration));
@@ -295,11 +294,6 @@ void ATimeline::onVideoPositionChanged(int , int row, int relativeProgress)//pro
 
 void ATimeline::onTimelineWidgetsChanged(int p_transitiontime, QString transitionType, AClipsTableView *clipsTableView)
 {
-//    if (transitionType != "No transition")
-        transitiontime = p_transitiontime;
-//    else
-//        transitiontime = 0;
-
 //    qDebug()<<"ATimeline::onTimelineWidgetsChanged"<<p_transitiontime<<transitionType<<clipsTableView->model()->rowCount();
 
     onClipsChangedToTimeline(clipsTableView->clipsProxyModel);

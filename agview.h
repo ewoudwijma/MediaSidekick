@@ -20,7 +20,6 @@ static const int mediaWithIndex = 4;
 static const int mediaHeightIndex = 5;
 static const int mediaDurationIndex = 6;
 static const int ffMpegMetaIndex = 10;
-static const int exifToolMetaIndex = 11;
 static const int excludedInFilter = 12;
 static const int createDateIndex = 13;
 
@@ -76,6 +75,8 @@ public:
 
     QGraphicsItem *rootItem = nullptr;
 
+    bool isLoading = false;
+
 public slots:
     void onSetView();
     void onCreateClip();
@@ -97,9 +98,6 @@ private slots:
     void mouseMoveEvent(QMouseEvent *event);
 
     void onSelectionChanged();
-
-signals:
-    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
 };
 
 #endif // AGVIEW_H

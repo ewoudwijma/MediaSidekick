@@ -32,11 +32,6 @@ public slots:
 signals:
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
     void releaseMedia(QString folderName, QString fileName);
-    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
-
-    void loadProperties(QStandardItem *parentItem);
-    void loadClips(QStandardItem *parentItem);
-
 };
 
 #endif // AFILESTREEVIEW_H

@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     avformat_close_input(&fmt_ctx);
 #endif
 
-    qRegisterMetaType<AJobParams>("AJobParams"); //so signal/slots can use it (jobAddlog)
+//    qRegisterMetaType<AJobParams>("AJobParams"); //so signal/slots can use it (jobAddlog)
     qRegisterMetaType<QList<int>>("QList<int>");
     //otherwise: QObject::connect: Cannot queue arguments of type 'QPainterPath' (Make sure 'QPainterPath' is registered using qRegisterMetaType().)
 

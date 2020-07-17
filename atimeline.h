@@ -46,8 +46,6 @@ private:
 
     void setupActions(QWidget *widget);
 
-    int transitiontime;
-
 //    Qt::CheckState transitionChecked;
 
 public slots:

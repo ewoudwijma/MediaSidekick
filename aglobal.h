@@ -2,6 +2,7 @@
 #define AGLOBAL_H
 
 #include <QGeoCoordinate>
+#include <QMap>
 #include <QString>
 
 static const int orderBeforeLoadIndex = 0;
@@ -10,18 +11,13 @@ static const int orderAfterMovingIndex = 2;
 static const int changedIndex = 3;
 static const int folderIndex = 4;
 static const int fileIndex = 5;
-static const int fpsIndex = 6;
-static const int fileDurationIndex = 7;
-static const int imageWidthIndex = 8;
-static const int imageHeightIndex = 9;
-static const int channelsIndex = 10;
-static const int inIndex = 11;
-static const int outIndex = 12;
-static const int durationIndex = 13;
-static const int ratingIndex = 14;
-static const int alikeIndex = 15;
-static const int hintIndex = 16;
-static const int tagIndex = 17;
+static const int inIndex = 6;
+static const int outIndex = 7;
+static const int durationIndex = 8;
+static const int ratingIndex = 9;
+static const int alikeIndex = 10;
+static const int hintIndex = 11;
+static const int tagIndex = 12;
 
 static const int propertyIndex = 0;
 static const int minimumIndex = 1;
@@ -37,6 +33,15 @@ typedef struct {
     int counter;
     bool definitionGenerated;
 } FileStruct;
+
+typedef struct {
+    QString absoluteFilePath;
+    QString categoryName;
+    QString propertyName;
+    QString propertySortOrder;
+    QString value; //for mediaItems
+    QMap<QString, QString> fileValues; //for group of mediaItems
+} ExifToolValueStruct;
 
 class AGlobal
 {

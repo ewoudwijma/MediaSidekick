@@ -19,7 +19,7 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
 {
     clipsItemModel = new AClipsItemModel(this);
     QStringList labels;
-    labels << "OrderBL" << "OrderAL"<<"OrderAM"<<"Changed"<< "Path" << "File"<<"Fps"<<"FDur"<<"Width"<<"Height"<<"Channels"<<"In"<<"Out"<<"Duration"<<"Rating"<<"Alike"<<"Hint"<<"Tags";
+    labels << "OrderBL" << "OrderAL"<<"OrderAM"<<"Changed"<< "Path" << "File"<<"In"<<"Out"<<"Duration"<<"Rating"<<"Alike"<<"Hint"<<"Tags";
     clipsItemModel->setHorizontalHeaderLabels(labels);
 
     clipsProxyModel = new AClipsSortFilterProxyModel(this);
@@ -41,11 +41,6 @@ AClipsTableView::AClipsTableView(QWidget *parent) : QTableView(parent)
     setColumnWidth(orderAtLoadIndex, 1);
     setColumnWidth(orderAfterMovingIndex, 1);
     setColumnWidth(changedIndex, 1);
-    setColumnWidth(fpsIndex,int(columnWidth(fpsIndex) / 2));
-//    setColumnWidth(fileDurationIndex,int(columnWidth(fileDurationIndex) / 2));
-    setColumnWidth(imageWidthIndex,int(columnWidth(imageWidthIndex) / 2));
-    setColumnWidth(imageHeightIndex,int(columnWidth(imageHeightIndex) / 2));
-    setColumnWidth(channelsIndex,int(columnWidth(channelsIndex) / 2));
     setColumnWidth(ratingIndex,int(columnWidth(ratingIndex) / 1.5));
     setColumnWidth(alikeIndex,columnWidth(alikeIndex) / 2);
 
@@ -113,12 +108,12 @@ void AClipsTableView::onIndexClicked(QModelIndex index)
 
 void AClipsTableView::onIndexActivated(QModelIndex index)
 {
-    qDebug()<<"AClipsTableView::onIndexActivated"<<index.data();
+//    qDebug()<<"AClipsTableView::onIndexActivated"<<index.data();
 }
 
 void AClipsTableView::onSectionEntered(int logicalIndex)
 {
-    qDebug()<<"AClipsTableView::onSectionEntered"<<logicalIndex;
+//    qDebug()<<"AClipsTableView::onSectionEntered"<<logicalIndex;
 }
 
 void AClipsTableView::onSectionMoved(int , int , int ) //logicalIndex, oldVisualIndex, newVisualIndex
@@ -145,7 +140,21 @@ void AClipsTableView::onFolderSelected(QString folderName)
     selectedFolderName = folderName;
 //    qDebug()<<"AClipsTableView::onFolderSelected"<<selectedFolderName;
 
-    onLoadClips(nullptr);
+    if (checkSaveIfClipsChanged())
+    {
+        saveModels();
+    }
+
+    AGProcessAndThread *process = new AGProcessAndThread(this);
+    processes<<process;
+    process->command("Load clips", [=]()
+    {
+        loadModel(selectedFolderName);
+
+        emit folderSelectedItemModel(clipsItemModel);
+        emit folderSelectedProxyModel(model());
+    });
+    process->start();
 }
 
 void AClipsTableView::onFileIndexClicked(QModelIndex index, QStringList filePathList)
@@ -218,10 +227,6 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
         QString fileName = clipsItemModel->index(row, fileIndex).data().toString();
         QTime inTime = QTime::fromString(clipsItemModel->index(row,inIndex).data().toString(), "HH:mm:ss.zzz");
         QTime outTime = QTime::fromString(clipsItemModel->index(row,outIndex).data().toString(), "HH:mm:ss.zzz");
-        QTime fileDuration = QTime::fromString(clipsItemModel->index(row, fileDurationIndex).data().toString(), "HH:mm:ss.zzz");
-        QString imageWidth = clipsItemModel->index(row, imageWidthIndex).data().toString();
-        QString imageHeight = clipsItemModel->index(row, imageHeightIndex).data().toString();
-        QString audioChannels = clipsItemModel->index(row, channelsIndex).data().toString();
 
         //check overlapping, remove overlap from this clip if this is the case
         if (folderName == selectedFolderName && fileName == selectedFileName)
@@ -240,11 +245,11 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
                     newInTime = outTime.addMSecs( AGlobal().frames_to_msec(1) );
                 }
             }
-            if (newOutTime.msecsSinceStartOfDay() > fileDuration.msecsSinceStartOfDay())
-            {
-                newOutTime = fileDuration;
-                qDebug()<<"AClipsTableView::addClip adjust"<<newInTime<<newOutTime<<fileDuration;
-            }
+//            if (newOutTime.msecsSinceStartOfDay() > fileDuration.msecsSinceStartOfDay())
+//            {
+//                newOutTime = fileDuration;
+//                qDebug()<<"AClipsTableView::addClip adjust"<<newInTime<<newOutTime<<fileDuration;
+//            }
 
         }
 
@@ -329,32 +334,6 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
         items.append(new QStandardItem(QString::number(orderAFterMovingIndexx.data().toInt()-1)));
     }
 
-    QVariant  *frameratePointer = new QVariant();
-    emit getPropertyValue(selectedFolderName + selectedFileName, "VideoFrameRate", frameratePointer);
-
-    QVariant  *imageWidthPointer = new QVariant();
-    emit getPropertyValue(selectedFolderName + selectedFileName, "ImageWidth", imageWidthPointer);
-
-    QVariant  *imageHeightPointer = new QVariant();
-    emit getPropertyValue(selectedFolderName + selectedFileName, "ImageHeight", imageHeightPointer);
-
-    QVariant  *audioChannelsPointer = new QVariant();
-    emit getPropertyValue(selectedFolderName + selectedFileName, "AudioChannels", audioChannelsPointer);
-
-    QVariant *durationPointer = new QVariant();
-    emit getPropertyValue(selectedFolderName + selectedFileName, "Duration", durationPointer);
-    *durationPointer = durationPointer->toString().replace(" (approx)", "");
-    QTime fileDurationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
-    if (fileDurationTime == QTime())
-    {
-        QString durationString = durationPointer->toString();
-        durationString = durationString.left(durationString.length() - 2); //remove " s"
-        fileDurationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
-    }
-
-    if (fileDurationTime.msecsSinceStartOfDay() == 0)
-        fileDurationTime = QTime::fromMSecsSinceStartOfDay(24 * 60 * 60 * 1000 - 1);
-
     QStringList tagList;
     for (int i=0; i < tagFilter1Model->rowCount();i++)
     {
@@ -374,11 +353,6 @@ void AClipsTableView::addClip(int rating, bool alike, QAbstractItemModel *tagFil
     items.append(new QStandardItem("yes"));
     items.append(new QStandardItem(selectedFolderName));
     items.append(new QStandardItem(selectedFileName));
-    items.append(new QStandardItem(frameratePointer->toString()));
-    items.append(new QStandardItem(fileDurationTime.toString("HH:mm:ss.zzz")));
-    items.append(new QStandardItem(imageWidthPointer->toString()));
-    items.append(new QStandardItem(imageHeightPointer->toString()));
-    items.append(new QStandardItem(audioChannelsPointer->toString()));
     items.append(new QStandardItem(newInTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(newOutTime.toString("HH:mm:ss.zzz")));
     items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(AGlobal().msec_to_frames(newOutTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(newInTime.msecsSinceStartOfDay()) + 1)).toString("HH:mm:ss.zzz"))); //durationIndex
@@ -414,150 +388,6 @@ void AClipsTableView::onClipRightClickMenu(const QPoint &point)
 //    qDebug()<<"onClipRightClickMenu"<<point;
     if (index.isValid() )
         clipContextMenu->exec(viewport()->mapToGlobal(point));
-}
-
-void AClipsTableView::onLoadClips(QStandardItem *parentItem)
-{
-//    qDebug()<<"AClipsTableView::onloadClips";
-
-    if (checkSaveIfClipsChanged())
-    {
-        saveModels();
-    }
-
-    AJobParams jobParams;
-    jobParams.thisObject = this;
-    jobParams.parentItem = parentItem;
-    jobParams.folderName = selectedFolderName;
-    jobParams.fileName = "All";
-    jobParams.action = "Load clips";
-    jobParams.parameters["totalDuration"] = QString::number(1000);
-
-    jobTreeView->createJob(jobParams, [] (AJobParams jobParams)
-    {
-        AClipsTableView *clipsTableView = qobject_cast<AClipsTableView *>(jobParams.thisObject);
-//        qDebug()<<"AClipsTableView::onloadClips thread"<<jobParams.folderName;
-        clipsTableView->loadModel(jobParams.folderName);
-
-        emit clipsTableView->folderSelectedItemModel(clipsTableView->clipsItemModel);
-        emit clipsTableView->folderSelectedProxyModel(clipsTableView->model());
-
-        return QString();
-    }, nullptr);
-}
-
-void AClipsTableView::onTrimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget, QTime inTime, QTime outTime)
-{
-//    qDebug()<<"AExport::onTrimC"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage;
-    int duration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
-
-    QString sourceFolderFileName = folderNameSource + fileNameSource;
-    QString targetFolderFileName = folderNameTarget + fileNameTarget;
-
-#ifdef Q_OS_WIN
-    sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
-    targetFolderFileName = targetFolderFileName.replace("/", "\\");
-#endif
-
-    AJobParams jobParams;
-    jobParams.parentItem = parentItem;
-    jobParams.folderName = folderNameSource;
-    jobParams.fileName = fileNameTarget;
-    jobParams.action = "Trim";
-    jobParams.command = "ffmpeg -i \"" + sourceFolderFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -vcodec copy -acodec copy -y \"" + targetFolderFileName + "\""; // -map_metadata 0
-    jobParams.parameters["exportFolderFileName"] = targetFolderFileName;
-    jobParams.parameters["totalDuration"] = QString::number(duration);
-
-    currentItem = jobTreeView->createJob(jobParams, nullptr, nullptr);
-}
-
-void AClipsTableView::onPropertiesLoaded()
-{
-    bool clipsFramerateExistsInClips = false;
-
-    //set duration and fps to each clip
-    QMap<int, QString> fpsMap;
-    for (int row=0; row<clipsItemModel->rowCount();row++)
-    {
-        QVariant *frameratePointer = new QVariant();
-        emit getPropertyValue(clipsItemModel->index(row, folderIndex).data().toString() + clipsItemModel->index(row, fileIndex).data().toString(), "VideoFrameRate", frameratePointer);
-//        qDebug()<<"AClipsTableView::onPropertiesLoaded"<<clipsItemModel->index(row, folderIndex).data().toString() + clipsItemModel->index(row, fileIndex).data().toString()<<*frameratePointer<<(*frameratePointer).toDouble();
-        clipsItemModel->setData(clipsItemModel->index(row, fpsIndex), *frameratePointer);
-
-        if (qRound(frameratePointer->toDouble()) == QSettings().value("frameRate").toInt())
-            clipsFramerateExistsInClips = true;
-        else
-        {
-            int fpsSuggested = -1;
-            fpsSuggested = qRound(frameratePointer->toDouble());
-            fpsMap[fpsSuggested] = QString::number(fpsSuggested);
-        }
-
-        QVariant *durationPointer = new QVariant();
-        emit getPropertyValue(clipsItemModel->index(row, folderIndex).data().toString() + clipsItemModel->index(row, fileIndex).data().toString(), "Duration", durationPointer);
-        *durationPointer = durationPointer->toString().replace(" (approx)", "");
-        QTime fileDurationTime = QTime::fromString(durationPointer->toString(),"h:mm:ss");
-        if (fileDurationTime == QTime())
-        {
-            QString durationString = durationPointer->toString();
-            durationString = durationString.left(durationString.length() - 2); //remove " s"
-            fileDurationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
-        }
-
-        if (fileDurationTime.msecsSinceStartOfDay() == 0)
-            fileDurationTime = QTime::fromMSecsSinceStartOfDay(24 * 60 * 60 * 1000 - 1);
-
-        clipsItemModel->setData(clipsItemModel->index(row, fileDurationIndex), fileDurationTime.toString("HH:mm:ss.zzz"));
-
-        QVariant *imageWidthPointer = new QVariant();
-        emit getPropertyValue(clipsItemModel->index(row, folderIndex).data().toString() + clipsItemModel->index(row, fileIndex).data().toString(), "ImageWidth", imageWidthPointer);
-        clipsItemModel->setData(clipsItemModel->index(row, imageWidthIndex), imageWidthPointer->toString());
-
-        QVariant *imageHeightPointer = new QVariant();
-        emit getPropertyValue(clipsItemModel->index(row, folderIndex).data().toString() + clipsItemModel->index(row, fileIndex).data().toString(), "ImageHeight", imageHeightPointer);
-        clipsItemModel->setData(clipsItemModel->index(row, imageHeightIndex), imageHeightPointer->toString());
-
-        QVariant *channelsPointer = new QVariant();
-        emit getPropertyValue(clipsItemModel->index(row, folderIndex).data().toString() + clipsItemModel->index(row, fileIndex).data().toString(), "AudioChannels", channelsPointer);
-        clipsItemModel->setData(clipsItemModel->index(row, channelsIndex), channelsPointer->toString());
-    }
-
-//    qDebug()<<"AClipsTableView::onPropertiesLoaded"<<fpsSuggested<<clipsFramerateExistsInClips;
-
-//    if (!clipsFramerateExistsInClips && fpsMap.count() > 0 && false)
-//    {
-//        QMessageBox messageBox;
-////        messageBox.setParent(this); //then messagebox disappears
-
-//        QMapIterator<int, QString> fpsIterator(fpsMap);
-//        QList<int> fpsList;
-//        while (fpsIterator.hasNext()) //all files in reverse order
-//        {
-//            fpsIterator.next();
-//            fpsList<<fpsIterator.key();
-//            messageBox.addButton(fpsIterator.value(), QMessageBox::ActionRole);
-//        }
-
-//        messageBox.addButton(QMessageBox::No);
-
-//        messageBox.setWindowTitle( "Loading clips");
-//        messageBox.setText("There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to one of below founded frame rates ?");
-//        int result = messageBox.exec();
-
-////                   QMessageBox::StandardButton reply;
-
-////         reply = QMessageBox::question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
-////                                       QMessageBox::Yes|QMessageBox::No);
-////         reply = messageBox.question(this, "Loading clips", "There are no clips with the frame rate used (" + QSettings().value("frameRate").toString() + "). Do you want to update to " + QString::number(fpsSuggested) + " ?",
-////                             QMessageBox::Yes|QMessageBox::No);
-
-//        if (result != QMessageBox::No)
-//        {
-//            emit frameRateChanged(fpsList[result]);
-////            QSettings().setValue("frameRate",fpsSuggested);
-//        }
-//    }
-    emit propertiesLoaded();
 }
 
 void AClipsTableView::onClipDelete()
@@ -891,11 +721,6 @@ QStandardItemModel* AClipsTableView::read(QString folderName, QString fileName)
             items.append(new QStandardItem("no"));
             items.append(new QStandardItem(folderName));
             items.append(new QStandardItem(fileName));
-            items.append(new QStandardItem("")); //fps
-            items.append(new QStandardItem("")); //fdur
-            items.append(new QStandardItem("")); //imageWidth
-            items.append(new QStandardItem("")); //imageHeight
-            items.append(new QStandardItem("")); //audioChannels
             items.append(new QStandardItem(inTime.toString("HH:mm:ss.zzz")));
             items.append(new QStandardItem(outTime.toString("HH:mm:ss.zzz")));
             items.append(new QStandardItem(QTime::fromMSecsSinceStartOfDay(duration).toString("HH:mm:ss.zzz"))); //durationIndex
@@ -993,6 +818,7 @@ void AClipsTableView::scanDir(QDir dir, QStringList extensionList)
 
 void AClipsTableView::loadModel(QString folderName)
 {
+//    qDebug()<<metaObject()->className() + tr("::") + __func__<<folderName<<"start";
     clipCounter = 1;
     fileCounter = 0;
     originalDuration = 0;
@@ -1011,6 +837,8 @@ void AClipsTableView::loadModel(QString folderName)
         audioFilters << "*." + extension;
 
     scanDir(QDir(folderName), audioFilters);
+
+//    qDebug()<<metaObject()->className()<<__func__<<folderName<<"done";
 }
 
 bool AClipsTableView::checkSaveIfClipsChanged()

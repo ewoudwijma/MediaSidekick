@@ -5,12 +5,17 @@
 #include <QThread>
 #include <QObject>
 #include <QTime>
+#include <QWinTaskbarButton>
 
 class AGProcessAndThread: public QObject
 {
     Q_OBJECT
 
     QString commandString;
+
+#ifdef Q_OS_WIN
+    QWinTaskbarButton *taskbarButton;
+#endif
 
 public:
     AGProcessAndThread(QObject *parent = nullptr);
@@ -31,11 +36,13 @@ public:
 
     bool processStopped = false;
 
+    QTime totalTime;
+
 public slots:
-    void onProcessOutput(QString event, QString outputString);
+    void addProcessLog(QString event, QString outputString);
 
 signals:
-    void processOutput(QTime time, QString event, QString outputString);
+    void processOutput(QTime time, QTime totalTime, QString event, QString outputString);
     void stopThreadProcess();
 
 };

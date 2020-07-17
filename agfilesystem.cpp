@@ -42,7 +42,7 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
     if (processStopped || process->processStopped)
     {
         QString output = "loadFilesAndFolders processStopped for " + dir.absolutePath();
-        process->onProcessOutput("output", output);
+        process->addProcessLog("output", output);
         qDebug()<<output<<dir.absolutePath()<<processStopped<<process->processStopped;
         return;
     }
@@ -56,7 +56,7 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
 
 //    qDebug()<<"AGFileSystem::loadFilesAndFolders"<<(QThread::currentThread() == qApp->thread()?"Main":"Thread")<<folderName + fileInfo.fileName();
 
-    process->onProcessOutput("output", "loadFilesAndFolders: " + folderName + fileInfo.fileName());
+    process->addProcessLog("output", "loadFilesAndFolders: " + folderName + fileInfo.fileName());
 
     bool result = fileSystemWatcher->addPath(folderName + fileInfo.fileName());
 //    if (result)
@@ -75,7 +75,7 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
         emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Project"));
         emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Parking"));
 
-        emit addItem("Video", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
+        emit addItem("Video", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline")); //do not add filegroup in fileinfo as it is not a real folder
         emit addItem("Image", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
         emit addItem("Audio", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
         emit addItem("Export", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
@@ -108,7 +108,7 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
                 if (processStopped || process->processStopped)
                 {
                     QString output = "LoadItems processStopped for " + dir.absolutePath() + "/" + dir.entryList().at(i);
-                    process->onProcessOutput("output", output);
+                    process->addProcessLog("output", output);
                     qDebug()<<output<<fileInfo.fileName()<<processStopped<<process->processStopped;
                     return;
                 }
@@ -124,14 +124,14 @@ void AGFileSystem::loadItem(AGProcessAndThread *process, QFileInfo fileInfo, boo
     if (processStopped || process->processStopped)
     {
         QString output = "loadItem processStopped for " + fileInfo.absoluteFilePath();
-        process->onProcessOutput("output", output);
+        process->addProcessLog("output", output);
         qDebug()<<output<<fileInfo.fileName()<<processStopped<<process->processStopped;
         return;
     }
     //thread
 //    qDebug()<<"AGFileSystem::loadItem"<<(QThread::currentThread() == qApp->thread()?"Main":"Thread")<<fileInfo.absoluteFilePath();
 
-    process->onProcessOutput("output", "loadItem: " + fileInfo.absoluteFilePath());
+    process->addProcessLog("output", "loadItem: " + fileInfo.absoluteFilePath());
 
     bool exportFileFound = false;
     foreach (QString exportMethod, AGlobal().exportMethods)
@@ -143,31 +143,31 @@ void AGFileSystem::loadItem(AGProcessAndThread *process, QFileInfo fileInfo, boo
         if (exportFileFound && AGlobal().exportExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
             emit addItem("Export", "MediaFile", fileInfo);
-            loadClips(process, "Export", fileInfo);
+            loadClips(process, fileInfo);
         }
         else if (AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
             emit addItem("Video", "MediaFile", fileInfo);
-            loadClips(process, "Video", fileInfo);
+            loadClips(process, fileInfo);
         }
         else if (AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
             emit addItem("Audio", "MediaFile", fileInfo);
-            loadClips(process, "Audio", fileInfo);
+            loadClips(process, fileInfo);
         }
         else if (AGlobal().imageExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
             emit addItem("Image", "MediaFile", fileInfo);
-            loadClips(process, "Image", fileInfo);
+            loadClips(process, fileInfo);
         }
         else if (AGlobal().projectExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
             emit addItem("Project", "MediaFile", fileInfo);
-//            loadClips(process, "Project", folderName, fileName); //no clips for project files
+//            loadClips(process, fileInfo); //no clips for project files
         }
         else if (fileInfo.suffix().toLower() == "srt")
         {
-            loadClips(process, "Project", fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
+            loadClips(process, fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
         }
 
         //else  stuff which is outside Media Sidekick
@@ -177,12 +177,12 @@ void AGFileSystem::loadItem(AGProcessAndThread *process, QFileInfo fileInfo, boo
     }
 }
 
-void AGFileSystem::loadClips(AGProcessAndThread *process, QString parentName, QFileInfo fileInfo)
+void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
 {
     if (processStopped || process->processStopped)
     {
         QString output = "loadClips processStopped for " + fileInfo.absoluteFilePath();
-        process->onProcessOutput("output", output);
+        process->addProcessLog("output", output);
         qDebug()<<output<<fileInfo.fileName()<<processStopped<<process->processStopped;
         return;
     }
@@ -318,7 +318,7 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QString parentName, QF
 
             int clipDuration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
-            emit addItem(parentName, "Clip", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
+            emit addItem("Timeline", "Clip", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
 
             if (true)
             {
@@ -384,7 +384,7 @@ void AGFileSystem::onFileChanged(const QString &path)
                 processes<<process;
                 process->command("Load clips", [=]()
                 {
-                    loadClips(process, "Project", fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
+                    loadClips(process, fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
                 });
                 process->start();
             }

@@ -5,8 +5,13 @@
 #include "agfolderrectitem.h"
 #include "agview.h"
 #include "agviewrectitem.h"
+#include "agprocessthread.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMediaPlayer>
+
+#include "aglobal.h"
 
 class AGView;
 class AGMediaFileRectItem;
@@ -27,15 +32,15 @@ public:
     AGMediaFileRectItem(QGraphicsItem *parent = nullptr, QFileInfo fileInfo = QFileInfo(), int duration = 0, qreal mediaWidth = 0);
     ~AGMediaFileRectItem();
 
-    AGViewRectItem *folderItem = nullptr;
+    AGViewRectItem *groupItem = nullptr;
 
     QGraphicsVideoItem *playerItem = nullptr;
     QMediaPlayer *m_player = nullptr;
 
-    QGraphicsTextItem *subLogItem = nullptr;
-    QGraphicsRectItem *progressRectItem = nullptr;
-
     QGraphicsRectItem *durationLine = nullptr;
+
+    QMap<QString, QMap<QString, ExifToolValueStruct>> exiftoolMap;
+    QMap<QString, ExifToolValueStruct> exiftoolValueMap;
 
 public slots:
     void onItemRightClicked(AGView *view, QPoint pos);
@@ -49,15 +54,14 @@ public slots:
     void onMute(QMediaPlayer *m_player);
     void onSetSourceVideoVolume(QMediaPlayer *m_player, int volume);
     void onSetPlaybackRate(QMediaPlayer *m_player, qreal rate);
-    void onProcessOutput(QTime time, QString event, QString outputString);
+    void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);
 
     void onMediaFileChanged();
 
 signals:
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
     void trimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
-    void exportClips(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
-    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
+//    void exportClips(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
     void mediaLoaded(QFileInfo fileInfo, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
 
 private slots:

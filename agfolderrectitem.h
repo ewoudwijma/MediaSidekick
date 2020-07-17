@@ -12,6 +12,9 @@ class AGFolderRectItem: public AGViewRectItem
 public:
     AGFolderRectItem(QGraphicsItem *parent = nullptr, QFileInfo fileInfo = QFileInfo());
     void onItemRightClicked(QGraphicsView *view, QPoint pos);
+
+    QString transitionValueChangedBy;
+
 };
 
 #endif // AGFOLDERRECTITEM_H

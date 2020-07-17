@@ -13,7 +13,7 @@ class AGFileSystem: public QObject
     Q_OBJECT
 
     void recursiveFirstFile(QModelIndex parentIndex);
-    void loadClips(AGProcessAndThread *process, QString parentName, QFileInfo fileInfo);
+    void loadClips(AGProcessAndThread *process, QFileInfo fileInfo);
 
     void loadItem(AGProcessAndThread *process, QFileInfo fileInfo, bool isNewFile);
 

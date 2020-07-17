@@ -73,6 +73,7 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
                                      "<ul>"
                                         "<li>Only files applying to the <u>filter</u> are shown</li>"
                                         "<li>Move over the column headers to see <u>column tooltips</u></li>"
+                                        "<li><b>right click</b>: show cell contents in separate window</li>"
                                         "<li><u>Rows</u></li>"
                                         "<ul>"
                                         "<li><u>General, Location, Camera and Labels</u>: Can be <u>updated</u>. Use Minimum, Delta and Maximum to update all the selected file or edit each file separately (press the update button to perform the update)</li>"
@@ -92,6 +93,27 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
                                         "</ul>"
                                         "</ul>"
                                      ));
+
+    ui->propertyTreeView->propertyItemModel->horizontalHeaderItem(minimumIndex)->setToolTip(tr("<p><b>Minimum, delta and max</b></p>"
+                                                                                               "<p><i>Update property of multiple files at once</i></p>"
+                                                                                               "<ul>"
+                                                                                                  "<li>Only files applying to the <u>filter</u> are updated</li>"
+                                                                                               "<li>Types</li>"
+                                                                                               "<ul>"
+                                                                                               "<li><u>Range</u> from Minimum via Delta to Maximum (CreateDate and GeoCoordinate)</li>"
+                                                                                               "<ul>"
+                                                                                                   "<li><u>Minimum</u>: value of first file</li>"
+                                                                                                   "<li><u>Delta</u>: increase value with delta for subsequent files</li>"
+                                                                                                   "<li><u>Maximum</u>: value of last file</li>"
+                                                                                               "</ul>"
+                                                                                               "<li><u>Drop down</u> (Make, Model and Artist): Shows all values found in selected files and choose one to update all the selected files with</li>"
+                                                                                               "<li><u>Multiple values</u> (Keywords): Shows all values found in selected files. Edit Minumum value (seperate value by semicolon (;)) to update all selected files with new values</li>"
+                                                                                               "<li><u>Stars</u> (Rating): Shows the Minumum and Maximum of all stars found in selected files. Change stars to update all selected files with new stars</li>"
+                                                                                               "</ul>"
+                                                                                               "</ul>"
+                                                                                               ));
+    ui->propertyTreeView->propertyItemModel->horizontalHeaderItem(deltaIndex)->setToolTip(ui->propertyTreeView->propertyItemModel->horizontalHeaderItem(minimumIndex)->toolTip());
+    ui->propertyTreeView->propertyItemModel->horizontalHeaderItem(maximumIndex)->setToolTip(ui->propertyTreeView->propertyItemModel->horizontalHeaderItem(minimumIndex)->toolTip());
 
     ui->updateButton->setToolTip(tr("<p><b>%1</b></p>"
                                     "<p><i>Write properties to files</i></p>"
@@ -128,6 +150,10 @@ APropertyEditorDialog::APropertyEditorDialog(QWidget *parent) :
     connect(ui->propertyTreeView, &APropertyTreeView::redrawMap, this, &APropertyEditorDialog::onRedrawMap);
 
     connect(ui->geocodingWidget, &AGeocoding::finished, this, &APropertyEditorDialog::onGeoCodingFinished);
+
+    connect(this, &APropertyEditorDialog::loadProperties, ui->propertyTreeView, &APropertyTreeView::onloadProperties);
+
+//    connect(ui->propertyTreeView, &APropertyTreeView::mousePressEvent, this, &APropertyEditorDialog::propertyTreeMousePressEvent);
 
     QTimer::singleShot(0, this, [this]()->void
     {
@@ -183,13 +209,15 @@ bool APropertyEditorDialog::checkExit()
     return exitYes;
 }
 
-void APropertyEditorDialog::setProperties(QStandardItemModel *itemModel)
+void APropertyEditorDialog::setProperties(QStandardItemModel *itemModel, QStringList filesMap)
 {
 //    qDebug()<<"APropertyEditorDialog::setProperties"<<itemModel->rowCount();
 
     ui->propertyTreeView->onSuggestedNameFiltersClicked(ui->locationCheckBox, ui->cameraCheckBox, ui->artistCheckBox);
 
     ui->propertyTreeView->initModel(itemModel);
+
+    ui->propertyTreeView->filesMap = filesMap;
 
     onPropertiesLoaded();
 }
@@ -263,7 +291,7 @@ void APropertyEditorDialog::onRedrawMap()
     {
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
-            QString folderFileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
+            QString folderFileName = ui->propertyTreeView->filesMap[col - firstFileColumnIndex];
 
             QVariant *coordinate = new QVariant();
             ui->propertyTreeView->onGetPropertyValue(folderFileName, "GeoCoordinate", coordinate);
@@ -284,7 +312,6 @@ void APropertyEditorDialog::on_updateButton_clicked()
     ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
 
     onRedrawMap();
-    ui->propertyTreeView->jobTreeView = jobTreeView;
     ui->propertyTreeView->saveChanges(ui->updateProgressBar);
 //    onPropertiesLoaded();
 }
@@ -293,7 +320,7 @@ void APropertyEditorDialog::onGeoCodingFinished(QGeoCoordinate geoCoordinate)
 {
     QObject *target = qobject_cast<QObject *>(ui->mapQuickWidget->rootObject());
 
-//    qDebug()<<"APropertyEditorDialog::onGeoCodingFinished"<<geoCoordinate;
+    qDebug()<<"APropertyEditorDialog::onGeoCodingFinished"<<geoCoordinate;
     ui->propertyTreeView->onSetPropertyValue("Minimum", "GeoCoordinate", QString::number(geoCoordinate.latitude()) + ";" + QString::number(geoCoordinate.longitude()) + ";" + QString::number(geoCoordinate.altitude()));
     QMetaObject::invokeMethod(target, "center", Qt::AutoConnection, Q_ARG(QVariant, geoCoordinate.latitude()), Q_ARG(QVariant, geoCoordinate.longitude()));
     onRedrawMap();
@@ -309,7 +336,7 @@ void APropertyEditorDialog::on_renameButton_clicked()
     {
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
-            QString folderFileName =  ui->propertyTreeView->propertyProxyModel->headerData(col, Qt::Horizontal).toString();
+            QString folderFileName = ui->propertyTreeView->filesMap[col - firstFileColumnIndex];
             QString fileNameLow = folderFileName.toLower();
             int lastIndexOf = fileNameLow.lastIndexOf(".");
             QString extension = fileNameLow.mid(lastIndexOf + 1);
@@ -377,9 +404,9 @@ void APropertyEditorDialog::on_renameButton_clicked()
                  ui->propertyTreeView->onSetPropertyValue(folderFileNameList[i], "SuggestedName", QBrush(QColor(34,139,34, 50)), Qt::BackgroundRole);
 
              }
-             emit loadClips(nullptr);
+
              ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
-             emit loadProperties(nullptr);
+             emit loadProperties();
          }
     }
     else
@@ -489,7 +516,19 @@ void APropertyEditorDialog::checkAndMatchPicasa()
 void APropertyEditorDialog::on_refreshButton_clicked()
 {
     ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
-    emit loadProperties(nullptr);
+    emit loadProperties();
+    ui->updateProgressBar->setValue(0);
+    ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
+
+//    ui->propertyTreeView->isLoading = false;
+}
+
+void APropertyEditorDialog::onLoadProperties()
+{
+    ui->propertyTreeView->exiftoolMap = exifToolMap;
+
+    ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
+    emit loadProperties();
     ui->updateProgressBar->setValue(0);
     ui->updateProgressBar->setStyleSheet("QProgressBar::chunk {background: " + palette().highlight().color().name() + "}");
 

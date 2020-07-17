@@ -10,6 +10,7 @@
 #include <QKeyEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QFileInfo>
+#include <QGraphicsView>
 
 #include <QMenu>
 
@@ -40,6 +41,14 @@ public:
 
     QList<AGProcessAndThread *> processes;
 
+    QList<QGraphicsItem *> clips;
+
+    QGraphicsTextItem *subLogItem = nullptr;
+
+    QGraphicsRectItem *progressRectItem = nullptr;
+
+    void onItemRightClicked(QGraphicsView *view, QPoint pos);
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
@@ -56,6 +65,7 @@ signals:
 private slots:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);
 };
 
 

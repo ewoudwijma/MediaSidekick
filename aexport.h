@@ -1,88 +1,84 @@
-#ifndef AEXPORT_h
-#define AEXPORT_h
+#ifndef MEXPORTDIALOG_H
+#define MEXPORTDIALOG_H
 
-#include "aclipssortfilterproxymodel.h"
-#include "mainwindow.h"
-
+#include "agprocessthread.h"
+#include "agviewrectitem.h"
 #include "aglobal.h"
 
-#include <QTextStream>
-#include <QWidget>
-#include <QXmlStreamWriter>
+#include <QAbstractButton>
+#include <QDialog>
+#include <QGraphicsScene>
 
-#include "aspinnerlabel.h"
+namespace Ui {
+class MExportDialog;
+}
 
-#include <QPushButton>
-#include <QSlider>
-#include <QThread>
-
-class AExport: public QWidget
+class MExportDialog : public QDialog
 {
     Q_OBJECT
+
+    QString transitionValueChangedBy;
+    QList<AGViewRectItem *> timelineGroupList;
+    QString fileNameWithoutExtension;
+
 public:
-    explicit AExport(QWidget *parent = nullptr);
+    explicit MExportDialog(QWidget *parent = nullptr, AGViewRectItem *rootItem = nullptr);
+    ~MExportDialog();
 
-    void exportClips(QAbstractItemModel *ptimelineModel, QString ptarget, QString ptargetSize, QString pframeRate, int ptransitionTimeFrames, QSlider *exportVideoAudioSlider, QString pwatermarkFileName, QComboBox *clipsFramerateComboBox, QComboBox *clipsSizeComboBox);
+    QList<AGProcessAndThread *> *processes;
 
-    AJobTreeView *jobTreeView;
+    AGViewRectItem *rootItem;
+
+private slots:
+    void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);
+    void on_exportVideoAudioSlider_valueChanged(int value);
+
+    void on_exportSizeComboBox_currentTextChanged(const QString &arg1);
+
+    void on_exportFramerateComboBox_currentTextChanged(const QString &arg1);
+
+    void on_clipsFramerateComboBox_currentTextChanged(const QString &arg1);
+
+    void on_exportButton_clicked();
+
+    void on_watermarkButton_clicked();
+
+    void on_exportTargetComboBox_currentTextChanged(const QString &arg1);
+
+    void on_transitionTimeSpinBox_valueChanged(int arg1);
+
+    void on_transitionDial_valueChanged(int value);
+
+    void on_transitionDial_sliderMoved(int position);
+
+    void on_transitionComboBox_currentTextChanged(const QString &arg1);
 
 private:
+    Ui::MExportDialog *ui;
+    void watermarkFileNameChanged(QString newFileName);
+
+    void muxVideoAndAudio();
+    void losslessVideoAndAudio();
+    void encodeVideoClips();
+
+    int exportWidth;
+    int exportHeight;
+    int exportFramerate;
+    QString exportSizeShortName;
+    void loadSettings();
+    void changeUIProperties();
+    void allTooltips();
+    void exportShotcut();
+    void exportPremiere();
+
     QTextStream stream;
 
-    void shotcutTransitionTractor(QXmlStreamWriter *stream, int transitionTime);
     void s(QString y, QString arg1 = "", QString arg2 ="", QString arg3="", QString arg4="");
-
-    ASpinnerLabel *spinnerLabel;
-
-    QStandardItem *encodeVideoClips(QStandardItem *parentItem);
-
-    QMap<int,int> clipsMap;
-    QMap<int,int> videoClipsMap;
-    QMap<int,int> audioClipsMap;
-    QAbstractItemModel *timelineModel;
-    int transitionTimeFrames;
-    QString selectedFolderName;
-    QString recycleFolderName;
-//    QMap<QString, FileStruct> filesMap;
-    QMap<QString, FileStruct> filesMap;
-    QMap<QString, FileStruct> videoFilesMap;
-    QMap<QString, FileStruct> audioFilesMap;
-    QString watermarkFileName;
-    int exportVideoAudioValue;
-    QString frameRate;
-    QString fileNameWithoutExtension;
-    QString videoFileExtension;
-    QString audioFileExtension;
-    QString videoWidth;
-    QString videoHeight;
-    QString target;
-
-    QStandardItem *muxVideoAndAudio(QStandardItem *parentItem);
-    QStandardItem *losslessVideoAndAudio(QStandardItem *parentItem);
-
-    void addPremiereTrack(QString mediaType, QMap<int,int> clipsMap, QMap<QString, FileStruct> filesMap);
+    void addPremiereClipitem(QString clipId, QFileInfo fileInfo, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels, QString imageWidth, QString imageHeight);
     void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
-    void addPremiereClipitem(QString clipId, QString folderName, QString fileName, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels, QString imageWidth, QString imageHeight);
-
-    int maxVideoDuration;
-    int maxAudioDuration;
-    int maxCombinedDurationInFrames;
-    void startWorkInAThread();
-    void exportShotcut(AJobParams jobParams);
-    void exportPremiere(AJobParams jobParams);
+    void addPremiereTrack(QString mediaType, AGViewRectItem *timelineItem, QMap<QString, FileStruct> filesMap);
 signals:
-    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
-
-    void loadClips(QStandardItem *parentItem);
-    void loadProperties(QStandardItem *parentItem);
-
-    void exportCompleted(QString error);
-
-    void jobAddLog(AJobParams jobParams, QString logMessage);
-    void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
-    void trimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget, QTime inTime, QTime outTime);
-    void releaseMedia(QString folderName, QString fileName);
-
+    void processOutput(QTime time, QTime totalTime, QString event, QString outputString);
 };
 
-#endif // AEXPORT_h
+#endif // MEXPORTDIALOG_H

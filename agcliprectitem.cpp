@@ -17,6 +17,9 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
     this->duration = duration;
 
     this->mediaItem = mediaItem;
+    this->timelineGroupItem = (AGViewRectItem *)mediaItem->focusProxy()->focusProxy();
+    this->timelineGroupItem->clips<<this;
+//    qDebug()<<"AGClipRectItem addclip"<<this->timelineGroupItem->fileInfo.fileName()<<this->timelineGroupItem->clips.count();
     setFocusProxy(mediaItem);
 
     int alpha = 125;
@@ -84,7 +87,7 @@ void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
                 {
                     success = dir.mkpath(".");
                     if (success)
-                        process->onProcessOutput("output", tr("%1 created").arg(recycleFolder));
+                        process->addProcessLog("output", tr("%1 created").arg(recycleFolder));
                 }
 
                 if (success)
@@ -100,7 +103,7 @@ void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
                             recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                             success = file->rename(recycleFolder + srtFileName);
                             if (success)
-                                process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                                process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
                         }
 
                         //txt file
@@ -113,18 +116,18 @@ void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
                                 recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                                 success = file->rename(recycleFolder + srtFileName);
                                 if (success)
-                                    process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                                    process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
                             }
                         }
                         else
-                             process->onProcessOutput("error", QString("-3, could not rename to " + recycleFolder + srtFileName));
+                             process->addProcessLog("error", QString("-3, could not rename to " + recycleFolder + srtFileName));
                     }
                     else
-                         process->onProcessOutput("error", QString("-2, could not rename to " + recycleFolder + fileInfo.fileName()));
+                         process->addProcessLog("error", QString("-2, could not rename to " + recycleFolder + fileInfo.fileName()));
 
                }
                else
-                  process->onProcessOutput("error", QString("-1, could not create folder " + recycleFolder));
+                  process->addProcessLog("error", QString("-1, could not create folder " + recycleFolder));
 
             });
             process->start();

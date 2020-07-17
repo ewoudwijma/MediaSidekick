@@ -1,12 +1,13 @@
 #ifndef PROPERTYEDITORDIALOG_H
 #define PROPERTYEDITORDIALOG_H
 
-#include "ajobtreeview.h"
 #include "aspinnerlabel.h"
 
 #include <QDialog>
 #include <QGeoCoordinate>
 #include <QStandardItemModel>
+
+#include "aglobal.h"
 
 namespace Ui {
 class propertyEditorDialog;
@@ -20,11 +21,12 @@ public:
     explicit APropertyEditorDialog(QWidget *parent = nullptr);
     ~APropertyEditorDialog();
 
-    void setProperties(QStandardItemModel *itemModel);
+    void setProperties(QStandardItemModel *itemModel, QStringList filesMap);
 
     void closeEvent(QCloseEvent *event);
 
-    AJobTreeView *jobTreeView;
+    QMap<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> exifToolMap;
+
 private:
     Ui::propertyEditorDialog *ui;
     ASpinnerLabel *spinnerLabel;
@@ -33,6 +35,8 @@ private:
     bool checkExit();
 public slots:
     void onPropertiesLoaded();
+
+    void onLoadProperties();
 
 private slots:
     void on_filterColumnsLineEdit_textChanged(const QString &arg1);
@@ -56,8 +60,7 @@ private slots:
 
 signals:
     void releaseMedia(QString folderName, QString fileName);
-    void loadClips(QStandardItem *parentItem);
-    void loadProperties(QStandardItem *parentItem);
+    void loadProperties();
 
 };
 

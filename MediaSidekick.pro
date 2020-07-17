@@ -60,8 +60,6 @@ SOURCES += \
         agview.cpp \
         agviewrectitem.cpp \
         ajobitemdelegate.cpp \
-        ajobthread.cpp \
-        ajobtreeview.cpp \
         apropertyeditordialog.cpp \
         apropertyitemdelegate.cpp \
         apropertysortfilterproxymodel.cpp \
@@ -74,6 +72,7 @@ SOURCES += \
         avideowidget.cpp \
         main.cpp \
         mainwindow.cpp \
+        mgrouprectitem.cpp \
         qedge.cpp \
         qgraphwidget.cpp \
         qnode.cpp \
@@ -104,8 +103,6 @@ HEADERS += \
         agview.h \
         agviewrectitem.h \
         ajobitemdelegate.h \
-        ajobthread.h \
-        ajobtreeview.h \
         apropertyeditordialog.h \
         apropertyitemdelegate.h \
         apropertysortfilterproxymodel.h \
@@ -117,6 +114,7 @@ HEADERS += \
         atimeline.h \
         avideowidget.h \
         mainwindow.h \
+        mgrouprectitem.h \
         qedge.h \
         qgraphwidget.h \
         qnode.h \
@@ -125,6 +123,7 @@ HEADERS += \
 
 FORMS += \
         mainwindow.ui \
+        mexportdialog.ui \
         propertyeditordialog.ui
 
 # Default rules for deployment.

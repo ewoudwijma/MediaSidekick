@@ -3,7 +3,7 @@
 
 #include "aclipsitemmodel.h"
 #include "aclipssortfilterproxymodel.h"
-#include "ajobtreeview.h"
+#include "agprocessthread.h"
 #include "astareditor.h"
 #include "stimespinbox.h"
 
@@ -17,6 +17,9 @@
 class AClipsTableView: public QTableView
 {
     Q_OBJECT
+
+    QList<AGProcessAndThread *> processes;
+
 public:
     AClipsTableView(QWidget *parent = nullptr);
     void addClip(int rating, bool alike, QAbstractItemModel *tagFilter1Model, QAbstractItemModel *tagFilter2Model);
@@ -33,8 +36,6 @@ public:
 
     void saveModels();
     int nrOfDeletedItems;
-
-    AJobTreeView *jobTreeView;
 
 private:
     QString selectedFolderName;
@@ -57,10 +58,7 @@ public slots:
     void onScrubberOutChanged(QString AV, int row, int out);
     void onVideoPositionChanged(int progress, int row, int relativeProgress);
     void onClipsFilterChanged(QComboBox *ratingFilterComboBox, QCheckBox *alikeCheckBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *fileOnlyCheckBox);
-    void onPropertiesLoaded();
     void onSectionMoved(int logicalIndex, int oldVisualIndex, int newVisualIndex);
-    void onLoadClips(QStandardItem *parentItem);
-    void onTrimC(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget, QTime inTime, QTime outTime);
 
 private slots:
     void onIndexClicked(QModelIndex index);
@@ -78,15 +76,11 @@ signals:
     void folderSelectedItemModel(QAbstractItemModel *itemModel);
     void folderSelectedProxyModel(QAbstractItemModel *itemModel);
     void fileIndexClicked(QModelIndex index, QStringList filePathList);
-    void getPropertyValue(QString folderFileName, QString key, QVariant *value);
-    void loadProperties(QStandardItem *parentItem);
     void setIn(int frames);
     void setOut(int frames);
     void frameRateChanged(int frameRate);
-    void propertiesLoaded();
     void showInStatusBar(QString message, int timeout);
     void releaseMedia(QString folderName, QString fileName);
-
 };
 
 #endif // s_H

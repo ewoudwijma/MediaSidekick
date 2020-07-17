@@ -20,6 +20,7 @@ public:
     QGraphicsItem *drawPoly();
 
     AGMediaFileRectItem *mediaItem;
+    AGViewRectItem *timelineGroupItem;
 };
 
 #endif // AGCLIPRECTITEM_H

@@ -17,6 +17,10 @@
 #include <QMediaService>
 #include <QMediaMetaData>
 #include <QTabWidget>
+#include <QGroupBox>
+#include <QFormLayout>
+#include <QLineEdit>
+#include <QJsonDocument>
 //#include <QAudioProbe>
 
 #include <QStyle>
@@ -32,7 +36,7 @@ AGMediaFileRectItem::AGMediaFileRectItem(QGraphicsItem *parent, QFileInfo fileIn
     this->duration = duration;
     this->mediaWidth = mediaWidth;
 
-    this->folderItem = (AGViewRectItem *)parent;
+    this->groupItem = (AGViewRectItem *)parent;
     setFocusProxy(parent);
 
 //    qDebug()<<"AGFolderRectItem::AGMediaFileRectItem" <<folderName<<fileName;
@@ -201,39 +205,215 @@ void AGMediaFileRectItem::onMediaFileChanged()
     if (QThread::currentThread() != qApp->thread())
         qDebug()<<"AGMediaFileRectItem::onMediaFileChanged thread problem"<<fileInfo.fileName();
 
-    AGProcessAndThread *process = new AGProcessAndThread(this);
-    process->command("Load Media " + fileInfo.fileName(), [=]()
+    if (AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive) || AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive) || AGlobal().imageExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
     {
-//        qDebug()<<"thread start"<<process->name<<qApp->thread()<<this->thread()<<QThread::currentThread();
 
-//        connect(process, &AGProcessAndThread::stopThreadProcess, this, &AGMediaFileRectItem::onStopThreadProcess);
-
-//        qDebug()<<"Loadmedia started"<<fileInfo.fileName();
-
-        loadMedia(process);
-    });
-
-    processes<<process;
-    connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-    connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QString event, QString outputString)
-    {
-        //this is executed in the created thread!
-
-        if (event == "finished")
+        AGProcessAndThread *process = new AGProcessAndThread(this);
+        process->command("Load Media " + fileInfo.fileName(), [=]()
         {
-//            qDebug()<<"Loadmedia finished"<<fileInfo.fileName();
-        }
-    });
+    //        qDebug()<<"thread start"<<process->name<<qApp->thread()<<this->thread()<<QThread::currentThread();
 
-    process->start();
+    //        connect(process, &AGProcessAndThread::stopThreadProcess, this, &AGMediaFileRectItem::onStopThreadProcess);
 
+    //        qDebug()<<"Loadmedia started"<<fileInfo.fileName();
+
+            loadMedia(process);
+        });
+
+        processes<<process;
+        connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
+        connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
+        {
+            //this is executed in the created thread!
+
+            if (event == "finished")
+            {
+    //            qDebug()<<process->name + " finished"<<fileInfo.fileName();
+            }
+        });
+
+        process->start();
+
+
+        AGProcessAndThread *process2 = new AGProcessAndThread(this);
+        process2->command("Load Exiftool " + fileInfo.fileName(), "exiftool -api largefilesupport=1 -s -c \"%02.6f\" \"" + fileInfo.absoluteFilePath() + "\"");
+
+        processes<<process2;
+        connect(process2, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
+        {
+
+            //this is executed in the created thread!
+
+            if (event == "finished")
+            {
+                foreach (QString keyValuePair, process2->log)
+                {
+                    QStringList keyValueList = keyValuePair.split(" : ");
+
+                    if (keyValueList.count() > 1)
+                    {
+                        QString propertyName = keyValueList[0].trimmed();
+                        QString valueString = keyValueList[1].trimmed();
+
+                        QString categoryName;
+
+                        QStringList toplevelPropertyNames;
+                        toplevelPropertyNames << "001 - General" << "002 - Video" << "003 - Audio" << "004 - Location" << "005 - Camera" << "006 - Labels" << "007 - Status" << "008 - Media" << "009 - File" << "010 - Date" << "011 - Artists" << "012 - Keywords" << "013 - Ratings"<< "099 - Other";
+
+                        if (propertyName == "CreateDate")//|| propertyName == "SuggestedName"
+                            categoryName = "001 - General";
+                        else if (propertyName == "Directory")
+                            categoryName = "007 - Status";
+                        else if ( propertyName == "GPSLatitude" || propertyName == "GPSLongitude" || propertyName == "GPSAltitude")
+                        {
+                            categoryName = "004 - Location";
+                            //change value for Geo data
+                            QStringList positiveValues = QStringList() << " m Above Sea Level" << " N" << " E";
+                            QStringList negativeValues = QStringList() << " m Below Sea Level" << " S" << " W";
+
+                            foreach (QString value, positiveValues)
+                                if (valueString.contains(value))
+                                    valueString = QString::number(valueString.left(valueString.length() - value.length()).toDouble());
+
+                            foreach (QString value, negativeValues)
+                                if (valueString.contains(value))
+                                    valueString = QString::number(-valueString.left(valueString.length() - value.length()).toDouble());
+
+                            //init if not done
+                            if (exiftoolValueMap["GeoCoordinate"].value == "")
+                                exiftoolValueMap["GeoCoordinate"].value = ";;";
+
+                            QStringList geoStringList = exiftoolValueMap["GeoCoordinate"].value.split(";");
+                            if (propertyName == "GPSLatitude")
+                                geoStringList[0] = valueString;
+                            else if (propertyName == "GPSLongitude")
+                                geoStringList[1] = valueString;
+                            else if (propertyName == "GPSAltitude")
+                                geoStringList[2] = valueString;
+
+    //                        valueMap["GeoCoordinate"][folderFileName] = geoStringList.join(";"); //sets the value
+
+                            propertyName = "GeoCoordinate";
+                            valueString = geoStringList.join(";");
+                        }
+                        else if ( propertyName == "Make" || propertyName == "Model" )
+                            categoryName = "005 - Camera";
+                        else if (propertyName == "Artist" || propertyName == "Title")
+                            categoryName = "006 - Labels";
+                        else if (propertyName == "Rating")
+                        {
+                            categoryName = "006 - Labels";
+                        }
+                        else if (propertyName == "Keywords")
+                        {
+                            categoryName = "006 - Labels";
+                            valueString = valueString.replace(",", ";");
+    //                        qDebug()<<"Keywords assignment"<<fileInfo.absoluteFilePath()<<categoryName<<propertyName<<valueString;
+    //                        valueString = exiftoolValueMap[propertyName].value.replace(",", ";"); //sets the value
+    //                        exiftoolValueMap[propertyName].value = valueString;
+                        }
+                        else if (propertyName == "RatingPercent" || propertyName == "SharedUserRating") //video
+                        {
+        //                        qDebug()<<"SharedUserRating"<<valueString;
+                            categoryName = "013 - Ratings";
+                            if (valueString.toInt() == 1 ) //== 1)
+                                valueString = "1";
+                            else if (valueString.toInt() ==25)// == 25)
+                                valueString = "2";
+                            else if (valueString.toInt() ==50)//== 50)
+                                valueString = "3";
+                            else if (valueString.toInt() ==75)// 75)
+                                valueString = "4";
+                            else if (valueString.toInt() ==99)//== 99)
+                                valueString = "5";
+                        }
+
+                        else if (propertyName.contains("Rating"))
+                            categoryName = "013 - Ratings";
+                        else if (propertyName.contains("Keyword") || propertyName == "Category" || propertyName == "Comment" || propertyName == "Subject")
+                            categoryName = "012 - Keywords";
+                        else if ( propertyName == "Director" || propertyName == "Producer" || propertyName == "Publisher" || propertyName == "Creator" || propertyName == "Writer" || propertyName.contains("Author")|| propertyName == "ContentDistributor")
+                            categoryName = "011 - Artists";
+                        else if (propertyName == "Duration")
+                        {
+                            categoryName = "008 - Media";
+                            valueString = valueString.replace(" (approx)", "");
+                            QTime fileDurationTime = QTime::fromString(valueString,"h:mm:ss");
+                            if (fileDurationTime == QTime())
+                            {
+                                QString durationString = valueString;
+                                durationString = durationString.left(durationString.length() - 2); //remove " s"
+                                fileDurationTime = QTime::fromMSecsSinceStartOfDay(int(durationString.toDouble() * 1000.0));
+                            }
+
+                            if (fileDurationTime.msecsSinceStartOfDay() == 0)
+                                fileDurationTime = QTime::fromMSecsSinceStartOfDay(24 * 60 * 60 * 1000 - 1);
+
+                            valueString = fileDurationTime.toString("HH:mm:ss.zzz");
+
+    //                        qDebug()<<"exiftool Duration"<<valueString;
+                        }
+                        else // if (!editMode)
+                        {
+                            if (propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "CompressorID" || propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "VideoFrameRate" || propertyName == "AvgBitrate" || propertyName == "BitDepth" )
+                                categoryName = "002 - Video";
+                            else if (propertyName.contains("Audio"))
+                                categoryName = "003 - Audio";
+                            else if (propertyName.contains("Duration") || propertyName.contains("Image") || propertyName.contains("Video") || propertyName.contains("Compressor") || propertyName == "TrackDuration" )
+                                categoryName = "008 - Media";
+                            else if (propertyName.contains("File") || propertyName.contains("Directory"))
+                                categoryName = "009 - File";
+                            else if (propertyName.contains("Date"))
+                                categoryName = "010 - Date";
+                            else
+                                categoryName = "099 - Other";
+                        }
+
+    //                    QString propertyKey = QString::number(exiftoolPropertyMap[categoryName].count()).rightJustified(3, '0') + " - " + propertyName;
+    //                    QString categoryKey = QString::number(exiftoolPropertyMap.count()).rightJustified(3, '0') + " - " + categoryName;
+
+                        ExifToolValueStruct exifToolValueStruct;
+                        exifToolValueStruct.absoluteFilePath = fileInfo.absoluteFilePath();
+                        exifToolValueStruct.categoryName = categoryName;
+                        exifToolValueStruct.propertyName = propertyName;
+                        exifToolValueStruct.propertySortOrder = QString::number(exiftoolMap[categoryName].count()).rightJustified(3, '0');
+                        exifToolValueStruct.value = valueString;
+
+                        exiftoolMap[categoryName][propertyName] = exifToolValueStruct;
+                        exiftoolValueMap[propertyName] = exifToolValueStruct;
+                    }
+                }
+
+    //            qDebug()<<process2->name + " finished"<<fileInfo.fileName();
+            }
+        });
+
+        process2->start();
+
+    }
 }
 
-void AGMediaFileRectItem::onProcessOutput(QTime time, QString event, QString outputString)
+void AGMediaFileRectItem::onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString)
 {
     AGProcessAndThread *processAndThread = (AGProcessAndThread *)sender();
 
-//    qDebug()<<"AGMediaFileRectItem::onProcessOutput sender "<<thread->log.join("\n");
+//    qDebug()<<"AGMediaFileRectItem::onProcessOutput sender "<<processAndThread->log.join("\n");
+
+    if (subLogItem == nullptr)
+    {
+        subLogItem = new QGraphicsTextItem(this);
+        subLogItem->setDefaultTextColor(Qt::white);
+
+//                setItemProperties(subLogItem, "MediaFile", "SubLog", folderName, fileName, data(mediaDurationIndex).toInt());
+        subLogItem->setData(itemTypeIndex, "SubLog");
+        subLogItem->setData(mediaTypeIndex, "MediaFile");
+
+        subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
+
+        subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height() - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
+
+        subLogItem->setTextWidth(boundingRect().width() * 0.8);
+    }
 
     if (subLogItem != nullptr)
     {
@@ -252,7 +432,12 @@ void AGMediaFileRectItem::onProcessOutput(QTime time, QString event, QString out
     {
     }
 
-    if (event == "finished" || event == "error")
+    if (event == "finished")
+    {
+        subLogItem->setPlainText("");
+    }
+
+    if (event == "error")
     {
     }
 }
@@ -265,24 +450,6 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
 #ifdef Q_OS_MAC
     commandControl = "⌘-";
 #endif
-
-    {
-        if (subLogItem == nullptr)
-        {
-            subLogItem = new QGraphicsTextItem(this);
-            subLogItem->setDefaultTextColor(Qt::white);
-
-//                setItemProperties(subLogItem, "MediaFile", "SubLog", folderName, fileName, data(mediaDurationIndex).toInt());
-            subLogItem->setData(itemTypeIndex, "SubLog");
-            subLogItem->setData(mediaTypeIndex, "MediaFile");
-
-            subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
-
-            subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height() - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
-
-            subLogItem->setTextWidth(boundingRect().width() * 0.8);
-        }
-    }
 
     if (m_player != nullptr)
     {
@@ -391,7 +558,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                 {
                     AGClipRectItem *clipItem = (AGClipRectItem *)item;
 
-                    qDebug()<<"Clip"<<clipItem->itemToString();
+//                    qDebug()<<"Clip"<<clipItem->itemToString();
 
                     QTime inTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipIn);
                     QTime outTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipOut);
@@ -425,7 +592,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
 
                     processes<<process;
                     connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-                    connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QString event, QString outputString)
+                    connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
                     {
                         if (event == "finished")
                         {
@@ -546,7 +713,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
 
             processes<<process;
             connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QString event, QString outputString)
+            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
             {
                 if (event == "finished")
                 {
@@ -602,7 +769,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
             process->command("Remux", command);
             processes<<process;
             connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QString event, QString outputString)
+            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
             {
                 if (event == "finished")
                 {
@@ -640,23 +807,23 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
             {
                 connect(process, &AGProcessAndThread::stopThreadProcess, derperView, &ADerperView::onStopThreadProcess);
 
-                connect(derperView, &ADerperView::processOutput, process, &AGProcessAndThread::onProcessOutput);
+                connect(derperView, &ADerperView::processLog, process, &AGProcessAndThread::addProcessLog);
 
-                derperView->processOutput("output", "===================");
-                derperView->processOutput("output", "WideView by Derperview, Derperview by Banelle: https://github.com/banelle/derperview");
-                derperView->processOutput("output", "Perform non-linear stretch of 4:3 video to make it 16:9.");
-                derperView->processOutput("output", "See also Derperview - A Command Line Superview Alternative: https://intofpv.com/t-derperview-a-command-line-superview-alternative");
-                derperView->processOutput("output", "===================");
-                derperView->processOutput("output", "Media Sidekick uses unmodified Derperview sourcecode and embedded it in the Qt and Media Sidekick job handling structure.");
-                derperView->processOutput("output", "Use 'Remux to MP4/Yuv420' to prepare videocontent for Wideview conversion");
-                derperView->processOutput("output", "===================");
+                derperView->processLog("output", "===================");
+                derperView->processLog("output", "WideView by Derperview, Derperview by Banelle: https://github.com/banelle/derperview");
+                derperView->processLog("output", "Perform non-linear stretch of 4:3 video to make it 16:9.");
+                derperView->processLog("output", "See also Derperview - A Command Line Superview Alternative: https://intofpv.com/t-derperview-a-command-line-superview-alternative");
+                derperView->processLog("output", "===================");
+                derperView->processLog("output", "Media Sidekick uses unmodified Derperview sourcecode and embedded it in the Qt and Media Sidekick job handling structure.");
+                derperView->processLog("output", "Use 'Remux to MP4/Yuv420' to prepare videocontent for Wideview conversion");
+                derperView->processLog("output", "===================");
 
                 derperView->Go((fileInfo.absoluteFilePath()).toUtf8().constData(), (fileInfo.absolutePath() + "/" + fileInfo.completeBaseName() + "WV.mp4").toUtf8().constData(), 1);
             });
 
             processes<<process;
             connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QString event, QString outputString)
+            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
             {
                 //this is executed in the created thread!
 
@@ -708,7 +875,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
             {
                 success = dir.mkpath(".");
                 if (success)
-                    process->onProcessOutput("output", tr("%1 created").arg(recycleFolder));
+                    process->addProcessLog("output", tr("%1 created").arg(recycleFolder));
             }
 
             if (success)
@@ -724,7 +891,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                         recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                         success = file->rename(recycleFolder + srtFileName);
                         if (success)
-                            process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                            process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
                     }
 
                     //txt file
@@ -737,14 +904,14 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                             recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                             success = file->rename(recycleFolder + srtFileName);
                             if (success)
-                                process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                                process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
                         }
                     }
                     else
-                         process->onProcessOutput("error", QString("-3, could not rename to " + recycleFolder + srtFileName));
+                         process->addProcessLog("error", QString("-3, could not rename to " + recycleFolder + srtFileName));
                 }
                 else
-                     process->onProcessOutput("error", QString("-2, could not rename to " + recycleFolder + fileInfo.fileName()));
+                     process->addProcessLog("error", QString("-2, could not rename to " + recycleFolder + fileInfo.fileName()));
 
                 //last the file itseld
                 if (success && !supportingFilesOnly)
@@ -757,18 +924,15 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                         success = file.rename(recycleFolder + fileInfo.fileName());
                         qDebug()<<"moved"<<success<<tr("%1 moved to recycle folder %2").arg(fileInfo.fileName(),recycleFolder);
                         if (success)
-                            process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(fileInfo.fileName()));
+                            process->addProcessLog("output", tr("%1 moved to recycle folder").arg(fileInfo.fileName()));
                     }
                 }
            }
            else
-              process->onProcessOutput("error", QString("-1, could not create folder " + recycleFolder));
+              process->addProcessLog("error", QString("-1, could not create folder " + recycleFolder));
 
         });
         process->start();
-
-//            emit loadClips(parentItem);
-//            emit loadProperties(parentItem);
 
     });
     fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
@@ -803,7 +967,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                     {
                         success = dir.mkpath(".");
                         if (success)
-                            process->onProcessOutput("output", tr("%1 created").arg(recycleFolder));
+                            process->addProcessLog("output", tr("%1 created").arg(recycleFolder));
                     }
 
                     if (success)
@@ -819,7 +983,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                                 recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                                 success = file->rename(recycleFolder + srtFileName);
                                 if (success)
-                                    process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                                    process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
                             }
 
                             //txt file
@@ -832,18 +996,18 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                                     recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                                     success = file->rename(recycleFolder + srtFileName);
                                     if (success)
-                                        process->onProcessOutput("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                                        process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
                                 }
                             }
                             else
-                                 process->onProcessOutput("error", QString("-3, could not rename to " + recycleFolder + srtFileName));
+                                 process->addProcessLog("error", QString("-3, could not rename to " + recycleFolder + srtFileName));
                         }
                         else
-                             process->onProcessOutput("error", QString("-2, could not rename to " + recycleFolder + fileInfo.fileName()));
+                             process->addProcessLog("error", QString("-2, could not rename to " + recycleFolder + fileInfo.fileName()));
 
                    }
                    else
-                      process->onProcessOutput("error", QString("-1, could not create folder " + recycleFolder));
+                      process->addProcessLog("error", QString("-1, could not create folder " + recycleFolder));
 
                 });
                 process->start();
@@ -935,10 +1099,10 @@ QProcess::startDetached("explorer", args);
         fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/MediaSidekick.ico"))));
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
-            QDialog * propertiesDialog = new QDialog(view);
-            propertiesDialog->setWindowTitle("Media Sidekick Properties");
+            QDialog * dialog = new QDialog(view);
+            dialog->setWindowTitle("Media Sidekick Properties " + fileInfo.fileName());
         #ifdef Q_OS_MAC
-            propertiesDialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
+            dialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
         #endif
 
             QRect savedGeometry = QSettings().value("Geometry").toRect();
@@ -946,80 +1110,150 @@ QProcess::startDetached("explorer", args);
             savedGeometry.setY(savedGeometry.y() + savedGeometry.height()/4);
             savedGeometry.setWidth(savedGeometry.width()/2);
             savedGeometry.setHeight(savedGeometry.height()/2);
-            propertiesDialog->setGeometry(savedGeometry);
+            dialog->setGeometry(savedGeometry);
 
-            QVBoxLayout *mainLayout = new QVBoxLayout(propertiesDialog);
-            QTabWidget *tabWidget = new QTabWidget(propertiesDialog);
+            QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
+            QTabWidget *tabWidget = new QTabWidget(dialog);
             mainLayout->addWidget(tabWidget);
 
-            QWidget *metaDataWidget = new QWidget(tabWidget);
-            QVBoxLayout *metadataLayout = new QVBoxLayout;
-            metaDataWidget->setLayout(metadataLayout);
+            QTabWidget *metaDataTabWidget = new QTabWidget(tabWidget);
+            tabWidget->addTab(metaDataTabWidget, "Metadata");
 
-            metadataLayout->addWidget(new QLabel("File size: " + QString::number(fileInfo.size()/1024/1024) + " MB", metaDataWidget));
-            metadataLayout->addWidget(new QLabel("path: " + fileInfo.path(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("absolutePath: " + fileInfo.absolutePath(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("filePath: " + fileInfo.filePath(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("absoluteFilePath: " + fileInfo.absoluteFilePath(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("fileName: " + fileInfo.fileName(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("completeBaseName: " + fileInfo.completeBaseName(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("suffix: " + fileInfo.suffix(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("birthTime: " + fileInfo.birthTime().toString(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("lastModified: " + fileInfo.lastModified().toString(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("lastRead: " + fileInfo.lastRead().toString(), metaDataWidget));
-            metadataLayout->addWidget(new QLabel("metadataChangeTime: " + fileInfo.metadataChangeTime().toString(), metaDataWidget));
+            {
+                QScrollArea *scrollArea = new QScrollArea(metaDataTabWidget);
+                scrollArea->setWidgetResizable(true); //otherwise nothing shown...???
 
-            tabWidget->addTab(metaDataWidget, "File info");
+                QWidget *scrollAreaWidget = new QWidget(scrollArea);
+
+                scrollArea->setWidget(scrollAreaWidget);
+
+                QVBoxLayout *scrollAreaWidgetLayout = new QVBoxLayout(scrollAreaWidget);
+                scrollAreaWidget->setLayout(scrollAreaWidgetLayout);
+
+                QMapIterator<QString, QMap<QString, ExifToolValueStruct>> categoryIterator(exiftoolMap);
+                while (categoryIterator.hasNext())
+                {
+                    categoryIterator.next();
+
+//                    qDebug()<<"categoryIterator.key()"<<fileInfo.fileName()<<categoryIterator.key();
+                    QString categoryKey = categoryIterator.key().split(" - ")[1];
+
+                    QGroupBox *groupBox = new QGroupBox(scrollAreaWidget);
+                    groupBox->setTitle(categoryKey);
+                    scrollAreaWidgetLayout->addWidget(groupBox);
+
+                    QFormLayout *groupBoxLayout = new QFormLayout(groupBox);
+                    groupBox->setLayout(groupBoxLayout);
+
+                    QMap<QString, ExifToolValueStruct> propertyMap = categoryIterator.value();
+
+                    QList<ExifToolValueStruct> propertyListSorted;
+                    foreach (ExifToolValueStruct exifToolValueStruct, propertyMap)
+                        propertyListSorted.append(exifToolValueStruct);
+
+                    std::sort(propertyListSorted.begin(), propertyListSorted.end(), [](ExifToolValueStruct v1, ExifToolValueStruct v2)->bool
+                    {
+                        return v1.propertySortOrder<v2.propertySortOrder;
+                    });
+
+                    foreach (ExifToolValueStruct exifToolValueStruct, propertyListSorted)
+                    {
+                        if (exifToolValueStruct.propertyName == "GeoCoordinate")
+                        {
+                            QString text = "";
+                            QStringList valueList = exifToolValueStruct.value.split(";");
+
+//                            qDebug()<<"GeoCoordinate"<<valueList;
+
+                            if (valueList.count() > 0 && valueList[0] != "")
+                                text += "↕" + QString::number(valueList[0].toDouble(), 'f', 3) + "°";
+                            if (valueList.count() > 1 && valueList[1] != "")
+                                text += " ↔" + QString::number(valueList[1].toDouble(), 'f', 3) + "°";
+                            if (valueList.count() > 2 && valueList[2] != "")
+                                text += " Δ" + valueList[2] + "m";
+
+                            groupBoxLayout->addRow(exifToolValueStruct.propertyName, new QLabel(text));
+                        }
+                        else
+                            groupBoxLayout->addRow(exifToolValueStruct.propertyName, new QLabel(exifToolValueStruct.value));
+                    }
+
+                }
+                metaDataTabWidget->addTab(scrollArea, "ExifTool");
+            }
+
+            QScrollArea *scrollArea = new QScrollArea(metaDataTabWidget);
+            scrollArea->setWidgetResizable(true); //otherwise nothing shown...???
+
+            QWidget *scrollAreaWidget = new QWidget(scrollArea);
+
+            scrollArea->setWidget(scrollAreaWidget);
+
+            QFormLayout *scrollAreaWidgetLayout = new QFormLayout(scrollAreaWidget);
+            scrollAreaWidget->setLayout(scrollAreaWidgetLayout);
+
+            scrollAreaWidgetLayout->addRow("File size", new QLabel(QString::number(fileInfo.size()/1024/1024) + " MB"));
+            scrollAreaWidgetLayout->addRow("path", new QLabel(fileInfo.path()));
+            scrollAreaWidgetLayout->addRow("absolutePath", new QLabel(fileInfo.absolutePath()));
+            scrollAreaWidgetLayout->addRow("filePath", new QLabel(fileInfo.filePath()));
+            scrollAreaWidgetLayout->addRow("absoluteFilePath", new QLabel(fileInfo.absoluteFilePath()));
+            scrollAreaWidgetLayout->addRow("fileName", new QLabel(fileInfo.fileName()));
+            scrollAreaWidgetLayout->addRow("completeBaseName", new QLabel(fileInfo.completeBaseName()));
+            scrollAreaWidgetLayout->addRow("suffix", new QLabel(fileInfo.suffix()));
+            scrollAreaWidgetLayout->addRow("birthTime", new QLabel(fileInfo.birthTime().toString()));
+            scrollAreaWidgetLayout->addRow("lastModified", new QLabel(fileInfo.lastModified().toString()));
+            scrollAreaWidgetLayout->addRow("lastRead", new QLabel(fileInfo.lastRead().toString()));
+            scrollAreaWidgetLayout->addRow("metadataChangeTime", new QLabel(fileInfo.metadataChangeTime().toString()));
+
+            metaDataTabWidget->addTab(scrollArea, "File info");
 
             if (m_player != nullptr && m_player->availableMetaData().count() > 0)
             {
-                QWidget *metaDataWidget = new QWidget(tabWidget);
-                QVBoxLayout *metadataLayout = new QVBoxLayout;
-                metaDataWidget->setLayout(metadataLayout);
+                QScrollArea *scrollArea = new QScrollArea(metaDataTabWidget);
+                scrollArea->setWidgetResizable(true); //otherwise nothing shown...???
+
+                QWidget *scrollAreaWidget = new QWidget(scrollArea);
+
+                scrollArea->setWidget(scrollAreaWidget);
+
+                QFormLayout *scrollAreaWidgetLayout = new QFormLayout(scrollAreaWidget);
+                scrollAreaWidget->setLayout(scrollAreaWidgetLayout);
 
                 foreach (QString metadata_key, m_player->availableMetaData())
                 {
-                    QLabel *metaDataLabel = new QLabel(metaDataWidget);
-        //                qDebug()<<"Metadata"<<metadata_key<<m_player->metaData(metadata_key);
                     QVariant meta = m_player->metaData(metadata_key);
                     if (meta.toSize() != QSize())
-                        metaDataLabel->setText(metadata_key + ": " + QString::number( meta.toSize().width()) + " x " + QString::number( meta.toSize().height()));
+                        scrollAreaWidgetLayout->addRow(metadata_key, new QLabel(QString::number( meta.toSize().width()) + " x " + QString::number( meta.toSize().height())));
                     else
-                        metaDataLabel->setText(metadata_key + ": " + meta.toString());
-                    metadataLayout->addWidget(metaDataLabel);
+                        scrollAreaWidgetLayout->addRow(metadata_key, new QLabel(meta.toString()));
                 }
 
-                tabWidget->addTab(metaDataWidget, "QMediaPlayer");
+                metaDataTabWidget->addTab(scrollArea, "QMediaPlayer");
             }
 
             QStringList ffMpegMetaList = data(ffMpegMetaIndex).toString().split(";");
 
             if (ffMpegMetaList.count() > 0 && ffMpegMetaList.first() != "")
             {
-                QWidget *ffMpegMetaWidget = new QWidget(tabWidget);
+                QScrollArea *scrollArea = new QScrollArea(metaDataTabWidget);
+                scrollArea->setWidgetResizable(true); //otherwise nothing shown...???
 
-//                    QGroupBox *ffMpegMetaGroupBox = new QGroupBox(tabWidget);
-//                    ffMpegMetaGroupBox->setTitle("Properties by FFMpeg");
-//                    mainLayout->addWidget(ffMpegMetaGroupBox);
-                QVBoxLayout *ffMpegMetaLayout = new QVBoxLayout;
-                ffMpegMetaWidget->setLayout(ffMpegMetaLayout);
+                QWidget *scrollAreaWidget = new QWidget(scrollArea);
+
+                scrollArea->setWidget(scrollAreaWidget);
+
+                QFormLayout *scrollAreaWidgetLayout = new QFormLayout(scrollAreaWidget);
+                scrollAreaWidget->setLayout(scrollAreaWidgetLayout);
 
                 foreach (QString keyValuePair, ffMpegMetaList)
                 {
-                    QLabel *ffMpegMetaLabel = new QLabel(ffMpegMetaWidget);
-                    ffMpegMetaLabel->setText(keyValuePair);
-                    ffMpegMetaLayout->addWidget(ffMpegMetaLabel);
+                    QStringList keyValueList = keyValuePair.split(" = ");
+
+                    scrollAreaWidgetLayout->addRow(keyValueList[0].trimmed(), new QLabel(keyValueList[1].trimmed()));
                 }
 
-                tabWidget->addTab(ffMpegMetaWidget, "FFMpeg");
-
+                metaDataTabWidget->addTab(scrollArea, "FFMpeg");
             }
-
-//                QGroupBox *parentPropGroupBox = new QGroupBox(propertiesDialog);
-//                parentPropGroupBox->setTitle("Properties by Exiftool");
-//                mainLayout->addWidget(parentPropGroupBox);
-//                QVBoxLayout *parentPropLayout = new QVBoxLayout;
-//                parentPropGroupBox->setLayout(parentPropLayout);
 
             QTabWidget *subTabWidget = new QTabWidget(tabWidget);
             tabWidget->addTab(subTabWidget, "Jobs");
@@ -1033,57 +1267,7 @@ QProcess::startDetached("explorer", args);
             }
             subTabWidget->setCurrentIndex(0);
 
-//            int fileColumnNr = -1;
-//            for(int col = 0; col < ui->propertyTreeView->propertyItemModel->columnCount(); col++)
-//            {
-//              if (ui->propertyTreeView->propertyItemModel->headerData(col, Qt::Horizontal).toString() == fileInfo.absoluteFilePath())
-//              {
-//                  fileColumnNr = col;
-//              }
-//            }
-//        //    qDebug()<<"APropertyTreeView::onSetPropertyValue"<<fileName<<fileColumnNr<<propertyName<<propertyItemModel->rowCount();
-
-//            if (fileColumnNr != -1)
-//            {
-//                //get row/ item value
-//                for(int rowIndex = 0; rowIndex < ui->propertyTreeView->propertyItemModel->rowCount(); rowIndex++)
-//                {
-//                    QModelIndex topLevelIndex = ui->propertyTreeView->propertyItemModel->index(rowIndex,propertyIndex);
-
-//                    if (ui->propertyTreeView->propertyItemModel->rowCount(topLevelIndex) > 0)
-//                    {
-
-//                        bool first = true;
-//                        QGroupBox *childPropGroupBox = new QGroupBox(parentPropGroupBox);
-//                        QVBoxLayout *childPropLayout = new QVBoxLayout;
-
-//                        for (int childRowIndex = 0; childRowIndex < ui->propertyTreeView->propertyItemModel->rowCount(topLevelIndex); childRowIndex++)
-//                        {
-//                            QModelIndex sublevelIndex = ui->propertyTreeView->propertyItemModel->index(childRowIndex,propertyIndex, topLevelIndex);
-//                            QString propValue = ui->propertyTreeView->propertyItemModel->index(childRowIndex, fileColumnNr, topLevelIndex).data().toString();
-
-//                            if (propValue != "")
-//                            {
-//                                if (first)
-//                                {
-//                                    childPropGroupBox->setTitle(topLevelIndex.data().toString());
-//                                    parentPropLayout->addWidget(childPropGroupBox);
-//                                    childPropGroupBox->setLayout(childPropLayout);
-
-//                                    first = false;
-//                                }
-
-//                                QLabel *metaDataLabel = new QLabel(childPropGroupBox);
-//                                metaDataLabel->setText(sublevelIndex.data().toString() + ": " + propValue);
-//                                childPropLayout->addWidget(metaDataLabel);
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-
-
-            propertiesDialog->show();
+            dialog->show();
 
             fileContextMenu->actions().last()->setToolTip(tr("<p><b>Properties</b></p>"
                                             "<p><i>Show properties for the currently selected media item</i></p>"
@@ -1551,7 +1735,7 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
 //    QString folderName = folderFileName.left(lastIndexOf + 1);
 //    QString fileName = folderFileName.mid(lastIndexOf + 1);
 
-//    qDebug()<<"AGMediaFileRectItem::onPositionChanged"<<fileName<<progress<<m_player->duration()<<m_player->media().request().url().path();
+    qDebug()<<"AGMediaFileRectItem::onPositionChanged"<<fileInfo.fileName()<<progress<<m_player->duration()<<m_player->media().request().url().path();
 
     if (m_player->duration() != 0)
     {
@@ -1593,13 +1777,13 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
     if (process->processStopped)
     {
         QString output = "loadMedia processStopped for " + fileInfo.absoluteFilePath();
-        process->onProcessOutput("output", output);
+        process->addProcessLog("output", output);
         qDebug()<<output<<fileInfo.fileName()<<process->processStopped;
         return;
     }
 //    qDebug()<<"AGMediaFileRectItem::loadMedia"<<fileInfo.absoluteFilePath()<<thread()<<process->thread();
 
-    process->onProcessOutput("output", "LoadMedia: " + fileInfo.absoluteFilePath());
+    process->addProcessLog("output", "LoadMedia: " + fileInfo.absoluteFilePath());
 
     DerperView::VideoInfo videoInfo;
 
@@ -1617,7 +1801,7 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
             else if (input.GetLastError() == -1094995529)
                 errorMessage = tr("Load Media. Error on opening file %1. Invalid data found when processing input").arg(fileInfo.fileName());
 
-            process->onProcessOutput("error", "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
+            process->addProcessLog("error", "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
 
             myImage = QImage(":/images/testbeeld.png");
 
@@ -1701,7 +1885,7 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
 
 //            qDebug()<<"AGMediaFileRectItem::loadMedia videoinfo"<<duration<<videoInfo.totalFrames << videoInfo.avg_frame_rate.num<<videoInfo.avg_frame_rate.den;
 
-            process->onProcessOutput("output", "LoadMedia->mediaLoaded: " + fileInfo.absoluteFilePath() + " d: " + QString::number(duration) + " s: " + QString::number(videoInfo.width) + "x" + QString::number(videoInfo.height) + " m: " + ffMpegMetaString.join(";"));
+            process->addProcessLog("output", "LoadMedia->mediaLoaded: " + fileInfo.absoluteFilePath() + " d: " + QString::number(duration) + " s: " + QString::number(videoInfo.width) + "x" + QString::number(videoInfo.height) + " m: " + ffMpegMetaString.join(";"));
 
             emit mediaLoaded(fileInfo, myImage, duration , QSize(videoInfo.width,videoInfo.height), ffMpegMetaString.join(";"), QList<int>());
 
@@ -1713,7 +1897,7 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
     {
         myImage.load(fileInfo.absoluteFilePath());
 
-        process->onProcessOutput("output", "LoadMedia->mediaLoaded: " + fileInfo.absolutePath() + "/" + " s: " + QString::number(myImage.width()) + "x" + QString::number(myImage.height()));
+        process->addProcessLog("output", "LoadMedia->mediaLoaded: " + fileInfo.absolutePath() + "/" + " s: " + QString::number(myImage.width()) + "x" + QString::number(myImage.height()));
 
         emit mediaLoaded(fileInfo, myImage, 0 , QSize(myImage.width(), myImage.height()), "",  QList<int>()); //as not always image loaded (e.g. png currently)
     }
@@ -1727,9 +1911,9 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
             if (input.GetLastError() == -13)
                 errorMessage = tr("Load Media. Error on opening file %1: Permission denied").arg(fileInfo.fileName());
 
-            qDebug()<<"AGMediaFileRectItem::loadMedia"<<"Error: " + errorMessage + " (" + QString::number(input.GetLastError()) + ")";
+//            qDebug()<<"AGMediaFileRectItem::loadMedia"<<"Error: " + errorMessage + " (" + QString::number(input.GetLastError()) + ")";
 
-            process->onProcessOutput("error", "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
+            process->addProcessLog("error", "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
         }
         else
         {
@@ -1747,7 +1931,7 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
                 if (process->processStopped)
                 {
                     QString output = "loadMedia audio processStopped for " + fileInfo.absoluteFilePath();
-                    process->onProcessOutput("output", output);
+                    process->addProcessLog("output", output);
                     qDebug()<<output<<fileInfo.fileName()<<process->processStopped;
                     return;
                 }
@@ -1805,7 +1989,7 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
 //                qDebug()<<"AGMediaFileRectItem::loadMedia frame"<<fileInfo.fileName()<<videoInfo.audioSampleRate<<videoInfo.audioBitRate<<videoInfo.audioChannelLayout<<videoInfo.audioTimeBase.num << videoInfo.audioTimeBase.den<<videoInfo.duration<<durationInMSeconds;
             //audioTimeBase is like fps
 
-            process->onProcessOutput("output", "LoadMedia->mediaLoaded: " + fileInfo.absoluteFilePath() + " d: " + QString::number(durationInMSeconds) + " s: " + QString::number(samples.count()));
+            process->addProcessLog("output", "LoadMedia->mediaLoaded: " + fileInfo.absoluteFilePath() + " d: " + QString::number(durationInMSeconds) + " s: " + QString::number(samples.count()));
 
             emit mediaLoaded(fileInfo, QImage(), durationInMSeconds , QSize(), "", samples); //as not always image loaded (e.g. png currently)
 

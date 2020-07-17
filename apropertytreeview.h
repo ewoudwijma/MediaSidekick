@@ -1,7 +1,6 @@
 #ifndef APROPERTYTREEVIEW_H
 #define APROPERTYTREEVIEW_H
 
-#include "ajobtreeview.h"
 #include "apropertysortfilterproxymodel.h"
 #include "aspinnerlabel.h"
 
@@ -10,6 +9,8 @@
 #include <QTreeView>
 #include <QLineEdit>
 #include <QProgressBar>
+
+#include "aglobal.h"
 
 class APropertyTreeView: public QTreeView
 {
@@ -35,10 +36,12 @@ public:
 
     bool isLoading;
 
-    AJobTreeView *jobTreeView;
+    QMap<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> exiftoolMap;
+    QStringList filesMap;
 
+    void mousePressEvent(QMouseEvent *event) override;
 private:
-    void loadModel(QStandardItem *parentItem, QString folderName);
+    void loadModel(QString folderName);
     void addSublevelItem(QUrl fileUrl, QString itemName, QString type, QString value);
     QStandardItem *getToplevelItem(QString itemName);
     QTreeView *frozenTableView;
@@ -66,12 +69,11 @@ protected:
 
 public slots:
     void onPropertyFilterChanged(QLineEdit *propertyFilterLineEdit, QCheckBox *propertyDiffCheckBox);
-    void onFolderSelected(QString folderName);
     bool onGetPropertyValue(QString folderFileName, QString propertyName, QVariant *value);
     bool onSetPropertyValue(QString folderFileName, QString propertyName, QVariant value, int role = Qt::EditRole);
     void onFileIndexClicked(QModelIndex index, QStringList filePathList);
     void onClipIndexClicked(QModelIndex index);
-    void onloadProperties(QStandardItem *parentItem);
+    void onloadProperties();
     void onPropertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
 
 
@@ -83,7 +85,6 @@ signals:
     void propertiesLoaded();
     void releaseMedia(QString folderName, QString fileName);
     void redrawMap();
-    void jobAddLog(AJobParams jobParams, QString logMessage);
 };
 
 #endif // APROPERTYTREEVIEW_H

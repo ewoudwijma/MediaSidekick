@@ -37,7 +37,7 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
     {
 //        cerr << "Source not in 4:3 aspect ratio" << endl;
         QString message = "Source not in 4:3 aspect ratio (" + QString::number(inputVideoInfo.width) + "x" + QString::number(inputVideoInfo.height) + ")";
-        emit processOutput("error", message);
+        emit processLog("error", message);
         return message;
     }
     if (
@@ -47,7 +47,7 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
     {
 //        cerr << "Source not in compatible pixel format" << endl;
         QString message = "Source not in compatible pixel format (AV_PIX_FMT_YUV420P or AV_PIX_FMT_YUVJ420P) (" + QString(inputVideoInfo.pixelFormat) + "). Remux to Mp3/yuv420 first.";
-        emit processOutput("error", message);
+        emit processLog("error", message);
         return message;
     }
 
@@ -139,7 +139,7 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
 
 //                        qDebug()<<speed<<previousMediaTime<<mediaTime<<previousRealTime<<QTime::currentTime()<<previousMediaTime.msecsTo(mediaTime) << previousRealTime.msecsTo(QTime::currentTime());
 
-                        emit processOutput("output", "frame=" + QString::number(frameCount) + " time=" + mediaTime.toString("HH:mm:ss.zzz") + " bitrate=" + QString::number(inputVideoInfo.bitRate) + " speed=" + QString::number(speed, 'f', 3) + "x framerate=" + QString::number(inputVideoInfo.frameRate.num) + "/" + QString::number(inputVideoInfo.frameRate.den) + "=" + QString::number(inputVideoInfo.frameRate.num / inputVideoInfo.frameRate.den));
+                        emit processLog("output", "frame=" + QString::number(frameCount) + " time=" + mediaTime.toString("HH:mm:ss.zzz") + " bitrate=" + QString::number(inputVideoInfo.bitRate) + " speed=" + QString::number(speed, 'f', 3) + "x framerate=" + QString::number(inputVideoInfo.frameRate.num) + "/" + QString::number(inputVideoInfo.frameRate.den) + "=" + QString::number(inputVideoInfo.frameRate.num / inputVideoInfo.frameRate.den));
 
                         previousMediaTime = mediaTime;
                         previousRealTime = QTime::currentTime();
@@ -191,8 +191,8 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
 
     output.Flush();
 
-    emit processOutput("output", "Encoded packet count: " + QString::number(encodedPacketCount));
-    emit processOutput("output", "Frames read: " + QString::number(frameCount));
+    emit processLog("output", "Encoded packet count: " + QString::number(encodedPacketCount));
+    emit processLog("output", "Frames read: " + QString::number(frameCount));
 //    cout << endl;
 //    cout << "Encoded packet count: " << encodedPacketCount << endl;
 //    cout << "Frames read: " << frameCount << endl;
@@ -202,7 +202,7 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
     if (processStopped)
     {
         QString message = "Job cancelled";
-        emit processOutput("error", message);
+        emit processLog("error", message);
         return message;
     }
     else
