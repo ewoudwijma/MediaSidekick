@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("mediasidekick.org");
     a.setApplicationName("Media Sidekick");
-    a.setApplicationVersion("0.4.4");
+    a.setApplicationVersion("0.4.5.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\mediasidekick.org
@@ -192,7 +192,9 @@ Windows 2020-02-20
         - deploy in shell (not powershell...)
         - C:\Qt\5.14.2\mingw73_64\bin\qtenv2.bat
         - cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Debug\debug or cd d:\MediaSidekick\build-MediaSidekick-Desktop_Qt_5_14_2_MinGW_64_bit-Release\release
+        - remove exiftool.exe, ffplay.exe, ffprobe.exe and ffmpeg.exe temporary out of debug or release folder
         - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\MediaSidekick\MediaSidekick\ .
+        - move exiftool.exe, ffplay.exe, ffprobe.exe and ffmpeg.exe back
 
     - get latest version of ffmpeg:
         - https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-latest-win64-dev.zip
@@ -211,6 +213,9 @@ Windows 2020-02-20
 
     - copy all of deploy to installer/data
     - update version in D:\MediaSidekick\MediaSidekickInstaller\run.bat, D:\MediaSidekick\MediaSidekickInstaller\config\config.xml and D:\MediaSidekick\MediaSidekickInstaller\packages\org.mediasidekick.msk\meta\package.xml
+
+General post
+    - Update version.json on mediasidekick.org
 
 
 MacOS 2020-02-01

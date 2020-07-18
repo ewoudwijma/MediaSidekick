@@ -41,13 +41,17 @@ public:
 
     QList<AGProcessAndThread *> processes;
 
-    QList<QGraphicsItem *> clips;
+//    QList<QGraphicsItem *> clips;
 
     QGraphicsTextItem *subLogItem = nullptr;
 
     QGraphicsRectItem *progressRectItem = nullptr;
 
     void onItemRightClicked(QGraphicsView *view, QPoint pos);
+
+    bool containsVideo;
+    bool containsAudio;
+    bool containsImage;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;

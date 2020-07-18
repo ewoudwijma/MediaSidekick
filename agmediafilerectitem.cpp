@@ -1370,7 +1370,7 @@ void AGMediaFileRectItem::onSkipPrevious(QMediaPlayer *m_player)
 
 void AGMediaFileRectItem::onStop(QMediaPlayer *m_player)
 {
-    qDebug()<<"AGMediaFileRectItem::onStop"<<m_player->media().request().url().path();
+//    qDebug()<<"AGMediaFileRectItem::onStop"<<m_player->media().request().url().path();
 
     AGView *view = (AGView *)scene()->views().first();
     view->stopAndDeletePlayers(fileInfo);
@@ -1443,7 +1443,7 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
             {
                 m_player->setProperty("startPlaying", startPlaying?"true":"false");
 
-                qDebug()<<"initplayer toggle play pause"<<m_player->media().request().url().path()<<m_player->state();
+//                qDebug()<<"initplayer toggle play pause"<<m_player->media().request().url().path()<<m_player->state();
                 if (m_player->state() != QMediaPlayer::PlayingState)
                     m_player->play();
                 else
@@ -1506,7 +1506,7 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
             }
             else
             {
-                qDebug()<<"initPlayer toggle play pause"<<fileInfo.absoluteFilePath();
+//                qDebug()<<"initPlayer toggle play pause"<<fileInfo.absoluteFilePath();
                 if (view->dialogMediaPlayer->state() != QMediaPlayer::PlayingState)
                     view->dialogMediaPlayer->play();
                 else
@@ -1735,7 +1735,7 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
 //    QString folderName = folderFileName.left(lastIndexOf + 1);
 //    QString fileName = folderFileName.mid(lastIndexOf + 1);
 
-    qDebug()<<"AGMediaFileRectItem::onPositionChanged"<<fileInfo.fileName()<<progress<<m_player->duration()<<m_player->media().request().url().path();
+//    qDebug()<<"AGMediaFileRectItem::onPositionChanged"<<fileInfo.fileName()<<progress<<m_player->duration()<<m_player->media().request().url().path();
 
     if (m_player->duration() != 0)
     {

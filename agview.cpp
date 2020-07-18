@@ -94,18 +94,18 @@ void AGView::stopAndDeletePlayers(QFileInfo fileInfo)
         {
             AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
 
-            if (mediaItem->progressRectItem != nullptr)
-                qDebug()<<"stopAndDeletePlayers media1"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem<<(fileInfo.absoluteFilePath() == "")<<( mediaItem->fileInfo == fileInfo)<<fileInfo.absoluteFilePath();
+//            if (mediaItem->progressRectItem != nullptr)
+//                qDebug()<<"stopAndDeletePlayers media1"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem<<(fileInfo.absoluteFilePath() == "")<<( mediaItem->fileInfo == fileInfo)<<fileInfo.absoluteFilePath();
             if (fileInfo.absoluteFilePath() == "" || mediaItem->fileInfo == fileInfo)
             {
-                if (mediaItem->progressRectItem != nullptr)
-                    qDebug()<<"stopAndDeletePlayers media2"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem;
+//                if (mediaItem->progressRectItem != nullptr)
+//                    qDebug()<<"stopAndDeletePlayers media2"<<mediaItem->itemToString()<<mediaItem->fileInfo<<fileInfo<<mediaItem->progressRectItem;
 
                 if (mediaItem->m_player != nullptr)
                 {
                     if (!deletedPlayerUrl.toString().contains(mediaItem->fileInfo.absoluteFilePath())) //already deleted above
                     {
-                        qDebug()<<"Delete mediaFile->m_player"<<mediaItem->fileInfo.absoluteFilePath();
+//                        qDebug()<<"Delete mediaFile->m_player"<<mediaItem->fileInfo.absoluteFilePath();
                         delete mediaItem->m_player;
                     }
                     mediaItem->m_player = nullptr;
@@ -113,7 +113,7 @@ void AGView::stopAndDeletePlayers(QFileInfo fileInfo)
 
                 if (mediaItem->playerItem != nullptr)
                 {
-                    qDebug()<<"Delete mediaFile->playerItem"<<mediaItem->fileInfo.absoluteFilePath();
+//                    qDebug()<<"Delete mediaFile->playerItem"<<mediaItem->fileInfo.absoluteFilePath();
                     delete mediaItem->playerItem;
                     mediaItem->playerItem = nullptr;
                 }
@@ -510,7 +510,7 @@ void AGView::onHoverPositionChanged(QGraphicsRectItem *rectItem, int progress)
     else if (rectItem->data(mediaTypeIndex).toString() == "MediaFile")
         mediaItem = (AGMediaFileRectItem *)rectItem;
 
-    qDebug()<<"AGView::onHoverPositionChanged"<<mediaItem->itemToString()<<progress<<mediaItem->progressRectItem;
+//    qDebug()<<"AGView::onHoverPositionChanged"<<mediaItem->itemToString()<<progress<<mediaItem->progressRectItem;
 
     int duration = 0;
     if (!playInDialog)

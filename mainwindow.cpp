@@ -94,11 +94,40 @@ MainWindow::~MainWindow()
 
 //    qDebug()<<"Destructor"<<geometry();
 
-    QSettings().setValue("Geometry", geometry());
+    if (geometry() != QSettings().value("Geometry"))
+    {
+        QSettings().setValue("Geometry", geometry());
 //    QSettings().setValue("windowState", saveState());
-    QSettings().sync();
+        QSettings().sync();
+    }
 
     delete ui;
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+   QMainWindow::resizeEvent(event);
+
+   if (geometry() != QSettings().value("Geometry"))
+   {
+       qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event;
+       QSettings().setValue("Geometry", geometry());
+   //    QSettings().setValue("windowState", saveState());
+       QSettings().sync();
+   }
+}
+
+void MainWindow::moveEvent(QMoveEvent *event)
+{
+   QMainWindow::moveEvent(event);
+
+   if (geometry() != QSettings().value("Geometry"))
+   {
+       qDebug()<<"MainWindow::moveEvent"<<geometry()<<event;
+       QSettings().setValue("Geometry", geometry());
+   //    QSettings().setValue("windowState", saveState());
+       QSettings().sync();
+   }
 }
 
 void MainWindow::on_actionQuit_triggered()
