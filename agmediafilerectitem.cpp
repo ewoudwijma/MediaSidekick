@@ -1296,7 +1296,7 @@ void AGMediaFileRectItem::onRewind(QMediaPlayer *m_player)
 
 void AGMediaFileRectItem::onPlayVideoButton(QMediaPlayer *m_player)
 {
-    qDebug()<<"AGMediaFileRectItem::onPlayVideoButton toggle play pause"<<m_player->media().request().url().path();
+//    qDebug()<<"AGMediaFileRectItem::onPlayVideoButton toggle play pause"<<m_player->media().request().url().path();
 
     if (m_player->state() != QMediaPlayer::PlayingState)
         m_player->play();
@@ -1436,7 +1436,7 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
 
                 m_player->setProperty("startPlaying", startPlaying?"true":"false");
 
-                qDebug()<<"setMedia"<<fileInfo.absoluteFilePath();
+//                qDebug()<<"setMedia"<<fileInfo.absoluteFilePath();
                 m_player->setMedia(QUrl::fromLocalFile(fileInfo.absoluteFilePath()));
             }
             else
@@ -1499,7 +1499,7 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
 
                 view->dialogMediaPlayer->setProperty("startPlaying", startPlaying?"true":"false");
 
-                qDebug()<<"initPlayer setMedia"<<fileInfo.absoluteFilePath();
+//                qDebug()<<"initPlayer setMedia"<<fileInfo.absoluteFilePath();
                 view->dialogMediaPlayer->setMedia(QUrl::fromLocalFile(fileInfo.absoluteFilePath()));
 
                 m_player = view->dialogMediaPlayer;
@@ -1520,7 +1520,7 @@ void AGMediaFileRectItem::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
     QMediaPlayer *m_player = qobject_cast<QMediaPlayer *>(sender());
 
-    qDebug()<<"AGMediaFileRectItem::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().request().url().path()<<m_player->error()<<m_player->errorString();
+//    qDebug()<<"AGMediaFileRectItem::onMediaStatusChanged"<<status<<m_player->metaData(QMediaMetaData::Title).toString()<<m_player->media().request().url().path()<<m_player->error()<<m_player->errorString();
 
     if (status == QMediaPlayer::LoadedMedia)
     {
@@ -1539,7 +1539,7 @@ void AGMediaFileRectItem::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 //            resize(s1);// return to original size
 //    #endif
 
-            qDebug()<<"onMediaStatusChanged toggle play pause"<<m_player->media().request().url().path()<<m_player->state()<<m_player->property("startPlaying");
+//            qDebug()<<"onMediaStatusChanged toggle play pause"<<m_player->media().request().url().path()<<m_player->state()<<m_player->property("startPlaying");
             if (m_player->property("startPlaying") != "true")
                 m_player->pause();
 
@@ -1559,7 +1559,7 @@ void AGMediaFileRectItem::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
         }
         else if (AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
-            qDebug()<<"toggle play pause"<<m_player->media().request().url().path()<<m_player->state()<<m_player->property("startPlaying");
+//            qDebug()<<"toggle play pause"<<m_player->media().request().url().path()<<m_player->state()<<m_player->property("startPlaying");
             if (m_player->state() != QMediaPlayer::PlayingState && m_player->property("startPlaying") == "true")
                 m_player->play();
             else

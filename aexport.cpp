@@ -66,9 +66,9 @@ void MExportDialog::loadSettings()
                 if (clipsSize != " x " && ui->clipsSizeComboBox->findText(clipsSize) == -1)
                     ui->clipsSizeComboBox->addItem(clipsSize);
 
-                QString clipsFrameRate = clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value;
-                if (clipsFrameRate != "" && ui->clipsFramerateComboBox->findText(clipsFrameRate) == -1)
-                    ui->clipsFramerateComboBox->addItem(clipsFrameRate);
+                int clipsFrameRate = qRound(clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value.toDouble());
+                if (clipsFrameRate != 0 && ui->clipsFramerateComboBox->findText(QString::number(clipsFrameRate)) == -1)
+                    ui->clipsFramerateComboBox->addItem(QString::number(clipsFrameRate));
             }
         }
     }
@@ -239,7 +239,7 @@ void MExportDialog::losslessVideoAndAudio()
         {
             QTextStream vidlistStream( &vidlistFile );
 
-            foreach (QGraphicsItem *item, timelineItem->childItems())
+            foreach (QGraphicsItem *item, timelineItem->filteredClips)
             {
                 AGClipRectItem *clipItem = (AGClipRectItem *)item;
 //                qDebug()<<"  Clip"<<clipItem->itemToString();
@@ -250,11 +250,11 @@ void MExportDialog::losslessVideoAndAudio()
                 vidlistStream << "file '" << clipItem->fileInfo.absoluteFilePath() << "'" << endl;
                 if (ui->transitionTimeSpinBox->value() > 0)
                 {
-                    if (item != timelineItem->childItems().first())
+                    if (item != timelineItem->filteredClips.first())
                     {
                         inTime = inTime.addMSecs(AGlobal().frames_to_msec((ui->transitionTimeSpinBox->value()/2))); //subtract half of the transitionframes 2, not 2.0
                     }
-                    if (item != timelineItem->childItems().last())
+                    if (item != timelineItem->filteredClips.last())
                     {
                         outTime = outTime.addMSecs(- AGlobal().frames_to_msec(qRound(ui->transitionTimeSpinBox->value()/2.0))); //subtract half of the transitionframes
                     }
@@ -264,7 +264,7 @@ void MExportDialog::losslessVideoAndAudio()
                 vidlistStream << "inpoint " <<  QString::number(inTime.msecsSinceStartOfDay() / 1000.0, 'g', 6) << endl;
                 vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << endl;
 
-                qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
+//                qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
 
                 timelineItem->containsVideo = clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value != "";
                 timelineItem->containsAudio = clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4
@@ -351,7 +351,7 @@ void MExportDialog::encodeVideoClips()
         int totalDurationMsec = 0;
         QString lastV, lastA;
 
-        foreach (QGraphicsItem *item, timelineItem->childItems())
+        foreach (QGraphicsItem *item, timelineItem->filteredClips)
         {
             AGClipRectItem *clipItem = (AGClipRectItem *)item;
 //            qDebug()<<"  Clip"<<clipItem->itemToString();
@@ -399,7 +399,7 @@ void MExportDialog::encodeVideoClips()
 
             int fileReference = ffmpegFiles.count() - 1;
 
-            qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
+//            qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
             timelineItem->containsVideo = clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value != "";
             timelineItem->containsAudio = clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4
             //tbd check other formats then mp3 and 4
@@ -441,9 +441,9 @@ void MExportDialog::encodeVideoClips()
                     {
                         QString alphaIn = "0"; //transparent= firstIn
                         QString alphaOut = "0"; //black = transitions
-                        if (item != timelineItem->childItems().first())
+                        if (item != timelineItem->filteredClips.first())
                             alphaIn = "1";
-                        if (item != timelineItem->childItems().last())
+                        if (item != timelineItem->filteredClips.last())
                             alphaOut = "1";
 
                         //in frames
@@ -482,7 +482,7 @@ void MExportDialog::encodeVideoClips()
 
                 if (track == "v")
                 {
-                    if (item != timelineItem->childItems().first())
+                    if (item != timelineItem->filteredClips.first())
                     {
                         ffmpegCombines << tr("[%1][v%2]overlay[vo%2]").arg(lastV, QString::number(fileReference));
                         lastV = tr("vo%1").arg(QString::number(fileReference));
@@ -492,7 +492,7 @@ void MExportDialog::encodeVideoClips()
                 }
                 else
                 {
-                    if (item != timelineItem->childItems().first())
+                    if (item != timelineItem->filteredClips.first())
                     {
                         if (ui->transitionTimeSpinBox->value() > 0)
                             ffmpegCombines << tr("[%1][a%2]acrossfade=d=%3[ao%2]").arg( lastA, QString::number(fileReference), QString::number(AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value())/1000.0));
@@ -778,7 +778,7 @@ void MExportDialog::addPremiereTrack(QString mediaType, AGViewRectItem *timeline
             int iterationCounter = 0;
             int totalDurationMsec = 0;
 
-            foreach (QGraphicsItem *item, timelineItem->childItems())
+            foreach (QGraphicsItem *item, timelineItem->filteredClips)
             {
                 AGClipRectItem *clipItem = (AGClipRectItem *)item;
 //                qDebug()<<"  Clip"<<clipItem->itemToString();
@@ -820,7 +820,7 @@ void MExportDialog::addPremiereTrack(QString mediaType, AGViewRectItem *timeline
                 {
                     if (iterationCounter%2 == trackNr) //even or odd tracks
                     {
-                        if (item == timelineItem->childItems().first()) //fade in
+                        if (item == timelineItem->filteredClips.first()) //fade in
                         {
                             addPremiereTransitionItem(0, frameRate.toInt(), frameRate, mediaType, "start");
                         }
@@ -840,7 +840,7 @@ void MExportDialog::addPremiereTrack(QString mediaType, AGViewRectItem *timeline
 
                 totalFrames += deltaFrames;
 
-                if (trackNr == 1 && iterationCounter%2 == 1 && item != timelineItem->childItems().last() && ui->transitionTimeSpinBox->value() > 0) //track 2 and not last clip
+                if (trackNr == 1 && iterationCounter%2 == 1 && item != timelineItem->filteredClips.last() && ui->transitionTimeSpinBox->value() > 0) //track 2 and not last clip
                 {
                     addPremiereTransitionItem(totalFrames, totalFrames + ui->transitionTimeSpinBox->value(), frameRate, mediaType, "end");
                 }
@@ -851,7 +851,7 @@ void MExportDialog::addPremiereTrack(QString mediaType, AGViewRectItem *timeline
                 {
                     if (iterationCounter%2 == trackNr) //even or odd tracks
                     {
-                        if (item == timelineItem->childItems().last()) //fade out 1 second
+                        if (item == timelineItem->filteredClips.last()) //fade out 1 second
                         {
                             addPremiereTransitionItem(AGlobal().msec_to_frames(totalDurationMsec) - frameRate.toInt(), AGlobal().msec_to_frames(totalDurationMsec), frameRate, mediaType, "end");
                         }
@@ -1141,7 +1141,7 @@ void MExportDialog::exportShotcut()
 
         int totalDurationMsec = 0;
 
-        foreach (QGraphicsItem *item, timelineItem->childItems())
+        foreach (QGraphicsItem *item, timelineItem->filteredClips)
         {
             AGClipRectItem *clipItem = (AGClipRectItem *)item;
 
@@ -1155,7 +1155,7 @@ void MExportDialog::exportShotcut()
 
             if (groupItem->fileInfo.fileName() == "Audio")
             {
-                if (item == timelineItem->childItems().first() || item == timelineItem->childItems().last())
+                if (item == timelineItem->filteredClips.first() || item == timelineItem->filteredClips.last())
                 {
                     s("    <filter id=\"filter%1\" in=\"%2\" out=\"%3\">", QString::number(iterationCounter), inTime.toString("HH:mm:ss.zzz"), outTime.toString("HH:mm:ss.zzz"));
                     s("          <property name=\"window\">75</property>");
@@ -1163,7 +1163,7 @@ void MExportDialog::exportShotcut()
                     s("          <property name=\"mlt_service\">volume</property>");
 
                     //fadein and out of 1 second.
-                    if (item == timelineItem->childItems().first())
+                    if (item == timelineItem->filteredClips.first())
                     {
                         s("          <property name=\"level\">00:00:00.000=-60;00:00:00.960=0</property>");
                         s("          <property name=\"shotcut:filter\">fadeInVolume</property>");
@@ -1209,7 +1209,7 @@ void MExportDialog::exportShotcut()
     foreach (AGViewRectItem *timelineItem, timelineGroupList)
     {
 
-        foreach (QGraphicsItem *item, timelineItem->childItems())
+        foreach (QGraphicsItem *item, timelineItem->filteredClips)
         {
             AGClipRectItem *clipItem = (AGClipRectItem *)item;
 //            qDebug()<<"  Clip"<<clipItem->itemToString();
@@ -1236,7 +1236,7 @@ void MExportDialog::exportShotcut()
         iterationCounter = 0;
         foreach (AGViewRectItem *timelineItem, timelineGroupList)
         {
-            foreach (QGraphicsItem *item, timelineItem->childItems())
+            foreach (QGraphicsItem *item, timelineItem->filteredClips)
             {
                 AGClipRectItem *clipItem = (AGClipRectItem *)item;
 //                qDebug()<<"  Clip"<<clipItem->itemToString();
@@ -1244,7 +1244,7 @@ void MExportDialog::exportShotcut()
                 QTime inTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipIn);
                 QTime outTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipOut); //not needed to add one frame...
 
-                if (item != timelineItem->childItems().first())
+                if (item != timelineItem->filteredClips.first())
                 {
                     s("<tractor id=\"tractor%1\" title=\"%2\" global_feed=\"1\" in=\"00:00:00.000\" out=\"%3\">", QString::number(previousProducerNr) + "-" + QString::number(iterationCounter), "Transition " + QString::number(previousProducerNr) + "-" + QString::number(iterationCounter), QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value())).toString("HH:mm:ss.zzz"));
                     s("   <property name=\"shotcut:transition\">lumaMix</property>");
@@ -1295,7 +1295,7 @@ void MExportDialog::exportShotcut()
         }
 
 
-        foreach (QGraphicsItem *item, timelineItem->childItems())
+        foreach (QGraphicsItem *item, timelineItem->filteredClips)
         {
             AGClipRectItem *clipItem = (AGClipRectItem *)item;
 //            qDebug()<<"  Clip"<<clipItem->itemToString();
@@ -1305,12 +1305,12 @@ void MExportDialog::exportShotcut()
 
             if (ui->transitionTimeSpinBox->value() > 0)
             {
-                if (item != timelineItem->childItems().first())
+                if (item != timelineItem->filteredClips.first())
                 {
                     s("    <entry producer=\"tractor%1\" in=\"00:00:00.000\" out=\"%2\"/>", QString::number(previousProducerNr) + "-" + QString::number(iterationCounter), QTime::fromMSecsSinceStartOfDay(AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value())).toString("HH:mm:ss.zzz"));
                     inTime = inTime.addMSecs(AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value())); //subtract half of the transitionframes
                 }
-                if (item != timelineItem->childItems().last())
+                if (item != timelineItem->filteredClips.last())
                 {
                     outTime = outTime.addMSecs(- AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value())); //subtract half of the transitionframes
                 }
@@ -1415,7 +1415,7 @@ void MExportDialog::exportPremiere()
     {
         int totalDurationMsec = 0;
 
-        foreach (QGraphicsItem *item, timelineItem->childItems())
+        foreach (QGraphicsItem *item, timelineItem->filteredClips)
         {
             AGClipRectItem *clipItem = (AGClipRectItem *)item;
 
@@ -1503,7 +1503,7 @@ void MExportDialog::exportPremiere()
 //                qDebug()<<"Timeline"<<groupItem->fileInfo<<timelineItem->fileInfo.absolutePath()<<timelineItem->fileInfo.fileName();
 
                 QMap<QString, FileStruct> filesMap;
-                foreach (QGraphicsItem *item, timelineItem->childItems())
+                foreach (QGraphicsItem *item, timelineItem->filteredClips)
                 {
                     AGClipRectItem *clipItem = (AGClipRectItem *)item;
 
@@ -1761,18 +1761,29 @@ void MExportDialog::on_exportButton_clicked()
                 if (item->parentItem() == folderItem && item->data(mediaTypeIndex).toString() == "FileGroup" && item->data(itemTypeIndex).toString() == "Base")
                 {
                     MGroupRectItem *fileGroup = (MGroupRectItem *)item;
-                    AGViewRectItem *timeLineGroup = (AGViewRectItem *)fileGroup->focusProxy();
+                    AGViewRectItem *timelineItem = (AGViewRectItem *)fileGroup->focusProxy();
 
                     //check if descendent of rootitem
+
+                    timelineItem->filteredClips.clear();
 
                     if (fileGroup->fileInfo.fileName() != "Parking" && isChild(rootItem, fileGroup))
                     {
 //                            qDebug()<<"  Group"<<fileGroup->fileInfo.fileName()<<fileGroup->focusProxy()->data(mediaTypeIndex)<<fileGroup->focusProxy()->data(fileNameIndex);
 
-                        if (timeLineGroup->childItems().count() > 0)
-                            timelineGroupList << (AGViewRectItem *)fileGroup->focusProxy();
-                    }
+                        foreach (QGraphicsItem *item, timelineItem->clips)
+                        {
+                            AGClipRectItem *clipItem = (AGClipRectItem *)item;
 
+//                            qDebug()<<"excludedInFilter"<<clipItem->fileInfo.fileName()<<clipItem->data(excludedInFilter).toBool();
+
+                            if (!clipItem->data(excludedInFilter).toBool())
+                                timelineItem->filteredClips << clipItem;
+                        }
+
+                        if (timelineItem->filteredClips.count() > 0)
+                            timelineGroupList << timelineItem;
+                    }
                 }
             }
         }

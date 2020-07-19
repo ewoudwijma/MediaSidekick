@@ -358,13 +358,12 @@ void AGView::onAddItem(QString parentName, QString mediaType, QFileInfo fileInfo
 
 void AGView::onDeleteItem(QString mediaType, QFileInfo fileInfo)
 {
-    qDebug()<<"AGView::onDeleteItem"<<(QThread::currentThread() == qApp->thread()?"Main":"Thread")<<fileInfo.absoluteFilePath()<<mediaType;
+//    qDebug()<<"AGView::onDeleteItem"<<(QThread::currentThread() == qApp->thread()?"Main":"Thread")<<fileInfo.absoluteFilePath()<<mediaType;
 
     //if (mediaType is clip then find the original extension!) //return value?
 
     if (QThread::currentThread() != qApp->thread())
         qDebug()<<"AGMediaFileRectItem::onDeleteItem thread problem"<<fileInfo.fileName();
-
 
     foreach (QGraphicsItem *item, scene->items())
     {

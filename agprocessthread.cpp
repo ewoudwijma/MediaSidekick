@@ -3,7 +3,9 @@
 #include <QDebug>
 #include <QApplication>
 #include <QWidget>
+#ifdef Q_OS_WINxxx
 #include <QWinTaskbarProgress>
+#endif
 #include <QTimer>
 
 #ifdef Q_OS_MAC

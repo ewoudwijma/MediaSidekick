@@ -41,7 +41,8 @@ public:
 
     QList<AGProcessAndThread *> processes;
 
-//    QList<QGraphicsItem *> clips;
+    QList<QGraphicsItem *> clips;
+    QList<QGraphicsItem *> filteredClips;
 
     QGraphicsTextItem *subLogItem = nullptr;
 

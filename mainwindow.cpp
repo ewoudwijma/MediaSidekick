@@ -96,6 +96,7 @@ MainWindow::~MainWindow()
 
     if (geometry() != QSettings().value("Geometry"))
     {
+        qDebug()<<"MainWindow::~MainWindow"<<geometry();
         QSettings().setValue("Geometry", geometry());
 //    QSettings().setValue("windowState", saveState());
         QSettings().sync();
@@ -111,19 +112,6 @@ void MainWindow::resizeEvent(QResizeEvent* event)
    if (geometry() != QSettings().value("Geometry"))
    {
        qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event;
-       QSettings().setValue("Geometry", geometry());
-   //    QSettings().setValue("windowState", saveState());
-       QSettings().sync();
-   }
-}
-
-void MainWindow::moveEvent(QMoveEvent *event)
-{
-   QMainWindow::moveEvent(event);
-
-   if (geometry() != QSettings().value("Geometry"))
-   {
-       qDebug()<<"MainWindow::moveEvent"<<geometry()<<event;
        QSettings().setValue("Geometry", geometry());
    //    QSettings().setValue("windowState", saveState());
        QSettings().sync();

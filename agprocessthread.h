@@ -5,7 +5,9 @@
 #include <QThread>
 #include <QObject>
 #include <QTime>
+#ifdef Q_OS_WIN
 #include <QWinTaskbarButton>
+#endif
 
 class AGProcessAndThread: public QObject
 {

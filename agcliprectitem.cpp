@@ -18,7 +18,7 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
 
     this->mediaItem = mediaItem;
     this->timelineGroupItem = (AGViewRectItem *)mediaItem->focusProxy()->focusProxy();
-//    this->timelineGroupItem->clips<<this;
+    this->timelineGroupItem->clips<<this;
 //    qDebug()<<"AGClipRectItem addclip"<<this->timelineGroupItem->fileInfo.fileName()<<this->timelineGroupItem->clips.count();
     setFocusProxy(mediaItem);
 

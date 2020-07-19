@@ -189,7 +189,6 @@ signals:
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
     void resizeEvent(QResizeEvent *event);
-    void moveEvent(QMoveEvent *event);
 };
 
 #endif // MAINWINDOW_H
