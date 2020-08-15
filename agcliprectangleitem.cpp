@@ -149,14 +149,14 @@ void AGClipRectangleItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 //    qDebug()<<"AGClipRectangleItem::hoverMoveEvent"<<event<<event->pos().x()<<xr;
 //    if (!mDragging)
     {
-    if(event->pos().x()/draggedWidth <= 0.2 )
+    if(event->pos().x() / draggedWidth <= 0.2 )
     {
         this->setCursor(Qt::SizeHorCursor);
         this->leftDragZone=true;
         this->midDragZone=false;
         this->rightDragZone=false;
     }
-    else if(event->pos().x()/draggedWidth >= 0.8)
+    else if(event->pos().x() / draggedWidth >= 0.8)
     {
         this->setCursor(Qt::SizeHorCursor);
         this->leftDragZone=false;

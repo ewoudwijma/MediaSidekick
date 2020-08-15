@@ -37,6 +37,17 @@ void AGFileSystem::onStopThreadProcess()
     }
 }
 
+void AGFileSystem::onFileWatch(QString folderFileName, bool on)
+{
+    qDebug()<<"AGFileSystem::onFileWatch"<<folderFileName<<on;
+
+    if (on)
+        bool result = fileSystemWatcher->addPath(folderFileName);
+    else
+        bool result = fileSystemWatcher->removePath(folderFileName);
+
+}
+
 void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
 {
     if (processStopped || process->processStopped)
@@ -66,21 +77,21 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
 
     if (fileInfo.isDir())
     {
-        emit addItem("Folder", "Folder", fileInfo);
+        emit addItem(false, "Folder", "Folder", fileInfo);
 
-        emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Video"));
-        emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Image"));
-        emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Audio"));
-        emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Export"));
-        emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Project"));
-        emit addItem("Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Parking"));
+        emit addItem(false, "Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Video"));
+        emit addItem(false, "Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Image"));
+        emit addItem(false, "Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Audio"));
+        emit addItem(false, "Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Export"));
+        emit addItem(false, "Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Project"));
+        emit addItem(false, "Folder", "FileGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Parking"));
 
-        emit addItem("Video", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline")); //do not add filegroup in fileinfo as it is not a real folder
-        emit addItem("Image", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
-        emit addItem("Audio", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
-        emit addItem("Export", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
-        emit addItem("Project", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
-        emit addItem("Parking", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
+        emit addItem(false, "Video", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline")); //do not add filegroup in fileinfo as it is not a real folder
+        emit addItem(false, "Image", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
+        emit addItem(false, "Audio", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
+        emit addItem(false, "Export", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
+        emit addItem(false, "Project", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
+        emit addItem(false, "Parking", "TimelineGroup", QFileInfo(folderName + fileInfo.fileName() + "/", "Timeline"));
 
     }
     else // file  if (parentItem->toolTip().contains("Video"))
@@ -142,27 +153,27 @@ void AGFileSystem::loadItem(AGProcessAndThread *process, QFileInfo fileInfo, boo
     {
         if (exportFileFound && AGlobal().exportExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
-            emit addItem("Export", "MediaFile", fileInfo);
+            emit addItem(false, "Export", "MediaFile", fileInfo);
             loadClips(process, fileInfo);
         }
         else if (AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
-            emit addItem("Video", "MediaFile", fileInfo);
+            emit addItem(false, "Video", "MediaFile", fileInfo);
             loadClips(process, fileInfo);
         }
         else if (AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
-            emit addItem("Audio", "MediaFile", fileInfo);
+            emit addItem(false, "Audio", "MediaFile", fileInfo);
             loadClips(process, fileInfo);
         }
         else if (AGlobal().imageExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
-            emit addItem("Image", "MediaFile", fileInfo);
+            emit addItem(false, "Image", "MediaFile", fileInfo);
             loadClips(process, fileInfo);
         }
         else if (AGlobal().projectExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
         {
-            emit addItem("Project", "MediaFile", fileInfo);
+            emit addItem(false, "Project", "MediaFile", fileInfo);
 //            loadClips(process, fileInfo); //no clips for project files
         }
         else if (fileInfo.suffix().toLower() == "srt")
@@ -196,13 +207,16 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
     QStringList list;
     int nrOfClips = 0;
 
-    if(file.open(QIODevice::ReadOnly))
+    if (file.open(QIODevice::ReadOnly))
     {
-        bool result = fileSystemWatcher->addPath(fileInfo.absolutePath() + "/" + srtFileName);
-//        if (result)
-//            qDebug()<<"fileSystemWatcher->addPath true "<<fileInfo.absolutePath() + "/" + srtFileName;
-//        else
-//            qDebug()<<"fileSystemWatcher->addPath false "<<fileInfo.absolutePath() + "/" + srtFileName;
+        if (!fileSystemWatcher->files().contains(fileInfo.absolutePath() + "/" + srtFileName))
+        {
+            bool result = fileSystemWatcher->addPath(fileInfo.absolutePath() + "/" + srtFileName);
+//            if (result)
+//                qDebug()<<"fileSystemWatcher->addPath true "<<fileInfo.absolutePath() + "/" + srtFileName;
+//            else
+//                qDebug()<<"fileSystemWatcher->addPath false "<<fileInfo.absolutePath() + "/" + srtFileName;
+        }
 
         QTextStream in(&file);
         while (!in.atEnd())
@@ -243,7 +257,10 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
             start = srtContentString.indexOf("<o>");
             end = srtContentString.indexOf("</o>");
             if (start >= 0 && end >= 0)
+            {
                 value = srtContentString.mid(start+3, end - start - 3);
+                srtContentString.replace(srtContentString.mid(start, end - start + 4), ""); //remove value from srtContentString
+            }
             else
                 value = "";
             QString order = value;
@@ -251,16 +268,23 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
             start = srtContentString.indexOf("<r>");
             end = srtContentString.indexOf("</r>");
             if (start >= 0 && end >= 0)
+            {
                 value = srtContentString.mid(start+3, end - start - 3);
+                srtContentString.replace(srtContentString.mid(start, end - start + 4), ""); //remove value from srtContentString
+            }
             else
                 value = "";
-            QStandardItem *starItem = new QStandardItem;
-            starItem->setData(QVariant::fromValue(AStarRating(value.toInt())), Qt::EditRole);
+            QString stars = QString("*").repeated(value.toInt());
+//            QStandardItem *starItem = new QStandardItem;
+//            starItem->setData(QVariant::fromValue(AStarRating(value.toInt())), Qt::EditRole);
 
             start = srtContentString.indexOf("<a>");
             end = srtContentString.indexOf("</a>");
             if (start >= 0 && end >= 0)
+            {
                 value = srtContentString.mid(start+3, end - start - 3);
+                srtContentString.replace(srtContentString.mid(start, end - start + 4), ""); //remove value from srtContentString
+            }
             else
                 value = "";
             QString alike = value;
@@ -268,7 +292,10 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
             start = srtContentString.indexOf("<h>");
             end = srtContentString.indexOf("</h>");
             if (start >= 0 && end >= 0)
+            {
                 value = srtContentString.mid(start+3, end - start - 3);
+                srtContentString.replace(srtContentString.mid(start, end - start + 4), ""); //remove value from srtContentString
+            }
             else
                 value = "";
             QString hint = value;
@@ -281,6 +308,7 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
 //                tagsContainSemiColon = tagsContainSemiColon || value.contains(";");
 //                if (!tagsContainSemiColon)
 //                    value = value.replace(" ",";");
+                srtContentString.replace(srtContentString.mid(start, end - start + 4), ""); //remove value from srtContentString
             }
             else
                 value = "";
@@ -293,18 +321,18 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
 
 //                order = QString::number(clipCounter*10);
 
-                QVariant starVar = QVariant::fromValue(AStarRating(0));
                 if (tags.indexOf("r9") >= 0)
-                    starVar = QVariant::fromValue(AStarRating(5));
+                    stars = "*****";
                 else if (tags.indexOf("r8") >= 0)
-                    starVar = QVariant::fromValue(AStarRating(4));
+                    stars = "****";
                 else if (tags.indexOf("r7") >= 0)
-                    starVar = QVariant::fromValue(AStarRating(3));
+                    stars = "***";
                 else if (tags.indexOf("r6") >= 0)
-                    starVar = QVariant::fromValue(AStarRating(2));
+                    stars = "**";
                 else if (tags.indexOf("r5") >= 0)
-                    starVar = QVariant::fromValue(AStarRating(1));
-                starItem->setData(starVar, Qt::EditRole);
+                    stars = "*";
+                else
+                    stars = "";
                 tags.replace(" r5", "").replace("r5","");
                 tags.replace(" r6", "").replace("r6","");
                 tags.replace(" r7", "").replace("r7","");
@@ -318,24 +346,24 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
 
             int clipDuration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
 
-            emit addItem("Timeline", "Clip", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
+//            qDebug()<<"Clip file changed - add item"<<fileInfo.fileName()<<inTime.msecsSinceStartOfDay();
+            emit addItem(false, "Timeline", "Clip", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
 
             if (true)
             {
-                AStarRating starRating = qvariant_cast<AStarRating>(starItem->data(Qt::EditRole));
-                if (starRating.starCount() != 0)
+//                AStarRating starRating = qvariant_cast<AStarRating>(starItem->data(Qt::EditRole));
+                if (stars.length() > 0)
                 {
-                    QString stars = QString("*").repeated(starRating.starCount());
-                    emit addItem("Clip", "Tag", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay(), stars);
+                    emit addItem(false, "Clip", "Tag", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay(), stars);
                 }
 
                 if (alike == "true")
-                    emit addItem("Clip", "Tag", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay(), "✔");
+                    emit addItem(false, "Clip", "Tag", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay(), "✔");
 
                 QStringList tagsList = tags.split(";");
                 foreach (QString tag, tagsList)
                     if (tag != "")
-                        emit addItem("Clip", "Tag", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay(), tag);
+                        emit addItem(false, "Clip", "Tag", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay(), tag);
             }
         }
     }
@@ -348,7 +376,7 @@ void AGFileSystem::onFileChanged(const QString &path)
     if (!fileSystemWatcher->files().contains(path))
     {
         QFile file(path);
-        if (file.exists())
+        if (file.exists()) //new file
         {
             bool result = fileSystemWatcher->addPath(path);
 //            if (result)
@@ -356,15 +384,15 @@ void AGFileSystem::onFileChanged(const QString &path)
 //            else
 //                qDebug()<<"AGFileSystem::onFileChanged false addpath - not in watch - file exists (new file!) - added in watch"<<path;
         }
-        else
+        else // file does not exist, so is deleted, delete from view.
         {
 //            qDebug()<<"AGFileSystem::onFileChanged - not in watch - file not exists (deleted!)"<<path;
             QFileInfo fileInfo(path);
 
             if (fileInfo.suffix().toLower() == "srt") //clips
-                emit deleteItem("Clip", fileInfo);
+                emit deleteItem(false, "Clip", fileInfo);
             else
-                emit deleteItem("MediaFile", fileInfo);
+                emit deleteItem(false, "MediaFile", fileInfo);
         }
     }
     else //file changed
@@ -373,10 +401,11 @@ void AGFileSystem::onFileChanged(const QString &path)
 
         //add a small delay to give OS the chance to release lock on file (avoid Permission denied erro)
 
-        if (fileInfo.suffix() == "srt")
+        if (fileInfo.suffix() == "srtxx") //not for the moment
         {
-            //remove and create clips
-            emit deleteItem("Clip", fileInfo); //is .srt
+
+//            qDebug()<<"Clip file changed - delete items"<<fileInfo.fileName();
+            emit deleteItem(false, "Clip", fileInfo); //is .srt
 
             if (!processStopped)
             {
@@ -384,13 +413,16 @@ void AGFileSystem::onFileChanged(const QString &path)
                 processes<<process;
                 process->command("Load clips", [=]()
                 {
+                    //remove and create clips
+//                    qDebug()<<"Clip file changed - load clips"<<fileInfo.fileName();
                     loadClips(process, fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
+//                    qDebug()<<"Clip file changed - done"<<fileInfo.fileName();
                 });
                 process->start();
             }
         }
         else
-            emit fileChanged(fileInfo);
+            emit fileChanged(fileInfo); //send to view to call mediaItem loadmedia
     }
 }
 

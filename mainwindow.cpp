@@ -34,6 +34,8 @@
 
 #include <QScrollBar>
 #include <QGraphicsScene>
+#include <QTextEdit>
+#include <QTextBrowser>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -52,11 +54,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     loadSettings();
 
-    onClipsFilterChanged(false); //crash if removed...
+//    onClipsFilterChanged(false); //crash if removed...
 
     allTooltips();
-
-    on_actionDebug_mode_triggered(false); //no debug mode
 
     QTimer::singleShot(0, this, [this]()->void
     {
@@ -111,7 +111,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
    if (geometry() != QSettings().value("Geometry"))
    {
-       qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event;
+//       qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event;
        QSettings().setValue("Geometry", geometry());
    //    QSettings().setValue("windowState", saveState());
        QSettings().sync();
@@ -150,10 +150,19 @@ bool MainWindow::checkExit()
 
     if (exitYes)
     {
-        if (ui->clipsTableView->checkSaveIfClipsChanged())
-            on_actionSave_triggered();
+        //check unsaved changes
+        if (ui->graphicsView->undoIndex != ui->graphicsView->undoSavePoint)
+        {
+            QMessageBox::StandardButton reply;
+            reply = QMessageBox::question(this, "Check changes", tr("There are %1 changes. Do you want to save these changes").arg(QString::number(qAbs(ui->graphicsView->undoIndex - ui->graphicsView->undoSavePoint))),
+                                          QMessageBox::Yes|QMessageBox::No);
 
-        ui->graphicsView->clearAll();
+            if (reply == QMessageBox::Yes)
+                on_actionSave_triggered();
+        }
+//        if (ui->clipsTableView->checkSaveIfClipsChanged())
+
+//        ui->graphicsView->clearAll();
 
         foreach (AGProcessAndThread *process, processes)
         {
@@ -180,6 +189,7 @@ bool MainWindow::checkExit()
 //        }
     }
 
+//    qDebug()<<"checkexit done"<<exitYes;
     return exitYes;
 }
 
@@ -207,42 +217,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 void MainWindow::changeUIProperties()
 {
     //added designer settings
-    ui->tagFilter1ListView->setMaximumHeight(ui->resetSortButton->height());
-    ui->tagFilter2ListView->setMaximumHeight(ui->resetSortButton->height());
-
-    ui->resetSortButton->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
-
-//    tagFilter1Model = new QStandardItemModel(this);
-//    ui->tagFilter1ListView->setModel(tagFilter1Model);
-//    ui->tagFilter1ListView->setFlow(QListView::LeftToRight);
-//    ui->tagFilter1ListView->setWrapping(true);
-//    ui->tagFilter1ListView->setDragDropMode(QListView::DragDrop);
-//    ui->tagFilter1ListView->setDefaultDropAction(Qt::MoveAction);
-//    ui->tagFilter1ListView->setSpacing(4);
-//    ui->tagFilter1ListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-//    connect(ui->tagFilter1ListView, &ATagsListView::doubleClicked, this, &MainWindow::onTagFilter1ListViewDoubleClicked);
-
-
-//    tagFilter2Model = new QStandardItemModel(this);
-//    ui->tagFilter2ListView->setModel(tagFilter2Model);
-//    ui->tagFilter2ListView->setFlow(QListView::LeftToRight);
-//    ui->tagFilter2ListView->setWrapping(true);
-//    ui->tagFilter2ListView->setDragDropMode(QListView::DragDrop);
-//    ui->tagFilter2ListView->setDefaultDropAction(Qt::MoveAction);
-//    ui->tagFilter2ListView->setSpacing(4);
-//    ui->tagFilter2ListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-    ui->videoFilesTreeView->setType("Video");
-    ui->audioFilesTreeView->setType("Audio");
-    ui->exportFilesTreeView->setType("Export");
 
     //video/media window
-
-    ui->positionSpinBox->setKeyboardTracking(false);
-    ui->positionSpinBox->setFixedWidth(120);
-    ui->durationLabel->setText(" / --:--:--:--");
-    ui->durationLabel->setFixedWidth(120);
 
     //https://joekuan.files.wordpress.com/2015/09/screen3.png
     ui->actionSave->setIcon(style()->standardIcon(QStyle::SP_DriveFDIcon));
@@ -264,41 +240,6 @@ void MainWindow::changeUIProperties()
     ui->actionWhatIsNew->setIcon(QIcon(QPixmap::fromImage(QImage(":/MediaSidekick.ico"))));
 //    ui->actionRepeat_context_sensible_help->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
 
-    QList<QPushButton *> playerControls;
-    playerControls<<ui->skipBackwardButton<<ui->seekBackwardButton<<ui->playButton<<ui->seekForwardButton<<ui->skipForwardButton<<ui->stopButton<<ui->muteButton<<ui->setInButton<<ui->setOutButton;
-    foreach (QPushButton *widget, playerControls)
-    {
-        widget->setText("");
-        widget->setMaximumWidth(widget->height());
-    }
-
-    ui->skipBackwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSkipBackward));
-    ui->seekBackwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekBackward));
-    ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    ui->seekForwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSeekForward));
-    ui->skipForwardButton->setIcon(style()->standardIcon(QStyle::SP_MediaSkipForward));
-
-    ui->stopButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
-    ui->muteButton->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
-
-    ui->setInButton->setText("{");
-    ui->setOutButton->setText("}");
-
-    ui->speedComboBox->addItem("-2x");
-    ui->speedComboBox->addItem("-1x");
-    ui->speedComboBox->addItem("1 fps");
-    ui->speedComboBox->addItem("2 fps");
-    ui->speedComboBox->addItem("4 fps");
-    ui->speedComboBox->addItem("8 fps");
-    ui->speedComboBox->addItem("16 fps");
-    ui->speedComboBox->addItem("1x");
-    ui->speedComboBox->addItem("2x");
-    ui->speedComboBox->addItem("4x");
-    ui->speedComboBox->addItem("8x");
-    ui->speedComboBox->addItem("16x");
-
-    ui->speedComboBox->setCurrentText("1x");
-
     ui->mediaFileScaleSlider->setStyleSheet("QSlider::sub-page:Horizontal { background-color: #9F2425; }"
                   "QSlider::add-page:Horizontal { background-color: #333333; }"
                   "QSlider::groove:Horizontal { background: transparent; height:4px; }"
@@ -310,127 +251,51 @@ void MainWindow::changeUIProperties()
                   "QSlider::handle:Horizontal { width:10px; border-radius:5px; background:#249f55; margin: -5px 0px -5px 0px; }");
 
 //https://forum.qt.io/topic/87256/how-to-set-qslider-handle-to-round/3
-    ui->refreshViewButton->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));//SP_DialogCancelButton
+    ui->actionRefresh->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));//SP_DialogCancelButton
 
+    ui->actionUndo->setIcon(QIcon(QPixmap::fromImage(QImage(":/images/undo.png"))));
+    ui->actionRedo->setIcon(QIcon(QPixmap::fromImage(QImage(":/images/redo.png"))));
+
+    ui->actionZoom_In->setIcon(QIcon(QPixmap::fromImage(QImage(":/images/zoomin.png"))));
+    ui->actionZoom_Out->setIcon(QIcon(QPixmap::fromImage(QImage(":/images/zoomout.png"))));
 }
 
 void MainWindow::allConnects()
 {
-    ui->graphicsView1->addNode("folder", 0, 0);
-    ui->graphicsView1->addNode("prop", 5, 0);
-    ui->graphicsView1->addNode("main", 8, 0);
-    ui->graphicsView1->addNode("tf1", 13, 0);
+//    ui->graphicsView1->addNode("folder", 0, 0);
+//    ui->graphicsView1->addNode("prop", 5, 0);
+//    ui->graphicsView1->addNode("main", 8, 0);
+//    ui->graphicsView1->addNode("tf1", 13, 0);
 
-    ui->graphicsView1->addNode("time", 2, 3);
-    ui->graphicsView1->addNode("video", 5, 3);
-    ui->graphicsView1->addNode("star", 11, 3);
-    ui->graphicsView1->addNode("tf2", 13, 3);
+//    ui->graphicsView1->addNode("time", 2, 3);
+//    ui->graphicsView1->addNode("video", 5, 3);
+//    ui->graphicsView1->addNode("star", 11, 3);
+//    ui->graphicsView1->addNode("tf2", 13, 3);
 
-    ui->graphicsView1->addNode("files", 0, 6);
-    ui->graphicsView1->addNode("clip", 8, 6);
-    ui->graphicsView1->addNode("tags", 13, 6);
+//    ui->graphicsView1->addNode("files", 0, 6);
+//    ui->graphicsView1->addNode("clip", 8, 6);
+//    ui->graphicsView1->addNode("tags", 13, 6);
 
-//    ui->graphicsView2->addNode("folder", 0, 0);
-//    ui->graphicsView2->addNode("prop", 5, 0);
-    ui->graphicsView2->addNode("main", 12, 3);
+//    ui->graphicsView2->addNode("main", 12, 3);
 
-    ui->graphicsView2->addNode("time", 6, 6);
-    ui->graphicsView2->addNode("video", 6, 0);
+//    ui->graphicsView2->addNode("time", 6, 6);
+//    ui->graphicsView2->addNode("video", 6, 0);
 
-//    ui->graphicsView2->addNode("files", 0, 6);
-    ui->graphicsView2->addNode("clip", 0, 3);
+//    ui->graphicsView2->addNode("clip", 0, 3);
 
-    QList<AFilesTreeView *> filesTreeList;
-    filesTreeList << ui->videoFilesTreeView;
-    filesTreeList << ui->audioFilesTreeView;
-    filesTreeList << ui->exportFilesTreeView;
-    foreach (AFilesTreeView* filesTree, filesTreeList)
-    {
-        connect(filesTree, &AFilesTreeView::fileIndexClicked, ui->clipsTableView, &AClipsTableView::onFileIndexClicked);
-        ui->graphicsView1->connectNodes("files", "clip", "file");
-        connect(filesTree, &AFilesTreeView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia); //stop and release
-        ui->graphicsView1->connectNodes("files", "video", "release");
-
-        connect(ui->clipsTableView, &AClipsTableView::clipIndexClicked, filesTree, &AFilesTreeView::onClipIndexClicked);
-        ui->graphicsView1->connectNodes("clip", "files", "clip");
-    }
-
-    connect(ui->clipsTableView, &AClipsTableView::folderSelectedItemModel, ui->tagsListView, &ATagsListView::onFolderSelected);
-    ui->graphicsView1->connectNodes("clip", "tags", "folder");
-    connect(ui->clipsTableView, &AClipsTableView::folderSelectedProxyModel, this,  &MainWindow::onFolderSelected); //to set clip counter and more
-    ui->graphicsView1->connectNodes("clip", "main", "folder");
-
-    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, ui->videoWidget, &AVideoWidget::onFileIndexClicked); //setmedia
-    ui->graphicsView1->connectNodes("clip", "video", "file");
-    connect(ui->clipsTableView, &AClipsTableView::fileIndexClicked, this, &MainWindow::onFileIndexClicked); //trigger onclipfilterchanged
-    ui->graphicsView1->connectNodes("clip", "prop", "file");
-
-    connect(ui->clipsTableView, &AClipsTableView::clipIndexClicked, ui->videoWidget, &AVideoWidget::onClipIndexClicked);
-    ui->graphicsView1->connectNodes("clip", "video", "clip");
-
-    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, ui->videoWidget, &AVideoWidget::onClipsChangedToVideo);
-    ui->graphicsView2->connectNodes("clip", "video", "clipchangevideo");
-    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToVideo, this,  &MainWindow::onClipsChangedToVideo);
-    ui->graphicsView2->connectNodes("clip", "main", "clipchangevideo");
-    connect(ui->clipsTableView, &AClipsTableView::clipsChangedToTimeline, ui->timelineWidget,  &ATimeline::onClipsChangedToTimeline);
-    ui->graphicsView2->connectNodes("clip", "time", "clipchangetimeline");
-
-    connect(ui->clipsTableView, &AClipsTableView::setIn, ui->videoWidget, &AVideoWidget::onSetIn);
-    connect(ui->clipsTableView, &AClipsTableView::setOut, ui->videoWidget, &AVideoWidget::onSetOut);
-
-//    connect(ui->clipsTableView, &AClipsTableView::frameRateChanged, this, &MainWindow::onFrameRateChanged);
-
-    connect(ui->clipsTableView, &AClipsTableView::showInStatusBar, this, &MainWindow::onShowInStatusBar);
-
-    connect(ui->clipsTableView, &AClipsTableView::releaseMedia, ui->videoWidget, &AVideoWidget::onReleaseMedia);
-
-    connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, ui->clipsTableView, &AClipsTableView::onVideoPositionChanged);
-    ui->graphicsView1->connectNodes("video", "clip", "pos");
-    connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, ui->timelineWidget, &ATimeline::onVideoPositionChanged);
-    ui->graphicsView2->connectNodes("video", "time", "pos");
-    connect(ui->videoWidget, &AVideoWidget::videoPositionChanged, this, &MainWindow::onVideoPositionChanged);
-    ui->graphicsView2->connectNodes("video", "main", "pos");
-    connect(ui->videoWidget, &AVideoWidget::durationChanged, this, &MainWindow::onDurationChanged);
-    connect(ui->videoWidget, &AVideoWidget::scrubberInChanged, ui->clipsTableView, &AClipsTableView::onScrubberInChanged);
-    ui->graphicsView1->connectNodes("video", "clip", "in");
-    connect(ui->videoWidget, &AVideoWidget::scrubberOutChanged, ui->clipsTableView, &AClipsTableView::onScrubberOutChanged);
-    ui->graphicsView1->connectNodes("video", "clip", "out");
-    connect(ui->videoWidget, &AVideoWidget::createNewEdit, this, &MainWindow::onCreateNewEdit);
-
-    connect(ui->videoWidget, &AVideoWidget::playerStateChanged, this, &MainWindow::onPlayerStateChanged);
-    connect(ui->videoWidget, &AVideoWidget::mutedChanged, this, &MainWindow::onMutedChanged);
-    connect(ui->videoWidget, &AVideoWidget::playbackRateChanged, this, &MainWindow::onPlaybackRateChanged);
-
-    connect(ui->timelineWidget, &ATimeline::timelinePositionChanged, ui->videoWidget, &AVideoWidget::onTimelinePositionChanged);
-    ui->graphicsView2->connectNodes("time", "video", "pos");
-    connect(ui->timelineWidget, &ATimeline::clipsChangedToVideo, ui->videoWidget, &AVideoWidget::onClipsChangedToVideo);
-    ui->graphicsView2->connectNodes("time", "video", "clipchangevideo");
-
-    connect(this, &MainWindow::clipsFilterChanged, ui->clipsTableView, &AClipsTableView::onClipsFilterChanged);
-    ui->graphicsView1->connectNodes("main", "clip", "filter");
-
-    connect(this, &MainWindow::timelineWidgetsChanged, ui->timelineWidget, &ATimeline::onTimelineWidgetsChanged);
-    ui->graphicsView2->connectNodes("main", "video", "widgetchanged");
-
-    connect(ui->tagFilter1ListView, &ATagsListView::tagChanged,  this, &MainWindow::onTagFilter1ListViewChanged);
-    connect(ui->tagFilter2ListView, &ATagsListView::tagChanged,  this, &MainWindow::onTagFilter2ListViewChanged);
-
-    ui->graphicsView1->connectNodes("tf1", "main", "filter");
-
-    ui->graphicsView1->connectNodes("tf2", "main", "filter");
-
-    //do not show the graph tab (only in debug mode)
-    graphWidget1 = ui->clipsTabWidget->widget(1);
-    graphWidget2 = ui->clipsTabWidget->widget(2);
-    graphicsWidget = ui->clipsTabWidget->widget(3);
+//    //do not show the graph tab (only in debug mode)
+//    graphWidget1 = ui->clipsTabWidget->widget(1);
+//    graphWidget2 = ui->clipsTabWidget->widget(2);
+//    graphicsWidget = ui->clipsTabWidget->widget(3);
 
     connect(&m_network, SIGNAL(finished(QNetworkReply*)), SLOT(onUpgradeCheckFinished(QNetworkReply*)));
-
-    connect(ui->positionSpinBox, SIGNAL(valueChanged(int)), ui->videoWidget, SLOT(onSpinnerPositionChanged(int))); //using other syntax not working...
 
     connect(agFileSystem, &AGFileSystem::addItem, ui->graphicsView, &AGView::onAddItem, Qt::BlockingQueuedConnection); //to draw item on scene immediately
     connect(agFileSystem, &AGFileSystem::deleteItem, ui->graphicsView, &AGView::onDeleteItem);
     connect(agFileSystem, &AGFileSystem::fileChanged, ui->graphicsView, &AGView::onFileChanged);
+
+    connect(ui->graphicsView, &AGView::fileWatch, agFileSystem, &AGFileSystem::onFileWatch);
+    connect(ui->graphicsView, &AGView::showInStatusBar, this, &MainWindow::onShowInStatusBar);
 
 } //allConnects
 
@@ -442,35 +307,10 @@ void MainWindow::loadSettings()
 
 //    restoreState(QSettings().value("windowState").toByteArray());
 
-    ui->tagFilter1ListView->stringToModel(QSettings().value("tagFilter1").toString());
-    ui->tagFilter2ListView->stringToModel(QSettings().value("tagFilter2").toString());
-
-    Qt::CheckState checkState;
-    if (QSettings().value("alikeCheckBox").toBool())
-        checkState = Qt::Checked;
-    else
-        checkState = Qt::Unchecked;
-    ui->alikeCheckBox->setCheckState(checkState);
-
-    if (QSettings().value("fileOnlyCheckBox").toBool())
-        checkState = Qt::Checked;
-    else
-        checkState = Qt::Unchecked;
-    ui->fileOnlyCheckBox->setCheckState(checkState);
-
-    ui->filesTabWidget->setCurrentIndex(QSettings().value("filesTabIndex").toInt());
-    ui->clipsTabWidget->setCurrentIndex(QSettings().value("clipTabIndex").toInt());
-    ui->tabUIWidget->setCurrentIndex(QSettings().value("uiTabIndex").toInt());
-
-    ui->ratingFilterComboBox->setCurrentIndex(QSettings().value("ratingFilterComboBox").toInt());
-
     if (QSettings().value("tooltipsOn").toString() == "")
         ui->actionTooltips->setChecked(true);
     else
         ui->actionTooltips->setChecked(QSettings().value("tooltipsOn").toBool());
-
-    if (QSettings().value("muteOn").toBool())
-        ui->videoWidget->onMute();
 
     QString viewMode = QSettings().value("viewMode").toString(); //default
     bool syncNeeded = false;
@@ -548,12 +388,12 @@ void MainWindow::allTooltips()
                                       "<li>Warning: For movie files with more than 100 clips and if more than 100 files with clips are loaded, a warning is given with the option to skip or cancel.</li>"
                                       "</ul>"));
 
-    ui->videoFilesTreeView->setToolTip(tr("<p><b>File</b></p>"
-                                     "<p><i>Files within the selected folder</i></p>"
-                                     "<ul>"
-                                     "<li><b>Click on file</b>: Show the clips of this file on the timeline and in the clips tab</li>"
-                                     "</ul>"
-                                          ));
+//    ui->videoFilesTreeView->setToolTip(tr("<p><b>File</b></p>"
+//                                     "<p><i>Files within the selected folder</i></p>"
+//                                     "<ul>"
+//                                     "<li><b>Click on file</b>: Show the clips of this file on the timeline and in the clips tab</li>"
+//                                     "</ul>"
+//                                          ));
 
     //video
 //    ui->videoWidget->setToolTip(tr("<p><b>Media window</b></p>"
@@ -564,156 +404,125 @@ void MainWindow::allTooltips()
 //                                   "</ul>"
 //                                ));
 
-    ui->playButton->setToolTip(tr("<p><b>Play or pause</b></p>"
-                              "<p><i>Play or pause the video</i></p>"
-                              "<ul>"
-                              "<li>Shortcut: Space</li>"
-                              "</ul>"));
-    ui->stopButton->setToolTip(tr("<p><b>Stop the video</b></p>"
-                                "<p><i>Stop the video</i></p>"
-                                ));
+//    ui->playButton->setToolTip(tr("<p><b>Play or pause</b></p>"
+//                              "<p><i>Play or pause the video</i></p>"
+//                              "<ul>"
+//                              "<li>Shortcut: Space</li>"
+//                              "</ul>"));
+//    ui->stopButton->setToolTip(tr("<p><b>Stop the video</b></p>"
+//                                "<p><i>Stop the video</i></p>"
+//                                ));
 
-    ui->skipForwardButton->setToolTip(tr("<p><b>Go to next or previous clip</b></p>"
-                              "<p><i>Go to next or previous clip</i></p>"
-                              "<ul>"
-                              "<li>Shortcut: %1up and %1down</li>"
-                              "</ul>").arg(commandControl));
-    ui->skipBackwardButton->setToolTip(ui->skipForwardButton->toolTip());
+//    ui->skipForwardButton->setToolTip(tr("<p><b>Go to next or previous clip</b></p>"
+//                              "<p><i>Go to next or previous clip</i></p>"
+//                              "<ul>"
+//                              "<li>Shortcut: %1up and %1down</li>"
+//                              "</ul>").arg(commandControl));
+//    ui->skipBackwardButton->setToolTip(ui->skipForwardButton->toolTip());
 
-    ui->seekBackwardButton->setToolTip(tr("<p><b>Go to next or previous frame</b></p>"
-                              "<p><i>Go to next or previous frame</i></p>"
-                              "<ul>"
-                              "<li>Shortcut: %1left and %1right</li>"
-                              "</ul>").arg(commandControl));
-    ui->seekForwardButton->setToolTip(ui->seekBackwardButton->toolTip());
+//    ui->seekBackwardButton->setToolTip(tr("<p><b>Go to next or previous frame</b></p>"
+//                              "<p><i>Go to next or previous frame</i></p>"
+//                              "<ul>"
+//                              "<li>Shortcut: %1left and %1right</li>"
+//                              "</ul>").arg(commandControl));
+//    ui->seekForwardButton->setToolTip(ui->seekBackwardButton->toolTip());
 
-    ui->setInButton->setToolTip(tr("<p><b>Set in- and out- point</b></p>"
-                                  "<p><i>Set the inpoint of a new clip or change the in- or outpoint of the current clip to the current position on the timeline</i></p>"
-                                  "<ul>"
-                                  "<li>Change: inpoint before outpoint of last selected clip or outpoint after inpoint of last selected clip</li>"
-//                                  "<li>Set: No last selected clip or inpoint after outpoint of last selected clip and outpoint before inpoint of last selected clip</li>"
-                                  "<li>Shortcut: %1i and %1o</li>"
-                                  "</ul>").arg(commandControl));
-    ui->setOutButton->setToolTip(ui->setInButton->toolTip());
+//    ui->setInButton->setToolTip(tr("<p><b>Set in- and out- point</b></p>"
+//                                  "<p><i>Set the inpoint of a new clip or change the in- or outpoint of the current clip to the current position on the timeline</i></p>"
+//                                  "<ul>"
+//                                  "<li>Change: inpoint before outpoint of last selected clip or outpoint after inpoint of last selected clip</li>"
+////                                  "<li>Set: No last selected clip or inpoint after outpoint of last selected clip and outpoint before inpoint of last selected clip</li>"
+//                                  "<li>Shortcut: %1i and %1o</li>"
+//                                  "</ul>").arg(commandControl));
+//    ui->setOutButton->setToolTip(ui->setInButton->toolTip());
 
-    ui->muteButton->setToolTip(tr("<p><b>Mute or unmute</b></p>"
-                              "<p><i>Mute or unmute sound (toggle)</i></p>"
-                              "<ul>"
-                              "<li>Video files are muted if selected. Audio files are unmuted if selected</li>"
-                              "<li>Shortcut mute toggle: %1m</li>"
-                              "</ul>").arg(commandControl));
-    ui->speedComboBox->setToolTip(tr("<p><b>Speed</b></p>"
-                                 "<p><i>Change the play speed of the video</i></p>"
-                                 "<ul>"
-                                 "<li>Supported speeds are depending on the media file codec installed on your computer</li>"
-                                 "</ul>"));
+//    ui->muteButton->setToolTip(tr("<p><b>Mute or unmute</b></p>"
+//                              "<p><i>Mute or unmute sound (toggle)</i></p>"
+//                              "<ul>"
+//                              "<li>Video files are muted if selected. Audio files are unmuted if selected</li>"
+//                              "<li>Shortcut mute toggle: %1m</li>"
+//                              "</ul>").arg(commandControl));
+//    ui->speedComboBox->setToolTip(tr("<p><b>Speed</b></p>"
+//                                 "<p><i>Change the play speed of the video</i></p>"
+//                                 "<ul>"
+//                                 "<li>Supported speeds are depending on the media file codec installed on your computer</li>"
+//                                 "</ul>"));
 
     //tt clip filters
-    ui->alikeCheckBox->setToolTip(tr("<p><b>Alike</b></p>"
-                                     "<p><i>Check if other clips are 'alike' this clip. This is typically the case with Action-cam footage: multiple shots which are similar.</i></p>"
-                                     "<p><i>This is used to exclude similar clips from the exported video.</i></p>"
-                                     "<ul>"
-                                     "<li>Alike filter checkbox: Show only alike clips</li>"
-                                     "<li>Alike column: Set if this clip is like another clip <%1 A></li>"
-                                     "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
-                                     "<li>Hint: Give the best of the alikes a higher rating than the others</li>"
-                                     "<li>Hint: Give alike clips the same tags to filter on them later</li>"
-                                     "</ul>"
-                                  ).arg(commandControl));
-
-    ui->ratingFilterComboBox->setToolTip(tr("<p><b>Ratings</b></p>"
-                                              "<p><i>Give a rating to a clip (0 to 5 stars)</i></p>"
-                                              "<ul>"
-                                                "<li>Rating filter: Select 0 to 5 stars. All clips with same or higher rating are shown</li>"
-                                                "<li>Rating column: Double click to change the rating (or %1 0 to %1 5 to rate the current clip)</li>"
-                                                "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
-                                              "</ul>").arg(commandControl));
 
     foreach (QAction *toolBarAction, ui->mainToolBar->actions())
     {
         if (toolBarAction->text() == "A&like")
-            toolBarAction->setToolTip(ui->alikeCheckBox->toolTip());
+            toolBarAction->setToolTip(tr("<p><b>Alike</b></p>"
+                                                                              "<p><i>Check if other clips are 'alike' this clip. This is typically the case with Action-cam footage: multiple shots which are similar.</i></p>"
+                                                                              "<p><i>This is used to exclude similar clips from the exported video.</i></p>"
+                                                                              "<ul>"
+                                                                              "<li>Alike filter checkbox: Show only alike clips</li>"
+                                                                              "<li>Alike column: Set if this clip is like another clip <%1 A></li>"
+                                                                              "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
+                                                                              "<li>Hint: Give the best of the alikes a higher rating than the others</li>"
+                                                                              "<li>Hint: Give alike clips the same tags to filter on them later</li>"
+                                                                              "</ul>"
+                                                                           ).arg(commandControl));
         else if (toolBarAction->toolTip().contains("star"))
-                 toolBarAction->setToolTip(ui->ratingFilterComboBox->toolTip());
+                 toolBarAction->setToolTip(tr("<p><b>Ratings</b></p>"
+                                                                                            "<p><i>Give a rating to a clip (0 to 5 stars)</i></p>"
+                                                                                            "<ul>"
+                                                                                              "<li>Rating filter: Select 0 to 5 stars. All clips with same or higher rating are shown</li>"
+                                                                                              "<li>Rating column: Double click to change the rating (or %1 0 to %1 5 to rate the current clip)</li>"
+                                                                                              "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
+                                                                                            "</ul>").arg(commandControl));
     }
 
-    ui->tagFilter1ListView->setToolTip(tr("<p><b>Tag filters</b></p>"
-                                          "<p><i>Define which clips are shown based on their tags</i></p>"
-                                          "<ul>"
-                                          "<li>Tag fields: The following logical condition applies: (Left1 or left2 or left3 ...) and (right1 or right2 or right3 ...)</li>"
-                                          "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
-                                          "<li>Double click: Remove a tag</li>"
-                                          "</ul>"));
+//    ui->tagFilter1ListView->setToolTip(tr("<p><b>Tag filters</b></p>"
+//                                          "<p><i>Define which clips are shown based on their tags</i></p>"
+//                                          "<ul>"
+//                                          "<li>Tag fields: The following logical condition applies: (Left1 or left2 or left3 ...) and (right1 or right2 or right3 ...)</li>"
+//                                          "<li>Timeline: Only clips which meet the filter criteria are shown in the timeline</li>"
+//                                          "<li>Double click: Remove a tag</li>"
+//                                          "</ul>"));
 
-    ui->tagFilter2ListView->setToolTip(ui->tagFilter1ListView->toolTip());
+//    ui->tagFilter2ListView->setToolTip(ui->tagFilter1ListView->toolTip());
 
-    ui->fileOnlyCheckBox->setToolTip(tr("<p><b>File only</b></p>"
-                                        "<p><i>Show only clips of the selected file</i></p>"
-                                        "<ul>"
-                                        "<li><b>Timeline</b>: If file only is checked, the timeline only shows clips of the selected file</li>"
-                                        "</ul>"));
+//    ui->fileOnlyCheckBox->setToolTip(tr("<p><b>File only</b></p>"
+//                                        "<p><i>Show only clips of the selected file</i></p>"
+//                                        "<ul>"
+//                                        "<li><b>Timeline</b>: If file only is checked, the timeline only shows clips of the selected file</li>"
+//                                        "</ul>"));
 
     //tt clips table
-    ui->resetSortButton->setToolTip(tr("<p><b>Reset sort</b></p>"
-                                       "<p><i>Set the order of clips back to file order</i></p>"
-                                       ));
+//    ui->resetSortButton->setToolTip(tr("<p><b>Reset sort</b></p>"
+//                                       "<p><i>Set the order of clips back to file order</i></p>"
+//                                       ));
 
-    ui->clipsTableView->setToolTip(tr("<p><b>Clips list</b></p>"
-                                     "<p><i>Show the clips for the files in the selected folder</i></p>"
-                                     "<ul>"
-                                     "<li>Only clips applying to the <b>filters</b> above this table are shown</li>"
-                                     "<li>Move over the column headers to see <b>column tooltips</b></li>"
-                                     "<li>Clips belonging to the <b>selected file</b> are highlighted gray</li>"
-                                     "<li>The clip <b>currently shown</b> in the video window is highlighted blue</li>"
-                                     "<li>To <b>delete</b> a clip: right mouse click</li>"
-                                     "<li>To change the <b>order</b> of clips: drag the number on the left of this table up or down</li>"
-                                      "<li>Note: Clips are saved on your filesystems as <b>.srt files</b>. They have the same name as the media file for which the edits are made.</li>"
-                                     "</ul>"
-                                     ));
-
-    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(inIndex)->setToolTip(tr("<p><b>Title</b></p>"
-                                                                                   "<p><i>Description</i></p>"
-                                                                                   "<ul>"
-                                                                                   "<li>Feature 1</li>"
-                                                                                   "</ul>"));
-    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(outIndex)->setToolTip( ui->clipsTableView->clipsItemModel->horizontalHeaderItem(inIndex)->toolTip());
-    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(durationIndex)->setToolTip( ui->clipsTableView->clipsItemModel->horizontalHeaderItem(inIndex)->toolTip());
-    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(ratingIndex)->setToolTip(ui->ratingFilterComboBox->toolTip());
-    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(alikeIndex)->setToolTip(ui->alikeCheckBox->toolTip());
-    ui->clipsTableView->clipsItemModel->horizontalHeaderItem(tagIndex)->setToolTip(tr("<p><b>Tags per clip</b></p>"
-                                                                                    "<p><i>Show the tags per clip</i></p>"
-                                                                                    "<ul>"
-                                                                                    "<li>To Add: drag tag on the right to Tags field</li>"
-                                                                                    "<li>To delete: First click to select item, second click to go into edit mode, double click to delete a tag</li>"
-                                                                                    "</ul>"
-                                                                                    ));
+//    ui->clipsTableView->setToolTip(tr("<p><b>Clips list</b></p>"
+//                                     "<p><i>Show the clips for the files in the selected folder</i></p>"
+//                                     "<ul>"
+//                                     "<li>Only clips applying to the <b>filters</b> above this table are shown</li>"
+//                                     "<li>Move over the column headers to see <b>column tooltips</b></li>"
+//                                     "<li>Clips belonging to the <b>selected file</b> are highlighted gray</li>"
+//                                     "<li>The clip <b>currently shown</b> in the video window is highlighted blue</li>"
+//                                     "<li>To <b>delete</b> a clip: right mouse click</li>"
+//                                     "<li>To change the <b>order</b> of clips: drag the number on the left of this table up or down</li>"
+//                                      "<li>Note: Clips are saved on your filesystems as <b>.srt files</b>. They have the same name as the media file for which the edits are made.</li>"
+//                                     "</ul>"
+//                                     ));
 
     //tt tags
-    ui->newTagLineEdit->setToolTip(tr("<p><b>Tag field</b></p>"
-                                      "<p><i>Create and remove tags</i></p>"
-                                      "<ul>"
-                                      "<li>Add new tag to tag list: fill in tag name and press return</li>"
-                                      "</ul>"
-                                      ));
-    ui->tagsListView->setToolTip(tr("<p><b>Tag list</b></p>"
-                                    "<p><i>List of tags used in clips or filter</i></p>"
-                                    "<ul>"
-                                    "<li>Add tag to clip: Drag and drop to tag column of clips</li>"
-                                    "<li>Add tag to filter: Drag and drop to filters</li>"
-                                    "<li>Delete tags: double click (or drag tag and drop in the tag field)</li>"
-                                    "</ul>"
-                                    ));
-
-    ui->graphicsView->setToolTip(tr("<p><b>Media view</b></p>"
-                                    "<p><i>Graphical presentations of folders, media files and clips</i></p>"
-                                    "<ul>"
-                                    "<li>Only (sub) folders with mediafiles shown</li>"
-                                    "<li><b>Scroll Wheel</b>: Scroll up and down</li>"
-                                    "<li><b>%1Scroll Wheel</b>: Zoom-in and -out at current mouse position</li>"
-                                    "<li><b>Left mouse click and drag</b>: Move around the scene</li>"
-                                    "<li><b>Right mouse click on item</b>: Actions and properties of the item</li>"
-                                    "</ul>"
-                                    ).arg(commandControl));
+//    ui->newTagLineEdit->setToolTip(tr("<p><b>Tag field</b></p>"
+//                                      "<p><i>Create and remove tags</i></p>"
+//                                      "<ul>"
+//                                      "<li>Add new tag to tag list: fill in tag name and press return</li>"
+//                                      "</ul>"
+//                                      ));
+//    ui->tagsListView->setToolTip(tr("<p><b>Tag list</b></p>"
+//                                    "<p><i>List of tags used in clips or filter</i></p>"
+//                                    "<ul>"
+//                                    "<li>Add tag to clip: Drag and drop to tag column of clips</li>"
+//                                    "<li>Add tag to filter: Drag and drop to filters</li>"
+//                                    "<li>Delete tags: double click (or drag tag and drop in the tag field)</li>"
+//                                    "</ul>"
+//                                    ));
 
     ui->spotviewDownButton->setToolTip(tr("<p><b>Spot view</b></p>"
                                       "<p><i>Arranges clips below their mediafiles. Best for spotting of clips in mediafiles</i></p>"
@@ -747,23 +556,23 @@ void MainWindow::allTooltips()
                                       "<li><b>Matching</b>: match on the tags of clips and on filename</li>"
                                       "</ul>"));
 
-    ui->reloadViewButton->setToolTip(tr("<p><b>(Re)load media</b></p>"
+    ui->actionReload->setToolTip(tr("<p><b>(Re)load media</b></p>"
                                       "<p><i>Clears the screen and (re)loads all videos, audios and images from the selected folder %1</i></p>"
                                       "<ul>"
                                         "<li><b>Cancel</b>: During loading, the load process can be cancelled</li>"
                                         "<li><b>File changes</b>: file changes are notified by Media Sidekick and updated in the view directly, no reload needed.</li>"
                                       "</ul>").arg(QSettings().value("selectedFolderName").toString()));
 
-    ui->refreshViewButton->setToolTip(tr("<p><b>Refresh screen</b></p>"
+    ui->actionRefresh->setToolTip(tr("<p><b>Refresh screen</b></p>"
                                       "<p><i>Redraw all the items of selected folder %1 on the screen</i></p>"
                                       "<ul>"
                                         "<li>Refresh the screen if something is not shown correctly</li>"
                                       "</ul>").arg(QSettings().value("selectedFolderName").toString()));
 
     ui->playerInDialogcheckBox->setToolTip(tr("<p><b>Show video in window</b></p>"
-                                              "<p><i>Video can be played in a separate window or at the place where it is located on the screen </i></p>"
+                                              "<p><i>Video can be played in a separate window or at the place where it is located on the screen</i></p>"
                                               "<ul>"
-                                                 "<li><b>Performace on Mac / OSX</b>: Currently performance on Mac / OSX for <i>at place</i> playing is very bad.</li>"
+                                                 "<li><b>Performace on Mac / OSX</b>: Currently performance of video windows in a graphical view on Mac / OSX is very bad (very high CPU load)</li>"
                                               "</ul>"));
     ui->mediaFileScaleSlider->setToolTip(tr("<p><b>Media file scale</b></p>"
                                    "<p><i>Sets the size of the video and audio files based on their duration (pixels per minute)</i></p>"
@@ -772,13 +581,6 @@ void MainWindow::allTooltips()
                                    "<p><i>Sets the size of the clips and exported files based on their duration (pixels per minute)</i></p>"
                                    ));
 
-    ui->tabUIWidget->setTabToolTip(0, ui->graphicsView->toolTip());
-    ui->tabUIWidget->setTabToolTip(1, tr("<p><b>Clip editor</b></p>"
-                                         "<p><i>Show all files of the selected folder and the clips of each file</i></p>"
-                                         "<ul>"
-                                            "<li><b>Note</b>: Editing clips will be done in the Media tab in the foreseeing future</li>"
-                                         "</ul>"
-                                         ));
 } //tooltips
 
 void MainWindow::on_actionBlack_theme_triggered()
@@ -824,12 +626,8 @@ void MainWindow::on_actionBlack_theme_triggered()
 
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
 
-    ui->clipsTableView->selectClips(); //to set the colors right
-
     QSettings().setValue("theme", "Black");
     QSettings().sync();
-
-    ui->clipsTableView->update();
 
     ui->graphicsView->setThemeColors(Qt::white);
 }
@@ -874,12 +672,8 @@ void MainWindow::on_actionWhite_theme_triggered()
 
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
 
-    ui->clipsTableView->selectClips(); //to set the colors right
-
     QSettings().setValue("theme", "White");
     QSettings().sync();
-
-    ui->clipsTableView->update();
 
     ui->graphicsView->setThemeColors(Qt::black);
 }
@@ -895,15 +689,16 @@ void MainWindow::on_actionAbout_triggered()
                "<p>This program proudly uses the following projects:</p>"
                "<ul>"
                "<li><a href=\"https://www.qt.io/\">Qt</a> application and UI framework</li>"
-               "<li><a href=\"https://www.shotcut.org/\">Shotcut</a> Open source video editor (timeline and version check)</li>"
+//               "<li><a href=\"https://www.shotcut.org/\">Shotcut</a> Open source video editor (timeline and version check)</li>"
                "<li><a href=\"https://www.ffmpeg.org/\">FFmpeg</a> multimedia format and codec libraries (lossless and encoded previews)</li>"
                "<li><a href=\"https://exiftool.org/\">Exiftool</a> Read, Write and Edit Meta Information (Properties)</li>"
                "<li><a href=\"https://github.com/banelle/derperview\">Derperview by Banelle</a> Perform non-linear stretch of 4:3 video to make it 16:9. See also <a href=\"https://intofpv.com/t-derperview-a-command-line-superview-alternative\">Derperview - A Command Line Superview Alternative</a></li>"
+               "<li><a href=\"https://github.com/ytdl-org/youtube-dl\">Youtube-dl</a>  download videos from youtube.com or other video platforms</li>"
                "</ul>"
                "<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>"
                "<p>As Media Sidekick may contain bugs, BACKUP your video files before editing!</p>"
                "<p>Media Sidekick issuetracker on GitHub <a href=\"https://github.com/ewoudwijma/MediaSidekick/issues\">GitHub Media Sidekick issues</a></p>"
-               "<p>Media Sidekick is created by <a href=\"https://nl.linkedin.com/in/ewoudwijma\">Ewoud Wijma</a>.</p>"
+               "<p>Media Sidekick is created by <a href=\"https://www.linkedin.com/in/ewoudwijma\">Ewoud Wijma</a>.</p>"
                ).arg(qApp->applicationVersion()));
 }
 
@@ -912,514 +707,98 @@ void MainWindow::on_actionAbout_Qt_triggered()
     qApp->aboutQt();
 }
 
-void MainWindow::onCreateNewEdit()
-{
-    ui->clipsTableView->addClip(ui->ratingFilterComboBox->currentIndex(), ui->alikeCheckBox->checkState() == Qt::Checked, ui->tagFilter1ListView->model(), ui->tagFilter2ListView->model());
-
-    createContextSensitiveHelp("New Edit");
-}
-
-void MainWindow::onClipsChangedToVideo(QAbstractItemModel *itemModel)
-{
-    ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
-}
-
-void MainWindow::onFolderSelected(QAbstractItemModel *itemModel)
-{
-
-    ui->clipRowsCounterLabel->setText(QString::number(itemModel->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
-
-    ui->filesTabWidget->setCurrentIndex(1); //go to files tab
-
-    QString folderName = QSettings().value("selectedFolderName").toString();// ui->folderTreeView->directoryModel->fileInfo(ui->folderTreeView->currentIndex()).absoluteFilePath();
-
-//    qDebug()<<"MainWindow::onFolderSelected"<<itemModel->rowCount()<<folderName;
-
-    ui->timelineWidget->transitiontimeLastGood = -1;
-
-    onClipsFilterChanged(false);
-//    emit timelineWidgetsChanged(ui->transitionTimeSpinBox->value(), ui->transitionComboBox->currentText(), ui->clipsTableView);
-
-    createContextSensitiveHelp("Folder selected", folderName);
-}
-
-void MainWindow::showContextSensitiveHelp(int index)
-{
-    if (requestList[index].tabWidget != nullptr)
-        requestList[index].tabWidget->setCurrentIndex(requestList[index].tabIndex);
-
-    QString widgetNamePlus = requestList[index].widgetName;
-
-    if (requestList.count() > 1)
-        widgetNamePlus +=  + " (" + QString::number(index+1) + " of " + QString::number(requestList.count()) + ")";
-
-    QString text = QStringLiteral("<div style=\"background-color: magenta\"><p>▲%1</p><p><i>%2</i></p></div>").arg(requestList[index].context + ": " + widgetNamePlus, requestList[index].helpText);//
-
-//    qDebug()<<"MainWindow::showContextSensitiveHelp"<<requestList[index].context<<requestList[index].helpText.mid(0,80);
-    if (requestList[index].widget == ui->mainToolBar) //qad to position Open folder help right
-        QToolTip::showText( requestList[index].widget->mapToGlobal( QPoint( 75, requestList[index].widget->height() ) ), text); //, this, QRect(),10000
-    else
-        QToolTip::showText( requestList[index].widget->mapToGlobal( QPoint( requestList[index].widget->width() / 2, requestList[index].widget->height() ) ), text); //, this, QRect(),10000
-
-}
-
-void MainWindow::createContextSensitiveHelp(QString context, QString arg1)
-{
-//    if (!ui->actionContext_Sensitive_Help->isChecked() && context != "ByeBye")
-        return;
-
-    requestList.clear();
-    currentRequestNumber = 0;
-
-//    qDebug()<<"MainWindow::createContextSensitiveHelp"<<context<<arg1<<ui->videoFilesTreeView->currentIndex().data();
-    QString name = qgetenv("USER");
-    if (name.isEmpty())
-        name = qgetenv("USERNAME");
-    name[0] = name.at(0).toTitleCase();
-
-//    AContextSensitiveHelpRequest contextSensitiveHelpRequest;
-
-    QString commandControl = "Ctrl-";
-
-#ifdef Q_OS_MAC
-    commandControl = "⌘-";
-#endif
-
-    if (ui->tabUIWidget->currentIndex() == 0) //no context sensitive help on graphical yet
-        return;
-
-    if (context == "Media Sidekick started" || context == "Folder selected")
-    {
-        if (ui->videoWidget->selectedFolderName == "")
-            requestList.append({context, ui->mainToolBar, "Open folder", tr("<p>Select folder</p>"
-                                "<p><i>Select a folder with media files.</i></p>"
-                                "<ul>"
-                                "<li>Supported video files: %1</li>"
-                                "<li>Supported audio files: %2</li>"
-                                "</ul>").arg(AGlobal().videoExtensions.join(","), AGlobal().audioExtensions.join(",")), ui->filesTabWidget, 0});
-        else if (ui->videoWidget->selectedFileName == "")
-            requestList.append({context, ui->videoFilesTreeView, "Video files", tr("<p>Select a file</p>"
-                                                            "<p><i>If a video or audio file is selected, it will play in the media window, it's clips are shown in the clip tab</i></p>"
-                                "<ul>"
-                                "<li>Next Context Sensitive Help Message: Press � or %1R</li>"
-                                "</ul>").arg(commandControl), ui->filesTabWidget, 1});
-
-        if (context == "Media Sidekick started")
-        {
-            requestList.append({context, ui->videoWidget, "Welcome message", tr("<p>Context sensitive help</p>"
-                                "<p><i>This is a context sensitive help message. Context sensitive help messages will pop up to <b>guide</b> you through Media Sidekick.</i></p>"
-                                "<ul>"
-                                "<li><b>Next help message</b>: Press the � in the toolbar or %1R. If there are more messages, it is shown in the title bar of a message as (x of y).</li>"
-                                "<li><b>Switch off</b>: Menu / Help / Context sensitive help</li>"
-                                "</ul>").arg(commandControl), nullptr, -1});
-        }
-
-        if (context == "Folder selectedxxx")
-        {
-//            requestList.append({context, ui->propertyTreeView, "Properties", tr("<p>View properties</p>"
-//                                                            "<p><i>View and update the properties of the mediafiles in the selected folder</i></p>"
-//                                                            "<ul>"
-//                                                            "<li>Selected folder: %1</li>"
-//                                                            "</ul>").arg(arg1), ui->clipsTabWidget, 1});
-        }
-
-    }
-    else if (context == "File selected" || context == "Clips filter changed" || context == "New Edit")
-    {
-
-//        qDebug()<<"MainWindow::createContextSensitiveHelp"<<context;
-
-        if (context == "New Edit")
-        {
-            requestList.append({context, ui->newTagLineEdit, "Tags", tr("<p>Create tags</p>"
-                                                            "<p><i>Create tags. Drag and drop created tabs to clips. Tags are used for filtering</i></p>"
-                                                            ), ui->clipsTabWidget, 0});
-
-            if (ui->clipsTableView->clipsProxyModel->rowCount() != 0)
-                requestList.append({context, ui->ratingFilterComboBox, "Filters", tr("<p>Select filters</p>"
-                                                        "<p><i>%1 Clips ready for export</i></p>"
-                                                        "<ul>"
-                                                        "<li>Use filters (rating, alike, tags, file only) to select clips to export</li>"
-                                                        "</ul>").arg(QString::number(ui->clipsTableView->clipsProxyModel->rowCount())), ui->clipsTabWidget, 0});
-        }
-
-        if (ui->clipsTableView->clipsItemModel->rowCount() == 0)
-        {
-            requestList.append({context, ui->setInButton, "In point", tr("<p>Set in point</p>"
-                                "<p><i>No clips created yet, you can add clips here by setting in and outpoints</i></p>"
-                                "<ul>"
-                                "<li>Note: Clips are saved on your filesystems as <b>.srt files</b>. They have the same name as the media file for which the edits are made.</li>"
-                                                            "</ul>"), ui->clipsTabWidget, 0});
-//            requestList.append({context, ui->propertyEditorPushButton, "Properties", tr("<p>Edit properties</p>"
-//                                                            "<p><i>Edit the properties of the media files and rename the files</i></p>"
-//                                                            ), ui->clipsTabWidget, 1});
-        }
-        else if (ui->clipsTableView->clipsProxyModel->rowCount() == 0)
-            requestList.append({context, ui->ratingFilterComboBox, "Filters", tr("<p>Select filters</p>"
-                                                            "<p><i>%1 Clips available but not selected</i></p>"
-                                                            "<ul>"
-                                                            "<li>Use filters (rating, alike, tags, file only) to select clips to export</li>"
-                                                            "</ul>").arg(QString::number(ui->clipsTableView->clipsItemModel->rowCount())), ui->clipsTabWidget, 0});
-        else //clips selected
-        {
-            QString audioDuration = AGlobal().msec_to_time(AGlobal().frames_to_msec(ui->timelineWidget->maxAudioDuration));
-            QString videoDuration = AGlobal().msec_to_time(AGlobal().frames_to_msec(ui->timelineWidget->maxVideoDuration));
-            QString combinedDuration = AGlobal().msec_to_time(AGlobal().frames_to_msec(ui->timelineWidget->maxCombinedDuration));
-//            qDebug()<<"MainWindow::onClipFilterChanged"<<ui->clipsTableView->clipsProxyModel->rowCount()<<audioDuration<<videoDuration;
-
-//            if (ui->timelineWidget->maxAudioDuration != ui->timelineWidget->maxVideoDuration)
-//                requestList.append({context, ui->exportButton, "Export", tr("<p>Run export</p>"
-//                                                                "<p><i>%1 clips selected, export possible but audio duration not equal to video duration</i></p>"
-//                                                                "<ul>"
-//                                    "<li>Video duration: %2</li>"
-//                                    "<li>Audio duration: %3</li>"
-//                                                                "</ul>").arg(QString::number(ui->clipsTableView->clipsProxyModel->rowCount()), videoDuration, audioDuration), ui->clipsTabWidget, 0});
-//            else
-//                requestList.append({context, ui->exportButton, "Export", tr("<p>Run export</p>"
-//                                                                "<p><i>File selected, %1 clips selected, export possible, video and audio same length</i></p>"
-//                                                                "<ul>"
-//                                                                "<li>Video / Audio length: %2</li>"
-//                                                                "</ul>").arg(QString::number(ui->clipsTableView->clipsProxyModel->rowCount()), combinedDuration), ui->clipsTabWidget, 0});
-
-            if (ui->timelineWidget->maxAudioDuration == 0)
-            {
-                requestList.append({context, ui->audioFilesTreeView, "Audio files", tr("<p>List of audio files in folder</p>"
-                                                                "<p><i>%1 clips selected but no audio clips selected. Add audio files here and create clips for them</i></p>"
-                                                                ).arg(QString::number(ui->clipsTableView->clipsProxyModel->rowCount())), ui->clipsTabWidget, 0});
-            }
-
-        }
-//        qDebug()<<"MainWindow::createContextSensitiveHelp done"<<context;
-    }
-    else if (context == "Export started") //to do use target as arg1
-    {
-//        requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
-//                                                        "<p><i>Exporting involves running of one or more processes</i></p>"
-//                                                        "<ul>"
-//                                                        "<li>Processes and process details are shown here</li>"
-//                                                        "</ul>"), ui->clipsTabWidget, 1});
-    }
-    else if (context == "Export completed")
-    {
-        if (arg1 == "") //no error
-            requestList.append({context, ui->exportFilesTreeView, "Export files",  tr("<p>List of exported files</p>"
-                                                            "<p><i>Exported files are found here</i></p>"
-                                                            ), ui->filesTabWidget, 1});
-//        else
-//            requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
-//                                                            "<p><i>Export completed with error, check the log to find out what went wrong</i></p>"
-//                                                            "<ul>"
-//                                                            "<li>Error message: %1</li>"
-//                                                            "</ul>").arg(arg1), ui->clipsTabWidget, 1});
-    }
-    else if (context == "Wideview completed")
-    {
-        if (arg1 == "") //no error
-            requestList.append({context, ui->exportFilesTreeView, "Wideview result",  tr("<p>List of video or exported files</p>"
-                                                            "<p><i>Created files are found here (DV added to the filename)</i></p>"
-                                                            ), ui->filesTabWidget, 1});
-//        else
-//            requestList.append({context, ui->jobTreeView, "Jobs", tr("<p>Overview of jobs</p>"
-//                                                            "<p><i>Wideview completed with error, check the log to find out what went wrong</i></p>"
-//                                                            "<ul>"
-//                                                            "<li>Error message: %1</li>"
-//                                                            "</ul>").arg(arg1), ui->clipsTabWidget, 1});
-    }
-    else if (context == "ByeBye")
-    {
-        requestList.append({context, ui->videoWidget, "Context Sensitive Help", tr("Bye bye %1.").arg(name), nullptr, -1});
-    }
-
-    if (requestList.count() > 0)
-    {
-        QTimer::singleShot(100, this, [this]()->void //timer needed to show first message
-        {
-                               showContextSensitiveHelp(currentRequestNumber);
-                               if (currentRequestNumber + 1 < requestList.count())
-                                    currentRequestNumber++;
-                               else
-                                currentRequestNumber = 0;
-        });
-    }
-}
-
-void MainWindow::onFileIndexClicked(QModelIndex index, QStringList filePathList)
-{
-//    qDebug()<<"MainWindow::onFileIndexClicked"<<index.data().toString();
-
-    if (ui->videoFilesTreeView->model() != index.model())
-        ui->videoFilesTreeView->clearSelection();
-    if (ui->audioFilesTreeView->model() != index.model())
-        ui->audioFilesTreeView->clearSelection();
-    if (ui->exportFilesTreeView->model() != index.model())
-        ui->exportFilesTreeView->clearSelection();
-
-    onClipsFilterChanged(false);
-
-    if (ui->exportFilesTreeView->model() != index.model())
-        createContextSensitiveHelp("File selected");
-}
-
-void MainWindow::onClipsFilterChanged(bool fromFilters)
-{
-    ui->clipRowsCounterLabel->setText(QString::number(ui->clipsTableView->model()->rowCount()) + " / " + QString::number(ui->clipsTableView->clipsItemModel->rowCount()));
-
-//    qDebug()<<"MainWindow::onClipFilterChanged"<<QSettings().value("ratingFilterComboBox")<<ui->ratingFilterComboBox->currentText();
-
-    emit clipsFilterChanged(ui->ratingFilterComboBox, ui->alikeCheckBox, ui->tagFilter1ListView, ui->tagFilter2ListView, ui->fileOnlyCheckBox);
-
-    if (fromFilters)
-        createContextSensitiveHelp("Clips filter changed");
-}
-
-void MainWindow::onTagFilter1ListViewChanged()
-{
-//    qDebug()<<"MainWindow::on_tagFilter1ListView_indexesMoved";
-
-    QString string1 = ui->tagFilter1ListView->modelToString();
-
-    if (QSettings().value("tagFilter1") != string1)
-    {
-        QSettings().setValue("tagFilter1", string1);
-        QSettings().sync();
-    }
-
-    onClipsFilterChanged(true);
-
-}
-
-void MainWindow::onTagFilter2ListViewChanged()
-{
-//    qDebug()<<"MainWindow::on_tagFilter2ListView_indexesMoved";
-
-    QString string1 = ui->tagFilter2ListView->modelToString();
-
-    if (QSettings().value("tagFilter2") != string1)
-    {
-        QSettings().setValue("tagFilter2", string1);
-        QSettings().sync();
-    }
-
-    onClipsFilterChanged(true);
-}
-
-
 void MainWindow::on_action5_stars_triggered()
 {
-    ui->clipsTableView->giveStars(5);
+    ui->graphicsView->processAction("Key_*****");
 }
 
 void MainWindow::on_action4_stars_triggered()
 {
-    ui->clipsTableView->giveStars(4);
+    ui->graphicsView->processAction("Key_****");
 }
 
 void MainWindow::on_action1_star_triggered()
 {
-    ui->clipsTableView->giveStars(1);
+    ui->graphicsView->processAction("Key_*");
 }
 
 void MainWindow::on_action2_stars_triggered()
 {
-    ui->clipsTableView->giveStars(2);
+    ui->graphicsView->processAction("Key_**");
 }
 
 void MainWindow::on_action3_stars_triggered()
 {
-    ui->clipsTableView->giveStars(3);
+    ui->graphicsView->processAction("Key_***");
 }
 
 void MainWindow::on_action0_stars_triggered()
 {
-    ui->clipsTableView->giveStars(0);
-
+    ui->graphicsView->processAction("Key_*0");
 }
 
 void MainWindow::on_actionAlike_triggered()
 {
-    ui->clipsTableView->toggleAlike();
+    ui->graphicsView->processAction("Key_✔");
 }
 
 void MainWindow::on_actionSave_triggered()
 {
-    int changeCount = 0;
-    for (int row = 0; row<ui->clipsTableView->clipsItemModel->rowCount(); row++)
-    {
-        if (ui->clipsTableView->clipsItemModel->index(row, changedIndex).data().toString() == "yes")
-            changeCount++;
-    }
+    ui->statusBar->showMessage(tr("%1 %2 changes will be saved").arg(QString::number(ui->graphicsView->undoIndex), QString::number(ui->graphicsView->undoIndex)), 5000);
 
-    ui->statusBar->showMessage(tr("%1 clip changes and %2 deletions saved").arg(QString::number(changeCount), QString::number(ui->clipsTableView->nrOfDeletedItems)), 5000);
-//        ui->statusBar->showMessage("No clip changes to save", 5000);
+    ui->graphicsView->saveModels();
 
-    ui->clipsTableView->saveModels();
+    qDebug()<<"MainWindow::on_actionSave_triggered done";
 }
 
 void MainWindow::on_actionPlay_Pause_triggered()
 {
-    ui->videoWidget->togglePlayPaused();
+    ui->graphicsView->processAction("actionPlay_Pause");
 }
 
 void MainWindow::on_actionIn_triggered()
 {
 //    qDebug()<<"MainWindow::on_actionIn_triggered"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
-    ui->videoWidget->onSetIn();
+//    ui->videoWidget->onSetIn();
+
+    ui->graphicsView->processAction("actionIn");
 }
 
 void MainWindow::on_actionOut_triggered()
 {
 //    qDebug()<<"MainWindow::on_actionOut_triggered"<<ui->clipsTableView->highLightedRow<<ui->videoWidget->m_position;
-    ui->videoWidget->onSetOut();
+//    ui->videoWidget->onSetOut();
+    ui->graphicsView->processAction("actionOut");
 }
 
 void MainWindow::on_actionPrevious_frame_triggered()
 {
-    ui->videoWidget->rewind();
+    ui->graphicsView->processAction("actionPrevious_frame");
+//    ui->videoWidget->rewind();
 }
 
 void MainWindow::on_actionNext_frame_triggered()
 {
-    ui->videoWidget->fastForward();
+    ui->graphicsView->processAction("actionNext_frame");
+//    ui->videoWidget->fastForward();
 }
 
 void MainWindow::on_actionPrevious_in_out_triggered()
 {
-     ui->videoWidget->skipPrevious();
+    ui->graphicsView->processAction("actionPrevious_in_out");
+//     ui->videoWidget->skipPrevious();
 }
 
 void MainWindow::on_actionNext_in_out_triggered()
 {
-    ui->videoWidget->skipNext();
-}
-
-void MainWindow::on_newTagLineEdit_returnPressed()
-{
-    if (ui->tagsListView->addTag(ui->newTagLineEdit->text()))
-        ui->newTagLineEdit->clear();
-    else
-        QMessageBox::information(this, "Add tag", "Tag " + ui->newTagLineEdit->text() + " already in list");
+    ui->graphicsView->processAction("actionNext_in_out");
+//    ui->videoWidget->skipNext();
 }
 
 void MainWindow::on_actionExport_triggered()
 {
 //    ui->exportButton->click();
-}
-
-void MainWindow::on_alikeCheckBox_clicked(bool checked)
-{
-    if (QSettings().value("alikeCheckBox").toBool() != checked)
-    {
-        QSettings().setValue("alikeCheckBox", checked);
-        QSettings().sync();
-    }
-    onClipsFilterChanged(true);
-}
-
-void MainWindow::on_fileOnlyCheckBox_clicked(bool checked)
-{
-    if (QSettings().value("fileOnlyCheckBox").toBool() != checked)
-    {
-        QSettings().setValue("fileOnlyCheckBox", checked);
-        QSettings().sync();
-    }
-    onClipsFilterChanged(true);
-}
-
-void MainWindow::on_actionDebug_mode_triggered(bool checked)
-{
-//    qDebug()<<"on_actionDebug_mode_triggered"<<checked;
-
-    if (checked)
-    {
-        ui->clipsTabWidget->insertTab(1, graphWidget1, "Graph1");
-        ui->clipsTabWidget->insertTab(2, graphWidget2, "Graph2");
-        ui->clipsTabWidget->insertTab(3, graphicsWidget, "Timeline2.0");
-    }
-    else
-    {
-        ui->clipsTabWidget->removeTab(3);
-        ui->clipsTabWidget->removeTab(2);
-        ui->clipsTabWidget->removeTab(1);
-    }
-
-    ui->clipsTableView->setColumnHidden(orderBeforeLoadIndex, !checked);
-    ui->clipsTableView->setColumnHidden(orderAtLoadIndex, !checked);
-    ui->clipsTableView->setColumnHidden(orderAfterMovingIndex, !checked);
-    ui->clipsTableView->setColumnHidden(changedIndex, !checked);
-}
-
-void MainWindow::on_resetSortButton_clicked()
-{
-    for (int row=0;row<ui->clipsTableView->clipsItemModel->rowCount();row++)
-    {
-        //https://uvesway.wordpress.com/2013/01/08/qheaderview-sections-visualindex-vs-logicalindex/
-        ui->clipsTableView->verticalHeader()->moveSection(ui->clipsTableView->verticalHeader()->visualIndex(row), row);
-        if (ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->clipsTableView->clipsItemModel->index(row, orderAtLoadIndex).data().toInt())
-        {
-//            qDebug()<<"MainWindow::on_resetSortButton_clicked1"<<row<<ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->clipsTableView->clipsItemModel->index(row, orderAtLoadIndex).data().toInt()<<ui->clipsTableView->clipsItemModel;
-            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, orderAtLoadIndex), ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
-            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, changedIndex), "yes");
-        }
-        if (ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 != ui->clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt())
-        {
-//            qDebug()<<"MainWindow::on_resetSortButton_clicked2"<<row<<ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10 << ui->clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
-            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex), ui->clipsTableView->clipsItemModel->index(row, orderBeforeLoadIndex).data().toInt() * 10);
-            ui->clipsTableView->clipsItemModel->setData(ui->clipsTableView->clipsItemModel->index(row, changedIndex), "yes");
-        }
-    }
-}
-
-void MainWindow::onVideoPositionChanged(int progress, int , int )//row, relativeProgress
-{
-    ui->positionSpinBox->blockSignals(true); //do not fire valuechanged signal
-    ui->positionSpinBox->setValue(AGlobal().msec_to_frames(progress));
-    ui->positionSpinBox->blockSignals(false);
-}
-
-void MainWindow::onDurationChanged(int duration)
-{
-    ui->durationLabel->setText(AGlobal().msec_to_time(duration).prepend(" / "));
-
-    ui->skipBackwardButton->setEnabled(duration > 0);
-    ui->seekBackwardButton->setEnabled(duration > 0);
-    ui->playButton->setEnabled(duration > 0);
-    ui->seekForwardButton->setEnabled(duration > 0);
-    ui->skipForwardButton->setEnabled(duration > 0);
-    ui->muteButton->setEnabled(duration > 0);
-    ui->stopButton->setEnabled(duration > 0);
-    ui->setInButton->setEnabled(duration > 0);
-    ui->setOutButton->setEnabled(duration > 0);
-    ui->speedComboBox->setEnabled(duration > 0);
-}
-
-void MainWindow::onPlayerStateChanged(QMediaPlayer::State state)
-{
-    if (state == QMediaPlayer::PlayingState)
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
-    if (state == QMediaPlayer::PausedState)
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-    if (state == QMediaPlayer::StoppedState)
-        ui->playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
-}
-
-void MainWindow::onMutedChanged(bool muted)
-{
-//    qDebug()<<"AVideoWidget::onMutedChanged"<<muted;
-    ui->muteButton->setIcon(style()->standardIcon(muted
-            ? QStyle::SP_MediaVolumeMuted
-            : QStyle::SP_MediaVolume));
-
-    if (QSettings().value("muteOn").toBool() != muted)
-    {
-        QSettings().setValue("muteOn", muted);
-        QSettings().sync();
-    }
-
-}
-
-void MainWindow::onPlaybackRateChanged(qreal rate)
-{
-    ui->speedComboBox->setCurrentText(QString::number(rate) + "x");
+    ui->graphicsView->processAction(__func__);
 }
 
 void MainWindow::showUpgradePrompt()
@@ -1494,38 +873,6 @@ void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
     reply->deleteLater();
 }
 
-void MainWindow::on_clipsTabWidget_currentChanged(int index)
-{
-    if (QSettings().value("clipTabIndex").toInt() != index)
-    {
-        QSettings().setValue("clipTabIndex", index);
-        QSettings().sync();
-    }
-}
-
-void MainWindow::on_filesTabWidget_currentChanged(int index)
-{
-    if (QSettings().value("filesTabIndex").toInt() != index)
-    {
-        QSettings().setValue("filesTabIndex", index);
-        QSettings().sync();
-    }
-}
-
-void MainWindow::on_tabUIWidget_currentChanged(int index)
-{
-    if (ui->clipsTableView->checkSaveIfClipsChanged())
-    {
-        ui->clipsTableView->saveModels();
-    }
-
-    if (QSettings().value("uiTabIndex").toInt() != index)
-    {
-        QSettings().setValue("uiTabIndex", index);
-        QSettings().sync();
-    }
-}
-
 void MainWindow::on_actionDonate_triggered()
 {
     QDesktopServices::openUrl(QUrl("https://www.mediasidekick.org/support"));
@@ -1534,17 +881,6 @@ void MainWindow::on_actionDonate_triggered()
 void MainWindow::on_actionCheck_for_updates_triggered()
 {
     showUpgradePrompt();
-}
-
-void MainWindow::on_ratingFilterComboBox_currentIndexChanged(int index)
-{
-    if (QSettings().value("ratingFilterComboBox").toInt() != index)
-    {
-        QSettings().setValue("ratingFilterComboBox", index);
-        QSettings().sync();
-    }
-
-    onClipsFilterChanged(true);
 }
 
 void MainWindow::on_actionWhatIsNew_triggered()
@@ -1569,77 +905,29 @@ void MainWindow::on_actionGithub_MSK_Issues_triggered()
 
 void MainWindow::on_actionMute_triggered()
 {
-    ui->videoWidget->onMute();
+//    ui->videoWidget->onMute();
+    ui->graphicsView->processAction("actionMute");
 }
 
-void MainWindow::on_skipBackwardButton_clicked()
+void MainWindow::on_actionSpeed_Up_triggered()
 {
-    ui->videoWidget->skipPrevious();
+    ui->graphicsView->processAction("actionSpeed_Up");
 }
 
-void MainWindow::on_seekBackwardButton_clicked()
+void MainWindow::on_actionSpeed_Down_triggered()
 {
-    ui->videoWidget->rewind();
+    ui->graphicsView->processAction("actionSpeed_Down");
 }
 
-void MainWindow::on_playButton_clicked()
+void MainWindow::on_actionVolume_Up_triggered()
 {
-    ui->videoWidget->togglePlayPaused();
+    ui->graphicsView->processAction("actionVolume_Up");
 }
 
-void MainWindow::on_seekForwardButton_clicked()
+void MainWindow::on_actionVolume_Down_triggered()
 {
-    ui->videoWidget->fastForward();
+    ui->graphicsView->processAction("actionVolume_Down");
 }
-
-void MainWindow::on_skipForwardButton_clicked()
-{
-    ui->videoWidget->skipNext();
-}
-
-void MainWindow::on_stopButton_clicked()
-{
-    ui->videoWidget->onStop();
-}
-
-void MainWindow::on_muteButton_clicked()
-{
-    ui->videoWidget->onMute();
-}
-
-void MainWindow::on_setInButton_clicked()
-{
-    ui->videoWidget->onSetIn();
-}
-
-void MainWindow::on_setOutButton_clicked()
-{
-    ui->videoWidget->onSetOut();
-}
-
-void MainWindow::on_speedComboBox_currentTextChanged(const QString &arg1)
-{
-    double playbackRate = arg1.left(arg1.lastIndexOf("x")).toDouble();
-    if (arg1.indexOf(" fps")  > 0)
-        playbackRate = arg1.left(arg1.lastIndexOf(" fps")).toDouble() / QSettings().value("frameRate").toInt();
-//    qDebug()<<"AVideoWidget::onSpeedChanged"<<speed<<playbackRate<<speed.lastIndexOf("x")<<speed.left(speed.lastIndexOf("x"));
-    ui->videoWidget->setPlaybackRate(playbackRate);
-}
-
-//void MainWindow::on_actionContext_Sensitive_Help_changed()
-//{
-//    qDebug()<<"MainWindow::on_actionContext_Sensitive_Help_changed"<<QSettings().value("contextSensitiveHelpOn").toBool()<<ui->actionContext_Sensitive_Help->isChecked();
-//    if (QSettings().value("contextSensitiveHelpOn").toBool() != ui->actionContext_Sensitive_Help->isChecked())
-//    {
-//        QSettings().setValue("contextSensitiveHelpOn", ui->actionContext_Sensitive_Help->isChecked());
-//        QSettings().sync();
-//    }
-
-//    if (ui->actionContext_Sensitive_Help->isChecked())
-//        createContextSensitiveHelp("Media Sidekick started");
-//    else
-//        createContextSensitiveHelp("ByeBye");
-//}
 
 void MainWindow::on_actionTooltips_changed()
 {
@@ -1720,7 +1008,9 @@ void MainWindow::checkAndOpenFolder(QString selectedFolderName)
 
     if (selectedFolderName != "")
     {
-        on_reloadViewButton_clicked();
+        //check unsaved changes
+
+        on_actionReload_triggered();
     }
 }
 
@@ -1730,8 +1020,12 @@ void MainWindow::on_actionOpen_Folder_triggered()
 
     dialog.setFileMode(QFileDialog::Directory);
 
-    QString selectedFolderName = dialog.getExistingDirectory() + "/";
+    qDebug()<<__func__<<"before getExistingDirectory";
 
+    QString selectedFolderName = dialog.getExistingDirectory() + "/";
+//    QString selectedFolderName = dialog.getExistingDirectory(this, "ewoud", "", QFileDialog::DontUseNativeDialog) + "/";
+
+    qDebug()<<__func__<<"after getExistingDirectory";
     if (selectedFolderName != "/")
     {
         QSettings().setValue("selectedFolderName", selectedFolderName);
@@ -1824,47 +1118,58 @@ void MainWindow::on_searchLineEdit_textChanged(const QString &arg1)
     }
 }
 
-void MainWindow::on_reloadViewButton_clicked()
+void MainWindow::on_actionReload_triggered()
 {
-    if (ui->reloadViewButton->text() == "Cancel")
+    if (ui->actionReload->text() == "Cancel")
     {
         foreach (AGProcessAndThread *process, processes)
         {
             if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
             {
-                qDebug()<<"MainWindow::on_reloadViewButton_clicked Killing process"<<"Main"<<process->name<<process->process<<process->jobThread;
+                qDebug()<<"MainWindow::on_actionReload_triggered Killing process"<<"Main"<<process->name<<process->process<<process->jobThread;
                 process->kill();
             }
         }
 
-        ui->reloadViewButton->setText("Reload");
         ui->graphicsView->isLoading = false;
-        ui->reloadViewButton->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));//SP_DialogCancelButton
+
+        QPixmap base = QPixmap::fromImage(QImage(":/images/Folder.png")).scaledToWidth(56);
+        QPixmap overlay = qApp->style()->standardIcon(QStyle::SP_BrowserReload).pixmap(32);
+        QPixmap result(base.width(), base.height());
+        result.fill(Qt::transparent); // force alpha channel
+        QPainter painter(&result);
+        painter.drawPixmap(0, 0, base);
+        painter.drawPixmap((base.width() - overlay.width()) / 2, (base.height() - overlay.height()) / 2, overlay);
+        ui->actionReload->setIcon(QIcon(result));
+
+        ui->actionReload->setText("Reload");
 
         return;
     }
 
-    ui->graphicsView->horizontalScrollBar()->setValue( 0 );
-    ui->graphicsView->verticalScrollBar()->setValue( 0 );
+    //check unsaved changes
+    if (ui->graphicsView->undoIndex != ui->graphicsView->undoSavePoint)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Check changes", tr("There are %1 changes. Do you want to save these changes").arg(QString::number(qAbs(ui->graphicsView->undoIndex - ui->graphicsView->undoSavePoint))),
+                                      QMessageBox::Yes|QMessageBox::No);
+
+        if (reply == QMessageBox::Yes)
+        {
+            on_actionSave_triggered();
+            //    wait otherwise crash (AGFileSystem does not find all the files for some reason
+            QTime dieTime= QTime::currentTime().addSecs(1);
+            while (QTime::currentTime() < dieTime)
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        }
+    }
+
     ui->graphicsView->clearAll();
-    ui->graphicsView->scale(1,1);
 
     if (agFileSystem->fileSystemWatcher->files().count() > 0)
         agFileSystem->fileSystemWatcher->removePaths(agFileSystem->fileSystemWatcher->files());
     if (agFileSystem->fileSystemWatcher->directories().count() > 0)
         agFileSystem->fileSystemWatcher->removePaths(agFileSystem->fileSystemWatcher->directories());
-
-//    QString selectedFolderName = QSettings().value("selectedFolderName").toString();
-//    selectedFolderName = selectedFolderName.left(selectedFolderName.length()-1);//remove last /
-
-//    if (agFileSystem->fileSystemWatcher->addPath(selectedFolderName))
-//        qDebug()<<"fileSystemWatcher->addPath true"<<selectedFolderName;
-//    else
-//        qDebug()<<"fileSystemWatcher->addPath false"<<selectedFolderName;
-//    if (agFileSystem->fileSystemWatcher->addPath(selectedFolderName))
-//        qDebug()<<"fileSystemWatcher->addPath true"<<selectedFolderName;
-//    else
-//        qDebug()<<"fileSystemWatcher->addPath false"<<selectedFolderName;
 
 //    ui->timelineViewButton->setEnabled(false);
 //    ui->spotviewDownButton->setEnabled(false);
@@ -1875,9 +1180,7 @@ void MainWindow::on_reloadViewButton_clicked()
     {
 //        qDebug()<<"thread start"<<process->name<<qApp->thread()<<this->thread()<<QThread::currentThread();
 
-//        qDebug()<<"MainWindow::on_reloadViewButton_clicked"<<thread()<<process->thread();
-
-//        qDebug()<<"LoadItems started";
+//        qDebug()<<"MainWindow::on_actionReload_triggered"<<thread()<<process->thread();
 
         connect(process, &AGProcessAndThread::stopThreadProcess, agFileSystem, &AGFileSystem::onStopThreadProcess);
 
@@ -1898,7 +1201,7 @@ void MainWindow::on_reloadViewButton_clicked()
 
             if (process->processStopped)
             {
-                QString output = "on_reloadViewButton_clicked finished and processStopped";
+                QString output = "on_actionReload_triggered finished and processStopped";
                 process->addProcessLog("output", output);
 //                qDebug()<<output<<process->processStopped;
                 return;
@@ -1907,29 +1210,33 @@ void MainWindow::on_reloadViewButton_clicked()
 //            ui->graphicsView->arrangeItems(nullptr); //causes crash
             AGFolderRectItem *folderItem = (AGFolderRectItem *)ui->graphicsView->rootItem;
             folderItem->processes<<processes;
-            ui->reloadViewButton->setText("Reload");
-            ui->reloadViewButton->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserReload));
+
+            QPixmap base = QPixmap::fromImage(QImage(":/images/Folder.png")).scaledToWidth(56);
+            QPixmap overlay = qApp->style()->standardIcon(QStyle::SP_BrowserReload).pixmap(32);
+            QPixmap result(base.width(), base.height());
+            result.fill(Qt::transparent); // force alpha channel
+            QPainter painter(&result);
+            painter.drawPixmap(0, 0, base);
+            painter.drawPixmap((base.width() - overlay.width()) / 2, (base.height() - overlay.height()) / 2, overlay);
+            ui->actionReload->setIcon(QIcon(result));
+
+            ui->actionReload->setText("Reload");
             ui->graphicsView->isLoading = false;
 
-            QTimer::singleShot(0, this, [this]()->void
+            QTimer::singleShot(0, this, [=]()->void
             {
-                                   QString selectedFolderName = QSettings().value("selectedFolderName").toString();
-
-                                   ui->clipsTableView->onFolderSelected(selectedFolderName);
-                                   ui->videoWidget->onFolderSelected(selectedFolderName);
-                                   ui->videoFilesTreeView->onFolderSelected(selectedFolderName);
-                                   ui->audioFilesTreeView->onFolderSelected(selectedFolderName);
-                                   ui->exportFilesTreeView->onFolderSelected(selectedFolderName);
+//                qDebug()<<"on_actionReload_triggered"<<"Done";
                                    //tags and mainwindow done by clips
+                ui->graphicsView->arrangeItems(nullptr, "Done");
             });
         }
     });
 
     process->start();
 
-    ui->reloadViewButton->setText("Cancel");
     ui->graphicsView->isLoading = true;
-    ui->reloadViewButton->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserStop));
+    ui->actionReload->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserStop));
+    ui->actionReload->setText("Cancel");
 }
 
 void MainWindow::on_mediaFileScaleSlider_valueChanged(int value)
@@ -1991,8 +1298,209 @@ void MainWindow::on_orderByNameButton_clicked()
     }
 }
 
-
-void MainWindow::on_refreshViewButton_clicked()
+void MainWindow::on_actionRefresh_triggered()
 {
-    ui->graphicsView->arrangeItems(nullptr);
+    ui->graphicsView->arrangeItems(nullptr, __func__);
+}
+
+void MainWindow::on_actionUndo_triggered()
+{
+    ui->graphicsView->undoOrRedo("Undo");
+}
+
+void MainWindow::on_actionRedo_triggered()
+{
+    ui->graphicsView->undoOrRedo("Redo");
+}
+
+
+void MainWindow::on_actionZoom_In_triggered()
+{
+    ui->graphicsView->processAction("actionZoom_In");
+}
+
+void MainWindow::on_actionZoom_Out_triggered()
+{
+    ui->graphicsView->processAction("actionZoom_Out");
+}
+
+void MainWindow::on_actionItem_Up_triggered()
+{
+    ui->graphicsView->processAction(__func__);
+}
+
+void MainWindow::on_actionItem_Down_triggered()
+{
+    ui->graphicsView->processAction(__func__);
+}
+
+void MainWindow::on_actionItem_Left_triggered()
+{
+    ui->graphicsView->processAction(__func__);
+}
+
+void MainWindow::on_actionItem_Right_triggered()
+{
+    ui->graphicsView->processAction(__func__);
+}
+
+void MainWindow::on_actionTop_Folder_triggered()
+{
+    ui->graphicsView->processAction(__func__);
+}
+
+QString addStep(int number, bool hyperlink, QString mainText, QString extraText, QString shortKey, QString imageURL, bool isPrimary)
+{
+    QString textStep = "";
+
+    if (isPrimary)
+        textStep += "<p style=\"color:red\">";
+    else
+        textStep += "<p>";
+
+    if (number != -1)
+        textStep += QString::number(number) + ") ";
+
+    if (hyperlink)
+    {
+        if (isPrimary)
+            textStep += "<a href=\"#" + mainText.toHtmlEscaped() + "\" style=\"color:red\">" + mainText + "</a>";
+        else
+            textStep += "<a href=\"#" + mainText.toHtmlEscaped() + "\" style=\"color:#33FFFF\">" + mainText + "</a>";
+    }
+    else
+    {
+        textStep += mainText;
+    }
+
+    if (extraText != "")
+        textStep += " " + extraText;
+
+    if (shortKey != "")
+        textStep += " [" + shortKey + "]";
+
+    if (imageURL != "")
+            textStep += "<img src = \":" + imageURL + "\" width=20/>";
+
+    textStep += "</p>";
+
+    return textStep;
+}
+
+void MainWindow::on_actionHelp_triggered()
+{
+    QString commandControl = "Ctrl-";
+#ifdef Q_OS_MAC
+    commandControl = "⌘-";
+#endif
+
+    QDialog *about = new QDialog();
+
+    about->setWindowTitle(tr("Media Sidekick Help"));
+    QRect savedGeometry = QSettings().value("Geometry").toRect();
+    savedGeometry.setX(savedGeometry.x() + savedGeometry.width() * .1);
+    savedGeometry.setY(savedGeometry.y() + savedGeometry.height() * .1);
+    savedGeometry.setWidth(savedGeometry.width() * .8);
+    savedGeometry.setHeight(savedGeometry.height() * .8);
+    about->setGeometry(savedGeometry);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(about);
+
+
+    QTextBrowser *textEdit = new QTextBrowser(this);
+    mainLayout->addWidget(textEdit);
+    textEdit->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
+
+//    textEdit->append("");
+
+    QString text =
+            "<h1 >Media Sidekick help</h1>\
+            <p>Media Sidekick shows all media items of folder.</p>\
+                <ul>"\
+                    "<li>Media Items are Folders, Media files, clips and tags</li>"\
+               "<li>Media Items are grouped per mediatype: Videos, Images, Audio, Export, Project, Parking</li>"\
+                "</ul>"\
+"<h1>Workflow</h1>"\
+                                                                            "<p>The table shows the workflow of Media Sidekick</p>"\
+           "<ul>"\
+           "<li>The main workflow of Mediasidekick is split into View, Edit, Change and Export</li>"\
+           "<li>The primary process are the steps in <span style=\"color:red\">red</span>. The other steps provide supporting functionality</li>"\
+           "<li>If a step is <span style=\"color:#33FFFF\">highlighted</span>: Click on a step to get additional help (WIP)</li>"\
+                                                                            "</ul>"\
+                                                                            "<p></p>"\
+             "<table border=1>\
+               <tr>\
+               <th></th>\
+               <th>View</th>\
+                 <th>Edit</th>\
+               <th>Change</th>\
+               <th>Export</th>\
+               </tr>\
+               <tr>\
+                 <td><b>App</b><img src = \":/MediaSidekick.ico\" width=20/></td>\
+                 <td><p>Spot view or timeline view</p>\
+               <p>Sort by name or by date</p>\
+               " + addStep(-1, false, "Properties", "", "Right-Click", "", false) + "\
+               " + addStep(-1, false, "Open in explorer / finder", "", "Right-Click", "", false) + "</td>\
+                 <td>" + addStep(-1, false, "Zoom in or out", "", "Ctrl-=/_", "/images/zoomin.png", false) + "\
+               <p>Duration lines</p></td>\
+<td></td>\
+<td><p>Filter</p>\
+               <p>Timeline view</p></td>\
+               </tr>\
+               <tr>\
+                 <td><b>Folder</b><img src = \":/images/Folder.png\" width=20/></td>\
+                 <td>" + addStep(1, false, "Open Folder", "", "Ctrl-O", "", true) + "\
+            " + addStep(-1, true, "Show media items", "grouped per type", "", "", false) + "\
+</td>\
+                 <td>" + addStep(-1, false, "Download video or audio from streaming media", "(e.g. youtube)", "Right-Click", "", false) + "\
+            " + addStep(-1, false, "Explorer/Finder", "Move media items into folder", "Right-Click", "", false) + "</td>\
+            <td>" + addStep(-1, false, "Property Manager", "", "Right-Click", "", false) + "</td>\
+            <td>" + addStep(8, false, "Export", "", "Ctrl-E", "", true) + "<p>Exported files in folder Export or Project</p></td>\
+               </tr>\
+               <tr>\
+                 <td><b>Media file</b></td>\
+                 <td>" + addStep(2, false, "Select item", "", "Arrows", "", true) + "\
+            " + addStep(3, false, "Play video", "", "Space", "", true) + "\
+            " + addStep(4, false, "Scrub video", "", "Shift-Mouse", "", true) + "</td>\
+                <td></td>\
+                 <td>" + addStep(-1, false, "Trim", "", "Right-Click", "", false) + "\
+            " + addStep(-1, false, "Wideview", "", "Right-Click", "", false) + "\
+            " + addStep(-1, false, "Archive to MSK recycle bin", "", "Right-Click", "", false) + "<p></p></td>\
+            <td><p>Exported files</p></td>\
+               </tr>\
+               <tr>\
+                 <td><b>Clip</b></td>\
+                 <td></td>\
+                 <td>" + addStep(5, false, "Add clip", "", "Ctrl-I", "", true) + "\
+            " + addStep(6, false, "Change in and out", "", "Ctrl-I/O", "", true) + "\
+            " + addStep(7, false, "Add tags, rating and alike", "", "a-Z, 0-9, Ctrl-1-5, Ctrl-L", "", true) + "\
+            " + addStep(-1, false, "Delete clip or tags", "", "Right-Click", "", false) + "\
+            " + addStep(-1, false, "Undo", "edits", "Ctrl-U", "/images/undo.png", false) + addStep(-1, false, "Redo", "edits", "Ctrl-R", "/images/redo.png", false) + addStep(-1, false, "Save", "edits", "Ctrl-S", "/images/save.png", false) +"\
+               </tr>\
+             </table>\
+            <h2 id=\"Show media items\" style=\"color:#33FFFF\">Show Media Items</h2>\
+               " +
+                                         "<ul>"
+                                         "<li>Only (sub) folders with mediafiles shown</li>"
+                                         "<li><b>Scroll Wheel</b>: Scroll up and down</li>"
+                                         "<li><b>" + commandControl + "Scroll Wheel</b>: Zoom-in and -out at current mouse position</li>"
+                                         "<li><b>Left mouse click and drag</b>: Move around the scene</li>"
+                                         "<li><b>Right mouse click on item</b>: Actions and properties of the item</li>"
+                                         "</ul>"
+            ; //.arg(qApp->applicationVersion())
+
+
+            textEdit->setHtml(text);
+
+//    about.setIconPixmap(QPixmap::fromImage(QImage(":/MediaSidekick.ico")));
+
+
+    connect(textEdit, &QTextBrowser::anchorClicked, [=]()
+    {
+        qDebug()<<"anchorClicked";
+    });
+
+    about->show();
+    about->exec();
 }

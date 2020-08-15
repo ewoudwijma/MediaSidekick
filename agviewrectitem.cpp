@@ -17,6 +17,8 @@
 
 #include <QTimeLine>
 
+#include <QMessageBox>
+
 AGViewRectItem::AGViewRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     QGraphicsRectItem(parent)
 {
@@ -90,24 +92,17 @@ void AGViewRectItem::updateToolTip()
     {
         tooltipText += tr("<p><b>Folder %1</b></p>"
                        "<p><i>Folder with its subfolders and media files. Only <b>folders containing mediafiles</b> are shown</i></p>"
-                          "<p><b>Properties</p>"
-                       "<ul>"
-            "<li><b>Foldername</b>: %1</li>"
-                          "</ul>").arg(tooltipItem->fileInfo.absoluteFilePath());
-        tooltipText += tr("<p><b>Help</p>"
+                       ).arg(tooltipItem->fileInfo.absoluteFilePath());
+        tooltipText += tr(
                     "<ul>"
-                      "<li><b>Actions</b>: Right click</li>"
-                          "<li><b>Media Sidekick recycle bin</b>: not shown. Right click / Open in explorer will show the Media Sidekick recycle bin</li>"
+                          "<li><b>Media Sidekick recycle bin</b>: Right click / Open in explorer will show the Media Sidekick recycle bin</li>"
                       "</ul>"
         );
-        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
     }
     else if (tooltipItem->data(mediaTypeIndex) == "FileGroup")
     {
-        tooltipText += tr("<p><b>Filegroup %1</b></p>"
-                       "<p><i>Grouping of %1 files in folder %2</i></p>"
+        tooltipText += tr("<p><b>%1 Files in folder %2</b></p>"
                           "<ul>"
-                          "<li><b>Sorting</b>: Files are sorted by their <u>creation date</u>. Files without creation date are shown first, in alphabetic order.</li>"
                           ).arg(tooltipItem->fileInfo.fileName(), tooltipItem->fileInfo.absolutePath());
         if (tooltipItem->fileInfo.fileName() == "Video")
             tooltipText += tr("<li><b>Supported Video files</b>: %1</li>"
@@ -135,7 +130,6 @@ void AGViewRectItem::updateToolTip()
         else
             tooltipText += tr("<li><b>Group</b>: %2</li>"
                               "</ul>").arg(tooltipItem->fileInfo.fileName());
-        tooltipText += tr("<p><b>zValue</b>: %1</p>").arg(QString::number(tooltipItem->zValue()));
     }
     else if (tooltipItem->data(mediaTypeIndex) == "TimelineGroup")
     {
@@ -151,14 +145,12 @@ void AGViewRectItem::updateToolTip()
     else if (tooltipItem->data(mediaTypeIndex) == "MediaFile")
     {
         AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)tooltipItem;
-        tooltipText += tr("<p><b>Media file %2</b></p>"
+        tooltipText += tr("<p><b>Media file %1</b></p>"
                        "<p><i></i></p>"
                           "<p><b>Properties</p>"
                        "<ul>"
-            "<li><b>Foldername</b>: %1</li>"
-                          "<li><b>File name</b>: %2</li>"
-                          "<li><b>File size</b>: %3</li>"
-                          "<li><b>Create date</b>: %4</li>").arg(tooltipItem->fileInfo.absolutePath(), tooltipItem->fileInfo.fileName()
+                          "<li><b>File size</b>: %2</li>"
+                          "<li><b>Create date</b>: %3</li>").arg(tooltipItem->fileInfo.fileName()
                                                                  , QString::number(fileInfo.size()/1024/1024) + " MB", tooltipItem->data(createDateIndex).toString());
 
         if (tooltipItem->data(mediaDurationIndex).toInt() != 0)
@@ -169,74 +161,31 @@ void AGViewRectItem::updateToolTip()
         if (tooltipItem->data(mediaWithIndex).toInt() != -1)
             tooltipText += tr("<li><b>Size</b>: %1 * %2</li>").arg(QString::number(tooltipItem->data(mediaWithIndex).toInt()), QString::number(tooltipItem->data(mediaHeightIndex).toInt()));
 
-//        QMapIterator<QString, QList<ExifToolValueStruct>> categoryIterator(mediaItem->exiftoolPropertyMap);
-//        while (categoryIterator.hasNext())
-//        {
-//            categoryIterator.next();
-
-//            qDebug()<<"categoryIterator.key()"<<categoryIterator.key();
-//            QString categoryKey = categoryIterator.key().split(" - ")[1];
-
-//            QList<ExifToolValueStruct> propertyListSorted = categoryIterator.value();
-
-//            std::sort(propertyListSorted.begin(), propertyListSorted.end(), [](ExifToolValueStruct v1, ExifToolValueStruct v2)->bool
-//            {
-//                return v1.sortOrder<v2.sortOrder;
-//            });
-
-//            foreach (ExifToolValueStruct exifToolValueStruct, propertyListSorted)
-//            {
-//                tooltipText += tr("<li><b>%1 - %2</b>: %3</li>").arg(categoryKey, exifToolValueStruct.propertyName, exifToolValueStruct.value);
-//            }
-//        }
-
         tooltipText += tr("</ul>"
             "<p><b>Help</p>"
             "<ul>"
-                          "<li><b>Actions</b>: Right click</li>"
                           "<li><b>Duration line</b>: Red or green line above. Allows comparison of duration of media files and clips</li>"
                           "<li><b>Progress line</b>: Red line below</li>"
-                          "<li><b>Change playing position</b>: Shift-Hover over %1 (start playing first)</li>"
+                          "<li><b>Change playing position</b>: Shift-Hover over %1</li>"
                           "</ul>"
             ).arg(tooltipItem->data(mediaTypeIndex).toString());
-
-        tooltipText += tr("<p><b>Debug</p>""<ul>");
-        tooltipText += tr("<li><b>Parent</b>: %1</li>").arg(mediaItem->parentRectItem->itemToString());
-        tooltipText += tr("<li><b>Proxy</b>: %1</li>").arg(mediaItem->groupItem->itemToString());
-        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
-        tooltipText += tr("<li><b>filtered</b>: %1</li></ul>").arg(tooltipItem->data(excludedInFilter).toBool());
-
     }
     else if (tooltipItem->data(mediaTypeIndex) == "Clip")
     {
         AGClipRectItem *clipItem = (AGClipRectItem *)tooltipItem;
-        tooltipText += tr("<p><b>Clip from %6 to %7</b></p>"
+        tooltipText += tr("<p><b>Clip from %3 to %4</b></p>"
                        "<ul>"
-                          "<li><b>Foldername</b>: %1</li>"
-            "<li><b>Filename</b>: %2</li>"
-                          "<li><b>Create date</b>: %3</li>"
-             "<li><b>Duration</b>: %4 (%5 s)</li>"
-                          "<li><b>In and out</b>: %6 - %7</li>"
-                       "</ul>").arg(tooltipItem->fileInfo.absolutePath(), tooltipItem->fileInfo.fileName()
-                                    , tooltipItem->data(createDateIndex).toString()
-                                    , AGlobal().msec_to_time(tooltipItem->data(mediaDurationIndex).toInt()), QString::number(tooltipItem->data(mediaDurationIndex).toInt() / 1000.0)
+             "<li><b>Duration</b>: %1 (%2 s)</li>"
+                       "</ul>").arg(AGlobal().msec_to_time(tooltipItem->data(mediaDurationIndex).toInt()), QString::number(tooltipItem->data(mediaDurationIndex).toInt() / 1000.0)
                                     , AGlobal().msec_to_time(clipItem->clipIn), AGlobal().msec_to_time(clipItem->clipOut)
                          );
 
         tooltipText += tr("</ul>"
             "<p><b>Help</p>"
             "<ul>"
-                          "<li><b>Actions</b>: Right click</li>"
-                          "<li><b>Change playing position</b>: Shift-Hover over %1 (start playing first)</li>"
+                          "<li><b>Change playing position</b>: Shift-Hover over %1</li>"
                           "</ul>"
             ).arg(tooltipItem->data(mediaTypeIndex).toString());
-
-        tooltipText += tr("<p><b>Debug</p>""<ul>");
-        tooltipText += tr("<li><b>Parent</b>: %1</li>").arg(clipItem->parentRectItem->itemToString());
-        tooltipText += tr("<li><b>Proxy</b>: %1</li>").arg(clipItem->mediaItem->itemToString());
-        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(qint64(tooltipItem->zValue())));
-        tooltipText += tr("<li><b>filtered</b>: %1</li></ul>").arg(tooltipItem->data(excludedInFilter).toBool());
-
     }
     else if (tooltipItem->data(mediaTypeIndex) == "Tag")
     {
@@ -302,6 +251,8 @@ void AGViewRectItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
             else
                 progress = data(mediaDurationIndex).toInt() * event->pos().x()/rect().width();
 
+//            qDebug()<<"AGViewRectItem::hoverMoveEvent"<<progress<<data(mediaDurationIndex).toInt()<<event->pos().x()/rect().width();
+
             emit hoverPositionChanged(this, progress);
         }
     }
@@ -323,8 +274,29 @@ void AGViewRectItem::recursiveFileRenameCopyIfExists(QString folderName, QString
     }
 }
 
-void AGViewRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
+void AGViewRectItem::processAction(QString action)
 {
+    AGView *agView = (AGView *)scene()->views().first();
+
+    if (action.contains("Export"))
+    {
+        if (agView->isLoading)
+            QMessageBox::information(agView, "Export", tr("View is loading, wait until finished"));
+        else
+        {
+            MExportDialog *exportDialog = new MExportDialog(nullptr, this);
+            exportDialog->processes = &processes;
+            exportDialog->show();
+            connect(exportDialog, &MExportDialog::processOutput, this, &AGViewRectItem::onProcessOutput);
+            connect(exportDialog, &MExportDialog::transitionTimeChanged, agView, &AGView::onTransitionTimeChanged);
+        }
+    }
+}
+
+void AGViewRectItem::onItemRightClicked(QPoint pos)
+{
+    QGraphicsView *view = scene()->views().first();
+
     fileContextMenu->addAction(new QAction("Zoom to item",fileContextMenu));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
@@ -336,20 +308,14 @@ void AGViewRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
                                               ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName()));
 
 
-    AGView *agView = (AGView *)view;
-
     fileContextMenu->addSeparator();
 
     fileContextMenu->addAction(new QAction("Export",fileContextMenu));
     fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/Spinner.gif"))));
-    fileContextMenu->actions().last()->setEnabled(!agView->isLoading);
+//    fileContextMenu->actions().last()->setEnabled(!agView->isLoading);
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
-        MExportDialog *exportDialog = new MExportDialog(nullptr, this);
-        exportDialog->processes = &processes;
-        exportDialog->show();
-
-        connect(exportDialog, &MExportDialog::processOutput, this, &AGViewRectItem::onProcessOutput);
+        processAction("Export");
     });
 
     fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
@@ -395,7 +361,12 @@ void AGViewRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
     fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
-        QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absoluteFilePath()) );
+        qDebug()<<"Open in explorer"<<metaObject()->className()<<fileInfo.absoluteFilePath()<<fileInfo.absolutePath()<<fileInfo.fileName();
+        if (strcmp(metaObject()->className() , "MGroupRectItem") == 0)
+            QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absolutePath()) );
+        else
+            QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absoluteFilePath()) );
+
     });
 
     fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
@@ -473,7 +444,7 @@ void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event,
         subLogItem->setData(itemTypeIndex, "SubLog");
         subLogItem->setData(mediaTypeIndex, "MediaFile");
 
-        subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
+//        subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
 
         subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height() - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
 
@@ -489,12 +460,12 @@ void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event,
     {
         progressRectItem = new QGraphicsRectItem(this);
 
-//            setItemProperties(progressLineItem, "MediaFile", "SubProgressLine", folderName, fileName, m_player->duration(), QSize());
+//            setItemProperties(progressRectItem, "MediaFile", "SubProgressLine", folderName, fileName, m_player->duration(), QSize());
 
         progressRectItem->setData(itemTypeIndex, "SubProgressLine");
         progressRectItem->setData(mediaTypeIndex, "MediaFile");
 
-        progressRectItem->setData(mediaDurationIndex, 60);
+//        progressRectItem->setData(mediaDurationIndex, 60);
 
         progressRectItem->setPos(0, boundingRect().height() - 10 ); //pos need to set here as arrangeitem not called here
         progressRectItem->setBrush(Qt::red);
@@ -508,11 +479,20 @@ void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event,
 
     if (event == "started")
     {
-        QImage image = QImage(":/Spinner.gif");
-        QPixmap pixmap = QPixmap::fromImage(image);//.scaled(QSize(200,200 * myImage.height() / myImage.width()))
-        pictureItem->setPixmap(pixmap);
-        if (image.height() != 0)
-            pictureItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
+        QPixmap base = QPixmap::fromImage(QImage(":/images/Folder.png")).scaledToWidth(56);
+        QPixmap overlay = QPixmap::fromImage(QImage(":/Spinner.gif")).scaledToWidth(32);
+        QPixmap result(base.width(), base.height());
+        result.fill(Qt::transparent); // force alpha channel
+        QPainter painter(&result);
+        painter.drawPixmap(0, 0, base);
+        painter.drawPixmap((base.width() - overlay.width()) / 2, (base.height() - overlay.height()) / 2, overlay);
+
+
+//        QImage image = QImage(":/Spinner.gif");
+//        QPixmap pixmap = QPixmap::fromImage(image);//.scaled(QSize(200,200 * myImage.height() / myImage.width()))
+        pictureItem->setPixmap(result);
+        if (base.height() != 0)
+            pictureItem->setScale(200.0 * 9.0 / 16.0 / base.height() * 0.8);
 
 
 //        QTimeLine *timer = new QTimeLine(5000);

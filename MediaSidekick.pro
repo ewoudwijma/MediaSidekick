@@ -37,17 +37,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
-        aclipsitemdelegate.cpp \
-        aclipsitemmodel.cpp \
-        aclipssortfilterproxymodel.cpp \
-        aclipstableview.cpp \
         aderperviewmain.cpp \
         aderperviewprocess.cpp \
         aderperviewvideo.cpp \
         adragdroplineedit.cpp \
         aexport.cpp \
-        afilessortfilterproxymodel.cpp \
-        afilestreeview.cpp \
         agcliprectangleitem.cpp \
         agcliprectitem.cpp \
         ageocoding.cpp \
@@ -59,7 +53,6 @@ SOURCES += \
         agtagtextitem.cpp \
         agview.cpp \
         agviewrectitem.cpp \
-        ajobitemdelegate.cpp \
         apropertyeditordialog.cpp \
         apropertyitemdelegate.cpp \
         apropertysortfilterproxymodel.cpp \
@@ -68,29 +61,20 @@ SOURCES += \
         astareditor.cpp \
         astarrating.cpp \
         atagslistview.cpp \
-        atimeline.cpp \
-        avideowidget.cpp \
         main.cpp \
         mainwindow.cpp \
         mgrouprectitem.cpp \
         qedge.cpp \
         qgraphwidget.cpp \
         qnode.cpp \
-        sscrubbar.cpp \
         stimespinbox.cpp
 
 HEADERS += \
-        aclipsitemdelegate.h \
-        aclipsitemmodel.h \
-        aclipssortfilterproxymodel.h \
-        aclipstableview.h \
         aderperviewmain.h \
         aderperviewprocess.h \
         aderperviewvideo.h \
         adragdroplineedit.h \
         aexport.h \
-        afilessortfilterproxymodel.h \
-        afilestreeview.h \
         agcliprectangleitem.h \
         agcliprectitem.h \
         ageocoding.h \
@@ -102,7 +86,6 @@ HEADERS += \
         agtagtextitem.h \
         agview.h \
         agviewrectitem.h \
-        ajobitemdelegate.h \
         apropertyeditordialog.h \
         apropertyitemdelegate.h \
         apropertysortfilterproxymodel.h \
@@ -111,14 +94,11 @@ HEADERS += \
         astareditor.h \
         astarrating.h \
         atagslistview.h \
-        atimeline.h \
-        avideowidget.h \
         mainwindow.h \
         mgrouprectitem.h \
         qedge.h \
         qgraphwidget.h \
         qnode.h \
-        sscrubbar.h \
         stimespinbox.h
 
 FORMS += \

@@ -1,12 +1,16 @@
 #ifndef AGTagTextItem_H
 #define AGTagTextItem_H
 
+#include "agcliprectitem.h"
+
 #include <QFileInfo>
 #include <QGraphicsTextItem>
 #include <QGraphicsView>
 #include <QMenu>
 
 #include <QObject>
+
+class AGClipRectItem;
 
 class AGTagTextItem: public QGraphicsTextItem
 {
@@ -16,7 +20,7 @@ class AGTagTextItem: public QGraphicsTextItem
 
 public:
     AGTagTextItem(QGraphicsItem *parent = nullptr, QFileInfo fileInfo = QFileInfo(), QString tagName = "");
-    void onItemRightClicked(QGraphicsView *view, QPoint pos);
+    void onItemRightClicked(QPoint pos);
 
     QString mediaType;
     QString itemType;
@@ -27,9 +31,17 @@ public:
 
     QString tagName;
 
+    AGClipRectItem *clipItem;
+
+//    bool changed = false;
+
 private slots:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
 
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event);
+signals:
+    void deleteItem(bool changed, QString mediaType, QFileInfo fileInfo, int clipIn = -1, QString tagName = "");
+    void hoverPositionChanged(QGraphicsRectItem *rectItem, double position);
 
 };
 

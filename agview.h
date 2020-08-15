@@ -23,16 +23,26 @@ static const int ffMpegMetaIndex = 10;
 static const int excludedInFilter = 12;
 static const int createDateIndex = 13;
 
-//class AGMediaFileRectItem;
+class AGMediaFileRectItem;
+
+typedef struct {
+    QString action;
+    QString mediaType;
+    QGraphicsItem *item;
+    QString property;
+    QString oldValue;
+    QString newValue;
+//    bool changed;
+} UndoStruct;
 
 class AGView: public QGraphicsView
 
 {
     Q_OBJECT
     QGraphicsScene *scene;
-    bool rightMousePressed = false;
-    double _panStartX;
-    double _panStartY;
+    bool panEnabled = false;
+    double panStartX;
+    double panStartY;
 
     bool noFileOrClipDescendants(QGraphicsItem *parentItem);
 
@@ -46,6 +56,7 @@ class AGView: public QGraphicsView
     void filterItem(QGraphicsItem *item);
 
     void assignCreateDates();
+
 public:
     AGView(QWidget *parent = nullptr);
     ~AGView();
@@ -71,15 +82,25 @@ public:
 
     QString orderBy = "Name";
 
-    QRectF arrangeItems(QGraphicsItem *parentItem = nullptr);
+    QRectF arrangeItems(QGraphicsItem *parentItem = nullptr, QString caller = "");
 
     QGraphicsItem *rootItem = nullptr;
 
     bool isLoading = false;
 
+    void processAction(QString action);
+
+    void undoOrRedo(QString undoOrRedo);
+
+    void saveModels();
+    void saveModel(AGMediaFileRectItem *mediaItem);
+    void updateChangedColors(bool debugOn);
+    QList<UndoStruct> undoList;
+    int undoIndex = -1;
+    int undoSavePoint = -1;
+
 public slots:
     void onSetView();
-    void onCreateClip();
 //    void onClipItemChanged(AGClipRectItem *clipItem);
 //    void onClipMouseReleased(AGClipRectItem *clipItem);
     void onItemRightClicked(QPoint pos);
@@ -87,9 +108,13 @@ public slots:
     void onPlayerDialogFinished(int result);
 
     void onFileChanged(QFileInfo fileInfo);
-    void onAddItem(QString parentName, QString mediaType, QFileInfo fileInfo = QFileInfo(), int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
-    void onDeleteItem(QString mediaType, QFileInfo fileInfo);
+    void onAddItem(bool changed, QString parentName, QString mediaType, QFileInfo fileInfo = QFileInfo(), int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
+    void onDeleteItem(bool changed, QString mediaType, QFileInfo fileInfo, int clipIn = -1, QString tagName = "");
 
+    void onAddUndo(bool changed, QString action, QString mediaType, QGraphicsItem *item, QString property = "", QString oldValue = "", QString newValue = "");
+    void onTransitionTimeChanged(int transitionTime);
+protected:
+    void keyPressEvent(QKeyEvent *event);
 private slots:
     void wheelEvent(QWheelEvent *event);
 
@@ -98,6 +123,11 @@ private slots:
     void mouseMoveEvent(QMouseEvent *event);
 
     void onSelectionChanged();
+
+signals:
+    void fileWatch(QString folderFileName, bool on);
+    void showInStatusBar(QString message, int timeout);
+
 };
 
 #endif // AGVIEW_H

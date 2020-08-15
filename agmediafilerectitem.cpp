@@ -39,7 +39,7 @@ AGMediaFileRectItem::AGMediaFileRectItem(QGraphicsItem *parent, QFileInfo fileIn
     this->groupItem = (AGViewRectItem *)parent;
     setFocusProxy(parent);
 
-//    qDebug()<<"AGFolderRectItem::AGMediaFileRectItem" <<folderName<<fileName;
+//    qDebug()<<"AGMediaFileRectItem::AGMediaFileRectItem" <<fileInfo.fileName();
 
     QBrush brush;
     brush.setColor(Qt::red);
@@ -65,9 +65,13 @@ AGMediaFileRectItem::AGMediaFileRectItem(QGraphicsItem *parent, QFileInfo fileIn
     pictureItem->setData(folderNameIndex, fileInfo.absolutePath());
     pictureItem->setData(fileNameIndex, fileInfo.fileName());
 
-    pictureItem->setData(mediaDurationIndex, duration);
+//    pictureItem->setData(mediaDurationIndex, duration);
     pictureItem->setData(mediaWithIndex, 0);
     pictureItem->setData(mediaHeightIndex, 0);
+
+//    pictureItem->setFlag(QGraphicsItem::ItemIsSelectable, false);
+
+//    connect(pictureItem, &QGraphicsPixmapItem::mousePressEvent)
 
     QImage image;
     if (AGlobal().projectExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
@@ -95,13 +99,24 @@ AGMediaFileRectItem::AGMediaFileRectItem(QGraphicsItem *parent, QFileInfo fileIn
 
 AGMediaFileRectItem::~AGMediaFileRectItem()
 {
+    bool somethingKilled = false;
     foreach (AGProcessAndThread *process, processes)
     {
         if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
         {
-            qDebug()<<"AGMediaFileRectItem::~AGMediaFileRectItem Killing process"<<fileInfo.fileName()<<process->name<<process->process<<process->jobThread;
+//            qDebug()<<"AGMediaFileRectItem::~AGMediaFileRectItem Killing process"<<fileInfo.fileName()<<process->name;//<<process->process<<process->jobThread;
             process->kill();
+            somethingKilled = true;
         }
+    }
+
+    if (somethingKilled) //add a delay to let process killing do its evil work.
+    {
+        //https://stackoverflow.com/questions/3752742/how-do-i-create-a-pause-wait-function-using-qt
+        //wait
+        QTime dieTime= QTime::currentTime().addSecs(1);
+        while (QTime::currentTime() < dieTime)
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     }
 }
 
@@ -137,7 +152,7 @@ void AGMediaFileRectItem::onMediaLoaded(QFileInfo fileInfo, QImage image, int du
         pictureItem->setData(folderNameIndex, fileInfo.absolutePath());
         pictureItem->setData(fileNameIndex, fileInfo.fileName());
 
-        pictureItem->setData(mediaDurationIndex, duration);
+//        pictureItem->setData(mediaDurationIndex, duration);
         pictureItem->setData(mediaWithIndex, mediaSize.width());
         pictureItem->setData(mediaHeightIndex, mediaSize.height());
     }
@@ -162,7 +177,7 @@ void AGMediaFileRectItem::onMediaLoaded(QFileInfo fileInfo, QImage image, int du
         pathItem->setData(mediaTypeIndex, "MediaFile");
         pathItem->setData(itemTypeIndex, "SubWave");
 
-        pathItem->setData(mediaDurationIndex, duration);
+//        pathItem->setData(mediaDurationIndex, duration);
         pathItem->setData(mediaWithIndex, mediaSize.width());
         pathItem->setData(mediaHeightIndex, mediaSize.height());
 
@@ -187,7 +202,7 @@ void AGMediaFileRectItem::onMediaLoaded(QFileInfo fileInfo, QImage image, int du
             durationLine->setData(folderNameIndex, fileInfo.absolutePath());
             durationLine->setData(fileNameIndex, fileInfo.fileName());
 
-            durationLine->setData(mediaDurationIndex, duration);
+//            durationLine->setData(mediaDurationIndex, duration);
             durationLine->setData(mediaWithIndex, mediaSize.width());
             durationLine->setData(mediaHeightIndex, mediaSize.height());
         }
@@ -195,6 +210,9 @@ void AGMediaFileRectItem::onMediaLoaded(QFileInfo fileInfo, QImage image, int du
 //            if (playerItem != nullptr) //update duration from QMediaPlayer (needed for audio files)
 //                setItemProperties(playerItem, "MediaFile", "SubPlayer", folderName, fileName, duration, mediaSize);
     }
+
+    AGView *view = (AGView *)scene()->views().first();
+    view->arrangeItems(nullptr, __func__);
 }
 
 void AGMediaFileRectItem::onMediaFileChanged()
@@ -215,7 +233,7 @@ void AGMediaFileRectItem::onMediaFileChanged()
 
     //        connect(process, &AGProcessAndThread::stopThreadProcess, this, &AGMediaFileRectItem::onStopThreadProcess);
 
-    //        qDebug()<<"Loadmedia started"<<fileInfo.fileName();
+//            qDebug()<<"Loadmedia started"<<fileInfo.fileName();
 
             loadMedia(process);
         });
@@ -408,7 +426,7 @@ void AGMediaFileRectItem::onProcessOutput(QTime time, QTime totalTime, QString e
         subLogItem->setData(itemTypeIndex, "SubLog");
         subLogItem->setData(mediaTypeIndex, "MediaFile");
 
-        subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
+//        subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
 
         subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height() - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
 
@@ -442,8 +460,58 @@ void AGMediaFileRectItem::onProcessOutput(QTime time, QTime totalTime, QString e
     }
 }
 
-void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
+void AGMediaFileRectItem::processAction(QString action)
 {
+//    qDebug()<<"AGMediaFileRectItem::processAction"<<action;
+    if (m_player == nullptr)
+        initPlayer(true);
+
+    if (action == "actionIn")
+    {
+        emit addItem(true, "Timeline", "Clip", fileInfo, 3000, m_player->position(), m_player->position() + 3000);
+    }
+    else if (action == "actionPlay_Pause")
+    {
+        initPlayer(true);
+    }
+    else if (action == "actionPrevious_frame")
+    {
+        onRewind(m_player);
+    }
+    else if (action == "actionNext_frame")
+    {
+        onFastForward(m_player);
+    }
+    else if (action == "actionMute")
+    {
+        onMuteVideoButton(m_player);
+    }
+    else if (action == "actionSpeed_Up")
+    {
+        onSpeed_Up(m_player);
+    }
+    else if (action == "actionSpeed_Down")
+    {
+        onSpeed_Down(m_player);
+    }
+    else if (action == "actionVolume_Up")
+    {
+        onVolume_Up(m_player);
+    }
+    else if (action == "actionVolume_Down")
+    {
+        onVolume_Down(m_player);
+    }
+    else
+        AGViewRectItem::processAction(action);
+
+//    setSelected(true); //not because if triggered by clip, the clip should remain selected.
+}
+
+void AGMediaFileRectItem::onItemRightClicked(QPoint pos)
+{
+    AGView *view = (AGView *)scene()->views().first();
+
     fileContextMenu->clear();
 
     QString commandControl = "Ctrl-";
@@ -460,7 +528,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
         fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaSeekBackward));
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
-            onRewind(m_player);
+            processAction("actionPrevious_frame");
         });
     }
 
@@ -475,7 +543,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
 
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
-            initPlayer(true);
+            processAction("actionPlay_Pause");
         }); //onPlayVideoButton(m_player);
     }
 
@@ -490,7 +558,7 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
         fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaSeekForward));
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
-            onFastForward(m_player);
+            processAction("actionNext_frame");
         });
 
         fileContextMenu->addAction(new QAction("Stop",fileContextMenu));
@@ -510,10 +578,10 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
         fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaVolume));
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
-            onMuteVideoButton(m_player);
+            processAction("actionMute");
         });
 
-        fileContextMenu->addAction(new QAction("Speed",fileContextMenu));
+        fileContextMenu->addAction(new QAction("Speed Up",fileContextMenu));
         fileContextMenu->actions().last()->setToolTip(tr("<p><b>Speed</b></p>"
                                                                     "<p><i>Change the play speed of the video</i></p>"
                                                                     "<ul>"
@@ -522,11 +590,44 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
         fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaVolume));
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
-            const QString &arg1 = "1x";
-            double playbackRate = arg1.left(arg1.lastIndexOf("x")).toDouble();
-            if (arg1.indexOf(" fps")  > 0)
-                playbackRate = arg1.left(arg1.lastIndexOf(" fps")).toDouble() / QSettings().value("frameRate").toInt();
-            onSetPlaybackRate(m_player, playbackRate);
+            processAction("actionSpeed_Up");
+        });
+
+        fileContextMenu->addAction(new QAction("Speed Down",fileContextMenu));
+        fileContextMenu->actions().last()->setToolTip(tr("<p><b>Speed</b></p>"
+                                                                    "<p><i>Change the play speed of the video</i></p>"
+                                                                    "<ul>"
+                                                                    "<li>Supported speeds are depending on the media file codec installed on your computer</li>"
+                                                                    "</ul>"));
+        fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaVolume));
+        connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+        {
+            processAction("actionSpeed_Down");
+        });
+
+
+        fileContextMenu->addAction(new QAction("Volume Up",fileContextMenu));
+        fileContextMenu->actions().last()->setToolTip(tr("<p><b>Speed</b></p>"
+                                                                    "<p><i>Change the play speed of the video</i></p>"
+                                                                    "<ul>"
+                                                                    "<li>Supported speeds are depending on the media file codec installed on your computer</li>"
+                                                                    "</ul>"));
+        fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaVolume));
+        connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+        {
+            processAction("actionVolume_Up");
+        });
+
+        fileContextMenu->addAction(new QAction("Volume Down",fileContextMenu));
+        fileContextMenu->actions().last()->setToolTip(tr("<p><b>Speed</b></p>"
+                                                                    "<p><i>Change the play speed of the video</i></p>"
+                                                                    "<ul>"
+                                                                    "<li>Supported speeds are depending on the media file codec installed on your computer</li>"
+                                                                    "</ul>"));
+        fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_MediaVolume));
+        connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+        {
+            processAction("actionVolume_Down");
         });
     }
 
@@ -552,99 +653,88 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
         {
             initPlayer(false);
 
-            foreach (QGraphicsItem *item, scene()->items())
+            foreach (AGClipRectItem *clipItem, clips)
             {
-                if (item->focusProxy() == this && item->data(itemTypeIndex).toString() == "Base" && item->data(mediaTypeIndex).toString() == "Clip") //find the clips
+                QTime inTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipIn);
+                QTime outTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipOut);
+
+                int deltaIn = qMin(1000, inTime.msecsSinceStartOfDay());
+                inTime = inTime.addMSecs(-deltaIn);
+                int deltaOut = 1000;//fmin(1000, ui->videoWidget->m_player->duration() - outTime.msecsSinceStartOfDay());
+                outTime = outTime.addMSecs(deltaOut);
+                int clipDuration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+
+                QString inTimeToMMSS;
+                if (inTime.msecsSinceStartOfDay() < 60 * 60000)
+                    inTimeToMMSS = inTime.toString("mm-ss");
+                else
+                    inTimeToMMSS = inTime.toString("HH-mm-ss");
+
+                QString fileNameTarget = fileInfo.completeBaseName() + "+" + inTimeToMMSS + "." + fileInfo.suffix();
+
+                QString sourceFolderFileName = fileInfo.absoluteFilePath();
+                QString targetFolderFileName = fileInfo.absolutePath() + "/" + fileNameTarget;
+
+            #ifdef Q_OS_WIN
+                sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
+                targetFolderFileName = targetFolderFileName.replace("/", "\\");
+            #endif
+
+                QString command = "ffmpeg -i \"" + sourceFolderFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(clipDuration).toString("hh:mm:ss.zzz") + " -vcodec copy -acodec copy -y \"" + targetFolderFileName + "\""; // -map_metadata 0;
+
+                AGProcessAndThread *process = new AGProcessAndThread(this);
+                process->command("Trim", command);
+
+                processes<<process;
+                connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
+                connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
                 {
-                    AGClipRectItem *clipItem = (AGClipRectItem *)item;
-
-//                    qDebug()<<"Clip"<<clipItem->itemToString();
-
-                    QTime inTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipIn);
-                    QTime outTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipOut);
-
-                    int deltaIn = qMin(1000, inTime.msecsSinceStartOfDay());
-                    inTime = inTime.addMSecs(-deltaIn);
-                    int deltaOut = 1000;//fmin(1000, ui->videoWidget->m_player->duration() - outTime.msecsSinceStartOfDay());
-                    outTime = outTime.addMSecs(deltaOut);
-                    int clipDuration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
-
-                    QString inTimeToMMSS;
-                    if (inTime.msecsSinceStartOfDay() < 60 * 60000)
-                        inTimeToMMSS = inTime.toString("mm-ss");
-                    else
-                        inTimeToMMSS = inTime.toString("HH-mm-ss");
-
-                    QString fileNameTarget = fileInfo.completeBaseName() + "+" + inTimeToMMSS + "." + fileInfo.suffix();
-
-                    QString sourceFolderFileName = fileInfo.absoluteFilePath();
-                    QString targetFolderFileName = fileInfo.absolutePath() + "/" + fileNameTarget;
-
-                #ifdef Q_OS_WIN
-                    sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
-                    targetFolderFileName = targetFolderFileName.replace("/", "\\");
-                #endif
-
-                    QString command = "ffmpeg -i \"" + sourceFolderFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(clipDuration).toString("hh:mm:ss.zzz") + " -vcodec copy -acodec copy -y \"" + targetFolderFileName + "\""; // -map_metadata 0;
-
-                    AGProcessAndThread *process = new AGProcessAndThread(this);
-                    process->command("Trim", command);
-
-                    processes<<process;
-                    connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-                    connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
+                    if (event == "finished")
                     {
-                        if (event == "finished")
+                        QString aLike = "false";
+                        QString stars;
+                        QStringList tags;
+                        foreach (AGTagTextItem *tagItem, clipItem->tags)
                         {
-                            QString aLike = "false";
-                            QString stars;
-                            QStringList tags;
-                            foreach (QGraphicsItem *item, clipItem->childItems())
-                            {
-                                if (item->data(mediaTypeIndex) == "Tag")
-                                {
-                                    AGTagTextItem *tagItem = (AGTagTextItem *)item;
-                                    if (tagItem->tagName.contains("*"))
-                                        stars = tagItem->tagName;
-                                    else if (tagItem->tagName.contains("✔"))
-                                        aLike = "true";
-                                    else if (tagItem->tagName != "")
-                                        tags << tagItem->tagName;
-                                }
-                            }
-
-                            qDebug()<<"AGMediaFileRectItem::finished"<<event<<outputString<<aLike<<stars<<tags<<fileInfo.absolutePath() + "/" + fileNameTarget.left(fileNameTarget.lastIndexOf(".")) + ".srt";
-
-                            //create srt file
-
-                            QFile file(fileInfo.absolutePath() + "/" + fileNameTarget.left(fileNameTarget.lastIndexOf(".")) + ".srt");
-                            if ( file.open(QIODevice::WriteOnly) )
-                            {
-                                QTextStream stream( &file );
-                //                        int order = clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
-
-                                QString srtContentString = "";
-                //                        srtContentString += "<o>" + QString::number(order) + "</o>"; //+1 for file trim, +2 for export
-                                srtContentString += "<r>" + QString::number(stars.length()) + "</r>";
-                                srtContentString += "<a>" + aLike + "</a>";
-                                srtContentString += "<t>" + tags.join(";") + "</t>";
-
-                                stream << 1 << endl;
-                                stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(clipDuration - deltaOut -  AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
-                                stream << srtContentString << endl;
-                                stream << endl;
-
-                                file.close();
-                            }
-                            qDebug()<<"AGMediaFileRectItem::finished2"<<event<<outputString<<aLike<<stars<<tags<<fileInfo.absolutePath() + "/" + fileNameTarget.left(fileNameTarget.lastIndexOf(".")) + ".srt";
+                            if (tagItem->tagName.contains("*"))
+                                stars = tagItem->tagName;
+                            else if (tagItem->tagName.contains("✔"))
+                                aLike = "true";
+                            else if (tagItem->tagName != "")
+                                tags << tagItem->tagName;
                         }
-                    });
 
-                    process->start();
+                        qDebug()<<"AGMediaFileRectItem::finished"<<event<<outputString<<aLike<<stars<<tags<<fileInfo.absolutePath() + "/" + fileNameTarget.left(fileNameTarget.lastIndexOf(".")) + ".srt";
+
+                        //create srt file
+
+                        QFile file(fileInfo.absolutePath() + "/" + fileNameTarget.left(fileNameTarget.lastIndexOf(".")) + ".srt");
+                        if ( file.open(QIODevice::WriteOnly) )
+                        {
+                            QTextStream stream( &file );
+            //                        int order = clipsTableView->clipsItemModel->index(row, orderAfterMovingIndex).data().toInt();
+
+                            QString srtContentString = "";
+            //                        srtContentString += "<o>" + QString::number(order) + "</o>"; //+1 for file trim, +2 for export
+                            srtContentString += "<r>" + QString::number(stars.length()) + "</r>";
+                            srtContentString += "<a>" + aLike + "</a>";
+                            srtContentString += "<t>" + tags.join(";") + "</t>";
+
+                            stream << 1 << endl;
+                            stream << QTime::fromMSecsSinceStartOfDay(deltaIn).toString("HH:mm:ss.zzz") << " --> " << QTime::fromMSecsSinceStartOfDay(clipDuration - deltaOut -  AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz") << endl;
+                            stream << srtContentString << endl;
+                            stream << endl;
+
+                            file.close();
+                        }
+                        qDebug()<<"AGMediaFileRectItem::finished2"<<event<<outputString<<aLike<<stars<<tags<<fileInfo.absolutePath() + "/" + fileNameTarget.left(fileNameTarget.lastIndexOf(".")) + ".srt";
+                    }
+                });
+
+                process->start();
 
 //                    qDebug()<<"AClipsTableView::onTrim before propertyCopy"<< folderName<<fileName<<fileNameTarget<<parentItem;
 //                    emit propertyCopy(currentItem, folderName, fileName, folderName, fileNameTarget);
-                }
             }
         });
 
@@ -922,9 +1012,13 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                     {
                         recursiveFileRenameCopyIfExists(recycleFolder, fileInfo.fileName());
                         success = file.rename(recycleFolder + fileInfo.fileName());
-                        qDebug()<<"moved"<<success<<tr("%1 moved to recycle folder %2").arg(fileInfo.fileName(),recycleFolder);
+//                        qDebug()<<"moved"<<success<<tr("%1 moved to recycle folder %2").arg(fileInfo.fileName(),recycleFolder);
                         if (success)
+                        {
                             process->addProcessLog("output", tr("%1 moved to recycle folder").arg(fileInfo.fileName()));
+//                            qDebug()<<"Undo - archive file"<<fileInfo.fileName() <<recycleFolder;
+                            emit addUndo(false, "Archive", "MediaFile", this);
+                        }
                     }
                 }
            }
@@ -941,15 +1035,31 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
 
     if (AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive) || AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive) || AGlobal().imageExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
     {
-        //check if clips
-        bool hasClips = false;
-        foreach (QGraphicsItem *childItem, childItems())
-        {
-            if (childItem->data(mediaTypeIndex).toString() == "Clip" && childItem->data(itemTypeIndex).toString() == "Base")
-                hasClips = true;
-        }
+        fileContextMenu->addAction(new QAction("Add clip",fileContextMenu));
+        fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_TrashIcon));
 
-        if (hasClips)
+        fileContextMenu->actions().last()->setEnabled(m_player != nullptr);
+
+        connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+        {
+            processAction("actionIn");
+        });
+        fileContextMenu->actions().last()->setToolTip(tr("<p><b>%1</b></p>"
+                                                         "<p><i>Add a clip at the current position of video %2</i></p>"
+                                                         "<ul>"
+                                                         "<li>Clips can only be added if the current video is played</li>"
+                                                         "</ul>"
+                                                         ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName()));
+
+//        //check if clips
+//        bool hasClips = false;
+//        foreach (QGraphicsItem *childItem, clips)
+//        {
+//            if (childItem->data(mediaTypeIndex).toString() == "Clip" && childItem->data(itemTypeIndex).toString() == "Base")
+//                hasClips = true;
+//        }
+
+        if (clips.count() > 0)
         {
             fileContextMenu->addAction(new QAction("Archive clips",fileContextMenu));
             fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_TrashIcon));
@@ -983,7 +1093,11 @@ void AGMediaFileRectItem::onItemRightClicked(AGView *view, QPoint pos)
                                 recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                                 success = file->rename(recycleFolder + srtFileName);
                                 if (success)
+                                {
+                                    qDebug()<<"Undo - archive srt"<<srtFileName <<recycleFolder;
+                                    emit addUndo(false, "Archive", "Clips", this);
                                     process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                                }
                             }
 
                             //txt file
@@ -1307,6 +1421,49 @@ void AGMediaFileRectItem::onPlayVideoButton(QMediaPlayer *m_player)
 void AGMediaFileRectItem::onMuteVideoButton(QMediaPlayer *m_player)
 {
     m_player->setMuted(!m_player->isMuted());
+
+    if (QSettings().value("muteOn").toBool() != m_player->isMuted())
+    {
+        QSettings().setValue("muteOn", m_player->isMuted());
+        QSettings().sync();
+    }
+}
+
+void AGMediaFileRectItem::onSpeed_Up(QMediaPlayer *m_player)
+{
+    qreal playbackRate = m_player->playbackRate();
+
+    if (playbackRate == 0)
+        playbackRate = 1;
+
+    m_player->setPlaybackRate(playbackRate * 2.0);
+
+    emit showInStatusBar("Speed " + QString::number(m_player->playbackRate()), 3000);
+}
+
+void AGMediaFileRectItem::onSpeed_Down(QMediaPlayer *m_player)
+{
+    qreal playbackRate = m_player->playbackRate();
+
+    if (playbackRate == 0)
+        playbackRate = 1;
+
+    m_player->setPlaybackRate(playbackRate / 2.0);
+
+    emit showInStatusBar("Speed " + QString::number(m_player->playbackRate()), 3000);
+}
+
+void AGMediaFileRectItem::onVolume_Up(QMediaPlayer *m_player)
+{
+    m_player->setVolume(m_player->volume() + 10);
+
+    emit showInStatusBar("Volume " + QString::number(m_player->volume()), 3000);
+}
+
+void AGMediaFileRectItem::onVolume_Down(QMediaPlayer *m_player)
+{
+    m_player->setVolume(m_player->volume() - 10);
+    emit showInStatusBar("Volume " + QString::number(m_player->volume()), 3000);
 }
 
 void AGMediaFileRectItem::onFastForward(QMediaPlayer *m_player)
@@ -1376,11 +1533,6 @@ void AGMediaFileRectItem::onStop(QMediaPlayer *m_player)
     view->stopAndDeletePlayers(fileInfo);
 }
 
-void AGMediaFileRectItem::onMute(QMediaPlayer *m_player)
-{
-    m_player->setMuted(!m_player->isMuted());
-}
-
 void AGMediaFileRectItem::onSetSourceVideoVolume(QMediaPlayer *m_player, int volume)
 {
 //    sourceVideoVolume = volume;
@@ -1392,11 +1544,6 @@ void AGMediaFileRectItem::onSetSourceVideoVolume(QMediaPlayer *m_player, int vol
 
 //    if (!(AGlobal().audioExtensions.contains(extension, Qt::CaseInsensitive) || exportFileFound))
 //        m_player->setVolume(volume);
-}
-
-void AGMediaFileRectItem::onSetPlaybackRate(QMediaPlayer *m_player, qreal rate)
-{
-    m_player->setPlaybackRate(rate);
 }
 
 void AGMediaFileRectItem::initPlayer(bool startPlaying)
@@ -1420,7 +1567,9 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
                 playerItem->setData(itemTypeIndex, "SubPlayer");
                 playerItem->setData(mediaTypeIndex, "MediaFile");
 
-                playerItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
+                playerItem->setFlag(QGraphicsItem::ItemIsSelectable, false);
+
+//                playerItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
             }
 
             if (m_player == nullptr)
@@ -1433,6 +1582,15 @@ void AGMediaFileRectItem::initPlayer(bool startPlaying)
                 m_player->setVideoOutput(playerItem);
 
                 m_player->setMuted(AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive));
+
+                if (AGlobal().videoExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
+                {
+                    m_player->setMuted(QSettings().value("muteOn").toBool());
+                    if (QSettings().value("exportVideoAudioSlider").toString() != "")
+                        m_player->setVolume(QSettings().value("exportVideoAudioSlider").toInt());
+                }
+                else //audio always on
+                    m_player->setMuted(false);
 
                 m_player->setProperty("startPlaying", startPlaying?"true":"false");
 
@@ -1739,17 +1897,16 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
 
     if (m_player->duration() != 0)
     {
-        //create progressLineItem when position changed, not when mediaLoaded
         if (progressRectItem == nullptr)
         {
             progressRectItem = new QGraphicsRectItem(this);
 
-//            setItemProperties(progressLineItem, "MediaFile", "SubProgressLine", folderName, fileName, m_player->duration(), QSize());
+//            setItemProperties(progressRectItem, "MediaFile", "SubProgressLine", folderName, fileName, m_player->duration(), QSize());
 
             progressRectItem->setData(itemTypeIndex, "SubProgressLine");
             progressRectItem->setData(mediaTypeIndex, "MediaFile");
 
-            progressRectItem->setData(mediaDurationIndex, m_player->duration());
+//            progressRectItem->setData(mediaDurationIndex, m_player->duration());
 
             progressRectItem->setPos(0, boundingRect().height() - 10 ); //pos need to set here as arrangeitem not called here
             progressRectItem->setBrush(Qt::red);
@@ -1767,6 +1924,27 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
             double maxX = boundingRect().width() - playerItem->boundingRect().width() - minX;
             playerItem->setPos(qMin(qMax(boundingRect().width() * progress / m_player->duration() - playerItem->boundingRect().width() / 2.0, minX), maxX), playerItem->pos().y());
         }
+
+        //select all clips of mediafile
+        //if position in clip position
+        //highlight clip
+
+        bool clipFound = false;
+        foreach (AGClipRectItem *clipItem, clips)
+        {
+            if (clipItem->clipIn <= progress && clipItem->clipOut >= progress)
+            {
+                //set all other clips off
+                clipItem->scene()->clearSelection();
+                clipItem->setSelected(true);
+                clipFound = true;
+                clipItem->scene()->setFocus(Qt::OtherFocusReason);
+
+            }
+//                else
+//                    clipItem->setSelected(false);
+        }
+//        setSelected(!clipFound);
     }
 }
 
@@ -1793,15 +1971,25 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
     {
         DerperView::InputVideoFile input((fileInfo.absoluteFilePath()).toUtf8().constData());
 
-        if (input.GetLastError() != 0)
+        videoInfo = input.GetVideoInfo();
+
+        if (input.GetLastError() != 0 || videoInfo.videoDuration == 0)
         {
             QString errorMessage = "";
+            int errorNumber = input.GetLastError();
             if (input.GetLastError() == -13)
                 errorMessage = tr("Load Media. Error on opening file %1. Permission denied").arg(fileInfo.fileName());
             else if (input.GetLastError() == -1094995529)
                 errorMessage = tr("Load Media. Error on opening file %1. Invalid data found when processing input").arg(fileInfo.fileName());
 
-            process->addProcessLog("error", "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
+            if (videoInfo.videoDuration == 0)
+            {
+                errorMessage = tr("Load Media. Video file %1 does not contain video").arg(fileInfo.fileName());;
+                errorNumber = 1;
+            }
+
+
+            process->addProcessLog("error", "Error: " + errorMessage + "(" + QString::number(errorNumber) + ")");
 
             myImage = QImage(":/images/testbeeld.png");
 
@@ -1809,7 +1997,6 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
         }
         else
         {
-            videoInfo = input.GetVideoInfo();
 
             AVFrame *frame = input.GetNextFrame();
 
@@ -1871,11 +2058,17 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
             QStringList ffMpegMetaString;
             if (videoInfo.avg_frame_rate.num != 0)
             {
-                duration = 1000.0 * videoInfo.totalFrames / videoInfo.avg_frame_rate.num * videoInfo.avg_frame_rate.den;
+                if (videoInfo.totalFrames != 0)
+                    duration = 1000.0 * videoInfo.totalFrames / videoInfo.avg_frame_rate.num * videoInfo.avg_frame_rate.den;
+                else //in mkv/mp4 files downloaded by youtube-dl for some reason
+                    duration = videoInfo.duration / 1000.0;
 
                 ffMpegMetaString << "Width = " + QString::number(videoInfo.width);
                 ffMpegMetaString << "Height = " + QString::number(videoInfo.height);
                 ffMpegMetaString << "Total frames = " + QString::number(videoInfo.totalFrames);
+                ffMpegMetaString << "duration = " + QString::number(videoInfo.duration);
+                ffMpegMetaString << "videoDuration = " + QString::number(videoInfo.videoDuration);
+                ffMpegMetaString << "audioDuration = " + QString::number(videoInfo.audioDuration);
                 if (videoInfo.frameRate.den != 0)
                     ffMpegMetaString << "Framerate = " + QString::number(videoInfo.frameRate.num / videoInfo.frameRate.den);
                 ffMpegMetaString << "Average framerate = " + QString::number(videoInfo.avg_frame_rate.num / videoInfo.avg_frame_rate.den);
@@ -1905,20 +2098,29 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
     {
         DerperView::InputVideoFile input((fileInfo.absoluteFilePath()).toUtf8().constData());
 
-        if (input.GetLastError() != 0)
+        videoInfo = input.GetVideoInfo();
+
+        if (input.GetLastError() != 0 || videoInfo.audioDuration == 0)
         {
             QString errorMessage = "";
+            int errorNumber = input.GetLastError();
             if (input.GetLastError() == -13)
-                errorMessage = tr("Load Media. Error on opening file %1: Permission denied").arg(fileInfo.fileName());
+                errorMessage = tr("Load Media. Error on opening file %1. Permission denied").arg(fileInfo.fileName());
+            else if (input.GetLastError() == -1094995529)
+                errorMessage = tr("Load Media. Error on opening file %1. Invalid data found when processing input").arg(fileInfo.fileName());
 
-//            qDebug()<<"AGMediaFileRectItem::loadMedia"<<"Error: " + errorMessage + " (" + QString::number(input.GetLastError()) + ")";
+            if (videoInfo.audioDuration == 0)
+            {
+                errorMessage = tr("Load Media. Video file %1 does not contain audio").arg(fileInfo.fileName());;
+                errorNumber = 1;
+            }
 
-            process->addProcessLog("error", "Error: " + errorMessage + "(" + QString::number(input.GetLastError()) + ")");
+
+            process->addProcessLog("error", "Error: " + errorMessage + "(" + QString::number(errorNumber) + ")");
+
         }
         else
         {
-            videoInfo = input.GetVideoInfo();
-
             AVFrame *frame = input.GetNextFrame();
 
             QList<int> samples;

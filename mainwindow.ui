@@ -14,570 +14,150 @@
    <string>Media Sidekick</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_7">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTabWidget" name="tabUIWidget">
-      <property name="tabPosition">
-       <enum>QTabWidget::South</enum>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="spotviewReturnButton">
+        <property name="text">
+         <string>Spot view ↵</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="spotviewDownButton">
+        <property name="text">
+         <string>Spot view ↓</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="spotviewRightButton">
+        <property name="text">
+         <string>Spot view →</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="timelineViewButton">
+        <property name="text">
+         <string>Timeline view</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="orderByDateButton">
+        <property name="text">
+         <string>Date ↓</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="orderByNameButton">
+        <property name="text">
+         <string>Name ↓</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="searchLineEdit">
+        <property name="placeholderText">
+         <string>search</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="mediaFileScaleSlider">
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>1000</number>
+        </property>
+        <property name="value">
+         <number>200</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="mediaFileScaleLabel">
+        <property name="text">
+         <string>mediaFileScaleLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="clipScaleSlider">
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>5000</number>
+        </property>
+        <property name="value">
+         <number>1000</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="clipScaleLabel">
+        <property name="text">
+         <string>clipScaleLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="playerInDialogcheckBox">
+        <property name="text">
+         <string>player in window</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QSplitter" name="verticalGraphicalSplitter">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>1</verstretch>
+       </sizepolicy>
       </property>
-      <property name="currentIndex">
-       <number>0</number>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="tabMedia">
-       <attribute name="title">
-        <string>Media</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QWidget" name="graphicsViewWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_10">
-           <item>
-            <widget class="QPushButton" name="spotviewReturnButton">
-             <property name="text">
-              <string>Spot view ↵</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="spotviewDownButton">
-             <property name="text">
-              <string>Spot view ↓</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="spotviewRightButton">
-             <property name="text">
-              <string>Spot view →</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="timelineViewButton">
-             <property name="text">
-              <string>Timeline view</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line_2">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="orderByDateButton">
-             <property name="text">
-              <string>Date ↓</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="orderByNameButton">
-             <property name="text">
-              <string>Name ↓</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="searchLineEdit">
-             <property name="placeholderText">
-              <string>search</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line_3">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="reloadViewButton">
-             <property name="text">
-              <string>Reload</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="refreshViewButton">
-             <property name="text">
-              <string>Refresh</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line_4">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="mediaFileScaleSlider">
-             <property name="minimum">
-              <number>10</number>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-             <property name="value">
-              <number>200</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickPosition">
-              <enum>QSlider::NoTicks</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="mediaFileScaleLabel">
-             <property name="text">
-              <string>mediaFileScaleLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="clipScaleSlider">
-             <property name="minimum">
-              <number>10</number>
-             </property>
-             <property name="maximum">
-              <number>5000</number>
-             </property>
-             <property name="value">
-              <number>1000</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickPosition">
-              <enum>QSlider::NoTicks</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="clipScaleLabel">
-             <property name="text">
-              <string>clipScaleLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line_5">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="playerInDialogcheckBox">
-             <property name="text">
-              <string>player in window</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSplitter" name="verticalGraphicalSplitter">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <widget class="AGView" name="graphicsView">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>250</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tabClipEditor">
-       <attribute name="title">
-        <string>Clip editor</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_8">
-        <item>
-         <widget class="QSplitter" name="splitter_all">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <widget class="QSplitter" name="splitter_top">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <widget class="QTabWidget" name="filesTabWidget">
-            <property name="tabPosition">
-             <enum>QTabWidget::South</enum>
-            </property>
-            <property name="currentIndex">
-             <number>0</number>
-            </property>
-            <widget class="QWidget" name="tab_file">
-             <attribute name="title">
-              <string>Files</string>
-             </attribute>
-             <layout class="QVBoxLayout" name="verticalLayout_5">
-              <item>
-               <widget class="QLabel" name="label_9">
-                <property name="text">
-                 <string>Video</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="AFilesTreeView" name="videoFilesTreeView"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_8">
-                <property name="text">
-                 <string>Audio</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="AFilesTreeView" name="audioFilesTreeView"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_11">
-                <property name="text">
-                 <string>Export</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="AFilesTreeView" name="exportFilesTreeView"/>
-              </item>
-             </layout>
-            </widget>
-           </widget>
-           <widget class="QSplitter" name="splitter_topright">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <widget class="QWidget" name="layoutWidget">
-             <layout class="QVBoxLayout" name="verticalLayout_player">
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_17">
-                <item>
-                 <widget class="AVideoWidget" name="videoWidget" native="true">
-                  <property name="styleSheet">
-                   <string notr="true">background-color: rgba(0,0,0,0)</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_9">
-                <item>
-                 <widget class="STimeSpinBox" name="positionSpinBox"/>
-                </item>
-                <item>
-                 <widget class="QLabel" name="durationLabel">
-                  <property name="text">
-                   <string>/ 00:00:00:00</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="skipBackwardButton">
-                  <property name="text">
-                   <string>|&lt;</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="seekBackwardButton">
-                  <property name="text">
-                   <string>&lt;&lt;</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="playButton">
-                  <property name="text">
-                   <string>&gt;</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="seekForwardButton">
-                  <property name="text">
-                   <string>&gt;&gt;</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="skipForwardButton">
-                  <property name="text">
-                   <string>&gt;|</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="stopButton">
-                  <property name="text">
-                   <string>[]</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="muteButton">
-                  <property name="text">
-                   <string>X</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_12">
-                  <property name="text">
-                   <string>add</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="setInButton">
-                  <property name="text">
-                   <string>{</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="setOutButton">
-                  <property name="text">
-                   <string>}</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_13">
-                  <property name="text">
-                   <string>speed</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QComboBox" name="speedComboBox"/>
-                </item>
-                <item>
-                 <spacer name="horizontalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QTabWidget" name="clipsTabWidget">
-             <property name="tabPosition">
-              <enum>QTabWidget::South</enum>
-             </property>
-             <property name="currentIndex">
-              <number>1</number>
-             </property>
-             <widget class="QWidget" name="tab_clips">
-              <attribute name="title">
-               <string>Clips</string>
-              </attribute>
-              <layout class="QVBoxLayout" name="verticalLayout_6">
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout">
-                 <item>
-                  <layout class="QHBoxLayout" name="horizontalLayout">
-                   <item>
-                    <widget class="QLabel" name="clipRowsCounterLabel">
-                     <property name="text">
-                      <string>1 / 1</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="fileOnlyCheckBox">
-                     <property name="text">
-                      <string>File only</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="resetSortButton">
-                     <property name="text">
-                      <string/>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QComboBox" name="ratingFilterComboBox">
-                     <item>
-                      <property name="text">
-                       <string>.....</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>*....</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>**...</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>***..</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>****.</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>*****</string>
-                      </property>
-                     </item>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="alikeCheckBox">
-                     <property name="text">
-                      <string>Alike</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="ATagsListView" name="tagFilter1ListView"/>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label">
-                     <property name="text">
-                      <string>&amp;</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="ATagsListView" name="tagFilter2ListView"/>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <widget class="QSplitter" name="splitter">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <widget class="AClipsTableView" name="clipsTableView"/>
-                   <widget class="QGroupBox" name="tagsGroupBox">
-                    <property name="maximumSize">
-                     <size>
-                      <width>256</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="title">
-                     <string>Tags</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_9">
-                     <item>
-                      <widget class="ADragDropLineEdit" name="newTagLineEdit">
-                       <property name="placeholderText">
-                        <string>new tag</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="ATagsListView" name="tagsListView"/>
-                     </item>
-                    </layout>
-                   </widget>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </widget>
-             <widget class="QWidget" name="tabGraph1">
-              <attribute name="title">
-               <string>Graph1</string>
-              </attribute>
-              <layout class="QVBoxLayout" name="verticalLayout_13">
-               <item>
-                <widget class="QGraphWidget" name="graphicsView1"/>
-               </item>
-              </layout>
-             </widget>
-             <widget class="QWidget" name="tabGraph2">
-              <attribute name="title">
-               <string>Graph2</string>
-              </attribute>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
-               <item>
-                <widget class="QGraphWidget" name="graphicsView2"/>
-               </item>
-              </layout>
-             </widget>
-            </widget>
-           </widget>
-          </widget>
-          <widget class="QGroupBox" name="timelineGroupBox">
-           <property name="title">
-            <string>Timeline</string>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_12">
-            <item>
-             <widget class="ATimeline" name="timelineWidget" native="true">
-              <layout class="QVBoxLayout" name="verticalLayout_10"/>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
+      <widget class="AGView" name="graphicsView">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>250</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
       </widget>
      </widget>
     </item>
@@ -604,16 +184,16 @@
     <property name="title">
      <string>&amp;Help</string>
     </property>
+    <addaction name="actionAbout"/>
+    <addaction name="actionHelp"/>
     <addaction name="actionWhatIsNew"/>
     <addaction name="actionCheck_for_updates"/>
     <addaction name="separator"/>
-    <addaction name="actionAbout"/>
     <addaction name="actionAbout_Qt"/>
     <addaction name="separator"/>
     <addaction name="actionTooltips"/>
     <addaction name="separator"/>
     <addaction name="actionDonate"/>
-    <addaction name="actionDebug_mode"/>
     <addaction name="actionGithub_MSK_Issues"/>
     <addaction name="separator"/>
    </widget>
@@ -623,11 +203,26 @@
     </property>
     <addaction name="actionWhite_theme"/>
     <addaction name="actionBlack_theme"/>
+    <addaction name="separator"/>
+    <addaction name="actionReload"/>
+    <addaction name="actionRefresh"/>
+    <addaction name="separator"/>
+    <addaction name="actionZoom_In"/>
+    <addaction name="actionZoom_Out"/>
+    <addaction name="separator"/>
+    <addaction name="actionItem_Up"/>
+    <addaction name="actionItem_Down"/>
+    <addaction name="actionItem_Left"/>
+    <addaction name="actionItem_Right"/>
+    <addaction name="actionTop_Folder"/>
    </widget>
    <widget class="QMenu" name="menuClips">
     <property name="title">
      <string>&amp;Clips</string>
     </property>
+    <addaction name="separator"/>
+    <addaction name="actionIn"/>
+    <addaction name="actionOut"/>
     <addaction name="separator"/>
     <addaction name="action0_stars"/>
     <addaction name="action1_star"/>
@@ -649,9 +244,11 @@
     <addaction name="actionNext_frame"/>
     <addaction name="actionNext_in_out"/>
     <addaction name="separator"/>
-    <addaction name="actionIn"/>
-    <addaction name="actionOut"/>
+    <addaction name="actionSpeed_Up"/>
+    <addaction name="actionSpeed_Down"/>
     <addaction name="separator"/>
+    <addaction name="actionVolume_Up"/>
+    <addaction name="actionVolume_Down"/>
     <addaction name="actionMute"/>
    </widget>
    <widget class="QMenu" name="menuExport">
@@ -660,7 +257,15 @@
     </property>
     <addaction name="actionExport"/>
    </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuPlayer"/>
    <addaction name="menuClips"/>
@@ -678,8 +283,17 @@
    <addaction name="actionOpen_Folder"/>
    <addaction name="actionQuit"/>
    <addaction name="separator"/>
+   <addaction name="actionUndo"/>
+   <addaction name="actionRedo"/>
+   <addaction name="separator"/>
    <addaction name="actionWhite_theme"/>
    <addaction name="actionBlack_theme"/>
+   <addaction name="separator"/>
+   <addaction name="actionReload"/>
+   <addaction name="actionRefresh"/>
+   <addaction name="separator"/>
+   <addaction name="actionZoom_In"/>
+   <addaction name="actionZoom_Out"/>
    <addaction name="separator"/>
    <addaction name="action0_stars"/>
    <addaction name="action1_star"/>
@@ -688,6 +302,8 @@
    <addaction name="action4_stars"/>
    <addaction name="action5_stars"/>
    <addaction name="actionAlike"/>
+   <addaction name="separator"/>
+   <addaction name="actionExport"/>
    <addaction name="separator"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -878,17 +494,6 @@
     <string>Ctrl+E</string>
    </property>
   </action>
-  <action name="actionDebug_mode">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Debug mode</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
-   </property>
-  </action>
   <action name="actionDonate">
    <property name="text">
     <string>Donate</string>
@@ -945,54 +550,134 @@
     <string>Open Folder</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+O</string>
+    <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
+   </property>
+  </action>
+  <action name="actionReload">
+   <property name="text">
+    <string>Reload</string>
+   </property>
+  </action>
+  <action name="actionRefresh">
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </action>
+  <action name="actionSpeed_Up">
+   <property name="text">
+    <string>Speed Up</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Right</string>
+   </property>
+  </action>
+  <action name="actionSpeed_Down">
+   <property name="text">
+    <string>Speed Down</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Left</string>
+   </property>
+  </action>
+  <action name="actionVolume_Up">
+   <property name="text">
+    <string>Volume Up</string>
+   </property>
+   <property name="shortcut">
+    <string>+</string>
+   </property>
+  </action>
+  <action name="actionVolume_Down">
+   <property name="text">
+    <string>Volume Down</string>
+   </property>
+   <property name="shortcut">
+    <string>-</string>
+   </property>
+  </action>
+  <action name="actionZoom_In">
+   <property name="text">
+    <string>Zoom In</string>
+   </property>
+   <property name="shortcut">
+    <string>=</string>
+   </property>
+  </action>
+  <action name="actionZoom_Out">
+   <property name="text">
+    <string>Zoom Out</string>
+   </property>
+   <property name="shortcut">
+    <string>_</string>
+   </property>
+  </action>
+  <action name="actionItem_Up">
+   <property name="text">
+    <string>Item Up</string>
+   </property>
+   <property name="shortcut">
+    <string>Up</string>
+   </property>
+  </action>
+  <action name="actionItem_Down">
+   <property name="text">
+    <string>Item Down</string>
+   </property>
+   <property name="shortcut">
+    <string>Down</string>
+   </property>
+  </action>
+  <action name="actionItem_Left">
+   <property name="text">
+    <string>Item Left</string>
+   </property>
+   <property name="shortcut">
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="actionItem_Right">
+   <property name="text">
+    <string>Item Right</string>
+   </property>
+   <property name="shortcut">
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="actionTop_Folder">
+   <property name="text">
+    <string>Top Folder</string>
+   </property>
+   <property name="shortcut">
+    <string>Home</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="text">
+    <string>Help</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
    </property>
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
-  <customwidget>
-   <class>STimeSpinBox</class>
-   <extends>QSpinBox</extends>
-   <header>stimespinbox.h</header>
-  </customwidget>
-  <customwidget>
-   <class>AVideoWidget</class>
-   <extends>QWidget</extends>
-   <header>avideowidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>AFilesTreeView</class>
-   <extends>QTreeView</extends>
-   <header>afilestreeview.h</header>
-  </customwidget>
-  <customwidget>
-   <class>ATagsListView</class>
-   <extends>QListView</extends>
-   <header>atagslistview.h</header>
-  </customwidget>
-  <customwidget>
-   <class>ATimeline</class>
-   <extends>QWidget</extends>
-   <header>atimeline.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QGraphWidget</class>
-   <extends>QGraphicsView</extends>
-   <header>qgraphwidget.h</header>
-  </customwidget>
-  <customwidget>
-   <class>ADragDropLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>adragdroplineedit.h</header>
-  </customwidget>
-  <customwidget>
-   <class>AClipsTableView</class>
-   <extends>QTableView</extends>
-   <header>aclipstableview.h</header>
-  </customwidget>
   <customwidget>
    <class>AGView</class>
    <extends>QGraphicsView</extends>

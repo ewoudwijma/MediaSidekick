@@ -144,13 +144,24 @@ void AGProcessAndThread::addProcessLog(QString event, QString outputString)
 {
     QTime time = QTime();
 
-    int timeIndex = outputString.indexOf("time=");
+    int timeIndex = outputString.indexOf("time="); //ffmpeg and derperview logging
 
     if (timeIndex >= 0)
     {
         QString timeString = outputString.mid(timeIndex + 5, 11) + "0";
         time = QTime::fromString(timeString,"HH:mm:ss.zzz");
     }
+
+    timeIndex = outputString.indexOf("% of"); //youtube-dl logging
+    //[download]   0.0% of 17.66MiB at 503.03KiB/s ETA 00:35
+    if (timeIndex >= 0)
+    {
+        QString timeString = outputString.mid(timeIndex - 5, 5);
+        time = QTime::fromMSecsSinceStartOfDay(timeString.toDouble() * 1000);
+        totalTime = QTime::fromMSecsSinceStartOfDay(100 * 1000);
+//        qDebug()<<"timeString"<<timeString<<timeString.toDouble()<<time<<totalTime;
+    }
+
     log << outputString;
 //    qDebug()<<"outputString"<<outputString;
 

@@ -28,8 +28,6 @@ static const int diffIndex = 5;
 static const int firstFileColumnIndex = 6;
 
 typedef struct {
-    QString folderName;
-    QString fileName;
     int counter;
     bool definitionGenerated;
 } FileStruct;
@@ -60,9 +58,9 @@ public:
     QGeoCoordinate csvToGeoCoordinate(QString csv);
 
     QStringList exportMethods = QStringList() << "lossless" << "encode" << "shotcut" << "premiere";
-    QStringList videoExtensions = QStringList() << "mp4"<<"avi"<<"wmv"<<"mts"<<"mov";
-    QStringList audioExtensions = QStringList() << "mp3"<<"wav"<<"wma"<<"aif"<<"m4a";
-    QStringList imageExtensions = QStringList() << "jpg"<<"jpeg"<<"png";
+    QStringList videoExtensions = QStringList() << "mp4"<<"avi"<<"wmv"<<"mts"<<"mov"<< "mkv" << "webm";
+    QStringList audioExtensions = QStringList() << "mp3"<<"wav"<<"wma"<<"aif"<<"m4a"<<"opus"<<"aac";
+    QStringList imageExtensions = QStringList() << "jpg"<<"jpeg"<<"png"<<"heic";
     QStringList projectExtensions = QStringList() << "mlt" << "xml";
     QStringList exportExtensions = QStringList() << videoExtensions;// << projectExtensions;
 

@@ -29,7 +29,7 @@ MGroupRectItem::MGroupRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     pictureItem->setData(folderNameIndex, fileInfo.absolutePath());
     pictureItem->setData(fileNameIndex, fileInfo.fileName());
 
-    pictureItem->setData(mediaDurationIndex, duration);
+//    pictureItem->setData(mediaDurationIndex, duration);
     pictureItem->setData(mediaWithIndex, 0);
     pictureItem->setData(mediaHeightIndex, 0);
 
@@ -47,12 +47,12 @@ MGroupRectItem::MGroupRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     pictureItem->setGraphicsEffect(bef); //make it significantly slower
 }
 
-void MGroupRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
+void MGroupRectItem::onItemRightClicked(QPoint pos)
 {
     fileContextMenu->clear();
 
-    AGViewRectItem::onItemRightClicked(view, pos);
+    AGViewRectItem::onItemRightClicked(pos);
 
-    QPointF map = view->mapToGlobal(QPoint(pos.x()+10, pos.y()));
+    QPointF map = scene()->views().first()->mapToGlobal(QPoint(pos.x()+10, pos.y()));
     fileContextMenu->popup(QPoint(map.x(), map.y()));
 }

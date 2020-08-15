@@ -48,12 +48,13 @@ public:
 
     QGraphicsRectItem *progressRectItem = nullptr;
 
-    void onItemRightClicked(QGraphicsView *view, QPoint pos);
+    void onItemRightClicked(QPoint pos);
 
     bool containsVideo;
     bool containsAudio;
     bool containsImage;
 
+    void processAction(QString action);
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
@@ -66,10 +67,13 @@ protected:
 signals:
 //    void agItemChanged(AGViewRectItem *clipItem);
     void hoverPositionChanged(QGraphicsRectItem *rectItem, double position);
+    void showInStatusBar(QString message, int timeout);
 
 private slots:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+
+protected slots:
     void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);
 };
 

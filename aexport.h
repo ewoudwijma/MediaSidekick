@@ -79,6 +79,7 @@ private:
     void addPremiereTrack(QString mediaType, AGViewRectItem *timelineItem, QMap<QString, FileStruct> filesMap);
 signals:
     void processOutput(QTime time, QTime totalTime, QString event, QString outputString);
+    void transitionTimeChanged(int transitionTime);
 };
 
 #endif // MEXPORTDIALOG_H

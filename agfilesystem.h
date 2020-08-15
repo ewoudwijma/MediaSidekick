@@ -33,10 +33,12 @@ private slots:
 
 public slots:
     void onStopThreadProcess();
+    void onFileWatch(QString folderFileName, bool on);
+
 
 signals:
-    void addItem(QString parentName, QString mediaType, QFileInfo fileInfo = QFileInfo(), int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
-    void deleteItem(QString mediaType, QFileInfo fileInfo);
+    void addItem(bool changed, QString parentName, QString mediaType, QFileInfo fileInfo = QFileInfo(), int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
+    void deleteItem(bool changed, QString mediaType, QFileInfo fileInfo, int clipIn = -1, QString tagName = "");
 
     void fileChanged(QFileInfo fileInfo);
 

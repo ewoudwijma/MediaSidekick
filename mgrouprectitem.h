@@ -11,7 +11,7 @@ class MGroupRectItem: public AGViewRectItem
 
 public:
     MGroupRectItem(QGraphicsItem *parent = nullptr, QFileInfo fileInfo = QFileInfo());
-    void onItemRightClicked(QGraphicsView *view, QPoint pos);
+    void onItemRightClicked(QPoint pos);
 
 //private slots:
 //    void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);

@@ -1,5 +1,6 @@
 #include "agcliprectitem.h"
 #include "aglobal.h"
+#include "agtagtextitem.h"
 
 #include "agview.h" //for the constants
 
@@ -9,6 +10,7 @@
 AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *mediaItem, QFileInfo fileInfo, int duration, int clipIn, int clipOut) :
     AGViewRectItem(parent, fileInfo)
 {
+//    changed = true;
     this->mediaType = "Clip";
     this->itemType = "Base";
 
@@ -17,6 +19,7 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
     this->duration = duration;
 
     this->mediaItem = mediaItem;
+    this->mediaItem->clips << this;
     this->timelineGroupItem = (AGViewRectItem *)mediaItem->focusProxy()->focusProxy();
     this->timelineGroupItem->clips<<this;
 //    qDebug()<<"AGClipRectItem addclip"<<this->timelineGroupItem->fileInfo.fileName()<<this->timelineGroupItem->clips.count();
@@ -46,9 +49,14 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
     durationLine->setData(folderNameIndex, fileInfo.absolutePath());
     durationLine->setData(fileNameIndex, fileInfo.fileName());
 
-    durationLine->setData(mediaDurationIndex, duration);
+//    durationLine->setData(mediaDurationIndex, duration);
     durationLine->setData(mediaWithIndex, 0);
     durationLine->setData(mediaHeightIndex, 0);
+}
+
+AGClipRectItem::~AGClipRectItem()
+{
+//    this->mediaItem->clips.rem
 }
 
 QString AGClipRectItem::itemToString()
@@ -56,8 +64,114 @@ QString AGClipRectItem::itemToString()
     return AGViewRectItem::itemToString() + " " + QString::number(clipIn) + " " + QString::number(clipOut);// + " " + QString::number(item->zValue());
 }
 
-void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
+void AGClipRectItem::processAction(QString action)
 {
+//    qDebug()<<"AGClipRectItem::processAction"<<action;
+    if (action == "actionIn")
+    {
+        if (mediaItem->m_player->position() > clipOut)
+            mediaItem->processAction(action); //add a new clip in mediaItem
+        else
+        {
+            emit addUndo(true, "Update", "Clip", this, "clipIn", QString::number(clipIn), QString::number(mediaItem->m_player->position()));
+            clipIn = mediaItem->m_player->position();
+            duration = clipOut - clipIn;
+            setData(mediaDurationIndex, duration);
+        }
+
+    }
+    else if (action == "actionOut")
+    {
+        emit addUndo(true, "Update", "Clip", this, "clipOut", QString::number(clipOut), QString::number(mediaItem->m_player->position()));
+        clipOut = mediaItem->m_player->position();
+        duration = clipOut - clipIn;
+//        qDebug()<<"AGClipRectItem processAction"<<action<<duration<<clipIn<<clipOut;
+        setData(mediaDurationIndex, duration);
+    }
+    else if (action.contains("Key_"))
+    {
+//        qDebug()<<"ClipItem Key"<<action;
+
+        //if key is * to ****: check if exists * and replace, otherwise add. if 0* then remove tag
+        //if key is ✔: check if exists then remove (toggle), otherwise add
+        //else if keybuffer not empty: check if (old) keybuffer exists (always the case...)
+        //  if key is \r: empty keybuffer (tag will be red)
+        //  if key is \b: remove last character from tag. If tag is empty, remove tag
+        //  else update tag by adding key and update keybuffer
+        //else if empty keybuffer: add key
+
+        if (action == "Key_\r") //return
+            keyBuffer = "";
+        else
+        {
+            //loop over tags
+            QString searchTag = "";
+            if (action.contains("Key_*"))
+                searchTag = "*";
+            else if (action == "Key_✔")
+                searchTag = "✔";
+            else if (keyBuffer != "")
+                searchTag = keyBuffer;
+
+            bool found = false;
+            if (searchTag != "")
+            {
+                foreach (AGTagTextItem *tagItem, tags)
+                {
+                    if ((action.contains("Key_*") && tagItem->tagName.contains(searchTag)) || tagItem->tagName == searchTag) //contains because of *(*(*(*(*)))))
+                    {
+                        found = true;
+
+                        if (action == "Key_✔")
+                            emit deleteItem(true, "Tag", fileInfo, clipIn, "✔");
+                        else if (action == "Key_\b" && tagItem->tagName.length() == 1)
+                            emit deleteItem(true, "Tag", fileInfo, clipIn, tagItem->tagName);
+                        else if (action == "Key_*0")
+                            emit deleteItem(true, "Tag", fileInfo, clipIn, tagItem->tagName);
+                        else
+                        {
+                            QString oldValue = tagItem->tagName;
+                            if (action == "Key_\b")
+                            {
+                                tagItem->tagName = tagItem->tagName.left(tagItem->tagName.length()-1);
+                                keyBuffer = tagItem->tagName;
+                            }
+                            else if (action.contains("Key_*"))
+                                tagItem->tagName = action.mid(4);
+                            else
+                            {
+                                tagItem->tagName += action.mid(4);
+                                keyBuffer = tagItem->tagName;
+                            }
+
+                            emit addUndo(true, "Update", "Tag", tagItem, "tagName", oldValue, keyBuffer);
+
+                            tagItem->setHtml(QString("<div align=\"center\">") + tagItem->tagName + "</div>");
+
+                        }
+                    }
+                }
+            }
+
+            if (!found  && !action.contains("Key_\b"))
+            {
+                //add tag
+                if (!action.contains("Key_*") && action != "Key_✔")
+                    keyBuffer += action.mid(4);
+                emit addItem(true, "Clip", "Tag", fileInfo, duration, clipIn, clipOut, action.mid(4));
+            }
+        }
+    }
+    else
+    {
+        mediaItem->processAction(action);
+    }
+}
+
+void AGClipRectItem::onItemRightClicked(QPoint pos)
+{
+    QGraphicsView *view = scene()->views().first();
+
     fileContextMenu->clear();
 
     fileContextMenu->addAction(new QAction("Zoom to item",fileContextMenu));
@@ -70,6 +184,13 @@ void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
                                               ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName()));
 
     fileContextMenu->addSeparator();
+
+    fileContextMenu->addAction(new QAction("Delete clip",fileContextMenu));
+    fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_TrashIcon));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+    {
+        emit deleteItem(true, "Clip", fileInfo, clipIn);
+    });
 
         fileContextMenu->addAction(new QAction("Archive clips",fileContextMenu));
         fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_TrashIcon));
@@ -103,7 +224,11 @@ void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
                             recursiveFileRenameCopyIfExists(recycleFolder, srtFileName);
                             success = file->rename(recycleFolder + srtFileName);
                             if (success)
+                            {
+//                                qDebug()<<"Undo - archive srt"<<srtFileName <<recycleFolder;
+                                emit addUndo(false, "Archive", "Clips", this->mediaItem);
                                 process->addProcessLog("output", tr("%1 moved to recycle folder").arg(srtFileName));
+                            }
                         }
 
                         //txt file
@@ -143,6 +268,8 @@ void AGClipRectItem::onItemRightClicked(QGraphicsView *view, QPoint pos)
 
 QGraphicsItem * AGClipRectItem::drawPoly()
 {
+//    prepareGeometryChange();
+
 //    qDebug()<<"AGView::drawPoly"<<itemToString(clipItem);
     QGraphicsPolygonItem *polyItem = nullptr;
 
@@ -188,7 +315,7 @@ QGraphicsItem * AGClipRectItem::drawPoly()
             polyItem->setData(mediaTypeIndex, "Poly");
             polyItem->setData(itemTypeIndex, "poly");
 
-            polyItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
+//            polyItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
             polyItem->setData(mediaWithIndex, 0);
             polyItem->setData(mediaHeightIndex, 0);
         }
