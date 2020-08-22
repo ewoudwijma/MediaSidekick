@@ -20,10 +20,10 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
 
     this->mediaItem = mediaItem;
     this->mediaItem->clips << this;
-    this->timelineGroupItem = (AGViewRectItem *)mediaItem->focusProxy()->focusProxy();
-    this->timelineGroupItem->clips<<this;
+//    this->timelineGroupItem = mediaItem->groupItem->timelineGroupItem;
+    mediaItem->groupItem->timelineGroupItem->clips<<this;
 //    qDebug()<<"AGClipRectItem addclip"<<this->timelineGroupItem->fileInfo.fileName()<<this->timelineGroupItem->clips.count();
-    setFocusProxy(mediaItem);
+//    setFocusProxy(mediaItem);
 
     int alpha = 125;
     if (AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
@@ -48,10 +48,6 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
 
     durationLine->setData(folderNameIndex, fileInfo.absolutePath());
     durationLine->setData(fileNameIndex, fileInfo.fileName());
-
-//    durationLine->setData(mediaDurationIndex, duration);
-    durationLine->setData(mediaWithIndex, 0);
-    durationLine->setData(mediaHeightIndex, 0);
 }
 
 AGClipRectItem::~AGClipRectItem()
@@ -66,7 +62,7 @@ QString AGClipRectItem::itemToString()
 
 void AGClipRectItem::processAction(QString action)
 {
-//    qDebug()<<"AGClipRectItem::processAction"<<action;
+//    qDebug()<<"AGClipRectItem::processAction"<<fileInfo.fileName()<<clipIn<<clipOut<<action;
     if (action == "actionIn")
     {
         if (mediaItem->m_player->position() > clipOut)
@@ -76,7 +72,6 @@ void AGClipRectItem::processAction(QString action)
             emit addUndo(true, "Update", "Clip", this, "clipIn", QString::number(clipIn), QString::number(mediaItem->m_player->position()));
             clipIn = mediaItem->m_player->position();
             duration = clipOut - clipIn;
-            setData(mediaDurationIndex, duration);
         }
 
     }
@@ -86,12 +81,9 @@ void AGClipRectItem::processAction(QString action)
         clipOut = mediaItem->m_player->position();
         duration = clipOut - clipIn;
 //        qDebug()<<"AGClipRectItem processAction"<<action<<duration<<clipIn<<clipOut;
-        setData(mediaDurationIndex, duration);
     }
     else if (action.contains("Key_"))
     {
-//        qDebug()<<"ClipItem Key"<<action;
-
         //if key is * to ****: check if exists * and replace, otherwise add. if 0* then remove tag
         //if key is ✔: check if exists then remove (toggle), otherwise add
         //else if keybuffer not empty: check if (old) keybuffer exists (always the case...)
@@ -281,11 +273,11 @@ QGraphicsItem * AGClipRectItem::drawPoly()
     }
 
     bool shouldDraw = true;
-    if (parentItem() != focusProxy()) //if clip part of timeline
+    if (parentItem() != mediaItem) //if clip part of timeline
     {
         //if mediafile not in same FileGroup as clip then do not draw (in case of filtering where the clip is in parking and the mediafile not)
         QGraphicsItem *clipFileGroup = parentItem()->parentItem();
-        QGraphicsItem *mediaFileGroup = focusProxy()->parentItem();
+        QGraphicsItem *mediaFileGroup = mediaItem->parentItem();
 
         if (clipFileGroup != mediaFileGroup)
         {
@@ -310,29 +302,25 @@ QGraphicsItem * AGClipRectItem::drawPoly()
             QColor color = Qt::lightGray;
             color.setAlpha(127);
             polyItem->setBrush(color);
-//            setItemProperties(polyItem, "Poly", "poly", data(mediaDurationIndex).toInt());
+
+            polyItem->setZValue(99999); //to put polys after tags in arrangeitem ordering
 
             polyItem->setData(mediaTypeIndex, "Poly");
             polyItem->setData(itemTypeIndex, "poly");
-
-//            polyItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
-            polyItem->setData(mediaWithIndex, 0);
-            polyItem->setData(mediaHeightIndex, 0);
         }
 
         if (polyItem != nullptr) //should always be the case here
         {
-            QGraphicsRectItem *parentMediaFile = (QGraphicsRectItem *)focusProxy(); //parent of the clip
 //            if (fileInfo.fileName().contains("Blindfold"))
 //                qDebug()<<"draw poly" << itemToString(clipItem) << itemToString(parentMediaFile);
-            if (parentMediaFile != nullptr) //should always be the case
+            if (mediaItem != nullptr) //should always be the case
             {
-                int duration = parentMediaFile->data(mediaDurationIndex).toInt();
+                int duration = this->mediaItem->duration;
 
 //                        qDebug()<<"AGView::drawPoly inout"<<clipIn<<clipOut<<duration<<itemToString(parentMediaFile);
 
-                QPointF parentPointLeft = mapFromItem(parentMediaFile, QPoint(duration==0?0:parentMediaFile->rect().width() * clipIn / duration, parentMediaFile->rect().height()));
-                QPointF parentPointRight = mapFromItem(parentMediaFile, QPoint(duration==0?0:parentMediaFile->rect().width() * clipOut / duration, parentMediaFile->rect().height()));
+                QPointF parentPointLeft = mapFromItem(mediaItem, QPoint(duration==0?0:mediaItem->rect().width() * clipIn / duration, mediaItem->rect().height()));
+                QPointF parentPointRight = mapFromItem(mediaItem, QPoint(duration==0?0:mediaItem->rect().width() * clipOut / duration, mediaItem->rect().height()));
 
 //                if (fileInfo.fileName().contains("Blindfold"))
 //                    qDebug()<<"  "<<parentMediaFile->rect()<<clipIn<<duration<<parentPointLeft<<QPoint(duration==0?0:parentMediaFile->rect().width() * clipIn / duration, parentMediaFile->rect().height());

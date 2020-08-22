@@ -1,4 +1,3 @@
-#include "avideowidget.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -111,6 +110,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
    if (geometry() != QSettings().value("Geometry"))
    {
+       ui->graphicsView->arrangeItems(nullptr, __func__);
 //       qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event;
        QSettings().setValue("Geometry", geometry());
    //    QSettings().setValue("windowState", saveState());
@@ -744,11 +744,11 @@ void MainWindow::on_actionAlike_triggered()
 
 void MainWindow::on_actionSave_triggered()
 {
-    ui->statusBar->showMessage(tr("%1 %2 changes will be saved").arg(QString::number(ui->graphicsView->undoIndex), QString::number(ui->graphicsView->undoIndex)), 5000);
+    ui->statusBar->showMessage(tr("%1 changes will be saved").arg(QString::number(qAbs(ui->graphicsView->undoIndex - ui->graphicsView->undoIndex))), 5000);
 
     ui->graphicsView->saveModels();
 
-    qDebug()<<"MainWindow::on_actionSave_triggered done";
+//    qDebug()<<"MainWindow::on_actionSave_triggered done";
 }
 
 void MainWindow::on_actionPlay_Pause_triggered()
@@ -1020,12 +1020,9 @@ void MainWindow::on_actionOpen_Folder_triggered()
 
     dialog.setFileMode(QFileDialog::Directory);
 
-    qDebug()<<__func__<<"before getExistingDirectory";
-
     QString selectedFolderName = dialog.getExistingDirectory() + "/";
 //    QString selectedFolderName = dialog.getExistingDirectory(this, "ewoud", "", QFileDialog::DontUseNativeDialog) + "/";
 
-    qDebug()<<__func__<<"after getExistingDirectory";
     if (selectedFolderName != "/")
     {
         QSettings().setValue("selectedFolderName", selectedFolderName);
@@ -1410,8 +1407,6 @@ void MainWindow::on_actionHelp_triggered()
     QTextBrowser *textEdit = new QTextBrowser(this);
     mainLayout->addWidget(textEdit);
     textEdit->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
-
-//    textEdit->append("");
 
     QString text =
             "<h1 >Media Sidekick help</h1>\

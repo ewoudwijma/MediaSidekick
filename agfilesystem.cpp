@@ -344,7 +344,7 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
             QStandardItem *alikeItem = new QStandardItem(alike);
             alikeItem->setTextAlignment(Qt::AlignCenter); //tbd: not working ...
 
-            int clipDuration = AGlobal().frames_to_msec(AGlobal().msec_to_frames(outTime.msecsSinceStartOfDay()) - AGlobal().msec_to_frames(inTime.msecsSinceStartOfDay()) + 1);
+            int clipDuration = outTime.msecsSinceStartOfDay() - inTime.msecsSinceStartOfDay();
 
 //            qDebug()<<"Clip file changed - add item"<<fileInfo.fileName()<<inTime.msecsSinceStartOfDay();
             emit addItem(false, "Timeline", "Clip", fileInfo, clipDuration, inTime.msecsSinceStartOfDay(), outTime.msecsSinceStartOfDay());
@@ -379,14 +379,14 @@ void AGFileSystem::onFileChanged(const QString &path)
         if (file.exists()) //new file
         {
             bool result = fileSystemWatcher->addPath(path);
-//            if (result)
-//                qDebug()<<"AGFileSystem::onFileChanged true addpath - not in watch - file exists (new file!) - added in watch"<<path;
-//            else
-//                qDebug()<<"AGFileSystem::onFileChanged false addpath - not in watch - file exists (new file!) - added in watch"<<path;
+            if (result)
+                qDebug()<<"AGFileSystem::onFileChanged true addpath - not in watch - file exists (new file!) - added in watch"<<path;
+            else
+                qDebug()<<"AGFileSystem::onFileChanged false addpath - not in watch - file exists (new file!) - added in watch"<<path;
         }
         else // file does not exist, so is deleted, delete from view.
         {
-//            qDebug()<<"AGFileSystem::onFileChanged - not in watch - file not exists (deleted!)"<<path;
+            qDebug()<<"AGFileSystem::onFileChanged - not in watch - file not exists (deleted!)"<<path;
             QFileInfo fileInfo(path);
 
             if (fileInfo.suffix().toLower() == "srt") //clips
@@ -397,11 +397,11 @@ void AGFileSystem::onFileChanged(const QString &path)
     }
     else //file changed
     {
-//        qDebug()<<"AGFileSystem::onFileChanged - in watch"<<path;
+        qDebug()<<"AGFileSystem::onFileChanged - in watch"<<path;
 
         //add a small delay to give OS the chance to release lock on file (avoid Permission denied erro)
 
-        if (fileInfo.suffix() == "srtxx") //not for the moment
+        if (fileInfo.suffix() == "srt") //not for the moment
         {
 
 //            qDebug()<<"Clip file changed - delete items"<<fileInfo.fileName();

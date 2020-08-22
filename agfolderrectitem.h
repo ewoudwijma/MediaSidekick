@@ -2,8 +2,11 @@
 #define AGFOLDERRECTITEM_H
 
 #include "agviewrectitem.h"
+#include "mgrouprectitem.h"
 
 #include <QGraphicsView>
+
+class MGroupRectItem;
 
 class AGFolderRectItem: public AGViewRectItem
 {
@@ -14,6 +17,8 @@ public:
     void onItemRightClicked(QPoint pos);
 
     QString transitionValueChangedBy;
+
+    MGroupRectItem *parkingGroupItem = nullptr;
 
 };
 

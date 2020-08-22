@@ -111,23 +111,23 @@ void AGTagTextItem::onItemRightClicked(QPoint pos)
     fileContextMenu->popup(QPoint(map.x(), map.y()));
 }
 
-void AGTagTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    qDebug()<<"AGTagTextItem::mousePressEvent"<<event;
-    if (event->button() == Qt::LeftButton)
-    {
+//void AGTagTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+//{
+//    qDebug()<<"AGTagTextItem::mousePressEvent"<<event;
+//    if (event->button() == Qt::LeftButton)
+//    {
 
-    }
-    else
-        QGraphicsTextItem::mousePressEvent(event);
+//    }
+//    else
+//        QGraphicsTextItem::mousePressEvent(event);
 
-}
+//}
 
 void AGTagTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
 //    qDebug()<<"AGTagTextItem::hoverMoveEvent"<<event->pos();
 
-    if(event->modifiers() == Qt::ShiftModifier)
+    if (event->modifiers() == Qt::ShiftModifier)
     {
 //        if (event->pos().y() > rect().height() * 0.7) //only hover on timeline
         {
@@ -140,10 +140,9 @@ void AGTagTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
                 progress = clipItem->clipIn + (clipItem->clipOut - clipItem->clipIn) * event->pos().x()/clipItem->rect().width();
             }
             else
-                progress = data(mediaDurationIndex).toInt() * event->pos().x()/clipItem->rect().width();
+                progress = clipItem->mediaItem->duration * event->pos().x()/clipItem->rect().width();
 
-//            qDebug()<<"AGTagTextItem::hoverMoveEvent"<<progress<<data(mediaDurationIndex).toInt()<<event->pos().x()/clipItem->rect().width();
-
+//            qDebug()<<"AGTagTextItem::hoverMoveEvent"<<"emit hoverPositionChanged"<<progress<<clipItem->mediaItem->duration<<event->pos().x()/clipItem->rect().width();
             emit hoverPositionChanged(clipItem, progress);
         }
     }

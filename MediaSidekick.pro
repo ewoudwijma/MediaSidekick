@@ -64,6 +64,7 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
         mgrouprectitem.cpp \
+        mtimelinegrouprectitem.cpp \
         qedge.cpp \
         qgraphwidget.cpp \
         qnode.cpp \
@@ -96,6 +97,7 @@ HEADERS += \
         atagslistview.h \
         mainwindow.h \
         mgrouprectitem.h \
+        mtimelinegrouprectitem.h \
         qedge.h \
         qgraphwidget.h \
         qnode.h \
@@ -122,9 +124,9 @@ win32: LIBS += -LD:\MediaSidekick\windows\ffmpeg-latest-win64-dev\lib
 win32: LIBS += -lavcodec -lavformat -lavutil -lswscale #-lavdevice -lavfilter -lpostproc -lswresample
 win32: INCLUDEPATH +=D:\MediaSidekick\windows\ffmpeg-latest-win64-dev\include
 
-win32: LIBS += -LD:\MediaSidekick\windows\SDL2_x86_64-w64-mingw32\lib
-win32: LIBS += -lSDL2
-win32: INCLUDEPATH +=D:\MediaSidekick\windows\SDL2_x86_64-w64-mingw32\include
+#win32: LIBS += -LD:\MediaSidekick\windows\SDL2_x86_64-w64-mingw32\lib
+#win32: LIBS += -lSDL2
+#win32: INCLUDEPATH +=D:\MediaSidekick\windows\SDL2_x86_64-w64-mingw32\include
 
 unix:LIBS += -L/Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-shared/bin
 unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample

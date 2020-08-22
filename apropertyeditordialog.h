@@ -25,7 +25,7 @@ public:
 
     void closeEvent(QCloseEvent *event);
 
-    QMap<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> exifToolMap;
+    QMap<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exifToolMap;
 
 private:
     Ui::propertyEditorDialog *ui;

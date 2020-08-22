@@ -36,7 +36,7 @@ public:
 
     bool isLoading;
 
-    QMap<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> exiftoolMap;
+    QMap<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolMap;
     QStringList filesMap;
 
     void mousePressEvent(QMouseEvent *event) override;

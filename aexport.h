@@ -4,6 +4,7 @@
 #include "agprocessthread.h"
 #include "agviewrectitem.h"
 #include "aglobal.h"
+#include "agcliprectitem.h"
 
 #include <QAbstractButton>
 #include <QDialog>
@@ -18,7 +19,7 @@ class MExportDialog : public QDialog
     Q_OBJECT
 
     QString transitionValueChangedBy;
-    QList<AGViewRectItem *> timelineGroupList;
+    QList<MTimelineGroupRectItem *> timelineGroupList;
     QString fileNameWithoutExtension;
 
 public:
@@ -53,6 +54,8 @@ private slots:
 
     void on_transitionComboBox_currentTextChanged(const QString &arg1);
 
+    void on_clipsSizeComboBox_currentTextChanged(const QString &arg1);
+
 private:
     Ui::MExportDialog *ui;
     void watermarkFileNameChanged(QString newFileName);
@@ -74,9 +77,10 @@ private:
     QTextStream stream;
 
     void s(QString y, QString arg1 = "", QString arg2 ="", QString arg3="", QString arg4="");
-    void addPremiereClipitem(QString clipId, QFileInfo fileInfo, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr, QString clipAudioChannels, QString imageWidth, QString imageHeight);
+    void addPremiereClipitem(AGClipRectItem *clipItem, QString clipId, QFileInfo fileInfo, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr);
     void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
-    void addPremiereTrack(QString mediaType, AGViewRectItem *timelineItem, QMap<QString, FileStruct> filesMap);
+    void addPremiereTrack(QString mediaType, MTimelineGroupRectItem *timelineItem, QMap<QString, FileStruct> filesMap);
+    void encodeVideoClipsTrimToBeRemoved();
 signals:
     void processOutput(QTime time, QTime totalTime, QString event, QString outputString);
     void transitionTimeChanged(int transitionTime);

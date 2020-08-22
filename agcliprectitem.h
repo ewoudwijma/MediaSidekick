@@ -26,7 +26,6 @@ public:
     QGraphicsItem *drawPoly();
 
     AGMediaFileRectItem *mediaItem;
-    AGViewRectItem *timelineGroupItem;
 
     void processAction(QString action);
     ~AGClipRectItem();

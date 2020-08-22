@@ -2,6 +2,7 @@
 #define AGViewRectItem_H
 
 
+//#include "agcliprectitem.h"
 #include "agprocessthread.h"
 
 #include <QObject>
@@ -37,12 +38,9 @@ public:
     int duration;
     void updateToolTip();
 
-    int mediaWidth;
+    qreal mediaHeight = 300 * 9.0 / 16.0;
 
     QList<AGProcessAndThread *> processes;
-
-    QList<QGraphicsItem *> clips;
-    QList<QGraphicsItem *> filteredClips;
 
     QGraphicsTextItem *subLogItem = nullptr;
 

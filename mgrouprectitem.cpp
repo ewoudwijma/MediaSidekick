@@ -9,13 +9,26 @@ MGroupRectItem::MGroupRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
 {
     this->mediaType = "FileGroup";
     this->itemType = "Base";
+//    this->folderItem = (AGFolderRectItem *)parent;
+
+    folderItem = (AGFolderRectItem *)parent;
+    if (fileInfo.fileName() == "Parking")
+    {
+//        folderItem->setFocusProxy(this); //Folder->focusProxy == FileGroupParking
+        folderItem->parkingGroupItem = this;
+    }
 
     QPen pen(Qt::transparent);
     setPen(pen);
 
-    setRect(QRectF(0, 0, 200 * 9 / 16, 200 * 9 / 16));
+    setRect(QRectF(0, 0, 200 * 9.0 / 16.0, 200 * 9.0 / 16.0));
 
-    setItemProperties("FileGroup", "Base", 0, QSize());
+//    setItemProperties("FileGroup", "Base", 0, QSize());
+
+    setData(itemTypeIndex, itemType);
+    setData(mediaTypeIndex, mediaType);
+
+    updateToolTip();
 
     pictureItem = new QGraphicsPixmapItem(this);
     QImage image = QImage(":/images/Folder.png");
@@ -23,15 +36,11 @@ MGroupRectItem::MGroupRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     pictureItem->setPixmap(pixmap);
     if (image.height() != 0)
         pictureItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
-//            setItemProperties(pictureItem, mediaType, "SubPicture", fileInfo.absolutePath() + "/", fileName, duration);
+
     pictureItem->setData(mediaTypeIndex, mediaType);
     pictureItem->setData(itemTypeIndex, "SubPicture");
     pictureItem->setData(folderNameIndex, fileInfo.absolutePath());
     pictureItem->setData(fileNameIndex, fileInfo.fileName());
-
-//    pictureItem->setData(mediaDurationIndex, duration);
-    pictureItem->setData(mediaWithIndex, 0);
-    pictureItem->setData(mediaHeightIndex, 0);
 
     QGraphicsColorizeEffect *bef = new QGraphicsColorizeEffect();
     if (fileInfo.fileName() == "Audio")

@@ -16,10 +16,6 @@ static const int mediaTypeIndex = 0;
 static const int folderNameIndex = 1;
 static const int fileNameIndex = 2;
 static const int itemTypeIndex = 3;
-static const int mediaWithIndex = 4;
-static const int mediaHeightIndex = 5;
-static const int mediaDurationIndex = 6;
-static const int ffMpegMetaIndex = 10;
 static const int excludedInFilter = 12;
 static const int createDateIndex = 13;
 
@@ -51,7 +47,7 @@ class AGView: public QGraphicsView
     qreal mediaFileScaleFactor;
     qreal clipScaleFactor;
 
-    qreal mediaWidth;
+    qreal mediaHeight = 300 * 9.0 / 16.0;
 
     void filterItem(QGraphicsItem *item);
 

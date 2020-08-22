@@ -68,10 +68,6 @@ void AGViewRectItem::setItemProperties(QString mediaType, QString itemType, int 
     setData(itemTypeIndex, itemType);
     setData(mediaTypeIndex, mediaType);
 
-    setData(mediaDurationIndex, duration);
-    setData(mediaWithIndex, mediaSize.width());
-    setData(mediaHeightIndex, mediaSize.height());
-
     updateToolTip();
 }
 
@@ -153,13 +149,18 @@ void AGViewRectItem::updateToolTip()
                           "<li><b>Create date</b>: %3</li>").arg(tooltipItem->fileInfo.fileName()
                                                                  , QString::number(fileInfo.size()/1024/1024) + " MB", tooltipItem->data(createDateIndex).toString());
 
-        if (tooltipItem->data(mediaDurationIndex).toInt() != 0)
+        if (mediaItem->duration != 0)
         {
-            tooltipText += tr("<li><b>Duration</b>: %1 (%2 s)</li>").arg(AGlobal().msec_to_time(tooltipItem->data(mediaDurationIndex).toInt()), QString::number(tooltipItem->data(mediaDurationIndex).toInt() / 1000.0));
+            tooltipText += tr("<li><b>Duration</b>: %1 (%2 s)</li>").arg(AGlobal().msec_to_time(mediaItem->duration), QString::number(mediaItem->duration / 1000.0));
         }
 
-        if (tooltipItem->data(mediaWithIndex).toInt() != -1)
-            tooltipText += tr("<li><b>Size</b>: %1 * %2</li>").arg(QString::number(tooltipItem->data(mediaWithIndex).toInt()), QString::number(tooltipItem->data(mediaHeightIndex).toInt()));
+        if (mediaItem->ffmpegMetaValueMap["Width"].value != "")
+            tooltipText += tr("<li><b>Size</b>: %1 * %2</li>").arg(mediaItem->ffmpegMetaValueMap["Width"].value, mediaItem->ffmpegMetaValueMap["Height"].value);
+        if (mediaItem->ffmpegMetaValueMap["Framerate"].value != "")
+            tooltipText += tr("<li><b>Framerate</b>: %1</li>").arg(mediaItem->ffmpegMetaValueMap["Framerate"].value);
+
+        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
+
 
         tooltipText += tr("</ul>"
             "<p><b>Help</p>"
@@ -176,7 +177,7 @@ void AGViewRectItem::updateToolTip()
         tooltipText += tr("<p><b>Clip from %3 to %4</b></p>"
                        "<ul>"
              "<li><b>Duration</b>: %1 (%2 s)</li>"
-                       "</ul>").arg(AGlobal().msec_to_time(tooltipItem->data(mediaDurationIndex).toInt()), QString::number(tooltipItem->data(mediaDurationIndex).toInt() / 1000.0)
+                       "</ul>").arg(AGlobal().msec_to_time(clipItem->duration), QString::number(clipItem->duration / 1000.0)
                                     , AGlobal().msec_to_time(clipItem->clipIn), AGlobal().msec_to_time(clipItem->clipOut)
                          );
 
@@ -186,6 +187,9 @@ void AGViewRectItem::updateToolTip()
                           "<li><b>Change playing position</b>: Shift-Hover over %1</li>"
                           "</ul>"
             ).arg(tooltipItem->data(mediaTypeIndex).toString());
+
+        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
+
     }
     else if (tooltipItem->data(mediaTypeIndex) == "Tag")
     {
@@ -232,9 +236,7 @@ void AGViewRectItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
 //    qDebug()<<"AGViewRectItem::hoverMoveEvent"<<event<<this->fileInfo.fileName();
 
-//    qDebug()<<"emit hoverPositionChanged"<<data(clipInIndex).toInt()<<data(clipOutIndex).toInt()<<event->pos()<<draggedWidth<<event->pos().x()/double(draggedWidth);
-
-    if(event->modifiers() == Qt::ShiftModifier)
+    if (event->modifiers() == Qt::ShiftModifier)
     {
 //        if (event->pos().y() > rect().height() * 0.7) //only hover on timeline
         {
@@ -249,10 +251,11 @@ void AGViewRectItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
                 progress = clipItem->clipIn + (clipItem->clipOut - clipItem->clipIn) * event->pos().x()/rect().width();
             }
             else
-                progress = data(mediaDurationIndex).toInt() * event->pos().x()/rect().width();
+                progress = duration * event->pos().x()/rect().width();
 
-//            qDebug()<<"AGViewRectItem::hoverMoveEvent"<<progress<<data(mediaDurationIndex).toInt()<<event->pos().x()/rect().width();
+//            QGraphicsItem *senderItem = (QGraphicsItem *)sender();
 
+//            qDebug()<<"AGViewRectItem::hoverMoveEvent"<<"emit hoverPositionChanged"<<senderItem->data(fileNameIndex).toString()<<fileInfo.fileName()<<mediaType<<itemType<<progress<<duration<<event->pos().x()/rect().width();
             emit hoverPositionChanged(this, progress);
         }
     }
@@ -266,7 +269,7 @@ void AGViewRectItem::recursiveFileRenameCopyIfExists(QString folderName, QString
     QFile file(folderName + fileName);
     if (file.exists())
     {
-        qDebug()<<"AFilesTreeView::recursiveFileRenameCopyIfExists"<<fileName<<fileName.left(fileName.lastIndexOf(".")) + "BU." + fileInfo.suffix();
+//        qDebug()<<"AFilesTreeView::recursiveFileRenameCopyIfExists"<<fileName<<fileName.left(fileName.lastIndexOf(".")) + "BU." + fileInfo.suffix();
 
         recursiveFileRenameCopyIfExists(folderName, fileName.left(fileName.lastIndexOf(".")) + "BU." + fileInfo.suffix());
 
@@ -312,7 +315,7 @@ void AGViewRectItem::onItemRightClicked(QPoint pos)
 
     fileContextMenu->addAction(new QAction("Export",fileContextMenu));
     fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/Spinner.gif"))));
-//    fileContextMenu->actions().last()->setEnabled(!agView->isLoading);
+    fileContextMenu->actions().last()->setShortcut(QKeySequence(tr("Ctrl+E")));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
         processAction("Export");
@@ -361,7 +364,7 @@ void AGViewRectItem::onItemRightClicked(QPoint pos)
     fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
-        qDebug()<<"Open in explorer"<<metaObject()->className()<<fileInfo.absoluteFilePath()<<fileInfo.absolutePath()<<fileInfo.fileName();
+//        qDebug()<<"Open in explorer"<<metaObject()->className()<<fileInfo.absoluteFilePath()<<fileInfo.absolutePath()<<fileInfo.fileName();
         if (strcmp(metaObject()->className() , "MGroupRectItem") == 0)
             QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absolutePath()) );
         else
@@ -440,11 +443,8 @@ void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event,
         subLogItem = new QGraphicsTextItem(this);
         subLogItem->setDefaultTextColor(Qt::white);
 
-//                setItemProperties(subLogItem, "MediaFile", "SubLog", folderName, fileName, data(mediaDurationIndex).toInt());
         subLogItem->setData(itemTypeIndex, "SubLog");
         subLogItem->setData(mediaTypeIndex, "MediaFile");
-
-//        subLogItem->setData(mediaDurationIndex, data(mediaDurationIndex).toInt());
 
         subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height() - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
 
@@ -460,12 +460,8 @@ void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event,
     {
         progressRectItem = new QGraphicsRectItem(this);
 
-//            setItemProperties(progressRectItem, "MediaFile", "SubProgressLine", folderName, fileName, m_player->duration(), QSize());
-
         progressRectItem->setData(itemTypeIndex, "SubProgressLine");
         progressRectItem->setData(mediaTypeIndex, "MediaFile");
-
-//        progressRectItem->setData(mediaDurationIndex, 60);
 
         progressRectItem->setPos(0, boundingRect().height() - 10 ); //pos need to set here as arrangeitem not called here
         progressRectItem->setBrush(Qt::red);

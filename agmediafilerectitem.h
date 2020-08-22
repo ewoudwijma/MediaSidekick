@@ -7,6 +7,7 @@
 #include "agviewrectitem.h"
 #include "agprocessthread.h"
 #include "agcliprectitem.h"
+#include "mgrouprectitem.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -17,6 +18,7 @@
 class AGView;
 //class AGMediaFileRectItem;
 class AGClipRectItem;
+class MGroupRectItem;
 
 class AGMediaFileRectItem: public AGViewRectItem
 {
@@ -29,24 +31,27 @@ class AGMediaFileRectItem: public AGViewRectItem
     ADerperView *derperView; //not a local variable to make connect onStopThreadProcess work
 
 public:
-    AGMediaFileRectItem(QGraphicsItem *parent = nullptr, QFileInfo fileInfo = QFileInfo(), int duration = 0, qreal mediaWidth = 0);
+    AGMediaFileRectItem(QGraphicsItem *parent = nullptr, QFileInfo fileInfo = QFileInfo(), int duration = 0);
     ~AGMediaFileRectItem();
 
-    AGViewRectItem *groupItem = nullptr;
+    MGroupRectItem *groupItem = nullptr;
 
     QGraphicsVideoItem *playerItem = nullptr;
     QMediaPlayer *m_player = nullptr;
 
     QGraphicsRectItem *durationLine = nullptr;
 
-    QMap<QString, QMap<QString, ExifToolValueStruct>> exiftoolMap;
-    QMap<QString, ExifToolValueStruct> exiftoolValueMap;
+    QMap<QString, QMap<QString, MMetaDataStruct>> exiftoolMap;
+    QMap<QString, MMetaDataStruct> exiftoolValueMap;
 
     void initPlayer(bool startPlaying);
 
     void processAction(QString action);
 
     QList<AGClipRectItem *> clips;
+
+    QMap<QString, MMetaDataStruct> ffmpegMetaValueMap;
+
 public slots:
     void onItemRightClicked(QPoint pos);
 
@@ -70,7 +75,7 @@ signals:
     void propertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
 //    void trimAll(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
 //    void exportClips(QStandardItem *parentItem, QStandardItem *&currentItem, QString folderName, QString fileName, bool moveToBin = true);
-    void mediaLoaded(QFileInfo fileInfo, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QString ffmpegMeta = "", QList<int> samples = QList<int>());
+    void mediaLoaded(QFileInfo fileInfo, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QList<int> samples = QList<int>());
     void addItem(bool changed, QString parentName, QString mediaType, QFileInfo fileInfo = QFileInfo(), int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
     void addUndo(bool changed, QString action, QString mediaType, QGraphicsItem *item, QString property = "", QString oldValue = "", QString newValue = "");
 
@@ -79,7 +84,7 @@ private slots:
     void onMetaDataAvailableChanged(bool available);
     void onMetaDataChanged();
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
-    void onMediaLoaded(QFileInfo fileInfo, QImage image, int duration, QSize mediaSize, QString ffmpegMeta, QList<int> samples);
+    void onMediaLoaded(QFileInfo fileInfo, QImage image, int duration, QSize mediaSize, QList<int> samples);
 };
 
 #endif // AGMEDIAFILERECTITEM_H

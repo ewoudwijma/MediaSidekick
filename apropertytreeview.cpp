@@ -180,16 +180,16 @@ void APropertyTreeView::loadModel(QString folderName)
     filesMap.clear();
     //get the files
     {
-        QMapIterator<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> category2Iterator(exiftoolMap);
-        while (category2Iterator.hasNext())
+        QMapIterator<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolMapIterator(exiftoolMap);
+        while (exiftoolMapIterator.hasNext())
         {
-            category2Iterator.next();
-            QMapIterator<QString, QMap<QString, ExifToolValueStruct>> property2Iterator(category2Iterator.value());
-            while (property2Iterator.hasNext())
+            exiftoolMapIterator.next();
+            QMapIterator<QString, QMap<QString, MMetaDataStruct>> metaDataMapIterator(exiftoolMapIterator.value());
+            while (metaDataMapIterator.hasNext())
             {
-                property2Iterator.next();
-                if (!filesMap.contains(property2Iterator.value().first().absoluteFilePath))
-                    filesMap << property2Iterator.value().first().absoluteFilePath;
+                metaDataMapIterator.next();
+                if (!filesMap.contains(metaDataMapIterator.value().first().absoluteFilePath))
+                    filesMap << metaDataMapIterator.value().first().absoluteFilePath;
             }
         }
         foreach (QString folderFileName, filesMap)
@@ -234,52 +234,52 @@ void APropertyTreeView::loadModel(QString folderName)
             QString categoryName = categoryPropery.split(";")[0];
             QString propertyName = categoryPropery.split(";")[1];
 
-            ExifToolValueStruct exifToolValueStruct = exiftoolMap[categoryName][propertyName][folderFileName];
+            MMetaDataStruct metaDataStruct = exiftoolMap[categoryName][propertyName][folderFileName];
 
-            if (exifToolValueStruct.categoryName == "")
+            if (metaDataStruct.categoryName == "")
             {
-                exifToolValueStruct.categoryName = categoryName;
-                exifToolValueStruct.propertyName = propertyName;
-                exifToolValueStruct.absoluteFilePath = folderFileName;
-                exifToolValueStruct.propertySortOrder = QString::number(exiftoolMap[categoryName].count()).rightJustified(3, '0');
+                metaDataStruct.categoryName = categoryName;
+                metaDataStruct.propertyName = propertyName;
+                metaDataStruct.absoluteFilePath = folderFileName;
+                metaDataStruct.propertySortOrder = QString::number(exiftoolMap[categoryName].count()).rightJustified(3, '0');
 
-                exiftoolMap[categoryName][propertyName][folderFileName] = exifToolValueStruct;
+                exiftoolMap[categoryName][propertyName][folderFileName] = metaDataStruct;
             }
         }
     }
 
-    QMapIterator<QString, QMap<QString, QMap<QString, ExifToolValueStruct>>> category2Iterator(exiftoolMap);
-    while (category2Iterator.hasNext())
+    QMapIterator<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolMapIterator(exiftoolMap);
+    while (exiftoolMapIterator.hasNext())
     {
-        category2Iterator.next();
+        exiftoolMapIterator.next();
 
 //        qDebug()<<"categoryIterator.key()"<<category2Iterator.key();
-        QString categoryKey = category2Iterator.key().split(" - ")[1];
+        QString categoryKey = exiftoolMapIterator.key().split(" - ")[1];
 
-        QList<QMap<QString, ExifToolValueStruct>> propertyListSorted;
+        QList<QMap<QString, MMetaDataStruct>> metaDataMapListSorted;
 
         //sort propertyList
         {
-            QMapIterator<QString, QMap<QString, ExifToolValueStruct>> property2Iterator(category2Iterator.value());
-            while (property2Iterator.hasNext())
+            QMapIterator<QString, QMap<QString, MMetaDataStruct>> metaDataMapIterator(exiftoolMapIterator.value());
+            while (metaDataMapIterator.hasNext())
             {
-                property2Iterator.next();
-                propertyListSorted.append(property2Iterator.value());
+                metaDataMapIterator.next();
+                metaDataMapListSorted.append(metaDataMapIterator.value());
             }
 
-            std::sort(propertyListSorted.begin(), propertyListSorted.end(), [](QMap<QString, ExifToolValueStruct> v1, QMap<QString, ExifToolValueStruct> v2)->bool
+            std::sort(metaDataMapListSorted.begin(), metaDataMapListSorted.end(), [](QMap<QString, MMetaDataStruct> metaDataMap1, QMap<QString, MMetaDataStruct> metaDataMap2)->bool
             {
-                ExifToolValueStruct vv1 = v1.first();
-                ExifToolValueStruct vv2 = v2.first();
-                return vv1.propertySortOrder<vv2.propertySortOrder;
+                MMetaDataStruct metaDataStruct1 = metaDataMap1.first();
+                MMetaDataStruct metaDataStruct2 = metaDataMap2.first();
+                return metaDataStruct1.propertySortOrder<metaDataStruct2.propertySortOrder;
             });
         }
 
-        QList<QMap<QString, ExifToolValueStruct>>::iterator property2Iterator;
-        for (property2Iterator = propertyListSorted.begin(); property2Iterator != propertyListSorted.end(); ++property2Iterator)
+        QList<QMap<QString, MMetaDataStruct>>::iterator metaDataMapIterator;
+        for (metaDataMapIterator = metaDataMapListSorted.begin(); metaDataMapIterator != metaDataMapListSorted.end(); ++metaDataMapIterator)
         {
-            QString propertyName = property2Iterator->first().propertyName; //split...
-            QMap<QString, ExifToolValueStruct> filesValueMap = *property2Iterator;
+            QString propertyName = metaDataMapIterator->first().propertyName; //split...
+            QMap<QString, MMetaDataStruct> metaDataMap = *metaDataMapIterator;
 
 //            qDebug()<<"  propertyName"<<propertyName;
 
@@ -344,7 +344,7 @@ void APropertyTreeView::loadModel(QString folderName)
 
             foreach (QString folderFileName, filesMap)
             {
-                QString value = filesValueMap[folderFileName].value;
+                QString value = metaDataMap[folderFileName].value;
 
 //                qDebug()<<"    filesIterator.key()"<<folderFileName << value;
 
@@ -916,7 +916,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                 {
                     valueChangedBy = "MinimumDeltaMaximum";
 
-                    QDateTime minimumTime = QDateTime::fromString(minimumValue.data().toString(), "yyyy:MM:dd HH:mm:ss");
+                    QDateTime minimumTime = QDateTime::fromString(minimumValue.data().toString().left(19), "yyyy:MM:dd HH:mm:ss");
                     QString deltaString = deltaValue.data().toString();
                     QDateTime maximumTime;
 
@@ -933,7 +933,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
                     }
                     else //updating Maximum, set delta
                     {
-                        maximumTime = QDateTime::fromString(maximumValue.data().toString(), "yyyy:MM:dd HH:mm:ss");
+                        maximumTime = QDateTime::fromString(maximumValue.data().toString().left(19), "yyyy:MM:dd HH:mm:ss");
                         seconds = minimumTime.secsTo(maximumTime);
                         deltaString = AGlobal().secondsToCSV(seconds);
 //                        qDebug()<<"secs and days"<<minimumTime<<maximumTime<<minimumTime.secsTo(maximumTime)<<deltaString;
@@ -1429,8 +1429,8 @@ void APropertyTreeView::calculateMinimumDeltaMaximum()
                 }
                 else if (typeValue.data().toString() == "QDateTime")
                 {
-                    QDateTime minimumTime = QDateTime::fromString(minValue, "yyyy:MM:dd HH:mm:ss");
-                    QDateTime maximumTime = QDateTime::fromString(maxValue, "yyyy:MM:dd HH:mm:ss");
+                    QDateTime minimumTime = QDateTime::fromString(minValue.left(19), "yyyy:MM:dd HH:mm:ss");
+                    QDateTime maximumTime = QDateTime::fromString(maxValue.left(19), "yyyy:MM:dd HH:mm:ss");
 
                     propertyProxyModel->setData(propertyProxyModel->index(childRow, deltaIndex, parentIndex), AGlobal().secondsToCSV(minimumTime.secsTo(maximumTime)));
                 }

@@ -39,7 +39,7 @@ typedef struct {
     QString propertySortOrder;
     QString value; //for mediaItems
     QMap<QString, QString> fileValues; //for group of mediaItems
-} ExifToolValueStruct;
+} MMetaDataStruct;
 
 class AGlobal
 {

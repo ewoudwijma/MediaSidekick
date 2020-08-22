@@ -36,7 +36,7 @@ public:
 //    bool changed = false;
 
 private slots:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event);
+//    void mousePressEvent(QGraphicsSceneMouseEvent *event);
 
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event);
 signals:

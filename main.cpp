@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("mediasidekick.org");
     a.setApplicationName("Media Sidekick");
-    a.setApplicationVersion("0.5.0");
+    a.setApplicationVersion("0.5.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\mediasidekick.org
@@ -233,6 +233,12 @@ MacOS 2020-02-01
         - Script
             cp -r /usr/local/bin/lib $MediaSidekick_build_path/MediaSidekick.app/Contents/MACOS/lib
             cp /usr/local/bin/exiftool $MediaSidekick_build_path/MediaSidekick.app/Contents/MACOS
+
+    - Get youtube-dl
+        - sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
+        - sudo chmod a+rx /usr/local/bin/youtube-dl
+        - Script
+            cp -r /usr/local/bin/youtube-dl $MediaSidekick_build_path/MediaSidekick.app/Contents/MACOS
 
     - macdeployqt
         - https://doc.qt.io/qt-5/macos-deployment.html

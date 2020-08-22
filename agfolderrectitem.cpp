@@ -26,9 +26,14 @@ AGFolderRectItem::AGFolderRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     QPen pen(Qt::transparent);
     setPen(pen);
 
-    setRect(QRectF(0, 0, 200 * 9 / 16 + 4, 200 * 9 / 16)); //+2 is minimum to get dd-mm-yyyy not wrapped (+2 extra to be sure)
+    setRect(QRectF(0, 0, 200 * 9.0 / 16.0 + 4, 200 * 9.0 / 16.0)); //+2 is minimum to get dd-mm-yyyy not wrapped (+2 extra to be sure)
 
-    setItemProperties("Folder", "Base", 0, QSize());
+//    setItemProperties("Folder", "Base", 0, QSize());
+
+    setData(itemTypeIndex, itemType);
+    setData(mediaTypeIndex, mediaType);
+
+    updateToolTip();
 
     pictureItem = new QGraphicsPixmapItem(this);
     QImage image = QImage(":/images/Folder.png");
@@ -42,10 +47,6 @@ AGFolderRectItem::AGFolderRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     pictureItem->setData(itemTypeIndex, "SubPicture");
     pictureItem->setData(folderNameIndex, fileInfo.absolutePath());
     pictureItem->setData(fileNameIndex, fileInfo.fileName());
-
-//    pictureItem->setData(mediaDurationIndex, 0);
-    pictureItem->setData(mediaWithIndex, 0);
-    pictureItem->setData(mediaHeightIndex, 0);
 }
 
 //https://stackoverflow.com/questions/34036848/how-to-suppress-unicode-characters-in-qstring-or-convert-to-latin1
@@ -214,14 +215,14 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
             {
                 AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
 
-                QMapIterator<QString, QMap<QString, ExifToolValueStruct>> categoryIterator(mediaItem->exiftoolMap);
-                while (categoryIterator.hasNext()) //for each category
+                QMapIterator<QString, QMap<QString, MMetaDataStruct>> exiftoolMapIterator(mediaItem->exiftoolMap);
+                while (exiftoolMapIterator.hasNext()) //for each category
                 {
-                    categoryIterator.next();
+                    exiftoolMapIterator.next();
 
-                    foreach (ExifToolValueStruct exifToolValueStruct, categoryIterator.value()) //for each property
+                    foreach (MMetaDataStruct metaDataStruct, exiftoolMapIterator.value()) //for each property
                     {
-                        propertyTreeView->exiftoolMap[categoryIterator.key()][exifToolValueStruct.propertyName][mediaItem->fileInfo.absoluteFilePath()] = exifToolValueStruct;
+                        propertyTreeView->exiftoolMap[exiftoolMapIterator.key()][metaDataStruct.propertyName][mediaItem->fileInfo.absoluteFilePath()] = metaDataStruct;
                     }
                 }
             }
@@ -264,13 +265,14 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
         QLineEdit *urlLineEdit = new QLineEdit();
         urlLineEdit->setPlaceholderText("URL...");
 //        mainLayout->addWidget(urlLineEdit);
-
         formLayout->addRow("URL:", urlLineEdit);
 
         QCheckBox *audioOnlyCheckBox = new QCheckBox();
-//        mainLayout->addWidget(audioOnlyCheckBox);
-
         formLayout->addRow("Audio Only:", audioOnlyCheckBox);
+
+        QCheckBox *mp3Mp4CheckBox = new QCheckBox();
+        formLayout->addRow("Export to mp3/mp4:", mp3Mp4CheckBox);
+        mp3Mp4CheckBox->setToolTip("Find the best mp3/mp4 codec available. If not checked default youtube formats are used (e.g. Webm, Opus)");
 
         QHBoxLayout *buttonLayout = new QHBoxLayout();
         mainLayout->addLayout(buttonLayout);
@@ -299,14 +301,33 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
             AGProcessAndThread *process = new AGProcessAndThread(this);
                         //https://ostechnix.com/youtube-dl-tutorial-with-examples-for-beginners/
 
-            if (audioOnlyCheckBox->isChecked())
-                process->command("Download media", "youtube-dl.exe -x -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
-//            process->command("Download media", "youtube-dl.exe -x --audio-format mp3 -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
-            else
-                process->command("Download media", "youtube-dl.exe -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
-//                process->command("Download media", "youtube-dl.exe -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
+            QString command = "youtube-dl";
 
-            //            process->command("Download media", "youtube-dl.exe -f \"bestvideo+bestaudio/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + text);
+            if (audioOnlyCheckBox->isChecked())
+            {
+                if (mp3Mp4CheckBox->isChecked())
+                    command += " -x --audio-format mp3";
+                else
+                    command += " -x";
+            }
+            else
+            {
+                if (mp3Mp4CheckBox->isChecked())
+                    command += " -f \"bestvideo[ext=mp4]+bestaudio[ext=mp3]/mp4\"";
+            }
+
+            command += " -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text();
+
+            process->command("Download media", command);
+
+//            if (audioOnlyCheckBox->isChecked())
+//                process->command("Download media", "youtube-dl -x -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
+////            process->command("Download media", "youtube-dl.exe -x --audio-format mp3 -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
+//            else
+//                process->command("Download media", "youtube-dl -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
+////                process->command("Download media", "youtube-dl.exe -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
+
+//            //            process->command("Download media", "youtube-dl.exe -f \"bestvideo+bestaudio/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + text);
 
             processes<<process;
             connect(process, &AGProcessAndThread::processOutput, this, &AGFolderRectItem::onProcessOutput);
@@ -317,6 +338,7 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
                 searchStrings << "[ffmpeg] Merging formats into ";
                 searchStrings << "[ffmpeg] Destination: ";
                 searchStrings << "[ffmpeg] Correcting container in ";
+                searchStrings << "[download] Destination: "; //for osx
 
                 foreach (QString searchString, searchStrings)
                     if (outputString.contains(searchString))

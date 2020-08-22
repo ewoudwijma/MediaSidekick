@@ -1,8 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "aclipssortfilterproxymodel.h"
-#include "aclipstableview.h"
 #include "agfilesystem.h"
 #include "astareditor.h"
 
