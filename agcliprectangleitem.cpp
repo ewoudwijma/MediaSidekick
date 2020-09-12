@@ -2,7 +2,6 @@
 
 #include "agcliprectitem.h"
 #include "aglobal.h"
-#include "agview.h"
 
 #include <QStyleOption>
 #include <QDebug>

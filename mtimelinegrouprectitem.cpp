@@ -1,7 +1,5 @@
 #include "mtimelinegrouprectitem.h"
 
-#include "agview.h" //for the constants
-
 MTimelineGroupRectItem::MTimelineGroupRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     AGViewRectItem(parent, fileInfo)
 {

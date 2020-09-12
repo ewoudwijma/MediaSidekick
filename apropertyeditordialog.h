@@ -21,7 +21,7 @@ public:
     explicit APropertyEditorDialog(QWidget *parent = nullptr);
     ~APropertyEditorDialog();
 
-    void setProperties(QStandardItemModel *itemModel, QStringList filesMap);
+    void setProperties(QStandardItemModel *itemModel, QStringList filesList);
 
     void closeEvent(QCloseEvent *event);
 

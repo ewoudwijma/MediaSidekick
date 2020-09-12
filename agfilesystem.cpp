@@ -37,15 +37,34 @@ void AGFileSystem::onStopThreadProcess()
     }
 }
 
-void AGFileSystem::onFileWatch(QString folderFileName, bool on)
+void AGFileSystem::onFileWatch(QString folderFileName, bool on, bool triggerFileChanged)
 {
-    qDebug()<<"AGFileSystem::onFileWatch"<<folderFileName<<on;
-
+    bool result = false;
     if (on)
-        bool result = fileSystemWatcher->addPath(folderFileName);
-    else
-        bool result = fileSystemWatcher->removePath(folderFileName);
+    {
+        result = excludedFilesFromWatch.removeOne(folderFileName);
+//        result = fileSystemWatcher->addPath(folderFileName); //set on so onFileChanged recognises this as existing file
 
+//        if (result || triggerFileChanged)
+//            qDebug()<<"AGFileSystem::onFileWatch"<<folderFileName<<on<<triggerFileChanged<<result;
+
+        QFile file(folderFileName);
+
+        if (file.exists() && triggerFileChanged)
+            onFileChanged(folderFileName);
+    }
+    else
+    {
+        if (!excludedFilesFromWatch.contains(folderFileName))
+        {
+            excludedFilesFromWatch << folderFileName;
+            result = true;
+
+//            qDebug()<<"AGFileSystem::onFileWatch"<<folderFileName<<on<<triggerFileChanged<<result;
+        }
+//        if (fileSystemWatcher->files().contains(folderFileName))
+//            result = fileSystemWatcher->removePath(folderFileName);
+    }
 }
 
 void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
@@ -140,7 +159,7 @@ void AGFileSystem::loadItem(AGProcessAndThread *process, QFileInfo fileInfo, boo
         return;
     }
     //thread
-//    qDebug()<<"AGFileSystem::loadItem"<<(QThread::currentThread() == qApp->thread()?"Main":"Thread")<<fileInfo.absoluteFilePath();
+//    qDebug()<<"AGFileSystem::loadItem"<<(QThread::currentThread() == qApp->thread()?"Main":"Thread")<<fileInfo.absoluteFilePath()<<isNewFile;
 
     process->addProcessLog("output", "loadItem: " + fileInfo.absoluteFilePath());
 
@@ -273,10 +292,31 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
                 srtContentString.replace(srtContentString.mid(start, end - start + 4), ""); //remove value from srtContentString
             }
             else
-                value = "";
+            {
+                if (srtContentString.indexOf("r9") >= 0)
+                    value = "5";
+                else if (srtContentString.indexOf("r8") >= 0)
+                    value = "4";
+                else if (srtContentString.indexOf("r7") >= 0)
+                    value = "3";
+                else if (srtContentString.indexOf("r6") >= 0)
+                    value = "2";
+                else if (srtContentString.indexOf("r5") >= 0)
+                    value = "1";
+                else
+                    value = "";
+                srtContentString.replace(" r5", "").replace("r5","");
+                srtContentString.replace(" r6", "").replace("r6","");
+                srtContentString.replace(" r7", "").replace("r7","");
+                srtContentString.replace(" r8", "").replace("r8","");
+                srtContentString.replace(" r9", "").replace("r9","");
+
+                if (value != "")
+                    qDebug()<<__func__<<"starsold"<<fileInfo.fileName()<<value;
+
+            }
+
             QString stars = QString("*").repeated(value.toInt());
-//            QStandardItem *starItem = new QStandardItem;
-//            starItem->setData(QVariant::fromValue(AStarRating(value.toInt())), Qt::EditRole);
 
             start = srtContentString.indexOf("<a>");
             end = srtContentString.indexOf("</a>");
@@ -315,32 +355,6 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
 
             QString tags = value;
 
-            if (start == -1 || end == -1) //backwards compatibility
-            {
-                tags = srtContentString;
-
-//                order = QString::number(clipCounter*10);
-
-                if (tags.indexOf("r9") >= 0)
-                    stars = "*****";
-                else if (tags.indexOf("r8") >= 0)
-                    stars = "****";
-                else if (tags.indexOf("r7") >= 0)
-                    stars = "***";
-                else if (tags.indexOf("r6") >= 0)
-                    stars = "**";
-                else if (tags.indexOf("r5") >= 0)
-                    stars = "*";
-                else
-                    stars = "";
-                tags.replace(" r5", "").replace("r5","");
-                tags.replace(" r6", "").replace("r6","");
-                tags.replace(" r7", "").replace("r7","");
-                tags.replace(" r8", "").replace("r8","");
-                tags.replace(" r9", "").replace("r9","");
-                tags.replace(" ", ";");
-            }
-
             QStandardItem *alikeItem = new QStandardItem(alike);
             alikeItem->setTextAlignment(Qt::AlignCenter); //tbd: not working ...
 
@@ -373,6 +387,8 @@ void AGFileSystem::onFileChanged(const QString &path)
 {
     QFileInfo fileInfo(path);
 
+//    qDebug()<<"AGFileSystem::onFileChanged"<<path<<fileSystemWatcher->files().contains(path);
+
     if (!fileSystemWatcher->files().contains(path))
     {
         QFile file(path);
@@ -386,7 +402,7 @@ void AGFileSystem::onFileChanged(const QString &path)
         }
         else // file does not exist, so is deleted, delete from view.
         {
-            qDebug()<<"AGFileSystem::onFileChanged - not in watch - file not exists (deleted!)"<<path;
+//            qDebug()<<"AGFileSystem::onFileChanged - not in watch - file not exists (deleted!)"<<path;
             QFileInfo fileInfo(path);
 
             if (fileInfo.suffix().toLower() == "srt") //clips
@@ -397,32 +413,38 @@ void AGFileSystem::onFileChanged(const QString &path)
     }
     else //file changed
     {
-        qDebug()<<"AGFileSystem::onFileChanged - in watch"<<path;
+//        qDebug()<<"AGFileSystem::onFileChanged - in watch"<<path<<fileInfo.absoluteFilePath()<<excludedFilesFromWatch.contains(path);
 
         //add a small delay to give OS the chance to release lock on file (avoid Permission denied erro)
 
-        if (fileInfo.suffix() == "srt") //not for the moment
+        if (!excludedFilesFromWatch.contains(path))
         {
-
-//            qDebug()<<"Clip file changed - delete items"<<fileInfo.fileName();
-            emit deleteItem(false, "Clip", fileInfo); //is .srt
-
-            if (!processStopped)
+            if (fileInfo.suffix() == "srt")
             {
-                AGProcessAndThread *process = new AGProcessAndThread(this);
-                processes<<process;
-                process->command("Load clips", [=]()
+
+    //            qDebug()<<"Clip file changed - delete items"<<fileInfo.fileName();
+                emit deleteItem(false, "Clip", fileInfo); //is .srt
+
+                if (!processStopped)
                 {
-                    //remove and create clips
-//                    qDebug()<<"Clip file changed - load clips"<<fileInfo.fileName();
-                    loadClips(process, fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
-//                    qDebug()<<"Clip file changed - done"<<fileInfo.fileName();
-                });
-                process->start();
+                    AGProcessAndThread *process = new AGProcessAndThread(this);
+                    processes<<process;
+                    process->command("Load clips", [=]()
+                    {
+                        //remove and create clips
+    //                    qDebug()<<"Clip file changed - load clips"<<fileInfo.fileName();
+                        loadClips(process, fileInfo); //if mediafile does not exists addClip of clip and tags will return (workaround)
+    //                    qDebug()<<"Clip file changed - done"<<fileInfo.fileName();
+                    });
+                    process->start();
+                }
+            }
+            else
+            {
+//                qDebug()<<"AGFileSystem::onFileChanged emit filechanged"<<fileInfo.fileName();
+                emit fileChanged(fileInfo); //send to view to call mediaItem loadmedia
             }
         }
-        else
-            emit fileChanged(fileInfo); //send to view to call mediaItem loadmedia
     }
 }
 
@@ -458,20 +480,27 @@ void AGFileSystem::onDirectoryChanged(const QString &path)
 //            else
 //                qDebug()<<"AGFileSystem::onDirectoryChanged false addpath - not in watch - file or folder exists (new!) - added in watch"<<filePath;
 
-            QString folderName = fileInfo.path() + "/";
+//            QString folderName = fileInfo.path() + "/";
 
-            if (!processStopped)
+            bool cnt = true;
+            if (fileInfo.suffix() == "srt")
+                cnt = !excludedFilesFromWatch.contains(filePath);//srts are excluded from creation, media files not.
+
+            if (cnt)
             {
-                AGProcessAndThread *process = new AGProcessAndThread(this);
-                processes<<process;
-                process->command("Load item", [=]()
+                if (!processStopped)
                 {
-                    loadItem(process, fileInfo, true); //new
-                });
-                process->start();
+                    AGProcessAndThread *process = new AGProcessAndThread(this);
+                    processes<<process;
+                    process->command("Load item", [=]()
+                    {
+                        loadItem(process, fileInfo, true); //new
+                    });
+                    process->start();
+                }
             }
         }
-//        else //nothing special
-//            qDebug()<<"  AGFileSystem::onDirectoryChanged already in watch - file or folder exists ()"<<filePath;
+    //        else //nothing special
+    //            qDebug()<<"  AGFileSystem::onDirectoryChanged already in watch - file or folder exists ()"<<filePath;
     }
 }

@@ -36,8 +36,8 @@ public:
 
     bool isLoading;
 
-    QMap<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolMap;
-    QStringList filesMap;
+    QMap<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolCategoryProperyFileMap;
+    QStringList filesList;
 
     void mousePressEvent(QMouseEvent *event) override;
 private:
@@ -72,7 +72,7 @@ public slots:
     bool onGetPropertyValue(QString folderFileName, QString propertyName, QVariant *value);
     bool onSetPropertyValue(QString folderFileName, QString propertyName, QVariant value, int role = Qt::EditRole);
     void onFileIndexClicked(QModelIndex index, QStringList filePathList);
-    void onClipIndexClicked(QModelIndex index);
+//    void onClipIndexClicked(QModelIndex index);
     void onloadProperties();
     void onPropertyCopy(QStandardItem *parentItem, QString folderNameSource, QString fileNameSource, QString folderNameTarget, QString fileNameTarget);
 

@@ -5,11 +5,15 @@
 #include "agcliprectitem.h"
 #include "aglobal.h"
 #include "agtagtextitem.h"
-#include "agview.h" //for the constants
+#include "agview.h"
 #include "aexport.h"
 
 #include <QDesktopServices>
+#include <QDir>
+#include <QGraphicsEffect>
 #include <QGraphicsItemAnimation>
+#include <QGraphicsProxyWidget>
+#include <QSlider>
 #include <QStyle>
 #include <QTabWidget>
 #include <QTextBrowser>
@@ -26,8 +30,8 @@ AGViewRectItem::AGViewRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     this->itemType = "Base";
 
     this->fileInfo = fileInfo;
-    setData(folderNameIndex, fileInfo.absolutePath());
-    setData(fileNameIndex, fileInfo.fileName());
+//    setData(folderNameIndex, fileInfo.absolutePath());
+//    setData(fileNameIndex, fileInfo.fileName());
 
     this->parentRectItem = (AGViewRectItem *)parent;
 
@@ -63,12 +67,88 @@ AGViewRectItem::AGViewRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     fileContextMenu->setPalette(pal);
 }
 
-void AGViewRectItem::setItemProperties(QString mediaType, QString itemType, int duration, QSize mediaSize)
+void AGViewRectItem::newProgressItem()
 {
-    setData(itemTypeIndex, itemType);
-    setData(mediaTypeIndex, mediaType);
+    if (progressSliderProxy == nullptr)
+    {
+        QSlider *progressSlider = new QSlider();
+        progressSlider->setOrientation(Qt::Horizontal);
 
-    updateToolTip();
+        progressSlider->setMinimumWidth(this->rect().width());
+        progressSlider->setMaximumWidth(this->rect().width());
+
+//            progressSlider->setStyleSheet("QSlider::sub-page:Horizontal { background-color: blue; }"
+//                          "QSlider::add-page:Horizontal { background-color: yellow; }"
+//                          "QSlider::groove:Horizontal {border-image: url(:/images/MovieStrip.PNG) 0 12 0 10;border-left: 10px solid transparent;border-right: 12px solid transparent;}"
+//                          "QSlider::handle:Horizontal { width:10px; border-radius:5px; background:magenta; margin: -5px 0px -5px 0px; }");
+
+//        progressSlider->setStyleSheet("QSlider::sub-page:Horizontal { background-color: #222222; }"
+//                      "QSlider::add-page:Horizontal { background-color: #222222; }"
+//                      "QSlider::groove:Horizontal { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4)}; height:4px; }"
+//                      "QSlider::handle:Horizontal { width:10px; border-radius:5px; background:#9F2425; margin: -5px 0px -5px 0px; }");
+
+        progressSlider->setStyleSheet("background-color: rgba(0,0,0,0)");
+//                                      "QSlider::sub-page:Horizontal { background-color: blue; }"
+//                      "QSlider::add-page:Horizontal { background-color: yellow; }"
+//                      "QSlider::groove:Horizontal { background: transparent; height:1px; }"
+//                      "QSlider::handle:Horizontal { width:10px; border-radius:5px; background:magenta; margin: -5px 0px -5px 0px; }");
+
+
+//            QSlider::groove {
+//               border-image: url(:/slider-decoration.png) 0 12 0 10;
+//               border-left: 10px solid transparent;
+//               border-right: 12px solid transparent;
+//            }
+//            QSlider::handle {
+//                width: 8px;
+//                background-color: green;
+//            }
+
+        progressSliderProxy = new QGraphicsProxyWidget(this);
+        progressSliderProxy->setWidget(progressSlider);
+
+        progressSliderProxy->setData(mediaTypeIndex, mediaType);
+        progressSliderProxy->setData(itemTypeIndex, "SubProgressSlider");
+        progressSliderProxy->setPos(0, boundingRect().height() - progressSliderProxy->rect().height() ); //pos need to set here as arrangeitem not called here
+    }
+}
+
+void AGViewRectItem::newSubLogItem()
+{
+    if (subLogItem == nullptr)
+    {
+        subLogItem = new QGraphicsTextItem(this);
+
+        if (QSettings().value("theme") == "Black")
+            subLogItem->setDefaultTextColor(Qt::white);
+        else
+            subLogItem->setDefaultTextColor(Qt::black);
+
+        subLogItem->setData(itemTypeIndex, "SubLogItem");
+        subLogItem->setData(mediaTypeIndex, "MediaFile");
+
+        subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height());// - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
+
+        subLogItem->setTextWidth(boundingRect().width() * 0.8);
+
+        subLogItem->setZValue(9999);
+    }
+}
+
+void AGViewRectItem::setTextItem(QTime time, QTime totalTime)
+{
+    if (subLogItem == nullptr)
+    {
+        newSubLogItem();
+    }
+
+    if (subLogItem != nullptr)
+    {
+        subLogItem->setHtml(tr("<p>%1</p><p><small><i>%2</i></small></p><p><small><i>%3</i></small></p>").arg(fileInfo.fileName(), time.toString() + " / " + totalTime.toString(), lastOutputString));
+    }
+
+//        subLogItem->setHtml(tr("<p>%1</p><p><small><i>%2</i></small></p>").arg(fileInfo.fileName(), QTime::fromMSecsSinceStartOfDay(progress).toString("hh:mm:ss.zzz") + " / " + QTime::fromMSecsSinceStartOfDay(m_player->duration()).toString("hh:mm:ss.zzz")));
+
 }
 
 void AGViewRectItem::updateToolTip()
@@ -135,41 +215,11 @@ void AGViewRectItem::updateToolTip()
                           "<li><b>Sorting</b>: Currently sorted in order of mediafiles and within a mediafile, sorted chronologically</li>"
                           "<li><b>Transition</b>: If transition defined (%3) then clips overlapping.</li>"
                           ).arg(tooltipItem->parentRectItem->fileInfo.fileName(), tooltipItem->fileInfo.absolutePath(), AGlobal().frames_to_time(QSettings().value("transitionTime").toInt()));
-        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
+//        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
 
     }
     else if (tooltipItem->data(mediaTypeIndex) == "MediaFile")
     {
-        AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)tooltipItem;
-        tooltipText += tr("<p><b>Media file %1</b></p>"
-                       "<p><i></i></p>"
-                          "<p><b>Properties</p>"
-                       "<ul>"
-                          "<li><b>File size</b>: %2</li>"
-                          "<li><b>Create date</b>: %3</li>").arg(tooltipItem->fileInfo.fileName()
-                                                                 , QString::number(fileInfo.size()/1024/1024) + " MB", tooltipItem->data(createDateIndex).toString());
-
-        if (mediaItem->duration != 0)
-        {
-            tooltipText += tr("<li><b>Duration</b>: %1 (%2 s)</li>").arg(AGlobal().msec_to_time(mediaItem->duration), QString::number(mediaItem->duration / 1000.0));
-        }
-
-        if (mediaItem->ffmpegMetaValueMap["Width"].value != "")
-            tooltipText += tr("<li><b>Size</b>: %1 * %2</li>").arg(mediaItem->ffmpegMetaValueMap["Width"].value, mediaItem->ffmpegMetaValueMap["Height"].value);
-        if (mediaItem->ffmpegMetaValueMap["Framerate"].value != "")
-            tooltipText += tr("<li><b>Framerate</b>: %1</li>").arg(mediaItem->ffmpegMetaValueMap["Framerate"].value);
-
-        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
-
-
-        tooltipText += tr("</ul>"
-            "<p><b>Help</p>"
-            "<ul>"
-                          "<li><b>Duration line</b>: Red or green line above. Allows comparison of duration of media files and clips</li>"
-                          "<li><b>Progress line</b>: Red line below</li>"
-                          "<li><b>Change playing position</b>: Shift-Hover over %1</li>"
-                          "</ul>"
-            ).arg(tooltipItem->data(mediaTypeIndex).toString());
     }
     else if (tooltipItem->data(mediaTypeIndex) == "Clip")
     {
@@ -177,19 +227,11 @@ void AGViewRectItem::updateToolTip()
         tooltipText += tr("<p><b>Clip from %3 to %4</b></p>"
                        "<ul>"
              "<li><b>Duration</b>: %1 (%2 s)</li>"
-                       "</ul>").arg(AGlobal().msec_to_time(clipItem->duration), QString::number(clipItem->duration / 1000.0)
-                                    , AGlobal().msec_to_time(clipItem->clipIn), AGlobal().msec_to_time(clipItem->clipOut)
+                       "</ul>").arg(AGlobal().msec_to_timeNoFPS(clipItem->duration), QString::number(clipItem->duration / 1000.0)
+                                    , AGlobal().msec_to_timeNoFPS(clipItem->clipIn), AGlobal().msec_to_timeNoFPS(clipItem->clipOut)
                          );
 
-        tooltipText += tr("</ul>"
-            "<p><b>Help</p>"
-            "<ul>"
-                          "<li><b>Change playing position</b>: Shift-Hover over %1</li>"
-                          "</ul>"
-            ).arg(tooltipItem->data(mediaTypeIndex).toString());
-
-        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
-
+//        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
     }
     else if (tooltipItem->data(mediaTypeIndex) == "Tag")
     {
@@ -284,14 +326,15 @@ void AGViewRectItem::processAction(QString action)
     if (action.contains("Export"))
     {
         if (agView->isLoading)
-            QMessageBox::information(agView, "Export", tr("View is loading, wait until finished"));
+            QMessageBox::information(agView, "Export", tr("Files are loading, wait until finished"));
         else
         {
             MExportDialog *exportDialog = new MExportDialog(nullptr, this);
             exportDialog->processes = &processes;
             exportDialog->show();
             connect(exportDialog, &MExportDialog::processOutput, this, &AGViewRectItem::onProcessOutput);
-            connect(exportDialog, &MExportDialog::transitionTimeChanged, agView, &AGView::onTransitionTimeChanged);
+            connect(exportDialog, &MExportDialog::arrangeItems, agView, &AGView::onArrangeItems);
+            connect(exportDialog, &MExportDialog::fileWatch, agView, &AGView::fileWatch);
         }
     }
 }
@@ -301,6 +344,7 @@ void AGViewRectItem::onItemRightClicked(QPoint pos)
     QGraphicsView *view = scene()->views().first();
 
     fileContextMenu->addAction(new QAction("Zoom to item",fileContextMenu));
+    fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/images/zoomin.png"))));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
         view->fitInView(boundingRect()|childrenBoundingRect(), Qt::KeepAspectRatio);
@@ -357,15 +401,34 @@ void AGViewRectItem::onItemRightClicked(QPoint pos)
                                                                ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName()));
     }
 
-
     fileContextMenu->addSeparator();
 
     fileContextMenu->addAction(new QAction("Open in explorer",fileContextMenu));
     fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
-//        qDebug()<<"Open in explorer"<<metaObject()->className()<<fileInfo.absoluteFilePath()<<fileInfo.absolutePath()<<fileInfo.fileName();
-        if (strcmp(metaObject()->className() , "MGroupRectItem") == 0)
+        if (strcmp(metaObject()->className() , "AGMediaFileRectItem") == 0)
+        {
+#ifdef Q_OS_MAC
+            QStringList args;
+            args << "-e";
+            args << "tell application \"Finder\"";
+            args << "-e";
+            args << "activate";
+            args << "-e";
+            args << "select POSIX file \"" + fileInfo.absolutePath() + "/" + fileInfo.fileName() + "\"";
+            args << "-e";
+            args << "end tell";
+            QProcess::startDetached("osascript", args);
+#endif
+
+#ifdef Q_OS_WIN
+            QStringList args;
+            args << "/select," << QDir::toNativeSeparators(fileInfo.absoluteFilePath());
+            QProcess::startDetached("explorer", args);
+#endif
+        }
+        else if (strcmp(metaObject()->className() , "MGroupRectItem") == 0)
             QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absolutePath()) );
         else
             QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absoluteFilePath()) );
@@ -376,14 +439,24 @@ void AGViewRectItem::onItemRightClicked(QPoint pos)
                                         "<p><i>Shows the current file or folder %2 in the explorer of your computer</i></p>"
                                               ).arg(fileContextMenu->actions().last()->text(), fileInfo.fileName())); //not effective!
 
+    if (strcmp(metaObject()->className() , "AGMediaFileRectItem") == 0)
+    {
+        fileContextMenu->addAction(new QAction("Open in default application",fileContextMenu));
+        fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/images/shotcut-logo-320x320.png"))));
+        connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+        {
+            QDesktopServices::openUrl( QUrl::fromLocalFile( fileInfo.absoluteFilePath()) );
+        });
+    }
+
     fileContextMenu->addSeparator();
 
-    fileContextMenu->addAction(new QAction("Properties",fileContextMenu));
+    fileContextMenu->addAction(new QAction("Jobs",fileContextMenu));
     fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/MediaSidekick.ico"))));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
         QDialog * dialog = new QDialog(view);
-        dialog->setWindowTitle("Media Sidekick Properties");
+        dialog->setWindowTitle("Media Sidekick Jobs");
     #ifdef Q_OS_MAC
         dialog->setWindowFlag(Qt::WindowStaysOnTopHint); //needed for MAC / OSX
     #endif
@@ -399,37 +472,23 @@ void AGViewRectItem::onItemRightClicked(QPoint pos)
         QTabWidget *tabWidget = new QTabWidget(dialog);
         mainLayout->addWidget(tabWidget);
 
-        QTabWidget *subTabWidget = new QTabWidget(tabWidget);
-        tabWidget->addTab(subTabWidget, "Jobs");
-
         foreach (AGProcessAndThread *process, processes)
         {
-            QTextBrowser *textBrowser = new QTextBrowser(subTabWidget);
+            QTextBrowser *textBrowser = new QTextBrowser(tabWidget);
             textBrowser->setWordWrapMode(QTextOption::NoWrap);
             textBrowser->setText(process->log.join("\n"));
-            subTabWidget->insertTab(0, textBrowser, process->name);
+            tabWidget->insertTab(0, textBrowser, process->name.replace(" " + fileInfo.fileName(), ""));
         }
-        subTabWidget->setCurrentIndex(0);
-
-
-//        if (data(logIndex).toString() != "")
-//        {
-//            QTextBrowser *textBrowser = new QTextBrowser(tabWidget);
-//            textBrowser->setWordWrapMode(QTextOption::NoWrap);
-//            textBrowser->setText(data(logIndex).toString());
-//            tabWidget->addTab(textBrowser, "Log");
-//        }
+        tabWidget->setCurrentIndex(0);
 
         dialog->show();
 
-        fileContextMenu->actions().last()->setToolTip(tr("<p><b>Properties</b></p>"
-                                        "<p><i>Show properties for the currently selected folder</i></p>"
-                                              "<ul>"
-                                              "<li><b>Log</b>: Show the output of folder processes (e.g. load all items, export)</li>"
-                                              "</ul>"));
-
     });
-
+    fileContextMenu->actions().last()->setToolTip(tr("<p><b>Jobs</b></p>"
+                                    "<p><i>Show jobs for %1</i></p>"
+                                          "<ul>"
+                                          "<li><b>Log</b>: Show the output of processes for %1 (e.g. load all items, export)</li>"
+                                          "</ul>").arg(fileInfo.fileName()));
 }
 
 void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString)
@@ -438,92 +497,62 @@ void AGViewRectItem::onProcessOutput(QTime time, QTime totalTime, QString event,
 
 //    qDebug()<<"AGFolderRectItem::onProcessOutput"<<processAndThread->name<<time<<event<<outputString;//thread->log.join("\n");
 
-    if (subLogItem == nullptr)
+    lastOutputString = outputString;
+    setTextItem(time, totalTime); //needed here as onPositionChanged not applicable here
+
+    if (progressSliderProxy == nullptr)
     {
-        subLogItem = new QGraphicsTextItem(this);
-        subLogItem->setDefaultTextColor(Qt::white);
-
-        subLogItem->setData(itemTypeIndex, "SubLog");
-        subLogItem->setData(mediaTypeIndex, "MediaFile");
-
-        subLogItem->setPos(boundingRect().height() * 0.1, boundingRect().height() - subLogItem->boundingRect().height() ); //pos need to set here as arrangeitem not called here
-
-        subLogItem->setTextWidth(boundingRect().width() * 0.8);
-    }
-
-    if (subLogItem != nullptr)
-    {
-        subLogItem->setPlainText(outputString);
-    }
-
-    if (progressRectItem == nullptr)
-    {
-        progressRectItem = new QGraphicsRectItem(this);
-
-        progressRectItem->setData(itemTypeIndex, "SubProgressLine");
-        progressRectItem->setData(mediaTypeIndex, "MediaFile");
-
-        progressRectItem->setPos(0, boundingRect().height() - 10 ); //pos need to set here as arrangeitem not called here
-        progressRectItem->setBrush(Qt::red);
+        newProgressItem();
     }
 
     //update progressLine (as arrangeitem not called here)
-    if (progressRectItem != nullptr && 60 != 0) // subProgressline already created in mediaLoaded
+    if (progressSliderProxy != nullptr && 60 != 0)
     {
-        progressRectItem->setRect(QRectF(0,0,  progressRectItem->parentItem()->boundingRect().width() * time.msecsSinceStartOfDay() / totalTime.msecsSinceStartOfDay(), 10));
+        QSlider *progressSlider = (QSlider *)progressSliderProxy->widget();
+        progressSlider->setMaximum(totalTime.msecsSinceStartOfDay());
+        progressSlider->setSingleStep(progressSlider->maximum() / 10);
+        progressSlider->setValue(time.msecsSinceStartOfDay());
     }
 
     if (event == "started")
     {
-        QPixmap base = QPixmap::fromImage(QImage(":/images/Folder.png")).scaledToWidth(56);
-        QPixmap overlay = QPixmap::fromImage(QImage(":/Spinner.gif")).scaledToWidth(32);
-        QPixmap result(base.width(), base.height());
-        result.fill(Qt::transparent); // force alpha channel
-        QPainter painter(&result);
-        painter.drawPixmap(0, 0, base);
-        painter.drawPixmap((base.width() - overlay.width()) / 2, (base.height() - overlay.height()) / 2, overlay);
+        if (strcmp(metaObject()->className() , "AGMediaFileRectItem") != 0)
+        {
+            QPixmap base = QPixmap::fromImage(QImage(":/images/Folder.png")).scaledToWidth(56);
+            QPixmap overlay = QPixmap::fromImage(QImage(":/Spinner.gif")).scaledToWidth(32);
+            QPixmap result(base.width(), base.height());
+            result.fill(Qt::transparent); // force alpha channel
+            QPainter painter(&result);
+            painter.drawPixmap(0, 0, base);
+            painter.drawPixmap((base.width() - overlay.width()) / 2, (base.height() - overlay.height()) / 2, overlay);
 
-
-//        QImage image = QImage(":/Spinner.gif");
-//        QPixmap pixmap = QPixmap::fromImage(image);//.scaled(QSize(200,200 * myImage.height() / myImage.width()))
-        pictureItem->setPixmap(result);
-        if (base.height() != 0)
-            pictureItem->setScale(200.0 * 9.0 / 16.0 / base.height() * 0.8);
-
-
-//        QTimeLine *timer = new QTimeLine(5000);
-//        timer->setFrameRange(0, 100);
-
-//        QGraphicsItemAnimation *animation = new QGraphicsItemAnimation();
-//        animation->setItem(pictureItem);
-//        animation->setTimeLine(timer);
-
-//        for (int i = 0; i < 200; ++i)
-//            animation->setRotationAt(i, i);
-
-//        timer->start();
-
-
-//        QMovie *movie = new QMovie(":/Spinner.gif");
-//        movie->setScaledSize(QSize(height()*2,height()*2));
-
-//        subLogItem.setpl
-//        setMovie(movie);
-
-
+            pictureItem->setPixmap(result);
+            if (base.height() != 0)
+                pictureItem->setScale(200.0 * 9.0 / 16.0 / base.height() * 0.8);
+        }
     }
     if (event == "finished" || event == "error")
     {
-        QImage image = QImage(":/images/Folder.png");
-        QPixmap pixmap = QPixmap::fromImage(image);//.scaled(QSize(200,200 * myImage.height() / myImage.width()))
-        pictureItem->setPixmap(pixmap);
-        if (image.height() != 0)
-            pictureItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
+        if (strcmp(metaObject()->className() , "AGMediaFileRectItem") != 0)
+        {
+            QImage image = QImage(":/images/Folder.png");
+            QPixmap pixmap = QPixmap::fromImage(image);//.scaled(QSize(200,200 * myImage.height() / myImage.width()))
+            pictureItem->setPixmap(pixmap);
+            if (image.height() != 0)
+                pictureItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
+        }
     }
 
     if (event == "finished")
     {
-        subLogItem->setPlainText("");
-    }
+        if (progressSliderProxy != nullptr)
+        {
+            delete progressSliderProxy;
+            progressSliderProxy = nullptr;
+        }
 
+//        subLogItem->setHtml("");
+        lastOutputString = "";
+        setTextItem(QTime(), QTime());
+    }
 }

@@ -19,7 +19,9 @@ public:
     QString transitionValueChangedBy;
 
     MGroupRectItem *parkingGroupItem = nullptr;
+    QList<MGroupRectItem *> groups;
 
+    void setTextItem(QTime time, QTime totalTime);
 };
 
 #endif // AGFOLDERRECTITEM_H

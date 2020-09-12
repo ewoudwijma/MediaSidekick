@@ -67,8 +67,8 @@ InputVideoFile::InputVideoFile(std::string filename) :
     filename_(filename),
     formatContext_(nullptr), videoCodecContext_(nullptr), audioCodecContext_(nullptr),
     videoStreamIndex_(-1), audioStreamIndex_(-1),
-    frame_(nullptr), draining_(false), lastError_(0),
-    videoFrameCount_(0)
+    frame_(nullptr), draining_(false),
+    videoFrameCount_(0), lastError_(0)
 {
 #if LIBAVFORMAT_VERSION_MAJOR < 58
     // need to register all muxers, decoders, ... on ffmpeg versions before 58.x, see
@@ -117,7 +117,7 @@ void InputVideoFile::Dump()
     av_dump_format(formatContext_, 0, filename_.c_str(), 0);
 }
 
-AVFrame *InputVideoFile::GetNextFrame()
+AVFrame *InputVideoFile::GetNextFrame(bool ignoreErrors)
 {
     if (draining_)
         return GetNextDrainFrame();
@@ -126,6 +126,10 @@ AVFrame *InputVideoFile::GetNextFrame()
     while (lastError_ == AVERROR(EAGAIN))
     {
         lastError_ = av_read_frame(formatContext_, &packet_);
+
+//        if (ignoreErrors)
+//            qDebug()<<__func__<<"2.5"<<lastError_<<AVERROR(EAGAIN)<<packet_.stream_index;
+
         if (lastError_ >= 0)
         {
             if (packet_.stream_index == videoStreamIndex_)
@@ -133,12 +137,14 @@ AVFrame *InputVideoFile::GetNextFrame()
                 lastError_ = avcodec_send_packet(videoCodecContext_, &packet_);
                 if (lastError_ < 0)
                 {
+                    qDebug()<<__func__<<"*** Error sending video packet to decoder: " << lastError_;
                     cout << "*** Error sending video packet to decoder: " << GetErrorString(lastError_) << endl;
                     return nullptr;
                 }
                 lastError_ = avcodec_receive_frame(videoCodecContext_, frame_);
                 if (lastError_ < 0 && lastError_ != AVERROR(EAGAIN))
                 {
+                    qDebug()<<__func__<<"*** Error getting video frame from decoder: " << lastError_;
                     cout << "*** Error getting video frame from decoder: " << GetErrorString(lastError_) << endl;
                     return nullptr;
                 }
@@ -148,12 +154,14 @@ AVFrame *InputVideoFile::GetNextFrame()
                 lastError_ = avcodec_send_packet(audioCodecContext_, &packet_);
                 if (lastError_ < 0)
                 {
+                    qDebug()<<__func__<<"*** Error sending audio packet to decoder: " << lastError_;
                     cout << "*** Error sending audio packet to decoder" << GetErrorString(lastError_) << endl;
                     return nullptr;
                 }
                 lastError_ = avcodec_receive_frame(audioCodecContext_, frame_);
                 if (lastError_ < 0 && lastError_ != AVERROR(EAGAIN))
                 {
+                    qDebug()<<__func__<<"*** Error getting audio frame from decoder: " << lastError_;
                     cout << "*** Error getting audio frame from decoder: " << GetErrorString(lastError_) << endl;
                     return nullptr;
                 }
@@ -167,6 +175,8 @@ AVFrame *InputVideoFile::GetNextFrame()
         }
         else if (lastError_ == AVERROR_EOF)
         {
+            qDebug()<<__func__<<"*** Error AVERROR_EOF: " << lastError_;
+
             // Begin draining
             draining_ = true;
 
@@ -179,6 +189,9 @@ AVFrame *InputVideoFile::GetNextFrame()
             return GetNextDrainFrame();
         }
         av_packet_unref(&packet_);
+
+        if (ignoreErrors)
+            lastError_ = 0;
     }
 
     return frame_;

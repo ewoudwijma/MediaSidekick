@@ -253,7 +253,8 @@ MacOS 2020-02-01
                 - open DiskUtility
                     - From menu: Images/Convert...
                     - Find created dmg
-                    - Choose Image Format: read/write then Convert. A link will be created on the desktop (if not open the dmg file in the destionation folder Documents)
+                    - Choose Image Format: read/write then Convert. A new dmg file will be created in the documents folder
+                    - open the dmg file, an image will be created on the desktop
                 - Open terminal
                     - type cd<space> and drag the desktop icon after this
                     - ln -s /Applications ./Applications
@@ -266,7 +267,7 @@ MacOS 2020-02-01
                     - From menu: Images/Convert...
                     - Find created dmg
                     - Rename to MediaSidekick vx.y.z
-                    - Choose Image Format: compressed then Convert. A link will be created on the desktop
+                    - Choose Image Format: compressed then Convert. A new dmg file will be created in the documents folder
 
 General post
     - Update version.json on mediasidekick.org

@@ -3,7 +3,6 @@
 
 #include "aderperviewmain.h"
 #include "agfolderrectitem.h"
-#include "agview.h"
 #include "agviewrectitem.h"
 #include "agprocessthread.h"
 #include "agcliprectitem.h"
@@ -15,8 +14,6 @@
 
 #include "aglobal.h"
 
-class AGView;
-//class AGMediaFileRectItem;
 class AGClipRectItem;
 class MGroupRectItem;
 
@@ -41,8 +38,8 @@ public:
 
     QGraphicsRectItem *durationLine = nullptr;
 
-    QMap<QString, QMap<QString, MMetaDataStruct>> exiftoolMap;
-    QMap<QString, MMetaDataStruct> exiftoolValueMap;
+    QMap<QString, QMap<QString, MMetaDataStruct>> exiftoolCategoryProperyMap;
+    QMap<QString, MMetaDataStruct> exiftoolPropertyMap;
 
     void initPlayer(bool startPlaying);
 
@@ -50,8 +47,11 @@ public:
 
     QList<AGClipRectItem *> clips;
 
-    QMap<QString, MMetaDataStruct> ffmpegMetaValueMap;
+    QMap<QString, MMetaDataStruct> ffmpegPropertyMap;
 
+    QGraphicsProxyWidget *playButtonProxy;
+
+    void setTextItem(QTime time, QTime totalTime);
 public slots:
     void onItemRightClicked(QPoint pos);
 
@@ -78,6 +78,7 @@ signals:
     void mediaLoaded(QFileInfo fileInfo, QImage image = QImage(), int duration = 0, QSize mediaSize = QSize(), QList<int> samples = QList<int>());
     void addItem(bool changed, QString parentName, QString mediaType, QFileInfo fileInfo = QFileInfo(), int duration = 0, int clipIn = 0, int clipOut = 0, QString tag = "");
     void addUndo(bool changed, QString action, QString mediaType, QGraphicsItem *item, QString property = "", QString oldValue = "", QString newValue = "");
+    void fileWatch(QString folderFileName, bool on, bool triggerFileChanged = false);
 
 private slots:
     void onPositionChanged(int progress);
@@ -85,6 +86,7 @@ private slots:
     void onMetaDataChanged();
     void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
     void onMediaLoaded(QFileInfo fileInfo, QImage image, int duration, QSize mediaSize, QList<int> samples);
+    void onPlayerStateChanged(QMediaPlayer::State status);
 };
 
 #endif // AGMEDIAFILERECTITEM_H

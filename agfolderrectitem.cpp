@@ -2,7 +2,6 @@
 
 #include <QDesktopServices>
 
-#include "agview.h" //for the constants
 #include "apropertyeditordialog.h"
 #include "apropertytreeview.h"
 #include "aexport.h"
@@ -17,6 +16,8 @@
 
 #include <qmath.h>
 
+#include <QMessageBox>
+
 AGFolderRectItem::AGFolderRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     AGViewRectItem(parent, fileInfo)
 {
@@ -27,8 +28,6 @@ AGFolderRectItem::AGFolderRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     setPen(pen);
 
     setRect(QRectF(0, 0, 200 * 9.0 / 16.0 + 4, 200 * 9.0 / 16.0)); //+2 is minimum to get dd-mm-yyyy not wrapped (+2 extra to be sure)
-
-//    setItemProperties("Folder", "Base", 0, QSize());
 
     setData(itemTypeIndex, itemType);
     setData(mediaTypeIndex, mediaType);
@@ -42,12 +41,48 @@ AGFolderRectItem::AGFolderRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
     if (image.height() != 0)
         pictureItem->setScale(200.0 * 9.0 / 16.0 / image.height() * 0.8);
 
-//    setItemProperties(pictureItem, "Folder", "SubPicture", folderName, fileName, 0);
     pictureItem->setData(mediaTypeIndex, "Folder");
     pictureItem->setData(itemTypeIndex, "SubPicture");
-    pictureItem->setData(folderNameIndex, fileInfo.absolutePath());
-    pictureItem->setData(fileNameIndex, fileInfo.fileName());
+
+    setTextItem(QTime(), QTime());
 }
+
+void AGFolderRectItem::setTextItem(QTime time, QTime totalTime)
+{
+    if (subLogItem == nullptr)
+    {
+        newSubLogItem();
+    }
+
+    if (subLogItem != nullptr)
+    {
+        if (time != QTime())
+            AGViewRectItem::setTextItem(time, totalTime);
+        else
+        {
+            duration = 0;
+            int foundGroups = 0;
+
+            foreach (MGroupRectItem *groupItem, groups)
+            {
+                if (groupItem->timelineGroupItem->clips.count() > 0)
+                {
+                    duration = max(duration, groupItem->duration);
+                    foundGroups++;
+                }
+            }
+
+//            qDebug()<<__func__<<"AGFolderRectItem"<<fileInfo.fileName()<<duration<<time<<totalTime;
+
+            subLogItem->setHtml(tr("<p>%1</p><p><small><i>%2 %3</i></small></p><p><small><i>%4</i></small></p>").arg(
+                                    fileInfo.fileName(),
+                                    QString::number(foundGroups) + " track" + (foundGroups>1?"s":""),
+                                    QTime::fromMSecsSinceStartOfDay(duration).toString(),
+                                    lastOutputString));
+        }
+    }
+}
+
 
 //https://stackoverflow.com/questions/34036848/how-to-suppress-unicode-characters-in-qstring-or-convert-to-latin1
 QString cleanQString(QString toClean) {
@@ -195,7 +230,7 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
 
 //            connect(this, &MainWindow::propertiesLoaded, propertyEditorDialog, &APropertyEditorDialog::onPropertiesLoaded);
 
-            propertyEditorDialog->setProperties(propertyTreeView->propertyItemModel, propertyTreeView->filesMap);
+            propertyEditorDialog->setProperties(propertyTreeView->propertyItemModel, propertyTreeView->filesList);
 
 //            spinnerLabel->stop();
 
@@ -215,14 +250,14 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
             {
                 AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
 
-                QMapIterator<QString, QMap<QString, MMetaDataStruct>> exiftoolMapIterator(mediaItem->exiftoolMap);
-                while (exiftoolMapIterator.hasNext()) //for each category
+                QMapIterator<QString, QMap<QString, MMetaDataStruct>> categoryIterator(mediaItem->exiftoolCategoryProperyMap);
+                while (categoryIterator.hasNext()) //for each category
                 {
-                    exiftoolMapIterator.next();
+                    categoryIterator.next();
 
-                    foreach (MMetaDataStruct metaDataStruct, exiftoolMapIterator.value()) //for each property
+                    foreach (MMetaDataStruct metaDataStruct, categoryIterator.value()) //for each property
                     {
-                        propertyTreeView->exiftoolMap[exiftoolMapIterator.key()][metaDataStruct.propertyName][mediaItem->fileInfo.absoluteFilePath()] = metaDataStruct;
+                        propertyTreeView->exiftoolCategoryProperyFileMap[categoryIterator.key()][metaDataStruct.propertyName][mediaItem->fileInfo.absoluteFilePath()] = metaDataStruct;
                     }
                 }
             }
@@ -288,7 +323,7 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
         connect(okButton, &QPushButton::clicked, [=] (bool checked)
         {
 //            QPushButton *button = qobject_cast<QPushButton *)sender();
-            qDebug()<<"Download Media Clicked"<<checked<<urlLineEdit->text();
+//            qDebug()<<"Download Media Clicked"<<checked<<urlLineEdit->text();
 
             //            QSettings().setValue("DownloadMediaURL", text);
             //            QSettings().sync();
@@ -331,7 +366,6 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
 
             processes<<process;
             connect(process, &AGProcessAndThread::processOutput, this, &AGFolderRectItem::onProcessOutput);
-
             connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
             {
                 QStringList searchStrings;
@@ -346,25 +380,31 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
 
                 if (event == "finished")
                 {
+                    if (process->errorMessage == "")
+                    {
+                    }
+                    else
+                        QMessageBox::information(scene()->views().first(), "Error " + process->name, process->errorMessage);
+
                     if (transitionValueChangedBy != "")
                     {
                         QFileInfo fileInfo(transitionValueChangedBy);
 
                         QDir recycleDir(fileInfo.absolutePath());
                         {
-                            qDebug()<<"onItemRightClicked download media finished"<<transitionValueChangedBy<<fileInfo.absolutePath();
+//                            qDebug()<<"onItemRightClicked download media finished"<<transitionValueChangedBy<<fileInfo.absolutePath();
 
                             recycleDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
                             foreach( QFileInfo dirInfoItem, recycleDir.entryInfoList() )
                             {
-                                qDebug()<<__func__<<dirInfoItem.fileName().toUtf8()<<cleanQString(dirInfoItem.fileName())<<fileInfo.fileName()<<(cleanQString(dirInfoItem.fileName()) == fileInfo.fileName());
+//                                qDebug()<<__func__<<dirInfoItem.fileName().toUtf8()<<cleanQString(dirInfoItem.fileName())<<fileInfo.fileName()<<(cleanQString(dirInfoItem.fileName()) == fileInfo.fileName());
 
                                 if (cleanQString(dirInfoItem.fileName()) == fileInfo.fileName())
                                 {
                                     QFile file(dirInfoItem.absoluteFilePath());
                                     bool success = file.rename(fileInfo.absoluteFilePath().replace("/MSKRecycleBin", ""));
 
-                                    qDebug()<<"onItemRightClicked download media finished"<<"move from msk recycle bin"<<transitionValueChangedBy<<fileInfo<<dirInfoItem<<success;
+//                                    qDebug()<<"onItemRightClicked download media finished"<<"move from msk recycle bin"<<transitionValueChangedBy<<fileInfo<<dirInfoItem<<success;
                                 }
                             }
                         }

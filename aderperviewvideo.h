@@ -43,7 +43,7 @@ public:
     virtual ~InputVideoFile();
 
     void Dump();
-    AVFrame *GetNextFrame();
+    AVFrame *GetNextFrame(bool ignoreErrors = false);
     AVFrame *GetNextDrainFrame();
     int GetWidth() { return videoCodecContext_->width; }
     int GetHeight() { return videoCodecContext_->height; }

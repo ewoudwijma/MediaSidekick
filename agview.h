@@ -12,13 +12,6 @@
 #include <QGraphicsView>
 #include <QMediaPlayer>
 
-static const int mediaTypeIndex = 0;
-static const int folderNameIndex = 1;
-static const int fileNameIndex = 2;
-static const int itemTypeIndex = 3;
-static const int excludedInFilter = 12;
-static const int createDateIndex = 13;
-
 class AGMediaFileRectItem;
 
 typedef struct {
@@ -108,7 +101,7 @@ public slots:
     void onDeleteItem(bool changed, QString mediaType, QFileInfo fileInfo, int clipIn = -1, QString tagName = "");
 
     void onAddUndo(bool changed, QString action, QString mediaType, QGraphicsItem *item, QString property = "", QString oldValue = "", QString newValue = "");
-    void onTransitionTimeChanged(int transitionTime);
+    void onArrangeItems();
 protected:
     void keyPressEvent(QKeyEvent *event);
 private slots:
@@ -121,7 +114,7 @@ private slots:
     void onSelectionChanged();
 
 signals:
-    void fileWatch(QString folderFileName, bool on);
+    void fileWatch(QString folderFileName, bool on, bool triggerFileChanged = false);
     void showInStatusBar(QString message, int timeout);
 
 };

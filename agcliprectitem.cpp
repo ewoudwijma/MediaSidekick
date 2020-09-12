@@ -2,8 +2,6 @@
 #include "aglobal.h"
 #include "agtagtextitem.h"
 
-#include "agview.h" //for the constants
-
 #include <QDir>
 #include <QStyle>
 
@@ -35,19 +33,19 @@ AGClipRectItem::AGClipRectItem(QGraphicsItem *parent, AGMediaFileRectItem *media
     else
         setBrush(QColor(42, 130, 218, alpha)); //#2a82da blue-ish
 
-    setItemProperties("Clip", "Base", duration, QSize());
+    setData(itemTypeIndex, itemType);
+    setData(mediaTypeIndex, mediaType);
+    updateToolTip();
 
     QGraphicsRectItem *durationLine = new QGraphicsRectItem(this);
 
     durationLine->setBrush(Qt::darkGreen);
 
-//    setItemProperties(durationLine, "Clip", "SubDurationLine", folderName, fileName, duration, QSize(), clipIn, clipOut);
-
     durationLine->setData(itemTypeIndex, "SubDurationLine");
     durationLine->setData(mediaTypeIndex, "Clip");
 
-    durationLine->setData(folderNameIndex, fileInfo.absolutePath());
-    durationLine->setData(fileNameIndex, fileInfo.fileName());
+//    durationLine->setData(folderNameIndex, fileInfo.absolutePath());
+//    durationLine->setData(fileNameIndex, fileInfo.fileName());
 }
 
 AGClipRectItem::~AGClipRectItem()
@@ -73,7 +71,6 @@ void AGClipRectItem::processAction(QString action)
             clipIn = mediaItem->m_player->position();
             duration = clipOut - clipIn;
         }
-
     }
     else if (action == "actionOut")
     {

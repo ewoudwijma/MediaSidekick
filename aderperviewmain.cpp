@@ -33,10 +33,10 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
 
     auto inputVideoInfo = input.GetVideoInfo();
 
-    if (inputVideoInfo.width * 3 / 4 != inputVideoInfo.height)
+    if (qAbs(inputVideoInfo.width * 3 / 4  - inputVideoInfo.height) > 10) //tolerance of 10 pixels
     {
 //        cerr << "Source not in 4:3 aspect ratio" << endl;
-        QString message = "Source not in 4:3 aspect ratio (" + QString::number(inputVideoInfo.width) + "x" + QString::number(inputVideoInfo.height) + ")";
+        QString message = "Source not in 4:3 aspect ratio (" + QString::number(inputVideoInfo.width) + "x" + QString::number(inputVideoInfo.height) + "). Remux to Mp3/yuv420/4:3 first.";
         emit processLog("error", message);
         return message;
     }
@@ -46,7 +46,7 @@ QString ADerperView::Go(const string inputFilename, const string outputFilename,
     )
     {
 //        cerr << "Source not in compatible pixel format" << endl;
-        QString message = "Source not in compatible pixel format (AV_PIX_FMT_YUV420P or AV_PIX_FMT_YUVJ420P) (" + QString(inputVideoInfo.pixelFormat) + "). Remux to Mp3/yuv420 first.";
+        QString message = "Source not in compatible pixel format (AV_PIX_FMT_YUV420P or AV_PIX_FMT_YUVJ420P) (" + QString(inputVideoInfo.pixelFormat) + "). Remux to Mp3/yuv420/4:3 first.";
         emit processLog("error", message);
         return message;
     }

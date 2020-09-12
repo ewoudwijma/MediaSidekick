@@ -32,7 +32,6 @@ public:
 
 private slots:
     void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);
-    void on_exportVideoAudioSlider_valueChanged(int value);
 
     void on_exportSizeComboBox_currentTextChanged(const QString &arg1);
 
@@ -80,10 +79,11 @@ private:
     void addPremiereClipitem(AGClipRectItem *clipItem, QString clipId, QFileInfo fileInfo, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr);
     void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
     void addPremiereTrack(QString mediaType, MTimelineGroupRectItem *timelineItem, QMap<QString, FileStruct> filesMap);
-    void encodeVideoClipsTrimToBeRemoved();
+
 signals:
     void processOutput(QTime time, QTime totalTime, QString event, QString outputString);
-    void transitionTimeChanged(int transitionTime);
+    void arrangeItems();
+    void fileWatch(QString folderFileName, bool on, bool triggerFileChanged = false);
 };
 
 #endif // MEXPORTDIALOG_H

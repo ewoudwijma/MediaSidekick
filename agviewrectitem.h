@@ -38,13 +38,14 @@ public:
     int duration;
     void updateToolTip();
 
-    qreal mediaHeight = 300 * 9.0 / 16.0;
+    qreal mediaDefaultHeight = 300 * 9.0 / 16.0;
 
     QList<AGProcessAndThread *> processes;
 
     QGraphicsTextItem *subLogItem = nullptr;
 
-    QGraphicsRectItem *progressRectItem = nullptr;
+//    QGraphicsRectItem *progressRectItem = nullptr;
+    QGraphicsProxyWidget *progressSliderProxy = nullptr;
 
     void onItemRightClicked(QPoint pos);
 
@@ -53,10 +54,14 @@ public:
     bool containsImage;
 
     void processAction(QString action);
+    void newProgressItem();
+    void newSubLogItem();
+
+    virtual void setTextItem(QTime time, QTime totalTime);
+    QString lastOutputString;
+
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
-
-    void setItemProperties(QString mediaType, QString itemType, int duration, QSize mediaSize);
 
     QMenu *fileContextMenu = nullptr;
 

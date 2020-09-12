@@ -19,6 +19,8 @@ class AGProcessAndThread: public QObject
     QWinTaskbarButton *taskbarButton;
 #endif
 
+    int timeOffsetMsec = 0;
+
 public:
     AGProcessAndThread(QObject *parent = nullptr);
     ~AGProcessAndThread();
@@ -28,7 +30,7 @@ public:
 
     QStringList log;
 
-    void command(QString name, QString commandString);
+    void command(QString name, QString commandString, int timeOffsetMsec = 0);
     void command(QString name, std::function<void ()> commandFunction);
 
     QString name;
@@ -39,6 +41,8 @@ public:
     bool processStopped = false;
 
     QTime totalTime;
+
+    QString errorMessage;
 
 public slots:
     void addProcessLog(QString event, QString outputString);

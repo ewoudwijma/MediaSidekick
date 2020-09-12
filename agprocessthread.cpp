@@ -55,8 +55,11 @@ void AGProcessAndThread::kill()
     }
 }
 
-void AGProcessAndThread::command(QString name, QString commandString)
+void AGProcessAndThread::command(QString name, QString commandString, int timeOffsetMsec)
 {
+    this->name = name;
+    this->timeOffsetMsec = timeOffsetMsec;
+
     process = new QProcess(this);
     process->setProcessChannelMode(QProcess::MergedChannels);
 
@@ -74,24 +77,21 @@ void AGProcessAndThread::command(QString name, QString commandString)
 
     connect (process, &QProcess::readyReadStandardError, [=]()
     {
-        QString outputString = process->readAllStandardError();
-        addProcessLog("output", outputString);
+        addProcessLog("output", process->readAllStandardError()); //no error...
     });
 
     connect(process, &QProcess::errorOccurred, [=](QProcess::ProcessError error)
     {
-        QString outputString = "Error " + QString::number(error) + ": " + process->errorString();
-        addProcessLog("error", outputString);
+        errorMessage = "Error " + QString::number(error) + ": " + process->errorString();
+        addProcessLog("error", errorMessage);
     });
 
     connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), [=](int exitCode, QProcess::ExitStatus exitStatus)
     {
-        QString outputString = "Finished " + QString::number(exitCode) + ": " + exitStatus;
-        addProcessLog("finished", outputString);
+        addProcessLog("finished", "Finished " + QString::number(exitCode) + ": " + exitStatus + " " + QTime::currentTime().toString());
     });
 
 
-    this->name = name;
     log.clear();
 
 //    log << commandString;
@@ -104,6 +104,7 @@ void AGProcessAndThread::command(QString name, QString commandString)
     this->commandString = execPath + commandString;
 //    process->setProgram(execPath + commandString); //does not work in MacOS
 //    process->start(execPath + commandString);
+    addProcessLog("started", "started " + QTime::currentTime().toString());
 }
 
 void AGProcessAndThread::command(QString name, std::function<void ()> commandFunction)
@@ -115,14 +116,15 @@ void AGProcessAndThread::command(QString name, std::function<void ()> commandFun
 
     connect(jobThread, &QThread::started, [=]()
     {
-        QString outputString = "started";
-        addProcessLog("started", outputString);
+        emit addProcessLog("started", "started " + QTime::currentTime().toString());
     });
 
     connect(jobThread, &QThread::finished, [=]()
     {
-        QString outputString = "finished";
-        addProcessLog("finished", outputString);
+        QTimer::singleShot(0, this, [=]()->void //timer needed to process other addProcessLogs first
+        {
+            emit addProcessLog("finished", "finished " + QTime::currentTime().toString());
+         });
     });
 
     this->name = name;
@@ -154,6 +156,7 @@ void AGProcessAndThread::addProcessLog(QString event, QString outputString)
 
     timeIndex = outputString.indexOf("% of"); //youtube-dl logging
     //[download]   0.0% of 17.66MiB at 503.03KiB/s ETA 00:35
+
     if (timeIndex >= 0)
     {
         QString timeString = outputString.mid(timeIndex - 5, 5);
@@ -186,7 +189,13 @@ void AGProcessAndThread::addProcessLog(QString event, QString outputString)
     }
 #endif
 
-    emit processOutput(time, totalTime, event, outputString);
+    if (event == "error")
+    {
+//        qDebug()<<__func__<<outputString;
+        errorMessage = outputString;
+    }
+
+    emit processOutput(time.addMSecs(timeOffsetMsec), totalTime, event, outputString);
 }
 
 //void AGProcessAndThread::start(QString name, const QString &commandString)

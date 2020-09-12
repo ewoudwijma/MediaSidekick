@@ -6,8 +6,6 @@
 #include <QDebug>
 #include <QGraphicsSceneMouseEvent>
 
-#include "agview.h"
-
 AGTagTextItem::AGTagTextItem(QGraphicsItem *parent, QFileInfo fileInfo, QString tagName) :
     QGraphicsTextItem(parent)
 {
@@ -23,12 +21,10 @@ AGTagTextItem::AGTagTextItem(QGraphicsItem *parent, QFileInfo fileInfo, QString 
 
     this->clipItem->tags << this;
 
-    //    setItemProperties(tagItem, mediaType, "Base", folderName, fileName, duration, QSize(), clipIn, clipOut, tagName);
-
     setData(itemTypeIndex, itemType);
     setData(mediaTypeIndex, mediaType);
-    setData(folderNameIndex, fileInfo.absolutePath());
-    setData(fileNameIndex, fileInfo.fileName());
+//    setData(folderNameIndex, fileInfo.absolutePath());
+//    setData(fileNameIndex, fileInfo.fileName());
 
 //    qDebug()<<"AGTagTextItem::AGTagTextItem"<<fileInfo.fileName()<<tagName;
 

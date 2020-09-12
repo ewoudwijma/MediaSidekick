@@ -12,6 +12,8 @@
 
 #include <qmath.h>
 
+#include <QGraphicsProxyWidget>
+
 MExportDialog::MExportDialog(QWidget *parent, AGViewRectItem *rootItem) :
     QDialog(parent),
     ui(new Ui::MExportDialog)
@@ -39,13 +41,6 @@ void MExportDialog::changeUIProperties()
 
     ui->transitionTimeSpinBox->setFixedWidth(120);
 
-    ui->exportVideoAudioSlider->setMaximum(100);
-    ui->exportVideoAudioSlider->setSingleStep(10);
-//    ui->exportVideoAudioSlider->setValue(20);
-    ui->exportVideoAudioSlider->setOrientation(Qt::Horizontal);
-    ui->exportVideoAudioSlider->setTickPosition(QSlider::TicksBelow);
-    ui->exportVideoAudioSlider->setTickInterval(10);
-
     ui->watermarkLabel->setText(QSettings().value("watermarkFileName").toString());
     watermarkFileNameChanged(ui->watermarkLabel->text());
 }
@@ -68,7 +63,8 @@ void MExportDialog::loadSettings()
 {
     timelineGroupList.clear();
 
-    bool foundClips = false;
+    int foundClips = 0;
+    int foundClipDuration = 0;
 
     QString savedClipsSizeComboBox = QSettings().value("clipsSizeComboBox").toString();
     QString savedClipsFramerateComboBox = QSettings().value("frameRate").toString();
@@ -78,42 +74,48 @@ void MExportDialog::loadSettings()
         if (item->data(mediaTypeIndex).toString() == "Folder" && item->data(itemTypeIndex).toString() == "Base")
         {
             AGFolderRectItem *folderItem = (AGFolderRectItem *)item;
-//                qDebug()<<"Folder"<<folderItem->fileInfo.fileName();
+
+//            qDebug()<<"Folder"<<folderItem->fileInfo.fileName();
 
             foreach (QGraphicsItem *item, rootItem->scene()->items(Qt::AscendingOrder)) //fileGroups
             {
+                foundClipDuration = 0;
                 if (item->parentItem() == folderItem && item->data(mediaTypeIndex).toString() == "FileGroup" && item->data(itemTypeIndex).toString() == "Base")
                 {
                     MGroupRectItem *fileGroup = (MGroupRectItem *)item;
-//                    AGViewRectItem *timelineItem = fileGroup->timelineGroupItem;
+//                    qDebug()<<"Filegroup"<<fileGroup->fileInfo.fileName();
 
                     //check if descendent of rootitem
 
                     fileGroup->timelineGroupItem->filteredClips.clear();
 
-                    if (fileGroup->fileInfo.fileName() != "Parking" && isChild(rootItem, fileGroup))
+                    if (fileGroup->fileInfo.fileName() != "Parking")
                     {
-//                            qDebug()<<"  Group"<<fileGroup->fileInfo.fileName();
+//                        qDebug()<<"  Group"<<fileGroup->fileInfo.fileName();
 
-                        foreach (QGraphicsItem *item, fileGroup->timelineGroupItem->clips)
+                        foreach (AGClipRectItem *clipItem, fileGroup->timelineGroupItem->clips)
                         {
-                            AGClipRectItem *clipItem = (AGClipRectItem *)item;
+                            bool cntnue;
+                            if (strcmp(rootItem->metaObject()->className() , "AGMediaFileRectItem") == 0)
+                                cntnue = clipItem->mediaItem == rootItem;
+                            else
+                                cntnue = isChild(rootItem, fileGroup);
 
-
-                            if (!clipItem->data(excludedInFilter).toBool())
+                            if (cntnue && !clipItem->data(excludedInFilter).toBool())
                             {
-//                                qDebug()<<"add to filteredClips"<<clipItem->fileInfo.fileName()<<clipItem->data(excludedInFilter).toBool()<<clipItem->clipIn;
+//                                qDebug()<<"add to filteredClips"<<fileGroup->fileInfo.fileName()<<clipItem->fileInfo.fileName()<<clipItem->data(excludedInFilter).toBool()<<clipItem->clipIn;
                                 fileGroup->timelineGroupItem->filteredClips << clipItem;
 
-                                foundClips = true;
+                                foundClips++;
+                                foundClipDuration += clipItem->duration;
 
                                 if (clipItem->mediaItem->groupItem->fileInfo.fileName() == "Video")
                                 {
-                                    QString clipsSize = clipItem->mediaItem->exiftoolValueMap["ImageWidth"].value + " x " + clipItem->mediaItem->exiftoolValueMap["ImageHeight"].value;
+                                    QString clipsSize = clipItem->mediaItem->exiftoolPropertyMap["ImageWidth"].value + " x " + clipItem->mediaItem->exiftoolPropertyMap["ImageHeight"].value;
                                     if (clipsSize != " x " && ui->clipsSizeComboBox->findText(clipsSize) == -1)
                                         ui->clipsSizeComboBox->addItem(clipsSize);
 
-                                    int clipsFrameRate = qRound(clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value.toDouble());
+                                    int clipsFrameRate = qRound(clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value.toDouble());
                                     if (clipsFrameRate != 0 && ui->clipsFramerateComboBox->findText(QString::number(clipsFrameRate)) == -1)
                                         ui->clipsFramerateComboBox->addItem(QString::number(clipsFrameRate));
                                 }
@@ -129,6 +131,41 @@ void MExportDialog::loadSettings()
                             });
 
                             timelineGroupList << fileGroup->timelineGroupItem;
+
+                            QGroupBox *groupBox = new QGroupBox(ui->timelinesGroupBox);
+                            groupBox->setTitle(fileGroup->fileInfo.fileName());
+                            ui->timelinesGroupBox->layout()->addWidget(groupBox);
+
+                            QFormLayout *groupBoxLayout = new QFormLayout(groupBox);
+                            groupBox->setLayout(groupBoxLayout);
+
+                            QSlider *audioLevelSlider = new QSlider(groupBox);
+                            audioLevelSlider->setMaximum(100);
+                            audioLevelSlider->setSingleStep(10);
+                            audioLevelSlider->setOrientation(Qt::Horizontal);
+                            audioLevelSlider->setTickPosition(QSlider::TicksBelow);
+                            audioLevelSlider->setTickInterval(10);
+                            if (QSettings().value(fileGroup->fileInfo.fileName() + "AudioLevelSlider").toInt() != audioLevelSlider->value())
+                                audioLevelSlider->setValue(QSettings().value(fileGroup->fileInfo.fileName() + "AudioLevelSlider").toInt());
+
+                            connect(audioLevelSlider, &QSlider::valueChanged, [=] (int value)
+                            {
+                                if (value != QSettings().value(fileGroup->fileInfo.fileName() + "AudioLevelSlider"))
+                                {
+                                    QSettings().setValue(fileGroup->fileInfo.fileName() + "AudioLevelSlider", value);
+                                    QSettings().sync();
+                                }
+                                emit arrangeItems();
+                            });
+
+                            foundClipDuration -= (foundClips - 1) * AGlobal().frames_to_msec(QSettings().value("transitionTime").toInt());
+
+                            groupBoxLayout->addRow("# clips", new QLabel(QString::number(fileGroup->timelineGroupItem->filteredClips.count())));
+                            groupBoxLayout->addRow("Duration", new QLabel(QTime::fromMSecsSinceStartOfDay(foundClipDuration).toString()));
+                            groupBoxLayout->addRow("Audio level", audioLevelSlider);
+                            if (fileGroup->fileInfo.fileName() == "Video")
+                            {
+                            }
                         }
                     }
                 }
@@ -136,29 +173,34 @@ void MExportDialog::loadSettings()
         }
     }
 
-    if (!foundClips)
+    if (foundClips == 0)
     {
         QMessageBox::information(this, "Export", tr("No clips found to export"));
 
-        QTimer::singleShot(0, this, [=]()->void //first constructor needs to finish
-        {
-            qDebug()<<"MExportDialog::loadSettings close"<<this->close();
-        });
+//        QTimer::singleShot(0, this, [=]()->void //first constructor needs to finish
+//        {
+//            qDebug()<<"MExportDialog::loadSettings close"<<this->close();
+//        });
 
         return;
     }
+
+    setWindowTitle(windowTitle() + " " + rootItem->fileInfo.fileName());
+
+    ui->clipsSizeLabel->setText(ui->clipsSizeLabel->text() + " (" + QString::number(ui->clipsSizeComboBox->count()) + ")");
+    ui->clipsFramerateLabel->setText(ui->clipsFramerateLabel->text() + " (" + QString::number(ui->clipsFramerateComboBox->count()) + ")");
 
     if (ui->clipsSizeComboBox->count() == 0 || ui->clipsFramerateComboBox->count() == 0)
     {
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Clips", tr("No clip sizes or framerates found. Cancel export?"), QMessageBox::Yes|QMessageBox::No);
-        qDebug()<<"MExportDialog::loadSettings"<<reply;
+//        qDebug()<<"MExportDialog::loadSettings"<<reply;
         if (reply == QMessageBox::Yes)
         {
-            QTimer::singleShot(0, this, [=]()->void //first constructor needs to finish
-            {
-                qDebug()<<"MExportDialog::loadSettings close"<<this->close();
-            });
+//            QTimer::singleShot(0, this, [=]()->void //first constructor needs to finish
+//            {
+//                qDebug()<<"MExportDialog::loadSettings close"<<this->close();
+//            });
 
             return;
         }
@@ -203,22 +245,16 @@ void MExportDialog::loadSettings()
             ui->exportFramerateComboBox->setCurrentText(QSettings().value("exportFrameRate").toString());
     }
 
-    if (QSettings().value("exportVideoAudioSlider") == "")
-        QSettings().setValue("exportVideoAudioSlider", 20); //default
-
-    if (QSettings().value("exportVideoAudioSlider").toInt() != ui->exportVideoAudioSlider->value())
-        ui->exportVideoAudioSlider->setValue(QSettings().value("exportVideoAudioSlider").toInt());
-
     ui->exportTableTextBrowser->setMinimumHeight(300);
     ui->exportTableTextBrowser->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::LinksAccessibleByMouse);
 
     QString text = "<h1>Features</h1><p><i>Features per target</i></p>"
             "<table border=1>\
             <tr><th></th><th>Lossless<sup><a href=\"#fn1\" id=\"ref1\">1</a></sup></th><th>Encode</th><th>Shotcut</th><th>Premiere</th></tr>\
-            <tr><td><b>Video volume</b></td><td align=\"center\">✔</td><td align=\"center\">✔</td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
+            <tr><td><b>Track audio levels</b></td><td align=\"center\">✔</td><td align=\"center\">✔</td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
             <tr><td><b>Transitions</b></td><td align=\"center\">-<sup><a href=\"#fn2\" id=\"ref2\">2</a></sup></td><td align=\"center\">✔</td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
             <tr><td><b>Watermark</b></td><td align=\"center\">-</td><td align=\"center\">✔</td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
-            <tr><td><b>Audio fade in/out</b></td><td align=\"center\">-</td><td align=\"center\">?</td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
+            <tr><td><b>Audio fade in/out</b></td><td align=\"center\">-</td><td align=\"center\">-</td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
             <tr><td><b>Speed</b></td><td align=\"center\">-</td><td align=\"center\">WIP<sup><a href=\"#fn3\" id=\"ref3\">3</a></sup></td><td align=\"center\">✔</td><td align=\"center\">✔</td></tr>\
             </table>\
             <ol>\
@@ -281,12 +317,12 @@ void MExportDialog::allTooltips()
                                                  "<li>Source: if source selected than the selected framerate of the clips is used</li>"
                                                  "</ul>"));
 
-    ui->exportVideoAudioSlider->setToolTip(tr("<p><b>Video Audio volume</b></p>"
-                                              "<p><i>Sets the volume of the original video</i></p>"
-                                              "<ul>"
-                                              "<li>Remark: This only applies to the videos. Audio files are always played at 100%</li>"
-                                              "<li>Remark: Volume adjustments are also effective in Media Sidekick when playing video files</li>"
-                                              "</ul>"));
+//    ui->exportVideoAudioSlider->setToolTip(tr("<p><b>Video Audio volume</b></p>"
+//                                              "<p><i>Sets the volume of the original video</i></p>"
+//                                              "<ul>"
+//                                              "<li>Remark: This only applies to the videos. Audio files are always played at 100%</li>"
+//                                              "<li>Remark: Volume adjustments are also effective in Media Sidekick when playing video files</li>"
+//                                              "</ul>"));
 
 
     ui->watermarkLabel->setToolTip(tr("<p><b>Watermark</b></p>"
@@ -367,14 +403,14 @@ void MExportDialog::losslessVideoAndAudio()
 
 //                qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
 
-                bool containsVideo = clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value != "";
-                bool containsAudio = clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
-                if (clipItem->mediaItem->exiftoolValueMap["MIMEType"].value.contains("video"))
+                bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
+                bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
+                if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
                 {
                     timelineItem->containsVideo = timelineItem->containsVideo || containsVideo;
                     timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
                 }
-                else if (clipItem->mediaItem->exiftoolValueMap["MIMEType"].value.contains("audio"))
+                else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
                 {
                     timelineItem->containsVideo = false;
                     timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
@@ -395,7 +431,8 @@ void MExportDialog::losslessVideoAndAudio()
 #endif
             QString command = "ffmpeg -f concat -safe 0 -i \"" + sourceFolderFileName + "\" -c copy -y \"" + targetFolderFileName + "\"";
 
-            if (timelineItem->containsAudio && ui->exportVideoAudioSlider->value() == 0) //remove audio
+            QSlider *audioLevelSlider = (QSlider *)timelineItem->groupItem->audioLevelSliderProxy->widget();
+            if (timelineItem->containsAudio && audioLevelSlider->value() == 0) //remove audio
                 command.replace("-c copy -y", " -an -c copy -y");
 
 //            if (frameRate != "")
@@ -409,16 +446,21 @@ void MExportDialog::losslessVideoAndAudio()
             {
                 if (event == "finished") //go mux
                 {
-                    //check if all processes finished
-                    int nrOfActiveJobs = 0;
-                    foreach (AGProcessAndThread *process, *processes)
+                    if (process->errorMessage == "")
                     {
-                        if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
-                            nrOfActiveJobs++;
-                    }
+                        //check if all processes finished
+                        int nrOfActiveJobs = 0;
+                        foreach (AGProcessAndThread *process, *processes)
+                        {
+                            if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
+                                nrOfActiveJobs++;
+                        }
 
-                    if (nrOfActiveJobs == 0)
-                        muxVideoAndAudio();
+                        if (nrOfActiveJobs == 0)
+                            muxVideoAndAudio();
+                    }
+                    else
+                        QMessageBox::information(this, "Error " + process->name, process->errorMessage);
                 }
             });
             process->start();
@@ -473,7 +515,7 @@ void MExportDialog::encodeVideoClips()
 
 //            AGMediaFileRectItem *mediaItem = clipItem->mediaItem;
 
-            if (qRound(clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value.toDouble()) != exportFramerate)
+            if (qRound(clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value.toDouble()) != exportFramerate)
                  differentFrameRateFound = true;
 
             QString trimOffsetFFMpeg = "";
@@ -485,14 +527,14 @@ void MExportDialog::encodeVideoClips()
             int fileReference = ffmpegFiles.count() - 1;
 
 //            qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
-            bool containsVideo = clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value != "";
-            bool containsAudio = clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
-            if (clipItem->mediaItem->exiftoolValueMap["MIMEType"].value.contains("video"))
+            bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
+            bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
+            if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
             {
                 timelineItem->containsVideo = timelineItem->containsVideo || containsVideo;
                 timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
             }
-            else if (clipItem->mediaItem->exiftoolValueMap["MIMEType"].value.contains("audio"))
+            else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
             {
                 timelineItem->containsVideo = false;
                 timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
@@ -503,7 +545,9 @@ void MExportDialog::encodeVideoClips()
 
             if (timelineItem->containsVideo)
                 tracks << "v";
-            if (timelineItem->containsAudio && (timelineItem->groupItem->fileInfo.completeBaseName() != "Video" || ui->exportVideoAudioSlider->value() > 0))
+
+            QSlider *audioLevelSlider = (QSlider *)timelineItem->groupItem->audioLevelSliderProxy->widget();
+            if (timelineItem->containsAudio && audioLevelSlider->value() > 0)
                 tracks << "a";
 
             int transitionTimeMSec = AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value());
@@ -525,8 +569,8 @@ void MExportDialog::encodeVideoClips()
                     filterClip = tr("[%1:a]").arg(QString::number(fileReference));
 
                     filterClip += tr("atrim=%2:%3[aa%1];[aa%1]").arg(QString::number(fileReference), QString::number(clipItem->clipIn / 1000.0 - clipInRounded) , QString::number(clipItem->clipOut / 1000.0 - clipInRounded)); // in seconds
-                    if (timelineItem->groupItem->fileInfo.fileName() == "Video" && ui->exportVideoAudioSlider->value() < 100)
-                        filterClip += tr("volume=%1,").arg(QString::number(ui->exportVideoAudioSlider->value() / 100.0));
+//                    if (audioLevelSlider->value() < 100) //done in mux
+//                        filterClip += tr("volume=%1,").arg(QString::number(audioLevelSlider->value() / 100.0));
                     filterClip += tr("aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,asetpts=(PTS-STARTPTS)");
                 }
 
@@ -553,7 +597,7 @@ void MExportDialog::encodeVideoClips()
                         if (item != timelineItem->filteredClips.last())
                             alphaOut = "1";
 
-                        qreal frameRateMedia = clipItem->mediaItem->ffmpegMetaValueMap["Framerate"].value.toDouble();
+                        qreal frameRateMedia = clipItem->mediaItem->ffmpegPropertyMap["Framerate"].value.toDouble();
                         int transitionTimeInMediaFrames = transitionTimeMSec * frameRateMedia / 1000.0;
 
                         //in frames
@@ -578,8 +622,8 @@ void MExportDialog::encodeVideoClips()
                 {
                     //maintain aspect ratio of original media: 638 * 480 to export:2704 * 1520
 
-                    int mediaWidth = clipItem->mediaItem->exiftoolValueMap["ImageWidth"].value.toInt();
-                    int mediaHeight = clipItem->mediaItem->exiftoolValueMap["ImageHeight"].value.toInt();
+                    int mediaWidth = clipItem->mediaItem->exiftoolPropertyMap["ImageWidth"].value.toInt();
+                    int mediaHeight = clipItem->mediaItem->exiftoolPropertyMap["ImageHeight"].value.toInt();
 
                     if (mediaWidth != exportWidth || mediaHeight != exportHeight)
                     {
@@ -598,7 +642,7 @@ void MExportDialog::encodeVideoClips()
 //                    filterClip += ",scale=w=" + QString::number(exportWidth) + ":h=-1";// + QString::number(height);
                     }
 
-                    if (qRound(clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value.toDouble()) != exportFramerate)
+                    if (qRound(clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value.toDouble()) != exportFramerate)
                     {
 //                        qDebug()<<__func__<<"fps"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value.toDouble()<<exportFramerate<<QString("50.0").toInt();
                         filterClip += ",fps=" + QString::number(exportFramerate);
@@ -673,7 +717,9 @@ void MExportDialog::encodeVideoClips()
             else
                 ffmpegMappings << tr("-map [%1]").arg(lastV);
         }
-        if (timelineItem->containsAudio && (timelineItem->groupItem->fileInfo.completeBaseName() != "Video" || ui->exportVideoAudioSlider->value() > 0))
+
+        QSlider *audioLevelSlider = (QSlider *)timelineItem->groupItem->audioLevelSliderProxy->widget();
+        if (timelineItem->containsAudio && audioLevelSlider->value() > 0)
         {
             ffmpegMappings << tr("-map [%1]").arg(lastA);
         }
@@ -758,107 +804,26 @@ void MExportDialog::encodeVideoClips()
             }
             if (event == "finished") //go mux
             {
-                //check if all processes finished
-                int nrOfActiveJobs = 0;
-                foreach (AGProcessAndThread *process, *processes)
+                if (process->errorMessage != "")
+                    QMessageBox::information(this, "Error " + process->name, process->errorMessage);
+                else
                 {
-                    if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
-                        nrOfActiveJobs++;
-                }
+                    //check if all processes finished
+                    int nrOfActiveJobs = 0;
+                    foreach (AGProcessAndThread *process, *processes)
+                    {
+                        if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
+                            nrOfActiveJobs++;
+                    }
 
-                if (nrOfActiveJobs == 0)
-                    muxVideoAndAudio();
+                    if (nrOfActiveJobs == 0)
+                        muxVideoAndAudio();
+                }
             }
         });
         process->start();
 
     } //for each timeline
-}
-
-void MExportDialog::encodeVideoClipsTrimToBeRemoved()
-{
-    QString recycleFolderName = QSettings().value("selectedFolderName").toString() + "MSKRecycleBin/";
-    QDir recycleDir(recycleFolderName);
-    if (!recycleDir.exists())
-        recycleDir.mkpath(".");
-    else
-    {
-        recycleDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
-        foreach( QString dirItem, recycleDir.entryList() )
-        {
-            if (dirItem.contains("EncodeClip"))
-                recycleDir.remove( dirItem );
-        }
-    }
-
-    foreach (MTimelineGroupRectItem *timelineItem, timelineGroupList)
-    {
-//        MGroupRectItem *groupItem = (MGroupRectItem *)timelineItem->parentItem();
-
-        int clipCounter = 0;
-        foreach (QGraphicsItem *item, timelineItem->filteredClips)
-        {
-            AGClipRectItem *clipItem = (AGClipRectItem *)item;
-//            qDebug()<<"  Clip"<<clipItem->itemToString();
-            QTime inTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipIn);
-            QTime outTime = QTime::fromMSecsSinceStartOfDay(clipItem->clipOut);
-
-            if (timelineItem->groupItem->fileInfo.fileName() == "Video")
-            {
-//                QStandardItem *childItem = nullptr;
-                QString recycleFileName = "EncodeClip" + QString::number(clipCounter) + "." + clipItem->fileInfo.suffix();
-                QFile file (recycleFolderName + recycleFileName);
-                if (!file.exists())
-                {
-                    //    qDebug()<<"AExport::onTrimC"<<folderName<<fileNameSource<<fileNameTarget<<inTime<<outTime<<progressPercentage;
-                    int duration = outTime.msecsSinceStartOfDay() - inTime.msecsSinceStartOfDay();
-
-                    QString sourceFolderFileName = clipItem->fileInfo.absoluteFilePath();
-                    QString targetFolderFileName = recycleFolderName + recycleFileName;
-
-                #ifdef Q_OS_WIN
-                    sourceFolderFileName = sourceFolderFileName.replace("/", "\\");
-                    targetFolderFileName = targetFolderFileName.replace("/", "\\");
-                #endif
-
-                    AGProcessAndThread *process = new AGProcessAndThread(this);
-                    process->command("Trim " + recycleFileName, "ffmpeg -i \"" + sourceFolderFileName + "\" -ss " + inTime.toString("HH:mm:ss.zzz") + " -t " + QTime::fromMSecsSinceStartOfDay(duration).toString("hh:mm:ss.zzz") + " -vcodec copy -acodec copy -y \"" + targetFolderFileName + "\""); // -map_metadata 0);
-
-                    *processes<<process;
-                    connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
-                    {
-                        if (event == "started")
-                        {
-                        }
-                        if (event == "finished") //go encodeVideoClipsEncode
-                        {
-                            //check if all processes finished
-                            int nrOfActiveJobs = 0;
-                            foreach (AGProcessAndThread *process, *processes)
-                            {
-                                if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
-                                    if (process->name.contains("Trim"))
-                                        nrOfActiveJobs++;
-                            }
-
-                            if (nrOfActiveJobs == 0)
-                            {
-                                qDebug()<<__func__<<"Done trimming";
-                                encodeVideoClips();
-                            }
-                        }
-                    });
-
-
-                    process->start();
-
-//                    emit trimC(recycleFolderName, recycleFileName, inTime, outTime.addMSecs(AGlobal().frames_to_msec(1))); //one frame extra in case some more frames needed
-                }
-
-            }
-            clipCounter++;
-        } //for each clipitem
-    }
 }
 
 void MExportDialog::muxVideoAndAudio()
@@ -869,6 +834,7 @@ void MExportDialog::muxVideoAndAudio()
     QStringList ffmpegMappings;
 
     QStringList audioStreamList;
+    QStringList audioStreamListAliases;
     QStringList videoStreamList;
     foreach (MTimelineGroupRectItem *timelineItem, timelineGroupList)
     {
@@ -895,21 +861,26 @@ void MExportDialog::muxVideoAndAudio()
         }
         if (timelineItem->containsAudio)
         {
-            if (timelineItem->groupItem->fileInfo.completeBaseName() == "Video")
+//            if (timelineItem->groupItem->fileInfo.completeBaseName() == "Video")
             {
-                if (ui->exportVideoAudioSlider->value() == 100)
-                    audioStreamList << "[" + QString::number(fileReference) + "]";
+                QSlider *audioLevelSlider = (QSlider *)timelineItem->groupItem->audioLevelSliderProxy->widget();
+                if (audioLevelSlider->value() == 100)
+                    audioStreamListAliases << "[" + QString::number(fileReference) + "]";
     //                                                command += " -filter_complex \"[0][1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
-                else if (ui->exportVideoAudioSlider->value() > 0)
-                    audioStreamList << "[" + QString::number(fileReference) + "]" + "volume=" + QString::number(ui->exportVideoAudioSlider->value() / 100.0) + "[a" + QString::number(fileReference) + "];[a" + QString::number(fileReference) + "]";
+                else if (audioLevelSlider->value() > 0)
+                {
+                    audioStreamList << "[" + QString::number(fileReference) + "]" + "volume=" + QString::number(audioLevelSlider->value() / 100.0) + "[a" + QString::number(fileReference) + "]";
+                    audioStreamListAliases << "[a" + QString::number(fileReference) + "]";
+                }
+
     //                                                command += " -filter_complex \"[1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
 
     //                                            ffmpegMappings << "-map " + QString::number(fileReference) + ":v";
             }
-            else
-            {
-                audioStreamList << "[" + QString::number(fileReference) + "]";
-            }
+//            else
+//            {
+//                audioStreamList << "[" + QString::number(fileReference) + "]";
+//            }
 
         }
         if (timelineItem->containsImage) //tbd
@@ -926,10 +897,8 @@ void MExportDialog::muxVideoAndAudio()
 
     if (audioStreamList.count() > 0)
     {
-        {
-            ffmpegCombines << audioStreamList.join("") + "amix=inputs=" + QString::number(audioStreamList.count()) + "[audio]";
-            ffmpegMappings << "-map \"[audio]\"";
-        }
+        ffmpegCombines << audioStreamList.join(";") + ";" + audioStreamListAliases.join("") + "amix=inputs=" + QString::number(audioStreamList.count()) + "[audio]";
+        ffmpegMappings << "-map \"[audio]\"";
     }
 
     ffmpegMappings << " -c:v copy";
@@ -971,12 +940,24 @@ void MExportDialog::muxVideoAndAudio()
     connect(process, &AGProcessAndThread::processOutput, this, &MExportDialog::onProcessOutput);
     connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
     {
+
+        emit fileWatch(QSettings().value("selectedFolderName").toString() +  fileNameWithoutExtension + ".mp4", false);
+
         if (event == "started")
         {
             process->addProcessLog("output", "Files\n" + ffmpegFiles.join("\n"));
             process->addProcessLog("output", "Clips\n" + ffmpegClips.join("\n"));
             process->addProcessLog("output", "Combines\n" + ffmpegCombines.join("\n"));
             process->addProcessLog("output", "Mappings\n" + ffmpegMappings.join("\n"));
+        }
+        if (event == "finished")
+        {
+            emit fileWatch(QSettings().value("selectedFolderName").toString() +  fileNameWithoutExtension + ".mp4", true, true);
+            if (process->errorMessage == "")
+            {
+            }
+            else
+                QMessageBox::information(this, "Error " + process->name, process->errorMessage);
         }
     });
     process->start();
@@ -1032,7 +1013,7 @@ void MExportDialog::addPremiereTrack(QString mediaType, MTimelineGroupRectItem *
 
                 //                qDebug()<<"props"<<fileName<<mediaType<<clipFrameRate<<clipAudioChannels<<*audioChannelsPointer;
 
-                int frameRate = qRound(mediaItem->exiftoolValueMap["VideoFrameRate"].value.toDouble());
+                int frameRate = qRound(mediaItem->exiftoolPropertyMap["VideoFrameRate"].value.toDouble());
                 if (frameRate == 0) //for audio
                     frameRate = exportFramerate;
 
@@ -1146,8 +1127,8 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
         s("     <clipitem>");
     else //audio
     {
-        if (clipItem->mediaItem->exiftoolValueMap["AudioChannels"].value != "")
-            clipAudioChannels = clipItem->mediaItem->exiftoolValueMap["AudioChannels"].value;
+        if (clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != "")
+            clipAudioChannels = clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value;
 //        else
 //        {
 //            if (mediaType == "audio")
@@ -1192,6 +1173,10 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
     else
         AVType = "V";
 
+    QSlider *audioLevelSlider = nullptr;
+    if (clipItem != nullptr)
+        audioLevelSlider = (QSlider *)clipItem->mediaItem->groupItem->audioLevelSliderProxy->widget();
+
     if (!(*filesMap)[fileInfo.absoluteFilePath()].definitionGenerated)
     {
         s("      <file id=\"file-%1%2\">", AVType, QString::number((*filesMap)[fileInfo.absoluteFilePath()].counter)); //define file
@@ -1228,15 +1213,18 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
             s("        </video>");
         }
 
-        if ((AVType == "A" || (clipAudioChannels != "0" && ui->exportVideoAudioSlider->value() > 0)) && AVType != "W")
+        if ((AVType == "A" || clipAudioChannels != "0") && AVType != "W")
         {
-            s("        <audio>");
-//                                s("         <samplecharacteristics>");
-//                                s("          <depth>16</depth>");
-////                                s("          <samplerate>44100</samplerate>");
-//                                s("         </samplecharacteristics>");
-            s("         <channelcount>%1</channelcount>", clipAudioChannels);
-            s("        </audio>");
+            if (audioLevelSlider != nullptr && audioLevelSlider->value() > 0)
+            {
+                s("        <audio>");
+    //                                s("         <samplecharacteristics>");
+    //                                s("          <depth>16</depth>");
+    ////                                s("          <samplerate>44100</samplerate>");
+    //                                s("         </samplecharacteristics>");
+                s("         <channelcount>%1</channelcount>", clipAudioChannels);
+                s("        </audio>");
+            }
         }
         s("       </media>");
         s("      </file>");
@@ -1252,8 +1240,8 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
     {
         if (AVType == "V")
         {
-            int imageWidth = clipItem->mediaItem->exiftoolValueMap["ImageWidth"].value.toInt();
-            int imageHeight = clipItem->mediaItem->exiftoolValueMap["ImageHeight"].value.toInt();
+            int imageWidth = clipItem->mediaItem->exiftoolPropertyMap["ImageWidth"].value.toInt();
+            int imageHeight = clipItem->mediaItem->exiftoolPropertyMap["ImageHeight"].value.toInt();
             if (imageHeight != exportHeight || imageWidth != exportWidth)
             {
                 double heightRatio = 100.0 * exportHeight / imageHeight;
@@ -1401,7 +1389,7 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
         s("       <trackindex>%1</trackindex>", QString::number(channelTrackNr));
         s("      </sourcetrack>");
 
-        if (AVType == "V"  && ui->exportVideoAudioSlider->value() > 0 && ui->exportVideoAudioSlider->value() < 100 && clipAudioChannels != "0")
+        if (audioLevelSlider != nullptr && audioLevelSlider->value() > 0 && audioLevelSlider->value() < 100 && clipAudioChannels != "0") //AVType == "V"  &&
         {
             s("      <filter>");
             s("       <effect>");
@@ -1416,7 +1404,7 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
             s("         <name>Level</name>");
             s("         <valuemin>0</valuemin>");
             s("         <valuemax>3.98109</valuemax>");
-            s("         <value>%1</value>", QString::number(ui->exportVideoAudioSlider->value() / 100.0));
+            s("         <value>%1</value>", QString::number(audioLevelSlider->value() / 100.0));
             s("        </parameter>");
             s("       </effect>");
             s("      </filter>");
@@ -1427,7 +1415,6 @@ void MExportDialog::addPremiereClipitem(AGClipRectItem *clipItem, QString clipId
 
 void MExportDialog::exportShotcut()
 {
-
     QFile fileWrite(QSettings().value("selectedFolderName").toString() + fileNameWithoutExtension + ".mlt");
     fileWrite.open(QIODevice::WriteOnly);
 
@@ -1506,16 +1493,29 @@ void MExportDialog::exportShotcut()
             }
             else //video
             {
-                if (ui->exportVideoAudioSlider->value() > 0)
+                if (false)
                 {
-    //                    qDebug()<<"qLn"<<qLn(10)<<exportVideoAudioSlider->value()<<10 * qLn(exportVideoAudioValue / 100.0);
-                    s("          <filter id=\"filter%1\" in=\"%2\" out=\"%3\">", QString::number(iterationCounter), inTime.toString("HH:mm:ss.zzz"), outTime.addMSecs(-AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"));
-                    s("             <property name=\"window\">75</property>");
-                    s("             <property name=\"max_gain\">20dB</property>");
-                    s("             <property name=\"level\">%1</property>", QString::number(10 * qLn(ui->exportVideoAudioSlider->value() / 100.0))); //percentage to dB
-                    s("             <property name=\"mlt_service\">volume</property>");
-                    s("           </filter>");
+                    s("          <filter id=\"filter%1-2\" in=\"%2\" out=\"%3\">", QString::number(iterationCounter), inTime.toString("HH:mm:ss.zzz"), outTime.addMSecs(-AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"));
+                    s("            <property name=\"mlt_service\">avfilter.hue</property>");
+                    s("            <property name=\"av.h\">%1</property>", QString::number(32.4)); //hue
+                    s("            <property name=\"av.b\">%1</property>", QString::number(-0.8)); //lightness / brightness
+                    s("            <property name=\"av.s\">%1</property>", QString::number(2.58)); //saturation
+//                    s("            <property name=\"shotcut:animIn\">00:00:00.000</property>");
+//                    s("            <property name=\"shotcut:animOut\">00:00:00.000</property>");
+                    s("          </filter>");
+
                 }
+            }
+            QSlider *audioLevelSlider = (QSlider *)clipItem->mediaItem->groupItem->audioLevelSliderProxy->widget();
+            if (audioLevelSlider->value() > 0 && audioLevelSlider->value() < 100)
+            {
+                    qDebug()<<"qLn"<<qLn(10)<<audioLevelSlider->value()<<10 * qLn(audioLevelSlider->value() / 100.0);
+                s("          <filter id=\"filter%1-1\" in=\"%2\" out=\"%3\">", QString::number(iterationCounter), inTime.toString("HH:mm:ss.zzz"), outTime.addMSecs(-AGlobal().frames_to_msec(1)).toString("HH:mm:ss.zzz"));
+                s("             <property name=\"window\">75</property>");
+                s("             <property name=\"max_gain\">20dB</property>");
+                s("             <property name=\"level\">%1</property>", QString::number(10 * qLn(audioLevelSlider->value() / 100.0))); //percentage to dB
+                s("             <property name=\"mlt_service\">volume</property>");
+                s("           </filter>");
             }
 
             s("  </producer>");
@@ -1735,7 +1735,8 @@ void MExportDialog::exportShotcut()
     {
 //        MGroupRectItem *groupItem = (MGroupRectItem *)timelineItem->parentItem();
 
-        if (timelineItem->groupItem->fileInfo.fileName() == "Video" && ui->exportVideoAudioSlider->value() == 0)
+        QSlider *audioLevelSlider = (QSlider *)timelineItem->groupItem->audioLevelSliderProxy->widget();
+        if (audioLevelSlider->value() == 0) //timelineItem->groupItem->fileInfo.fileName() == "Video" &&
             s("    <track producer=\"playlist%1\" hide=\"audio\"/>", timelineItem->groupItem->fileInfo.fileName());
         else
             s("    <track producer=\"playlist%1\"/>", timelineItem->groupItem->fileInfo.fileName());
@@ -1831,20 +1832,20 @@ void MExportDialog::exportPremiere()
             if (item != timelineItem->filteredClips.first())
                 totalDurationMsec -= AGlobal().frames_to_msec(ui->transitionTimeSpinBox->value());
 
-            bool containsVideo = clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value != "";
-            bool containsAudio = clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolValueMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
-            if (clipItem->mediaItem->exiftoolValueMap["MIMEType"].value.contains("video"))
+            bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
+            bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
+            if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
             {
                 timelineItem->containsVideo = timelineItem->containsVideo || containsVideo;
                 timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
             }
-            else if (clipItem->mediaItem->exiftoolValueMap["MIMEType"].value.contains("audio"))
+            else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
             {
                 timelineItem->containsVideo = false;
                 timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
             }
 
-            qDebug()<<"MExportDialog::exportPremiere() - contains"<<clipItem->fileInfo.fileName()<<inTime<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["MIMEType"].value<<containsVideo<<containsAudio;
+            qDebug()<<"MExportDialog::exportPremiere() - contains"<<clipItem->fileInfo.fileName()<<inTime<<clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value<<containsVideo<<containsAudio;
             //tbd check other formats then mp3 and 4
         }
 
@@ -1914,13 +1915,10 @@ void MExportDialog::exportPremiere()
 
         foreach (MTimelineGroupRectItem *timelineItem, timelineGroupList)
         {
-//            MGroupRectItem *groupItem = (MGroupRectItem *)timelineItem->parentItem();
-
-            qDebug()<<"MExportDialog::exportPremiere Timeline"<<timelineItem->groupItem->fileInfo<<timelineItem->fileInfo.absolutePath()<<timelineItem->fileInfo.fileName()<<mediaType<<timelineItem->containsVideo;
+//            qDebug()<<"MExportDialog::exportPremiere Timeline"<<timelineItem->groupItem->fileInfo<<timelineItem->fileInfo.absolutePath()<<timelineItem->fileInfo.fileName()<<mediaType<<timelineItem->containsVideo<<timelineItem->containsAudio;
             if ((mediaType == "video" && timelineItem->containsVideo) || (mediaType == "audio" && timelineItem->containsAudio))
-//            if ((groupItem->fileInfo.fileName() == "Video") || (groupItem->fileInfo.fileName() == "Audio" && mediaType == "audio"))
             {
-                qDebug()<<"  MExportDialog::exportPremiere Timeline"<<timelineItem->groupItem->fileInfo<<timelineItem->fileInfo.absolutePath()<<timelineItem->fileInfo.fileName();
+//                qDebug()<<"  MExportDialog::exportPremiere Timeline"<<timelineItem->groupItem->fileInfo<<timelineItem->fileInfo.absolutePath()<<timelineItem->fileInfo.fileName();
 
                 QMap<QString, FileStruct> filesMap;
                 foreach (QGraphicsItem *item, timelineItem->filteredClips)
@@ -2000,7 +1998,7 @@ void MExportDialog::on_transitionTimeSpinBox_valueChanged(int arg1)
         transitionValueChangedBy = "SpinBox";
         ui->transitionDial->setValue(arg1);
 
-        emit transitionTimeChanged(arg1);
+        emit arrangeItems();
     }
 }
 
@@ -2053,16 +2051,6 @@ void MExportDialog::on_exportSizeComboBox_currentTextChanged(const QString &arg1
     if (QSettings().value("exportSize") != arg1)
     {
         QSettings().setValue("exportSize", arg1);
-        QSettings().sync();
-    }
-}
-
-void MExportDialog::on_exportVideoAudioSlider_valueChanged(int value)
-{
-//    qDebug()<<"MExportDialog::on_exportVideoAudioSlider_valueChanged"<<QSettings().value("exportVideoAudioSlider")<<value;
-    if (value != QSettings().value("exportVideoAudioSlider"))
-    {
-        QSettings().setValue("exportVideoAudioSlider", value);
         QSettings().sync();
     }
 }

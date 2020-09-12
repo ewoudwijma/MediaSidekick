@@ -31,11 +31,11 @@ ATagsListView::ATagsListView(QWidget *parent) : QListView(parent)
     connect(tagsItemModel, &QStandardItemModel::rowsRemoved,  this, &ATagsListView::onTagChanged); //datachanged not signalled when removing
 }
 
-void ATagsListView::onFolderSelected(QAbstractItemModel *model)
-{
-//    qDebug()<<"ATagsListView::onFolderSelected"<<model->rowCount();
-    loadModel(model);
-}
+//void ATagsListView::onFolderSelected(QAbstractItemModel *model)
+//{
+////    qDebug()<<"ATagsListView::onFolderSelected"<<model->rowCount();
+//    loadModel(model);
+//}
 
 bool ATagsListView::addTag(QString tagString)
 {
@@ -60,17 +60,17 @@ bool ATagsListView::addTag(QString tagString)
     }
 }
 
-void ATagsListView::loadModel(QAbstractItemModel *editItemModel)
-{
-//    qDebug() << "ATagsListView::loadModel" << editItemModel->rowCount();
+//void ATagsListView::loadModel(QAbstractItemModel *editItemModel)
+//{
+////    qDebug() << "ATagsListView::loadModel" << editItemModel->rowCount();
 
-    tagsItemModel->removeRows(0, tagsItemModel->rowCount());
-    for (int i = 0; i < editItemModel->rowCount(); i++)
-    {
-        stringToModel(editItemModel->index(i,tagIndex).data().toString());
-    }
-//    qDebug() << "ATagsListView::loadModel done" << editItemModel->rowCount();
-}
+//    tagsItemModel->removeRows(0, tagsItemModel->rowCount());
+//    for (int i = 0; i < editItemModel->rowCount(); i++)
+//    {
+//        stringToModel(editItemModel->index(i,tagIndex).data().toString());
+//    }
+////    qDebug() << "ATagsListView::loadModel done" << editItemModel->rowCount();
+//}
 
 void ATagsListView::stringToModel(QString string)
 {

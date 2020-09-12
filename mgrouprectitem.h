@@ -6,9 +6,11 @@
 #include "mtimelinegrouprectitem.h"
 
 #include <QGraphicsView>
+#include <agmediafilerectitem.h>
 
 class MTimelineGroupRectItem;
 class AGFolderRectItem;
+class AGMediaFileRectItem;
 
 class MGroupRectItem: public AGViewRectItem
 {
@@ -20,10 +22,11 @@ public:
 
     MTimelineGroupRectItem *timelineGroupItem = nullptr;
     AGFolderRectItem *folderItem = nullptr;
+    QList<AGMediaFileRectItem *> mediaFiles;
 
-//private slots:
-//    void onProcessOutput(QTime time, QTime totalTime, QString event, QString outputString);
+    QGraphicsProxyWidget* audioLevelSliderProxy = nullptr;
+
+    void setTextItem(QTime time, QTime totalTime);
 };
-
 
 #endif // MGROUPRECTITEM_H

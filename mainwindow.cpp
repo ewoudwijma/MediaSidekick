@@ -35,6 +35,8 @@
 #include <QGraphicsScene>
 #include <QTextEdit>
 #include <QTextBrowser>
+#include <QHostAddress>
+#include <QNetworkInterface>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -67,6 +69,10 @@ MainWindow::MainWindow(QWidget *parent) :
                                on_actionBlack_theme_triggered();
 
                            QString selectedFolderName = QSettings().value("selectedFolderName").toString();
+
+                           QDir recycleDir(selectedFolderName);
+                           if (!recycleDir.exists())
+                                selectedFolderName = "";
 
                             //here as otherwise openfolder not opened
                            if (selectedFolderName == "")
@@ -238,7 +244,6 @@ void MainWindow::changeUIProperties()
     ui->actionAlike->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
     ui->actionExport->setIcon(style()->standardIcon(QStyle::SP_FileDialogStart));
     ui->actionWhatIsNew->setIcon(QIcon(QPixmap::fromImage(QImage(":/MediaSidekick.ico"))));
-//    ui->actionRepeat_context_sensible_help->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
 
     ui->mediaFileScaleSlider->setStyleSheet("QSlider::sub-page:Horizontal { background-color: #9F2425; }"
                   "QSlider::add-page:Horizontal { background-color: #333333; }"
@@ -744,7 +749,7 @@ void MainWindow::on_actionAlike_triggered()
 
 void MainWindow::on_actionSave_triggered()
 {
-    ui->statusBar->showMessage(tr("%1 changes will be saved").arg(QString::number(qAbs(ui->graphicsView->undoIndex - ui->graphicsView->undoIndex))), 5000);
+    ui->statusBar->showMessage(tr("%1 changes will be saved").arg(QString::number(qAbs(ui->graphicsView->undoIndex - ui->graphicsView->undoSavePoint))), 5000);
 
     ui->graphicsView->saveModels();
 
@@ -803,12 +808,19 @@ void MainWindow::on_actionExport_triggered()
 
 void MainWindow::showUpgradePrompt()
 {
-//    ui->statusBar->showMessage("Version check...", 15000);
-    QNetworkRequest request(QUrl("http://www.mediasidekick.org/version.json"));
-    QSslConfiguration sslConfig = request.sslConfiguration();
-    sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
-    request.setSslConfiguration(sslConfig);
-    m_network.get(request);
+    QString currentPath = QDir::currentPath();
+
+    if (!currentPath.contains("Debug", Qt::CaseInsensitive) && !currentPath.contains("Release", Qt::CaseInsensitive))
+    {
+        //    ui->statusBar->showMessage("Version check...", 15000);
+            QNetworkRequest request(QUrl("http://www.mediasidekick.org/version.json"));
+            QSslConfiguration sslConfig = request.sslConfiguration();
+            sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
+            request.setSslConfiguration(sslConfig);
+            m_network.get(request);
+    }
+//    else
+//        qDebug()<<__func__<<"not checking latest version because in " + currentPath;
 }
 
 void MainWindow::onUpgradeCheckFinished(QNetworkReply* reply)
@@ -940,35 +952,11 @@ void MainWindow::on_actionTooltips_changed()
     }
 }
 
-//void MainWindow::on_actionRepeat_context_sensible_help_triggered()
-//{
-//    if (!ui->actionContext_Sensitive_Help->isChecked())
-//    {
-//        ui->actionContext_Sensitive_Help->setChecked(true);
-//    }
-
-//    if (requestList.count() > 0)
-//    {
-//        QTimer::singleShot(100, this, [this]()->void //timer needed to show first message
-//        {
-//                               showContextSensitiveHelp(currentRequestNumber);
-//                               if (currentRequestNumber + 1 < requestList.count())
-//                                    currentRequestNumber++;
-//                               else
-//                                    currentRequestNumber = 0;
-//        });
-//    }
-//}
-
 void MainWindow::onShowInStatusBar(QString message, int timeout)
 {
+//    qDebug()<<__func__<<message<<timeout;
     ui->statusBar->showMessage(message, timeout);
 }
-
-//void MainWindow::createPlayerControls(QWidget *widget, QLayout *layout)
-//{
-
-//}
 
 int MainWindow::countFolders(QString folderName, int depth)
 {
@@ -991,8 +979,8 @@ int MainWindow::countFolders(QString folderName, int depth)
 
 void MainWindow::checkAndOpenFolder(QString selectedFolderName)
 {
-//    qDebug()<<"MainWindow::checkAndOpenFolder"<<selectedFolderName;
     int count = countFolders(selectedFolderName);
+//    qDebug()<<"MainWindow::checkAndOpenFolder"<<selectedFolderName<<count;
 
     if (count > 10)
     {
@@ -1123,7 +1111,7 @@ void MainWindow::on_actionReload_triggered()
         {
             if ((process->process != nullptr && process->process->state() != QProcess::NotRunning) || (process->jobThread != nullptr && process->jobThread->isRunning()))
             {
-                qDebug()<<"MainWindow::on_actionReload_triggered Killing process"<<"Main"<<process->name<<process->process<<process->jobThread;
+//                qDebug()<<"MainWindow::on_actionReload_triggered Killing process"<<"Main"<<process->name<<process->process<<process->jobThread;
                 process->kill();
             }
         }
@@ -1195,6 +1183,12 @@ void MainWindow::on_actionReload_triggered()
         if (event == "finished")
         {
 //            qDebug()<<"LoadItems finished";
+
+            if (process->errorMessage == "")
+            {
+            }
+            else
+                QMessageBox::information(this, "Error " + process->name, process->errorMessage);
 
             if (process->processStopped)
             {
@@ -1457,7 +1451,10 @@ void MainWindow::on_actionHelp_triggered()
                  <td><b>Media file</b></td>\
                  <td>" + addStep(2, false, "Select item", "", "Arrows", "", true) + "\
             " + addStep(3, false, "Play video", "", "Space", "", true) + "\
-            " + addStep(4, false, "Scrub video", "", "Shift-Mouse", "", true) + "</td>\
+            " + addStep(4, false, "Scrub video", "", "Shift-Mouse and hover over media file", "", true) +
+                                                                               "<p><b>Duration line</b>: Red or green line above. Allows comparison of duration of media files and clips</p>"
+                                                                               "<p><b>Progress slider</b>: Red slider below</p>"
+                                                                 "</td>\
                 <td></td>\
                  <td>" + addStep(-1, false, "Trim", "", "Right-Click", "", false) + "\
             " + addStep(-1, false, "Wideview", "", "Right-Click", "", false) + "\
@@ -1466,7 +1463,7 @@ void MainWindow::on_actionHelp_triggered()
                </tr>\
                <tr>\
                  <td><b>Clip</b></td>\
-                 <td></td>\
+                 <td>" + addStep(-1, false, "Scrub clip", "", "Shift-Mouse and hover over clip", "", false) + "</td>\
                  <td>" + addStep(5, false, "Add clip", "", "Ctrl-I", "", true) + "\
             " + addStep(6, false, "Change in and out", "", "Ctrl-I/O", "", true) + "\
             " + addStep(7, false, "Add tags, rating and alike", "", "a-Z, 0-9, Ctrl-1-5, Ctrl-L", "", true) + "\

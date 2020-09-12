@@ -18,6 +18,7 @@ class AGFileSystem: public QObject
     void loadItem(AGProcessAndThread *process, QFileInfo fileInfo, bool isNewFile);
 
     QList<AGProcessAndThread *> processes;
+    QStringList excludedFilesFromWatch;
 
 public:
     AGFileSystem(QObject *parent = nullptr);
@@ -33,7 +34,7 @@ private slots:
 
 public slots:
     void onStopThreadProcess();
-    void onFileWatch(QString folderFileName, bool on);
+    void onFileWatch(QString folderFileName, bool on, bool triggerFileChanged = false);
 
 
 signals:

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>630</width>
+    <width>654</width>
     <height>582</height>
    </rect>
   </property>
@@ -17,30 +17,39 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="timelinesGroupBox">
        <property name="title">
-        <string>Clips</string>
+        <string>Timelines</string>
        </property>
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Selected size</string>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QGroupBox" name="groupBox">
+          <property name="title">
+           <string>All videos</string>
           </property>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="clipsSizeLabel">
+             <property name="text">
+              <string>Selected size</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="clipsSizeComboBox"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="clipsFramerateLabel">
+             <property name="text">
+              <string>Selected framerate</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="clipsFramerateComboBox"/>
+           </item>
+          </layout>
          </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="clipsSizeComboBox"/>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Selected framerate</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="clipsFramerateComboBox"/>
         </item>
        </layout>
       </widget>
@@ -252,30 +261,13 @@
          </widget>
         </item>
         <item row="3" column="0">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>Video Audio</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QSlider" name="exportVideoAudioSlider">
-          <property name="value">
-           <number>20</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
          <widget class="QPushButton" name="watermarkButton">
           <property name="text">
            <string>Watermark</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="3" column="1">
          <widget class="QLabel" name="watermarkLabel">
           <property name="text">
            <string>No watermark</string>

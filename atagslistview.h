@@ -14,10 +14,10 @@ public:
     void stringToModel(QString string);
     QString modelToString();
 private:
-    void loadModel(QAbstractItemModel *editItemModel);
+//    void loadModel(QAbstractItemModel *editItemModel);
 
 public slots:
-    void onFolderSelected(QAbstractItemModel *model);
+//    void onFolderSelected(QAbstractItemModel *model);
 private slots:
     void onDoubleClicked(const QModelIndex &index);
     void onTagChanged();

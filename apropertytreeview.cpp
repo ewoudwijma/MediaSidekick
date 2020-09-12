@@ -18,6 +18,8 @@
 #include <QTextBrowser>
 #include <QVBoxLayout>
 
+#include <QMessageBox>
+
 APropertyTreeView::APropertyTreeView(QWidget *parent) : QTreeView(parent)
 {
     propertyItemModel = new QStandardItemModel(this);
@@ -100,7 +102,7 @@ void APropertyTreeView::setCellStyle(QStringList filePathList)
 
                 if (childColumn >= firstFileColumnIndex)
                 {
-                    QString folderFileName = filesMap[childColumn - firstFileColumnIndex];
+                    QString folderFileName = filesList[childColumn - firstFileColumnIndex];
 
                     if (filePathList.join(",").contains(folderFileName))
                     {
@@ -131,16 +133,16 @@ void APropertyTreeView::onFileIndexClicked(QModelIndex , QStringList filePathLis
     setCellStyle(filePathList);
 }
 
-void APropertyTreeView::onClipIndexClicked(QModelIndex index)
-{
-//    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index;
-    QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
-    QStringList selectedFileNames;
-    selectedFileNames <<fileName;
-    setCellStyle(selectedFileNames);
-}
+//void APropertyTreeView::onClipIndexClicked(QModelIndex index)
+//{
+////    qDebug()<<"AFilesTreeView::onClipIndexClicked"<<index;
+//    QString fileName = index.model()->index(index.row(),fileIndex).data().toString();
+//    QStringList selectedFileNames;
+//    selectedFileNames <<fileName;
+//    setCellStyle(selectedFileNames);
+//}
 
-void APropertyTreeView::loadModel(QString folderName)
+void APropertyTreeView::loadModel(QString /*folderName*/)
 {
     isLoading = true;
 
@@ -177,22 +179,36 @@ void APropertyTreeView::loadModel(QString folderName)
     //            process->onProcessOutput("output", "add all files as labels");
     QStringList headerLabels = QStringList() << "Property" << "Minimum" << "Delta" << "Maximum" << "Type" << "Diff";
 
-    filesMap.clear();
+    filesList.clear();
     //get the files
     {
-        QMapIterator<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolMapIterator(exiftoolMap);
-        while (exiftoolMapIterator.hasNext())
+        QMapIterator<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> categoryIterator(exiftoolCategoryProperyFileMap);
+        while (categoryIterator.hasNext())
         {
-            exiftoolMapIterator.next();
-            QMapIterator<QString, QMap<QString, MMetaDataStruct>> metaDataMapIterator(exiftoolMapIterator.value());
-            while (metaDataMapIterator.hasNext())
+            categoryIterator.next();
+
+            QMapIterator<QString, QMap<QString, MMetaDataStruct>> properyIterator(categoryIterator.value());
+            while (properyIterator.hasNext())
             {
-                metaDataMapIterator.next();
-                if (!filesMap.contains(metaDataMapIterator.value().first().absoluteFilePath))
-                    filesMap << metaDataMapIterator.value().first().absoluteFilePath;
+                properyIterator.next();
+
+                QMapIterator<QString, MMetaDataStruct> fileIterator(properyIterator.value());
+                while (fileIterator.hasNext())
+                {
+                    fileIterator.next();
+
+//                    qDebug()<<__func__<<"metaDataStructIterator"<<fileIterator.key() << fileIterator.value().absoluteFilePath;
+
+                    if (!filesList.contains(fileIterator.value().absoluteFilePath))
+                    {
+                        filesList << fileIterator.value().absoluteFilePath;
+//                        qDebug()<<__func__<<"  filesList"<<filesList.count()<<fileIterator.value().absoluteFilePath;
+                    }
+                }
             }
         }
-        foreach (QString folderFileName, filesMap)
+
+        foreach (QString folderFileName, filesList)
         {
             int lastIndexOf = folderFileName.lastIndexOf("/");
             headerLabels << folderFileName.mid(lastIndexOf + 1);
@@ -200,7 +216,7 @@ void APropertyTreeView::loadModel(QString folderName)
     }
     propertyItemModel->setHorizontalHeaderLabels(headerLabels);
 
-    foreach (QString folderFileName, filesMap)
+    foreach (QString folderFileName, filesList)
     {
 
         //add mandatory properties if no values occured for this in above for loop
@@ -234,40 +250,40 @@ void APropertyTreeView::loadModel(QString folderName)
             QString categoryName = categoryPropery.split(";")[0];
             QString propertyName = categoryPropery.split(";")[1];
 
-            MMetaDataStruct metaDataStruct = exiftoolMap[categoryName][propertyName][folderFileName];
+            MMetaDataStruct metaDataStruct = exiftoolCategoryProperyFileMap[categoryName][propertyName][folderFileName];
 
             if (metaDataStruct.categoryName == "")
             {
                 metaDataStruct.categoryName = categoryName;
                 metaDataStruct.propertyName = propertyName;
                 metaDataStruct.absoluteFilePath = folderFileName;
-                metaDataStruct.propertySortOrder = QString::number(exiftoolMap[categoryName].count()).rightJustified(3, '0');
+                metaDataStruct.propertySortOrder = QString::number(exiftoolCategoryProperyFileMap[categoryName].count()).rightJustified(3, '0');
 
-                exiftoolMap[categoryName][propertyName][folderFileName] = metaDataStruct;
+                exiftoolCategoryProperyFileMap[categoryName][propertyName][folderFileName] = metaDataStruct;
             }
         }
     }
 
-    QMapIterator<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> exiftoolMapIterator(exiftoolMap);
-    while (exiftoolMapIterator.hasNext())
+    QMapIterator<QString, QMap<QString, QMap<QString, MMetaDataStruct>>> categoryIterator(exiftoolCategoryProperyFileMap);
+    while (categoryIterator.hasNext())
     {
-        exiftoolMapIterator.next();
+        categoryIterator.next();
 
 //        qDebug()<<"categoryIterator.key()"<<category2Iterator.key();
-        QString categoryKey = exiftoolMapIterator.key().split(" - ")[1];
+        QString categoryKey = categoryIterator.key().split(" - ")[1];
 
-        QList<QMap<QString, MMetaDataStruct>> metaDataMapListSorted;
+        QList<QMap<QString, MMetaDataStruct>> fileMapListSorted;
 
         //sort propertyList
         {
-            QMapIterator<QString, QMap<QString, MMetaDataStruct>> metaDataMapIterator(exiftoolMapIterator.value());
-            while (metaDataMapIterator.hasNext())
+            QMapIterator<QString, QMap<QString, MMetaDataStruct>> propertyIterator(categoryIterator.value());
+            while (propertyIterator.hasNext())
             {
-                metaDataMapIterator.next();
-                metaDataMapListSorted.append(metaDataMapIterator.value());
+                propertyIterator.next();
+                fileMapListSorted.append(propertyIterator.value());
             }
 
-            std::sort(metaDataMapListSorted.begin(), metaDataMapListSorted.end(), [](QMap<QString, MMetaDataStruct> metaDataMap1, QMap<QString, MMetaDataStruct> metaDataMap2)->bool
+            std::sort(fileMapListSorted.begin(), fileMapListSorted.end(), [](QMap<QString, MMetaDataStruct> metaDataMap1, QMap<QString, MMetaDataStruct> metaDataMap2)->bool
             {
                 MMetaDataStruct metaDataStruct1 = metaDataMap1.first();
                 MMetaDataStruct metaDataStruct2 = metaDataMap2.first();
@@ -275,11 +291,11 @@ void APropertyTreeView::loadModel(QString folderName)
             });
         }
 
-        QList<QMap<QString, MMetaDataStruct>>::iterator metaDataMapIterator;
-        for (metaDataMapIterator = metaDataMapListSorted.begin(); metaDataMapIterator != metaDataMapListSorted.end(); ++metaDataMapIterator)
+        QList<QMap<QString, MMetaDataStruct>>::iterator fileListIterator;
+        for (fileListIterator = fileMapListSorted.begin(); fileListIterator != fileMapListSorted.end(); ++fileListIterator)
         {
-            QString propertyName = metaDataMapIterator->first().propertyName; //split...
-            QMap<QString, MMetaDataStruct> metaDataMap = *metaDataMapIterator;
+            QString propertyName = fileListIterator->first().propertyName; //split...
+            QMap<QString, MMetaDataStruct> fileMap = *fileListIterator; //fileMap for propertyName
 
 //            qDebug()<<"  propertyName"<<propertyName;
 
@@ -342,9 +358,9 @@ void APropertyTreeView::loadModel(QString folderName)
             bool valueFound = false; //in case label is added by a non media file
             QString previousValue = "";
 
-            foreach (QString folderFileName, filesMap)
+            foreach (QString folderFileName, filesList)
             {
-                QString value = metaDataMap[folderFileName].value;
+                QString value = fileMap[folderFileName].value;
 
 //                qDebug()<<"    filesIterator.key()"<<folderFileName << value;
 
@@ -484,7 +500,7 @@ void APropertyTreeView::setupModel()
                 updateSuggestedNames(column); //ok to take it from general as only the model and the column of childindex is used.
 
 //            qDebug()<<"filesMap - setUpModel"<<column - firstFileColumnIndex<<filesMap;
-            QString folderFileName = filesMap[column - firstFileColumnIndex];
+            QString folderFileName = filesList[column - firstFileColumnIndex];
             onSetPropertyValue(folderFileName, "Status", "Loaded");
             if (editMode)
                 setColumnWidth(column, columnWidth(propertyIndex) * 1.0);
@@ -626,7 +642,7 @@ void APropertyTreeView::onPropertyFilterChanged(QLineEdit *propertyFilterLineEdi
 
 QModelIndex APropertyTreeView::findIndex(QString folderFileName, QString propertyName)
 {
-    int fileColumnNr = filesMap.indexOf(folderFileName);
+    int fileColumnNr = filesList.indexOf(folderFileName);
 
     if (folderFileName == "Minimum") //APropertyEditorDialog::onGeoCodingFinished
         fileColumnNr = 1 - firstFileColumnIndex;
@@ -732,7 +748,7 @@ void APropertyTreeView::updateSuggestedNames(int column)
 
 
 //    qDebug()<<"APropertyTreeView::updateSuggestedNames"<<createDate<<locationInName<<cameraInName<<suggestedNameIndex;
-    if (createDate != "0000:00:00 00:00:00") // && createDate.right(8) != "00:00:00"
+    if (createDate != "") // && createDate.right(8) != "00:00:00"
     {
         suggestedName = createDate.replace(":", "-");
 
@@ -770,7 +786,7 @@ void APropertyTreeView::updateSuggestedNames(int column)
         if (index.column() >= firstFileColumnIndex)
         {
 //            qDebug()<<"filesMap - updateSug"<<index.column() - firstFileColumnIndex<<filesMap.count();
-            QString folderFileName = filesMap[index.column() - firstFileColumnIndex];
+            QString folderFileName = filesList[index.column() - firstFileColumnIndex];
 
             int pos = folderFileName.indexOf("+"); //first +
             int extPos = folderFileName.lastIndexOf(".");
@@ -826,7 +842,7 @@ void APropertyTreeView::onPropertyChanged(QStandardItem *item)
             if (index.column() >= firstFileColumnIndex) //updating individual files
             {
 //                qDebug()<<"filesMap - onPropC"<<index.column() - firstFileColumnIndex;
-                QString folderFileName = filesMap[index.column() - firstFileColumnIndex];
+                QString folderFileName = filesList[index.column() - firstFileColumnIndex];
 
                 QVariant brush;
                 if (index.parent().data().toString() == "Status")
@@ -1219,6 +1235,9 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
             {
 //                qDebug()<<"APropertyTreeView::saveChanges"<<result.join("\n");
 
+                if (process->errorMessage != "")
+                    QMessageBox::information(this, "Error " + process->name, process->errorMessage);
+
                 QString resultJoin = process->log.join(" ").trimmed();
 
                 onSetPropertyValue(folderName + fileName, "Status", resultJoin);//color done in propertychanged
@@ -1467,15 +1486,6 @@ void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folder
 
     //    processes<<process;
     //    connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
-        connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
-        {
-            //this is executed in the created thread!
-
-            if (event == "finished")
-            {
-                qDebug()<<process->name + " finished";
-            }
-        });
 
         process->start();
     }

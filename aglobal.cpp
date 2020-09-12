@@ -51,6 +51,13 @@ QString AGlobal::msec_to_time(int msec )
     return frames_to_time( msec_to_frames(msec));
 }
 
+QString AGlobal::msec_to_timeNoFPS(int msec )
+{
+
+    QTime time = QTime::fromMSecsSinceStartOfDay(msec);
+    return time.toString("HH:mm:ss.zzz").left(11);
+}
+
 int AGlobal::msec_rounded_to_fps(int msec )
 {
     int frames = msec_to_frames(msec);

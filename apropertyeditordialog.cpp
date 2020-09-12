@@ -209,7 +209,7 @@ bool APropertyEditorDialog::checkExit()
     return exitYes;
 }
 
-void APropertyEditorDialog::setProperties(QStandardItemModel *itemModel, QStringList filesMap)
+void APropertyEditorDialog::setProperties(QStandardItemModel *itemModel, QStringList filesList)
 {
 //    qDebug()<<"APropertyEditorDialog::setProperties"<<itemModel->rowCount();
 
@@ -217,7 +217,7 @@ void APropertyEditorDialog::setProperties(QStandardItemModel *itemModel, QString
 
     ui->propertyTreeView->initModel(itemModel);
 
-    ui->propertyTreeView->filesMap = filesMap;
+    ui->propertyTreeView->filesList = filesList;
 
     onPropertiesLoaded();
 }
@@ -291,7 +291,7 @@ void APropertyEditorDialog::onRedrawMap()
     {
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
-            QString folderFileName = ui->propertyTreeView->filesMap[col - firstFileColumnIndex];
+            QString folderFileName = ui->propertyTreeView->filesList[col - firstFileColumnIndex];
 
             QVariant *coordinate = new QVariant();
             ui->propertyTreeView->onGetPropertyValue(folderFileName, "GeoCoordinate", coordinate);
@@ -336,7 +336,7 @@ void APropertyEditorDialog::on_renameButton_clicked()
     {
         if (!ui->propertyTreeView->isColumnHidden(col))
         {
-            QString folderFileName = ui->propertyTreeView->filesMap[col - firstFileColumnIndex];
+            QString folderFileName = ui->propertyTreeView->filesList[col - firstFileColumnIndex];
             QString fileNameLow = folderFileName.toLower();
             int lastIndexOf = fileNameLow.lastIndexOf(".");
             QString extension = fileNameLow.mid(lastIndexOf + 1);
@@ -525,7 +525,7 @@ void APropertyEditorDialog::on_refreshButton_clicked()
 
 void APropertyEditorDialog::onLoadProperties()
 {
-    ui->propertyTreeView->exiftoolMap = exifToolMap;
+    ui->propertyTreeView->exiftoolCategoryProperyFileMap = exifToolMap;
 
     ui->propertyTreeView->isLoading = true; //to avoid mainwindow propertytreeview setupmodel to change properties here
     emit loadProperties();
