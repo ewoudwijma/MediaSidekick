@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("mediasidekick.org");
     a.setApplicationName("Media Sidekick");
-    a.setApplicationVersion("0.5.1");
+    a.setApplicationVersion("0.5.2.1");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\mediasidekick.org
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     {
         QSettings().setValue("frameRate", "25");
         QSettings().sync();
-        qDebug()<<"frameRate"<<QSettings().value("frameRate")<<QSettings().value("frameRate").toInt();
+//        qDebug()<<"frameRate"<<QSettings().value("frameRate")<<QSettings().value("frameRate").toInt();
     }
 
     QPixmap pixmap(":/MediaSidekick.ico");

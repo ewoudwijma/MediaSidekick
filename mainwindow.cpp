@@ -99,7 +99,7 @@ MainWindow::~MainWindow()
 
 //    qDebug()<<"Destructor"<<geometry();
 
-    if (geometry() != QSettings().value("Geometry"))
+    if (geometry() != QSettings().value("Geometry").toRect())
     {
         qDebug()<<"MainWindow::~MainWindow"<<geometry();
         QSettings().setValue("Geometry", geometry());
@@ -114,10 +114,12 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 {
    QMainWindow::resizeEvent(event);
 
-   if (geometry() != QSettings().value("Geometry"))
+//   qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event<<QSettings().value("Geometry").toRect();
+   if (geometry() != QSettings().value("Geometry").toRect())
    {
-       ui->graphicsView->arrangeItems(nullptr, __func__);
-//       qDebug()<<"MainWindow::resizeEvent"<<geometry()<<event;
+       if (ui->graphicsView->rootItem != nullptr)
+           ui->graphicsView->arrangeItems(nullptr, __func__);
+
        QSettings().setValue("Geometry", geometry());
    //    QSettings().setValue("windowState", saveState());
        QSettings().sync();
@@ -307,8 +309,11 @@ void MainWindow::allConnects()
 void MainWindow::loadSettings()
 {
     QRect savedGeometry = QSettings().value("Geometry").toRect();
-    if (savedGeometry != geometry() && savedGeometry.width() != 0) //initial
-        setGeometry(savedGeometry);
+    if (savedGeometry != geometry())
+    {
+        if (savedGeometry.width() != 0)
+            setGeometry(savedGeometry);
+    }
 
 //    restoreState(QSettings().value("windowState").toByteArray());
 
@@ -330,8 +335,10 @@ void MainWindow::loadSettings()
         QSettings().setValue("viewDirection", "Return");
         syncNeeded = true;
     }
+
     if (syncNeeded)
         QSettings().sync();
+
     ui->timelineViewButton->setEnabled(QSettings().value("viewMode") != "TimelineView");
     ui->spotviewDownButton->setEnabled((QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Down"));
     ui->spotviewRightButton->setEnabled((QSettings().value("viewMode") != "SpotView" || QSettings().value("viewDirection") != "Right"));

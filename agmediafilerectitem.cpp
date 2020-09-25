@@ -2342,7 +2342,7 @@ void AGMediaFileRectItem::loadMedia(AGProcessAndThread *process)
 
         if (fileInfo.suffix() == "mlt")
         {
-            qDebug() << __func__ << fileInfo.fileName();
+//            qDebug() << __func__ << fileInfo.fileName();
 
 //            QXmlStreamReader reader(xmlString);
 //            xmlRecursive(&reader, 0);
