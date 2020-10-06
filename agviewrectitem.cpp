@@ -214,7 +214,7 @@ void AGViewRectItem::updateToolTip()
                           "<ul>"
                           "<li><b>Sorting</b>: Currently sorted in order of mediafiles and within a mediafile, sorted chronologically</li>"
                           "<li><b>Transition</b>: If transition defined (%3) then clips overlapping.</li>"
-                          ).arg(tooltipItem->parentRectItem->fileInfo.fileName(), tooltipItem->fileInfo.absolutePath(), AGlobal().frames_to_time(QSettings().value("transitionTime").toInt()));
+                          ).arg(tooltipItem->parentRectItem->fileInfo.fileName(), tooltipItem->fileInfo.absolutePath(), QTime::fromMSecsSinceStartOfDay(QSettings().value("transitionTime").toInt()).toString("HH:mm:ss.zzz"));
 //        tooltipText += tr("<li><b>zValue</b>: %1</li>").arg(QString::number(tooltipItem->zValue()));
 
     }

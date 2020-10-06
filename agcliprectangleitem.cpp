@@ -99,7 +99,7 @@ void AGClipRectangleItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
             clipItem->clipOut = draggedWidth/rect().width() * originalClipOut;
 
-            qDebug()<<"AGClipRectangleItem::mouseMoveEvent right"<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_time(originalClipOut)<<AGlobal().msec_to_time(clipItem->clipOut);
+            qDebug()<<"AGClipRectangleItem::mouseMoveEvent right"<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_timeNoFPS(originalClipOut)<<AGlobal().msec_to_timeNoFPS(clipItem->clipOut);
         }
 
         if (leftDragZone || midDragZone)
@@ -108,7 +108,7 @@ void AGClipRectangleItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
             clipItem->clipIn = originalClipIn + draggedX/rect().width() * (originalClipOut - originalClipIn);
 
-            qDebug()<<"AGClipRectangleItem::mouseMoveEvent left"<<draggedX<<draggedX/rect().width()<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_time(clipItem->clipIn);
+            qDebug()<<"AGClipRectangleItem::mouseMoveEvent left"<<draggedX<<draggedX/rect().width()<<draggedWidth<<draggedWidth/rect().width()<<AGlobal().msec_to_timeNoFPS(clipItem->clipIn);
         }
 
         emit agItemChanged(this); //draws poly based on clipin and clipout

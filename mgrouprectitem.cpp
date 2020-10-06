@@ -144,7 +144,7 @@ void MGroupRectItem::setTextItem(QTime time, QTime totalTime)
                 }
             }
 
-            duration = foundClipDuration - (foundClips - 1) * AGlobal().frames_to_msec(QSettings().value("transitionTime").toInt());
+            duration = foundClipDuration - (foundClips - 1) * QSettings().value("transitionTime").toInt();
 //            qDebug()<<__func__<<"MGroupRectItem"<<fileInfo.fileName()<<duration<<time<<totalTime;
 
             if (audioLevelSliderProxy != nullptr)

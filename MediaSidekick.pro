@@ -67,8 +67,7 @@ SOURCES += \
         mtimelinegrouprectitem.cpp \
         qedge.cpp \
         qgraphwidget.cpp \
-        qnode.cpp \
-        stimespinbox.cpp
+        qnode.cpp
 
 HEADERS += \
         aderperviewmain.h \
@@ -100,8 +99,7 @@ HEADERS += \
         mtimelinegrouprectitem.h \
         qedge.h \
         qgraphwidget.h \
-        qnode.h \
-        stimespinbox.h
+        qnode.h
 
 FORMS += \
         mainwindow.ui \

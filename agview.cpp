@@ -322,6 +322,8 @@ void AGView::onAddItem(bool changed, QString parentName, QString mediaType, QFil
         arrangeItems(nullptr, mediaType); //in case of new clip added later
 
         onAddUndo(changed, "Create", "Clip", clipItem);
+
+        childItem->setFlag(QGraphicsItem::ItemIsMovable, true);
     }
     else if (mediaType == "Tag")
     {
@@ -341,7 +343,6 @@ void AGView::onAddItem(bool changed, QString parentName, QString mediaType, QFil
         childItem = tagItem;
     }
 
-//    childItem->setFlag(QGraphicsItem::ItemIsMovable, true);
     childItem->setFlag(QGraphicsItem::ItemIsSelectable, true);
 
     if (parentItem == nullptr)
@@ -916,7 +917,7 @@ void AGView::onHoverPositionChanged(QGraphicsRectItem *rectItem, int progress)
 
 //    qDebug()<<"AGView::onHoverPositionChanged"<<mediaItem->itemToString()<<progress;
 
-    int duration = 0;
+//    int duration = 0;
     if (!playInDialog)
     {
         if (mediaItem->m_player == nullptr)
@@ -925,8 +926,10 @@ void AGView::onHoverPositionChanged(QGraphicsRectItem *rectItem, int progress)
         }
         else
         {
+//            qDebug()<<__func__<<progress;
             mediaItem->m_player->setPosition(progress);
-            duration = mediaItem->m_player->duration();
+//            mediaItem->m_player->setPosition(qreal(mediaItem->m_player->duration()) * qreal(progress) / qreal(mediaItem->duration));
+//            duration = mediaItem->m_player->duration();
         }
     }
     else
@@ -938,7 +941,7 @@ void AGView::onHoverPositionChanged(QGraphicsRectItem *rectItem, int progress)
         else
         {
             dialogMediaPlayer->setPosition(progress);
-            duration = dialogMediaPlayer->duration();
+//            duration = dialogMediaPlayer->duration();
         }
     }
 }
@@ -1308,6 +1311,8 @@ QRectF AGView::arrangeItems(QGraphicsItem *parentItem, QString caller)
                 QColor oldColor = mediaItem->brush().color();
                 mediaItem->setBrush(QColor(oldColor.red(), oldColor.green(), oldColor.blue(), 60));
 
+                mediaItem->setTextItem(QTime(), QTime()); //new and updated
+
                 AGViewRectItem *parentViewRect = (AGViewRectItem *)parentItem;
                 if ((QSettings().value("viewMode") == "SpotView" && QSettings().value("viewDirection") == "Return") || (parentViewRect->fileInfo.fileName() == "Export") || (parentViewRect->fileInfo.fileName() == "Project") || (parentViewRect->fileInfo.fileName() == "Parking"))
                 {
@@ -1399,13 +1404,13 @@ QRectF AGView::arrangeItems(QGraphicsItem *parentItem, QString caller)
                 nextPos = QPointF(nextPos.x(), nextPos.y() + rectChildren.height() + spaceBetween * 3); //vertical *3: more space between folders
             else if (childMediaType == "Clip" && parentMediaType == "TimelineGroup")
             {
-                int transitionTimeFrames = QSettings().value("transitionTime").toInt();
-                int frameRate = QSettings().value("frameRate").toInt();
-                double transitionTimeMSec;
-                if (frameRate != 0)
-                    transitionTimeMSec = 1000.0 * transitionTimeFrames / frameRate;
-                else
-                    transitionTimeMSec = 0;
+//                int transitionTimeFrames = QSettings().value("transitionTime").toInt();
+//                int frameRate = QSettings().value("clipsFramerateComboBox").toInt();
+                int transitionTimeMSec = QSettings().value("transitionTime").toInt();
+//                if (frameRate != 0)
+//                    transitionTimeMSec = 1000.0 * transitionTimeFrames / frameRate;
+//                else
+//                    transitionTimeMSec = 0;
 
                 nextPos = QPointF(nextPos.x() + rectChildren.width() - transitionTimeMSec  * clipScaleFactor, nextPos.y() + (alternator?-0:0)); //horizontal alternating //
 //                AGClipRectItem *clipItem = (AGClipRectItem *)childItem;

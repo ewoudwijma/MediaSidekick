@@ -10,60 +10,11 @@ AGlobal::AGlobal()
 {
 }
 
-int AGlobal::time_to_frames(const QString time )
-{
-    QTime timeQ = QTime::fromString(time + "0", "HH:mm:ss.zzz");
-    int msec = timeQ.msecsSinceStartOfDay();
-    int frameAfterSeconds = msec % 1000 / 10;
-    int secs = msec / 1000;
-    int frames = secs * QSettings().value("frameRate").toInt() + frameAfterSeconds;
-
-//    qDebug()<<"time_to_frames"<<time<<frameAfterSeconds<<secs<<frames;
-    return frames;
-}
-
-QString AGlobal::frames_to_time(int frames)
-{
-    int secs = frames / QSettings().value("frameRate").toInt();
-    int framesAfterSecond = frames % QSettings().value("frameRate").toInt();
-
-    QTime time = QTime::fromMSecsSinceStartOfDay(secs * 1000 + framesAfterSecond * 10);
-    return time.toString("HH:mm:ss.zzz").left(11);
-}
-
-int AGlobal::msec_to_frames(int msec )
-{
-//    qDebug()<<"time_to_frames"<<time<<frameAfterSeconds<<secs<<frames;
-    return qRound(msec * QSettings().value("frameRate").toInt() / 1000.0);
-}
-
-int AGlobal::frames_to_msec(int frames )
-{
-
-//    qDebug()<<"AGlobal::frames_to_msec"<<frames<<qRound(1000.0 / QSettings().value("frameRate").toInt())<<frames*qRound(1000.0 / QSettings().value("frameRate").toInt());
-    return qRound(frames * 1000.0 / QSettings().value("frameRate").toInt());
-}
-
-QString AGlobal::msec_to_time(int msec )
-{
-
-//    qDebug()<<"time_to_frames"<<time<<frameAfterSeconds<<secs<<frames;
-    return frames_to_time( msec_to_frames(msec));
-}
-
 QString AGlobal::msec_to_timeNoFPS(int msec )
 {
 
     QTime time = QTime::fromMSecsSinceStartOfDay(msec);
     return time.toString("HH:mm:ss.zzz").left(11);
-}
-
-int AGlobal::msec_rounded_to_fps(int msec )
-{
-    int frames = msec_to_frames(msec);
-    return qRound(frames * 1000.0 / QSettings().value("frameRate").toInt());
-
-//    qDebug()<<"msec_rounded_to_fps"<<time<<frameAfterSeconds<<secs<<frames;
 }
 
 QString AGlobal::secondsToString(qint64 seconds)

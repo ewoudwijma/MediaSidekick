@@ -139,7 +139,7 @@ void AGFileSystem::loadFilesAndFolders(QDir dir, AGProcessAndThread *process)
                 {
                     QString output = "LoadItems processStopped for " + dir.absolutePath() + "/" + dir.entryList().at(i);
                     process->addProcessLog("output", output);
-                    qDebug()<<output<<fileInfo.fileName()<<processStopped<<process->processStopped;
+//                    qDebug()<<output<<fileInfo.fileName()<<processStopped<<process->processStopped;
                     return;
                 }
 
@@ -262,11 +262,6 @@ void AGFileSystem::loadClips(AGProcessAndThread *process, QFileInfo fileInfo)
 
             QTime inTime = QTime::fromString(line.left(12),"HH:mm:ss.zzz");
             QTime outTime = QTime::fromString(line.mid(17,12),"HH:mm:ss.zzz");
-
-//            STimeSpinBox *inSpin = new STimeSpinBox();
-//            inSpin->setValue(inTime.msecsSinceStartOfDay());
-//            QStandardItem *inSpinItem = new QStandardItem;
-//            inSpinItem->setData(QVariant::fromValue(inSpin));
 
             QString srtContentString = list[i+1];
             int start;

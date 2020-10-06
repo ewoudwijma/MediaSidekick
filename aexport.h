@@ -45,16 +45,13 @@ private slots:
 
     void on_exportTargetComboBox_currentTextChanged(const QString &arg1);
 
-    void on_transitionTimeSpinBox_valueChanged(int arg1);
-
-    void on_transitionDial_valueChanged(int value);
-
-    void on_transitionDial_sliderMoved(int position);
+    void on_transitionDurationTimeEdit_timeChanged(const QTime &time);
 
     void on_transitionComboBox_currentTextChanged(const QString &arg1);
 
     void on_clipsSizeComboBox_currentTextChanged(const QString &arg1);
 
+    void on_transitionDial_valueChanged(int value);
 private:
     Ui::MExportDialog *ui;
     void watermarkFileNameChanged(QString newFileName);
@@ -76,8 +73,8 @@ private:
     QTextStream stream;
 
     void s(QString y, QString arg1 = "", QString arg2 ="", QString arg3="", QString arg4="");
-    void addPremiereClipitem(AGClipRectItem *clipItem, QString clipId, QFileInfo fileInfo, int startFrames, int endFrames, int inFrames, int outFrames, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr);
-    void addPremiereTransitionItem(int startFrames, int endFrames, QString frameRate, QString mediaType, QString startOrEnd);
+    void addPremiereClipitem(AGClipRectItem *clipItem, QString clipId, QFileInfo fileInfo, int startTime, int endTime, int inTime, int outTime, QString frameRate, QString mediaType, QMap<QString, FileStruct> *filesMap, int channelTrackNr);
+    void addPremiereTransitionItem(int startTime, int endTime, QString frameRate, QString mediaType, QString startOrEnd);
     void addPremiereTrack(QString mediaType, MTimelineGroupRectItem *timelineItem, QMap<QString, FileStruct> filesMap);
 
 signals:

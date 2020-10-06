@@ -75,17 +75,10 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("mediasidekick.org");
     a.setApplicationName("Media Sidekick");
-    a.setApplicationVersion("0.5.2.1");
+    a.setApplicationVersion("0.5.3");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\mediasidekick.org
-
-    if (QSettings().value("frameRate").toInt() == 0)
-    {
-        QSettings().setValue("frameRate", "25");
-        QSettings().sync();
-//        qDebug()<<"frameRate"<<QSettings().value("frameRate")<<QSettings().value("frameRate").toInt();
-    }
 
     QPixmap pixmap(":/MediaSidekick.ico");
     QSplashScreen *splash = new QSplashScreen(pixmap);
@@ -183,10 +176,23 @@ Background
 
    install_name_tool -change /Users/ewoudwijma/Movies/ffmpeg-20200121-fc6fde2-macos64-shared/bin/libavcodec.58.dylib "@loader_path/libavcodec.58.dylib" ACVC
 
-General pre
+General pre release steps
     - setApplicationVersion("0.3.0") in main.cpp
+    - test
+        - delete ini file
+        - crud on folder and files
 
 Windows 2020-02-20
+
+    - get latest version of ffmpeg:
+        - https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-latest-win64-dev.zip
+        - https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-latest-win64-shared.zip
+    - latest version exiftool
+        - https://exiftool.org/: download zip, remove -k
+    - Get youtube-dl
+
+    - create deploy folder (step one to avoid crash)
+        - Copy contents of D:\MediaSidekick\windows\ffmpeg-latest-win64-shared\bin to debug or release folder (avcodec 58)
 
     - Prepare for installer
         - deploy in shell (not powershell...)
@@ -195,15 +201,6 @@ Windows 2020-02-20
         - remove exiftool.exe, ffplay.exe, ffprobe.exe and ffmpeg.exe temporary out of debug or release folder
         - C:\Qt\5.14.2\mingw73_64\bin\windeployqt.exe --quick --no-translations --qmldir D:\MediaSidekick\MediaSidekick\ .
         - move exiftool.exe, ffplay.exe, ffprobe.exe and ffmpeg.exe back
-
-    - get latest version of ffmpeg:
-        - https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-latest-win64-dev.zip
-        - https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-latest-win64-shared.zip
-    - latest version exiftool
-        - https://exiftool.org/: download zip, remove -k
-
-    - create deploy folder (otherwise crash)
-        - Copy contents of D:\MediaSidekick\windows\ffmpeg-latest-win64-shared\bin to debug or release folder (avcodec 58)
 
     - Media Sidekick exiftool and others missing
         - Copy D:\MediaSidekick\MediaSidekick support files\additional\exiftool.exe

@@ -1208,7 +1208,7 @@ void APropertyTreeView::saveChanges(QProgressBar *pprogressBar)
 
         emit releaseMedia(folderName, fileName); //to stop the video to free the resource in windows/os
 
-        QString command = "exiftool";
+        QString command = "exiftool1206";
 
 //        qDebug()<<"APropertyTreeView::saveChanges"<<propertyNames.count()<<values.count()<<folderFileName;
 
@@ -1482,7 +1482,7 @@ void APropertyTreeView::onPropertyCopy(QStandardItem *parentItem, QString folder
     #endif
 
         AGProcessAndThread *process = new AGProcessAndThread(this);
-        process->command("Copy Properties " + fileNameSource, "exiftool" + attributeString + " -overwrite_original \"" + targetFolderFileName + "\"");
+        process->command("Copy Properties " + fileNameSource, "exiftool1206" + attributeString + " -overwrite_original \"" + targetFolderFileName + "\"");
 
     //    processes<<process;
     //    connect(process, &AGProcessAndThread::processOutput, this, &AGMediaFileRectItem::onProcessOutput);
