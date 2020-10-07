@@ -264,10 +264,17 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
+   <widget class="QMenu" name="menuMedia">
+    <property name="title">
+     <string>Media</string>
+    </property>
+    <addaction name="actionDownload"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuPlayer"/>
+   <addaction name="menuMedia"/>
    <addaction name="menuClips"/>
    <addaction name="menuExport"/>
    <addaction name="menuHelp"/>
@@ -676,6 +683,14 @@
    </property>
    <property name="shortcut">
     <string>F1</string>
+   </property>
+  </action>
+  <action name="actionDownload">
+   <property name="text">
+    <string>Download</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
    </property>
   </action>
  </widget>

@@ -1449,7 +1449,7 @@ void MainWindow::on_actionHelp_triggered()
                  <td>" + addStep(1, false, "Open Folder", "", "Ctrl-O", "", true) + "\
             " + addStep(-1, true, "Show media items", "grouped per type", "", "", false) + "\
 </td>\
-                 <td>" + addStep(-1, false, "Download video or audio from streaming media", "(e.g. youtube)", "Right-Click", "", false) + "\
+                 <td>" + addStep(-1, false, "Download video or audio from streaming media", "(e.g. youtube)", "CTRL-D", "", false) + "\
             " + addStep(-1, false, "Explorer/Finder", "Move media items into folder", "Right-Click", "", false) + "</td>\
             <td>" + addStep(-1, false, "Property Manager", "", "Right-Click", "", false) + "</td>\
             <td>" + addStep(8, false, "Export", "", "Ctrl-E", "", true) + "<p>Exported files in folder Export or Project</p></td>\
@@ -1502,4 +1502,9 @@ void MainWindow::on_actionHelp_triggered()
 
     about->show();
     about->exec();
+}
+
+void MainWindow::on_actionDownload_triggered()
+{
+    ui->graphicsView->processAction(__func__);
 }

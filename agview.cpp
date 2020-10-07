@@ -917,32 +917,19 @@ void AGView::onHoverPositionChanged(QGraphicsRectItem *rectItem, int progress)
 
 //    qDebug()<<"AGView::onHoverPositionChanged"<<mediaItem->itemToString()<<progress;
 
-//    int duration = 0;
     if (!playInDialog)
     {
         if (mediaItem->m_player == nullptr)
-        {
             mediaItem->processAction("actionPlay_Pause");
-        }
         else
-        {
-//            qDebug()<<__func__<<progress;
             mediaItem->m_player->setPosition(progress);
-//            mediaItem->m_player->setPosition(qreal(mediaItem->m_player->duration()) * qreal(progress) / qreal(mediaItem->duration));
-//            duration = mediaItem->m_player->duration();
-        }
     }
     else
     {
         if (dialogMediaPlayer == nullptr)
-        {
             mediaItem->processAction("actionPlay_Pause");
-        }
         else
-        {
             dialogMediaPlayer->setPosition(progress);
-//            duration = dialogMediaPlayer->duration();
-        }
     }
 }
 
@@ -1709,6 +1696,12 @@ void AGView::processAction(QString action)
         centerOn(rootItem);
     }
     else if (action.contains("Export"))
+    {
+        AGFolderRectItem *folderItem = (AGFolderRectItem *)rootItem;
+
+        folderItem->processAction(action);
+    }
+    else if (action.contains("Download"))
     {
         AGFolderRectItem *folderItem = (AGFolderRectItem *)rootItem;
 

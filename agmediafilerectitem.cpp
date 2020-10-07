@@ -144,12 +144,16 @@ void AGMediaFileRectItem::setTextItem(QTime time, QTime totalTime)
     {
         newSubLogItem();
     }
-//    qDebug()<<__func__<<"setTextItem"<<fileInfo.fileName()<<(m_player!=nullptr?m_player->duration():0)<<duration<<(m_player!=nullptr?m_player->position():0)<<playerCorrectedPosition()<<time<<totalTime;
+//    qDebug()<<__func__<<"setTextItem"<<fileInfo.fileName()<<(m_player!=nullptr?m_player->duration():0)<<duration<<(m_player!=nullptr?m_player->position():0)<<time<<totalTime;
 
     if (subLogItem != nullptr)
     {
         if (time == QTime())
         {
+            int position = 0;
+            if (m_player != nullptr)
+                position = m_player->position();
+
             QString newString = "";
             if (fileInfo.lastModified().secsTo(QDateTime::currentDateTime()) < 3600 && qAbs(fileInfo.lastModified().secsTo(fileInfo.birthTime())) > 10) //not within 10 secs of birthTime (then new)
                 newString = " Updated(" + QTime::fromMSecsSinceStartOfDay(fileInfo.lastModified().msecsTo(QDateTime::currentDateTime())).toString("mm:ss") + ")";
@@ -170,7 +174,7 @@ void AGMediaFileRectItem::setTextItem(QTime time, QTime totalTime)
 
                     subLogItem->setHtml(tr("<p>%1<span style=\"color:red\";>%2</span></p><p><small><i>%3</i></small></p><p><small><i>%4</i></small></p><p><small><i>%5</i></small></p>").arg(
                                             fileInfo.fileName(), newString,
-                                            QTime::fromMSecsSinceStartOfDay(playerCorrectedPosition()).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString() + createDateString,
+                                            QTime::fromMSecsSinceStartOfDay(position).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString() + createDateString,
                                             ffmpegPropertyMap["Width"].value + " * " + ffmpegPropertyMap["Height"].value + " @ " + ffmpegPropertyMap["VideoFrameRate"].value + "fps",
                                             lastOutputString));
                 }
@@ -179,14 +183,14 @@ void AGMediaFileRectItem::setTextItem(QTime time, QTime totalTime)
                     QString audioParams = exiftoolPropertyMap["AudioBitrate"].value + " / " + exiftoolPropertyMap["SampleRate"].value + " / " + exiftoolPropertyMap["ChannelMode"].value + " / " + exiftoolPropertyMap["AudioChannels"].value;
                     subLogItem->setHtml(tr("<p>%1<span style=\"color:red\";>%2</span></p><p><small><i>%3</i></small></p><p><small><i>%4</i></small></p><p><small><i>%5</i></small></p>").arg(
                                             fileInfo.fileName(), newString,
-                                            QTime::fromMSecsSinceStartOfDay(playerCorrectedPosition()).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString(),
+                                            QTime::fromMSecsSinceStartOfDay(position).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString(),
                                             audioParams,
                                             lastOutputString));
                 }
                 else
                     subLogItem->setHtml(tr("<p>%1<span style=\"color:red\";>%2</span></p><p><small><i>%3</i></small></p><p><small><i>%4</i></small></p>").arg(
                                             fileInfo.fileName(), newString,
-                                            QTime::fromMSecsSinceStartOfDay(playerCorrectedPosition()).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString(),
+                                            QTime::fromMSecsSinceStartOfDay(position).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString(),
                                             lastOutputString));
             }
             else
@@ -197,16 +201,6 @@ void AGMediaFileRectItem::setTextItem(QTime time, QTime totalTime)
         else
             AGViewRectItem::setTextItem(time, totalTime);
     }
-}
-
-int AGMediaFileRectItem::playerCorrectedPosition()
-{
-    if (m_player == nullptr)
-        return 0;
-//    else if (duration != 0)
-//        return qreal(duration) * qreal(m_player->position()) / qreal(m_player->duration());
-    else
-        return m_player->position();
 }
 
 void AGMediaFileRectItem::onMediaLoaded(QFileInfo fileInfo, QImage image, int duration, QSize mediaSize, QList<int> samples)
@@ -435,11 +429,11 @@ void AGMediaFileRectItem::onMediaFileChanged()
                             }
                             else // if (!editMode)
                             {
-                                if (propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "CompressorID" || propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "VideoFrameRate" || propertyName == "AvgBitrate" || propertyName == "BitDepth" )
+                                if (propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "CompressorID" || propertyName == "ImageWidth" || propertyName == "ImageHeight" || propertyName == "VideoFrameRate" || propertyName == "BitDepth" )
                                     categoryName = "002 - Video";
                                 else if (propertyName.contains("Audio") || propertyName == "SampleRate" || propertyName == "ChannelMode")
                                     categoryName = "003 - Audio";
-                                else if (propertyName.contains("Duration") || propertyName.contains("Image") || propertyName.contains("Video") || propertyName.contains("Compressor") || propertyName == "TrackDuration" )
+                                else if (propertyName.contains("Duration") || propertyName.contains("Image") || propertyName.contains("Video") || propertyName.contains("Compressor") || propertyName == "TrackDuration"  || propertyName == "AvgBitrate" )
                                     categoryName = "008 - Media";
                                 else if (propertyName.contains("File") || propertyName.contains("Directory"))
                                     categoryName = "009 - File";
@@ -532,8 +526,7 @@ void AGMediaFileRectItem::processAction(QString action)
 
     if (action == "actionIn")
     {
-        qDebug()<<__func__<<playerCorrectedPosition();
-        emit addItem(true, "Timeline", "Clip", fileInfo, 3000, playerCorrectedPosition(), playerCorrectedPosition() + 3000);
+        emit addItem(true, "Timeline", "Clip", fileInfo, 3000, m_player->position(), m_player->position() + 3000);
     }
     else if (action == "actionPlay_Pause")
     {
@@ -1463,9 +1456,9 @@ void AGMediaFileRectItem::onRewind(QMediaPlayer *m_player)
 {
     if (m_player->state() != QMediaPlayer::PausedState)
         m_player->pause();
-    if (playerCorrectedPosition() > 1000.0 / m_player->metaData("VideoFrameRate").toDouble())
-        m_player->setPosition(playerCorrectedPosition() - 1000.0 / m_player->metaData("VideoFrameRate").toDouble());
-//    qDebug()<<"onPreviousKeyframeButtonClicked"<<playerCorrectedPosition();
+    if (m_player->position() > 1000.0 / m_player->metaData("VideoFrameRate").toDouble())
+        m_player->setPosition(m_player->position() - 1000.0 / m_player->metaData("VideoFrameRate").toDouble());
+//    qDebug()<<"onPreviousKeyframeButtonClicked"<<m_player->position();
 }
 
 void AGMediaFileRectItem::onPlayVideoButton(QMediaPlayer *m_player)
@@ -1531,9 +1524,9 @@ void AGMediaFileRectItem::onFastForward(QMediaPlayer *m_player)
     if (m_player->state() != QMediaPlayer::PausedState)
         m_player->pause();
 
-    if (playerCorrectedPosition() < duration - 1000.0 / m_player->metaData("VideoFrameRate").toDouble())
-        m_player->setPosition(playerCorrectedPosition() + 1000.0 / m_player->metaData("VideoFrameRate").toDouble());
-//    qDebug()<<"onNextKeyframeButtonClicked"<<playerCorrectedPosition()<<1000.0 / m_player->metaData("VideoFrameRate").toDouble();
+    if (m_player->position() < duration - 1000.0 / m_player->metaData("VideoFrameRate").toDouble())
+        m_player->setPosition(m_player->position() + 1000.0 / m_player->metaData("VideoFrameRate").toDouble());
+//    qDebug()<<"onNextKeyframeButtonClicked"<<m_player->position()<<1000.0 / m_player->metaData("VideoFrameRate").toDouble();
 }
 
 void AGMediaFileRectItem::onSkipNext(QMediaPlayer *m_player)
@@ -1541,7 +1534,7 @@ void AGMediaFileRectItem::onSkipNext(QMediaPlayer *m_player)
 //    int *prevRow = new int();
 //    int *nextRow = new int();
 //    int *relativeProgress = new int();
-//    m_scrubber->progressToRow("V", int(playerCorrectedPosition()), prevRow, nextRow, relativeProgress);
+//    m_scrubber->progressToRow("V", int(m_player->position()), prevRow, nextRow, relativeProgress);
 
 //    if (*nextRow == -1)
 //        *nextRow = lastHighlightedRow;
@@ -1553,7 +1546,7 @@ void AGMediaFileRectItem::onSkipNext(QMediaPlayer *m_player)
 //    else
 //        m_scrubber->rowToPosition("V", *nextRow, relativeProgressl);
 
-////    qDebug()<<"AVideoWidget::skipNext"<<playerCorrectedPosition()<<*nextRow<<*relativeProgress<<*relativeProgressl;
+////    qDebug()<<"AVideoWidget::skipNext"<<m_player->position()<<*nextRow<<*relativeProgress<<*relativeProgressl;
 
 //    if (*relativeProgressl != -1)
 //    {
@@ -1566,7 +1559,7 @@ void AGMediaFileRectItem::onSkipPrevious(QMediaPlayer *m_player)
 //    int *prevRow = new int();
 //    int *nextRow = new int();
 //    int *relativeProgress = new int();
-//    m_scrubber->progressToRow("V", playerCorrectedPosition(), prevRow, nextRow, relativeProgress);
+//    m_scrubber->progressToRow("V", m_player->position(), prevRow, nextRow, relativeProgress);
 
 //    if (*prevRow == -1)
 //        *prevRow = lastHighlightedRow;
@@ -1578,7 +1571,7 @@ void AGMediaFileRectItem::onSkipPrevious(QMediaPlayer *m_player)
 //    else
 //        m_scrubber->rowToPosition("V", *prevRow, relativeProgressl);
 
-////    qDebug()<<"AVideoWidget::skipPrevious"<<playerCorrectedPosition()<<*prevRow<<*relativeProgress<<*relativeProgressl;
+////    qDebug()<<"AVideoWidget::skipPrevious"<<m_player->position()<<*prevRow<<*relativeProgress<<*relativeProgressl;
 
 //    if (*relativeProgressl != -1)
 //    {
@@ -1986,7 +1979,7 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
 //    QString folderName = folderFileName.left(lastIndexOf + 1);
 //    QString fileName = folderFileName.mid(lastIndexOf + 1);
 
-    qDebug()<<"AGMediaFileRectItem::onPositionChanged"<<fileInfo.fileName()<<progress<<playerCorrectedPosition()<<m_player->duration()<<m_player->media().request().url().path();
+//    qDebug()<<"AGMediaFileRectItem::onPositionChanged"<<fileInfo.fileName()<<progress<<m_player->position()<<m_player->duration()<<m_player->media().request().url().path();
 
     if (m_player->duration() != 0)
     {
@@ -1997,8 +1990,8 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
             QSlider *progressSlider = (QSlider *)progressSliderProxy->widget();
             connect(progressSlider, &QSlider::valueChanged, [=] (int value)
             {
-                if (sender() != m_player)
-                    m_player->setPosition(value);
+                if (sender() != m_player) //move by mouse
+                    m_player->setPosition(value); //value is position if exiftool duration
             });
         }
 
@@ -2043,7 +2036,7 @@ void AGMediaFileRectItem::onPositionChanged(int progress)
 
     //            if (this->scene()->selectedItems().contains(this) || this->scene()->selectedItems().contains(clipItem))
                 {
-                    if (clipItem->clipIn <= playerCorrectedPosition() && clipItem->clipOut >= playerCorrectedPosition())
+                    if (clipItem->clipIn <= m_player->position() && clipItem->clipOut >= m_player->position())
                     {
                         //set all other clips off
                         clipItem->scene()->clearSelection();

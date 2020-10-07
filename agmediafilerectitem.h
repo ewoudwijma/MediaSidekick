@@ -52,7 +52,6 @@ public:
     QGraphicsProxyWidget *playButtonProxy;
 
     void setTextItem(QTime time, QTime totalTime);
-    int playerCorrectedPosition();
 public slots:
     void onItemRightClicked(QPoint pos);
 

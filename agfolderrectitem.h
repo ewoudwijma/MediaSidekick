@@ -22,6 +22,7 @@ public:
     QList<MGroupRectItem *> groups;
 
     void setTextItem(QTime time, QTime totalTime);
+    void processAction(QString action);
 };
 
 #endif // AGFOLDERRECTITEM_H

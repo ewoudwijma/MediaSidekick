@@ -156,6 +156,8 @@ private slots:
 
     void on_actionHelp_triggered();
 
+    void on_actionDownload_triggered();
+
 signals:
     void clipsFilterChanged(QComboBox *ratingFilterComboBox, QListView *tagFilter1ListView, QListView *tagFilter2ListView, QCheckBox *allCheckBox);
       void giveStars(int starCount);

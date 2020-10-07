@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationDomain("mediasidekick.org");
     a.setApplicationName("Media Sidekick");
-    a.setApplicationVersion("0.5.3");
+    a.setApplicationVersion("0.5.2.2");
 
     QSettings::setDefaultFormat(QSettings::IniFormat);
     //C:\Users\<user>\AppData\Roaming\mediasidekick.org

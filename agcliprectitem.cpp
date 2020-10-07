@@ -63,19 +63,19 @@ void AGClipRectItem::processAction(QString action)
 //    qDebug()<<"AGClipRectItem::processAction"<<fileInfo.fileName()<<clipIn<<clipOut<<action;
     if (action == "actionIn")
     {
-        if (mediaItem->playerCorrectedPosition() > clipOut)
+        if (mediaItem->m_player->position() > clipOut)
             mediaItem->processAction(action); //add a new clip in mediaItem
         else
         {
-            emit addUndo(true, "Update", "Clip", this, "clipIn", QString::number(clipIn), QString::number(mediaItem->playerCorrectedPosition()));
-            clipIn = mediaItem->playerCorrectedPosition();
+            emit addUndo(true, "Update", "Clip", this, "clipIn", QString::number(clipIn), QString::number(mediaItem->m_player->position()));
+            clipIn = mediaItem->m_player->position();
             duration = clipOut - clipIn;
         }
     }
     else if (action == "actionOut")
     {
-        emit addUndo(true, "Update", "Clip", this, "clipOut", QString::number(clipOut), QString::number(mediaItem->playerCorrectedPosition()));
-        clipOut = mediaItem->playerCorrectedPosition();
+        emit addUndo(true, "Update", "Clip", this, "clipOut", QString::number(clipOut), QString::number(mediaItem->m_player->position()));
+        clipOut = mediaItem->m_player->position();
         duration = clipOut - clipIn;
 //        qDebug()<<"AGClipRectItem processAction"<<action<<duration<<clipIn<<clipOut;
     }

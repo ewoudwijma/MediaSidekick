@@ -6,6 +6,7 @@
 #include "apropertytreeview.h"
 #include "aexport.h"
 
+#include <QComboBox>
 #include <QDir>
 #include <QFormLayout>
 #include <QInputDialog>
@@ -83,7 +84,6 @@ void AGFolderRectItem::setTextItem(QTime time, QTime totalTime)
     }
 }
 
-
 //https://stackoverflow.com/questions/34036848/how-to-suppress-unicode-characters-in-qstring-or-convert-to-latin1
 QString cleanQString(QString toClean) {
 
@@ -96,7 +96,217 @@ QString cleanQString(QString toClean) {
     }
 
     return toReturn;
+}
 
+void AGFolderRectItem::processAction(QString action)
+{
+    if (action.contains("Download"))
+    {
+        QDialog *dialog = new QDialog(this->scene()->views().first());
+        dialog->setWindowTitle("Download Media");
+        dialog->setMinimumWidth(1000);
+
+        QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
+
+        QFormLayout *formLayout = new QFormLayout();
+        mainLayout->addLayout(formLayout);
+
+        QLineEdit *urlLineEdit = new QLineEdit();
+        urlLineEdit->setPlaceholderText("URL...");
+        urlLineEdit->setToolTip("Enter URL what to download (e.g. copy paste youtube URL)");
+//        mainLayout->addWidget(urlLineEdit);
+        formLayout->addRow("URL", urlLineEdit);
+
+        QCheckBox *audioOnlyCheckBox = new QCheckBox();
+        audioOnlyCheckBox->setToolTip("If checked, download attempts to download audio only in best format");
+        formLayout->addRow("Audio Only:", audioOnlyCheckBox);
+
+        QComboBox *formatComboBox = new QComboBox();
+        formatComboBox->setToolTip("After entering an URL, all formats of the file specified is shown and one can be chosen");
+        formLayout->addRow("Format", formatComboBox);
+        formatComboBox->addItem("...enter url and wait for available download formats...");
+
+//        QCheckBox *mp3Mp4CheckBox = new QCheckBox();
+//        formLayout->addRow("Export to mp3/mp4:", mp3Mp4CheckBox);
+//        mp3Mp4CheckBox->setToolTip("Find the best mp3/mp4 codec available. If not checked default youtube formats are used (e.g. Webm, Opus)");
+
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        mainLayout->addLayout(buttonLayout);
+
+        QPushButton *okButton = new QPushButton();
+        okButton->setText("OK");
+        okButton->setEnabled(false);
+        okButton->setToolTip("Download media, if url entered and audio only checked or a format chosen");
+        buttonLayout->addWidget(okButton);
+
+        QPushButton *cancelButton = new QPushButton();
+        cancelButton->setText("Cancel");
+        buttonLayout->addWidget(cancelButton);
+
+        connect(audioOnlyCheckBox, &QCheckBox::clicked, [=] (bool checked)
+        {
+            okButton->setEnabled(checked);
+            formatComboBox->setEnabled(!checked);
+        });
+
+        connect(urlLineEdit, &QLineEdit::editingFinished, [=] ()
+        {
+            qDebug()<<__func__<<urlLineEdit->text();
+
+            formatComboBox->clear();
+
+            AGProcessAndThread *process = new AGProcessAndThread(this);
+                        //https://ostechnix.com/youtube-dl-tutorial-with-examples-for-beginners/
+
+            QString command = "youtube-dl --list-formats " + urlLineEdit->text();
+
+            process->command("Download media", command);
+
+            processes<<process;
+            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
+            {
+                QStringList formatValues = outputString.split("  ");
+
+                formatValues.removeAll("");
+
+                qDebug()<<outputString.split("  ");
+
+                if (formatValues.count() > 3 || outputString.contains("Error", Qt::CaseInsensitive))
+                {
+                    formatComboBox->addItem(formatValues.join(", "));
+                    if (outputString.contains("(best)"))
+                        formatComboBox->setCurrentText(formatValues.join(", "));
+                }
+
+                if (formatValues.count() > 3)
+                    okButton->setEnabled(true);
+
+                //249          webm       audio only tiny   60k , opus @ 50k (48000Hz), 1.64MiB
+                if (event == "finished")
+                {
+//                    qDebug()<<process->log;
+
+//                    int format_code
+//                    for (int i=0; i<process->log.count(); i++)
+//                    {
+//                        if (process->log[i].contains("format code"))
+//                    }
+                }
+            });
+            process->start();
+        });
+
+        connect(okButton, &QPushButton::clicked, [=] (bool /*checked*/)
+        {
+//            QPushButton *button = qobject_cast<QPushButton *)sender();
+//            qDebug()<<"Download Media Clicked"<<checked<<urlLineEdit->text();
+
+            //            QSettings().setValue("DownloadMediaURL", text);
+            //            QSettings().sync();
+
+            QString recycleFolderName = QSettings().value("selectedFolderName").toString() + "MSKRecycleBin/";
+            QDir recycleDir(recycleFolderName);
+            if (!recycleDir.exists())
+                recycleDir.mkpath(".");
+
+            AGProcessAndThread *process = new AGProcessAndThread(this);
+                        //https://ostechnix.com/youtube-dl-tutorial-with-examples-for-beginners/
+
+            QString command = "youtube-dl";
+
+            if (audioOnlyCheckBox->isChecked())
+            {
+//                if (mp3Mp4CheckBox->isChecked())
+//                    command += " -x --audio-format m4a";
+//                else
+                    command += " -x";
+            }
+            else
+            {
+                if (formatComboBox->currentText() != "")
+                {
+                    QStringList formatValues = formatComboBox->currentText().split(",");
+                    command += " -f " + formatValues[0];
+                }
+//                if (mp3Mp4CheckBox->isChecked())
+//                    command += " -f \"bestvideo[ext=mp4]+bestaudio[ext=mp3]/mp4\"";
+            }
+
+            command += " -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text();
+
+            process->command("Download media", command);
+
+//            if (audioOnlyCheckBox->isChecked())
+//                process->command("Download media", "youtube-dl -x -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
+////            process->command("Download media", "youtube-dl.exe -x --audio-format mp3 -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
+//            else
+//                process->command("Download media", "youtube-dl -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
+////                process->command("Download media", "youtube-dl.exe -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
+
+//            //            process->command("Download media", "youtube-dl.exe -f \"bestvideo+bestaudio/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + text);
+
+            processes<<process;
+            connect(process, &AGProcessAndThread::processOutput, this, &AGFolderRectItem::onProcessOutput);
+            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
+            {
+                QStringList searchStrings;
+                searchStrings << "[ffmpeg] Merging formats into ";
+                searchStrings << "[ffmpeg] Destination: ";
+                searchStrings << "[ffmpeg] Correcting container in ";
+                searchStrings << "[download] Destination: "; //for osx
+
+                foreach (QString searchString, searchStrings)
+                    if (outputString.contains(searchString))
+                        transitionValueChangedBy = outputString.replace(searchString, "").replace("\"", "");//.replace("//","/");
+
+                if (event == "finished")
+                {
+                    if (process->errorMessage == "")
+                    {
+                    }
+                    else
+                        QMessageBox::information(scene()->views().first(), "Error " + process->name, process->errorMessage);
+
+                    if (transitionValueChangedBy != "")
+                    {
+                        QFileInfo fileInfo(transitionValueChangedBy);
+
+                        QDir recycleDir(fileInfo.absolutePath());
+                        {
+//                            qDebug()<<"onItemRightClicked download media finished"<<transitionValueChangedBy<<fileInfo.absolutePath();
+
+                            recycleDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
+                            foreach( QFileInfo dirInfoItem, recycleDir.entryInfoList() )
+                            {
+//                                qDebug()<<__func__<<dirInfoItem.fileName().toUtf8()<<cleanQString(dirInfoItem.fileName())<<fileInfo.fileName()<<(cleanQString(dirInfoItem.fileName()) == fileInfo.fileName());
+
+                                if (cleanQString(dirInfoItem.fileName()) == fileInfo.fileName())
+                                {
+                                    QFile file(dirInfoItem.absoluteFilePath());
+                                    bool success = file.rename(fileInfo.absoluteFilePath().replace("/MSKRecycleBin", ""));
+
+//                                    qDebug()<<"onItemRightClicked download media finished"<<"move from msk recycle bin"<<transitionValueChangedBy<<fileInfo<<dirInfoItem<<success;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            process->start();
+
+            dialog->close();
+        });
+
+        connect(cancelButton, &QPushButton::clicked, [=] ()
+        {
+            dialog->close();
+        });
+
+        dialog->show();
+
+    }
+    else
+        AGViewRectItem::processAction(action);
 
 }
 
@@ -280,6 +490,7 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
 
     fileContextMenu->addAction(new QAction("Download media",fileContextMenu));
     fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
+    fileContextMenu->actions().last()->setShortcut(QKeySequence(tr("Ctrl+D")));
     connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
     {
 //        bool ok;
@@ -288,140 +499,8 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
 //                                             "URL:                                                                             ", QLineEdit::Normal,
 //                                             "", &ok); //add spaces in the label as workaround to make the dialog wider.
 
-        QDialog *dialog = new QDialog(this->scene()->views().first());
-        dialog->setWindowTitle("Download Media");
-        dialog->setMinimumWidth(500);
+        processAction("Download Media");
 
-        QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
-
-        QFormLayout *formLayout = new QFormLayout();
-        mainLayout->addLayout(formLayout);
-
-        QLineEdit *urlLineEdit = new QLineEdit();
-        urlLineEdit->setPlaceholderText("URL...");
-//        mainLayout->addWidget(urlLineEdit);
-        formLayout->addRow("URL:", urlLineEdit);
-
-        QCheckBox *audioOnlyCheckBox = new QCheckBox();
-        formLayout->addRow("Audio Only:", audioOnlyCheckBox);
-
-        QCheckBox *mp3Mp4CheckBox = new QCheckBox();
-        formLayout->addRow("Export to mp3/mp4:", mp3Mp4CheckBox);
-        mp3Mp4CheckBox->setToolTip("Find the best mp3/mp4 codec available. If not checked default youtube formats are used (e.g. Webm, Opus)");
-
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
-        mainLayout->addLayout(buttonLayout);
-
-        QPushButton *okButton = new QPushButton();
-        okButton->setText("OK");
-        buttonLayout->addWidget(okButton);
-
-        QPushButton *cancelButton = new QPushButton();
-        cancelButton->setText("Cancel");
-        buttonLayout->addWidget(cancelButton);
-
-        connect(okButton, &QPushButton::clicked, [=] (bool checked)
-        {
-//            QPushButton *button = qobject_cast<QPushButton *)sender();
-//            qDebug()<<"Download Media Clicked"<<checked<<urlLineEdit->text();
-
-            //            QSettings().setValue("DownloadMediaURL", text);
-            //            QSettings().sync();
-
-            QString recycleFolderName = QSettings().value("selectedFolderName").toString() + "MSKRecycleBin/";
-            QDir recycleDir(recycleFolderName);
-            if (!recycleDir.exists())
-                recycleDir.mkpath(".");
-
-            AGProcessAndThread *process = new AGProcessAndThread(this);
-                        //https://ostechnix.com/youtube-dl-tutorial-with-examples-for-beginners/
-
-            QString command = "youtube-dl";
-
-            if (audioOnlyCheckBox->isChecked())
-            {
-                if (mp3Mp4CheckBox->isChecked())
-                    command += " -x --audio-format mp3";
-                else
-                    command += " -x";
-            }
-            else
-            {
-                if (mp3Mp4CheckBox->isChecked())
-                    command += " -f \"bestvideo[ext=mp4]+bestaudio[ext=mp3]/mp4\"";
-            }
-
-            command += " -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text();
-
-            process->command("Download media", command);
-
-//            if (audioOnlyCheckBox->isChecked())
-//                process->command("Download media", "youtube-dl -x -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
-////            process->command("Download media", "youtube-dl.exe -x --audio-format mp3 -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
-//            else
-//                process->command("Download media", "youtube-dl -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
-////                process->command("Download media", "youtube-dl.exe -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
-
-//            //            process->command("Download media", "youtube-dl.exe -f \"bestvideo+bestaudio/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + text);
-
-            processes<<process;
-            connect(process, &AGProcessAndThread::processOutput, this, &AGFolderRectItem::onProcessOutput);
-            connect(process, &AGProcessAndThread::processOutput, [=] (QTime time, QTime totalTime, QString event, QString outputString)
-            {
-                QStringList searchStrings;
-                searchStrings << "[ffmpeg] Merging formats into ";
-                searchStrings << "[ffmpeg] Destination: ";
-                searchStrings << "[ffmpeg] Correcting container in ";
-                searchStrings << "[download] Destination: "; //for osx
-
-                foreach (QString searchString, searchStrings)
-                    if (outputString.contains(searchString))
-                        transitionValueChangedBy = outputString.replace(searchString, "").replace("\"", "");//.replace("//","/");
-
-                if (event == "finished")
-                {
-                    if (process->errorMessage == "")
-                    {
-                    }
-                    else
-                        QMessageBox::information(scene()->views().first(), "Error " + process->name, process->errorMessage);
-
-                    if (transitionValueChangedBy != "")
-                    {
-                        QFileInfo fileInfo(transitionValueChangedBy);
-
-                        QDir recycleDir(fileInfo.absolutePath());
-                        {
-//                            qDebug()<<"onItemRightClicked download media finished"<<transitionValueChangedBy<<fileInfo.absolutePath();
-
-                            recycleDir.setFilter( QDir::NoDotAndDotDot | QDir::Files );
-                            foreach( QFileInfo dirInfoItem, recycleDir.entryInfoList() )
-                            {
-//                                qDebug()<<__func__<<dirInfoItem.fileName().toUtf8()<<cleanQString(dirInfoItem.fileName())<<fileInfo.fileName()<<(cleanQString(dirInfoItem.fileName()) == fileInfo.fileName());
-
-                                if (cleanQString(dirInfoItem.fileName()) == fileInfo.fileName())
-                                {
-                                    QFile file(dirInfoItem.absoluteFilePath());
-                                    bool success = file.rename(fileInfo.absoluteFilePath().replace("/MSKRecycleBin", ""));
-
-//                                    qDebug()<<"onItemRightClicked download media finished"<<"move from msk recycle bin"<<transitionValueChangedBy<<fileInfo<<dirInfoItem<<success;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            process->start();
-
-            dialog->close();
-        });
-
-        connect(cancelButton, &QPushButton::clicked, [=] ()
-        {
-            dialog->close();
-        });
-
-        dialog->show();
 
 //        if (ok && !text.isEmpty())
 //        {
