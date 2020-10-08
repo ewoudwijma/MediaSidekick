@@ -129,3 +129,7 @@ win32: INCLUDEPATH +=D:\MediaSidekick\windows\ffmpeg-latest-win64-dev\include
 unix:LIBS += -L/Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-shared/bin
 unix:LIBS += -lavcodec.58 -lavformat.58 -lavutil.56 -lswscale.5 #-lavdevice -lavfilter -lpostproc -lswresample
 unix:INCLUDEPATH += /Users/ewoudwijma/Downloads/ffmpeg-latest-macos64-dev/include
+
+DISTFILES += \
+    deploy.txt \
+    primaryprocess.txt

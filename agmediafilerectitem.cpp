@@ -1148,6 +1148,7 @@ void AGMediaFileRectItem::onItemRightClicked(QPoint pos)
     {
         fileContextMenu->addAction(new QAction("Add clip",fileContextMenu));
         fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_TrashIcon));
+        fileContextMenu->actions().last()->setShortcut(QKeySequence(tr("Ctrl+I")));
 
         fileContextMenu->actions().last()->setEnabled(m_player != nullptr);
 

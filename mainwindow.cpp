@@ -101,7 +101,7 @@ MainWindow::~MainWindow()
 
     if (geometry() != QSettings().value("Geometry").toRect())
     {
-        qDebug()<<"MainWindow::~MainWindow"<<geometry();
+//        qDebug()<<"MainWindow::~MainWindow"<<geometry();
         QSettings().setValue("Geometry", geometry());
 //    QSettings().setValue("windowState", saveState());
         QSettings().sync();

@@ -85,6 +85,8 @@ void MExportDialog::loadSettings()
                     //check if descendent of rootitem
 
                     fileGroup->timelineGroupItem->filteredClips.clear();
+                    fileGroup->timelineGroupItem->containsVideo = false;
+                    fileGroup->timelineGroupItem->containsAudio = false;
 
                     if (fileGroup->fileInfo.fileName() != "Parking")
                     {
@@ -100,6 +102,26 @@ void MExportDialog::loadSettings()
 
                             if (cntnue && !clipItem->data(excludedInFilter).toBool())
                             {
+                                //            qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
+                                bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
+                                bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
+                    //            if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
+                    //            {
+                                    fileGroup->timelineGroupItem->containsVideo = fileGroup->timelineGroupItem->containsVideo || containsVideo;
+                                    fileGroup->timelineGroupItem->containsAudio = fileGroup->timelineGroupItem->containsAudio || containsAudio;
+                    //            }
+                    //            else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
+                    //            {
+                    //                timelineItem->containsVideo = false;
+                    //                timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
+                    //            }
+
+                                    //tbd check other formats then mp3 and 4 (and m4a...)
+
+
+
+//                                qDebug()<<"MExportDialog::exportPremiere() - contains"<<clipItem->fileInfo.fileName()<<inTime<<clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value<<containsVideo<<containsAudio;
+
 //                                qDebug()<<"add to filteredClips"<<fileGroup->fileInfo.fileName()<<clipItem->fileInfo.fileName()<<clipItem->data(excludedInFilter).toBool()<<clipItem->clipIn;
                                 fileGroup->timelineGroupItem->filteredClips << clipItem;
 
@@ -408,22 +430,6 @@ void MExportDialog::losslessVideoAndAudio()
                 vidlistStream << "outpoint " << QString::number((outTime.msecsSinceStartOfDay()) / 1000.0, 'g', 6) << Qt::endl;
 
 //                qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
-
-                bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
-                bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
-                if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
-                {
-                    timelineItem->containsVideo = timelineItem->containsVideo || containsVideo;
-                    timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
-                }
-                else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
-                {
-                    timelineItem->containsVideo = false;
-                    timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
-                }
-
-                //tbd check other formats then mp3 and 4
-
             } //for each clip
 
             vidlistFile.close();
@@ -531,21 +537,6 @@ void MExportDialog::encodeVideoClips()
             ffmpegFiles << trimOffsetFFMpeg + "-i \"" + clipItem->fileInfo.absoluteFilePath() + "\"";
 
             int fileReference = ffmpegFiles.count() - 1;
-
-//            qDebug()<<"VideoAudioCheck"<<clipItem->fileInfo.fileName()<<clipItem->mediaItem->exiftoolValueMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioSampleRate"].value<<clipItem->mediaItem->exiftoolValueMap["AudioBitrate"].value;
-            bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
-            bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
-            if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
-            {
-                timelineItem->containsVideo = timelineItem->containsVideo || containsVideo;
-                timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
-            }
-            else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
-            {
-                timelineItem->containsVideo = false;
-                timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
-            }
-            //tbd check other formats then mp3 and 4
 
             QStringList tracks;
 
@@ -870,6 +861,7 @@ void MExportDialog::muxVideoAndAudio()
 //            if (timelineItem->groupItem->fileInfo.completeBaseName() == "Video")
             {
                 QSlider *audioLevelSlider = (QSlider *)timelineItem->groupItem->audioLevelSliderProxy->widget();
+//                qDebug()<<__func__<<timelineItem->groupItem->fileInfo.fileName()<<timelineItem->containsVideo<<timelineItem->containsAudio<<audioLevelSlider->value();
                 if (audioLevelSlider->value() == 100)
                     audioStreamListAliases << "[" + QString::number(fileReference) + "]";
     //                                                command += " -filter_complex \"[0][1]amix=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy";
@@ -901,9 +893,9 @@ void MExportDialog::muxVideoAndAudio()
         ffmpegMappings << "-map 0:v";
     }
 
-    if (audioStreamList.count() > 0)
+    if (audioStreamListAliases.count() > 0)
     {
-        ffmpegCombines << audioStreamList.join(";") + ";" + audioStreamListAliases.join("") + "amix=inputs=" + QString::number(audioStreamListAliases.count()) + "[audio]";
+        ffmpegCombines << audioStreamList.join(";") + (audioStreamList.count()>0?";":"") + audioStreamListAliases.join("") + "amix=inputs=" + QString::number(audioStreamListAliases.count()) + "[audio]";
         ffmpegMappings << "-map \"[audio]\"";
     }
 
@@ -1850,20 +1842,6 @@ void MExportDialog::exportPremiere()
             if (item != timelineItem->filteredClips.first())
                 totalDurationMsec -= ui->transitionDurationTimeEdit->time().msecsSinceStartOfDay();
 
-            bool containsVideo = clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value != "";
-            bool containsAudio = clipItem->mediaItem->exiftoolPropertyMap["AudioSampleRate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioBitrate"].value != "" || clipItem->mediaItem->exiftoolPropertyMap["AudioChannels"].value != ""; //AudioBitrate for mp3, AudioSampleRate for mp4, AudioChannels for mkv;
-            if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("video"))
-            {
-                timelineItem->containsVideo = timelineItem->containsVideo || containsVideo;
-                timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
-            }
-            else if (clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value.contains("audio"))
-            {
-                timelineItem->containsVideo = false;
-                timelineItem->containsAudio = timelineItem->containsAudio || containsAudio;
-            }
-
-            qDebug()<<"MExportDialog::exportPremiere() - contains"<<clipItem->fileInfo.fileName()<<inTime<<clipItem->mediaItem->exiftoolPropertyMap["VideoFrameRate"].value<<clipItem->mediaItem->exiftoolPropertyMap["MIMEType"].value<<containsVideo<<containsAudio;
             //tbd check other formats then mp3 and 4
         }
 

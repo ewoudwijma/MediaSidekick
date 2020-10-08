@@ -1,0 +1,34 @@
+Primary process
+- (delete ini file)
+- Install MSK
+- Start MSK
+- Select folder
+	- Zoom in / out
+- Select video
+- Play video
+	- Increase / decrease volume
+	- Increase / decrease speed
+	- Slider (shift-left-mouse)
+	- Stop
+- Add clip
+    - change in
+    - change out
+- Add another 2 clips
+- Undo / Redo
+- Add rating
+- Add keywords
+- Save
+- Enter filter
+- toggle views, go to Timeline view
+- Open export window
+- Set transition Time
+- Download from youtube
+- Add clips matching length
+- Show scales
+- Zoom out (to see created exports)
+- Export set watermark
+	- Export lossless and play
+	- Export encode and play
+	- Export shotcut and play
+	- Export premiere and play
+

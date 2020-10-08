@@ -58,51 +58,60 @@ MGroupRectItem::MGroupRectItem(QGraphicsItem *parent, QFileInfo fileInfo) :
 
     if (fileInfo.fileName() != "Project")
     {
-    QSlider *audioLevelSlider = new QSlider();
+        QSlider *audioLevelSlider = new QSlider();
 
-    audioLevelSlider->setMaximum(100);
-    audioLevelSlider->setSingleStep(10);
-//    audioLevelSlider->setOrientation(Qt::Horizontal);
-    audioLevelSlider->setTickPosition(QSlider::TicksBelow);
-    audioLevelSlider->setTickInterval(10);
-    if (QSettings().value(fileInfo.fileName() + "AudioLevelSlider").toInt() != audioLevelSlider->value())
-        audioLevelSlider->setValue(QSettings().value(fileInfo.fileName() + "AudioLevelSlider").toInt());
-
-//    audioLevelSlider->setMinimumHeight(this->rect().height());
-
-    connect(audioLevelSlider, &QSlider::valueChanged, [=] (int value)
-    {
-        setTextItem(QTime(), QTime());
-
-        if (value != QSettings().value(fileInfo.fileName() + "AudioLevelSlider"))
+        audioLevelSlider->setMaximum(100);
+        audioLevelSlider->setSingleStep(10);
+    //    audioLevelSlider->setOrientation(Qt::Horizontal);
+        audioLevelSlider->setTickPosition(QSlider::TicksBelow);
+        audioLevelSlider->setTickInterval(10);
+//        qDebug()<<__func__<<fileInfo.fileName() + "AudioLevelSlider"<<QSettings().value(fileInfo.fileName() + "AudioLevelSlider");
+        if (QSettings().value(fileInfo.fileName() + "AudioLevelSlider").toString() == "")
         {
-            QSettings().setValue(fileInfo.fileName() + "AudioLevelSlider", value);
+            if (fileInfo.fileName() == "Video")
+                QSettings().setValue(fileInfo.fileName() + "AudioLevelSlider", "20");
+            else
+                QSettings().setValue(fileInfo.fileName() + "AudioLevelSlider", "100");
             QSettings().sync();
         }
+        if (QSettings().value(fileInfo.fileName() + "AudioLevelSlider").toInt() != audioLevelSlider->value())
+            audioLevelSlider->setValue(QSettings().value(fileInfo.fileName() + "AudioLevelSlider").toInt());
 
-        foreach(AGMediaFileRectItem *mediaFile, mediaFiles)
+    //    audioLevelSlider->setMinimumHeight(this->rect().height());
+
+        connect(audioLevelSlider, &QSlider::valueChanged, [=] (int value)
         {
-            if (mediaFile->m_player != nullptr)
-                mediaFile->m_player->setVolume(value);
-        }
-    });
+            setTextItem(QTime(), QTime());
+
+            if (value != QSettings().value(fileInfo.fileName() + "AudioLevelSlider"))
+            {
+                QSettings().setValue(fileInfo.fileName() + "AudioLevelSlider", value);
+                QSettings().sync();
+            }
+
+            foreach(AGMediaFileRectItem *mediaFile, mediaFiles)
+            {
+                if (mediaFile->m_player != nullptr)
+                    mediaFile->m_player->setVolume(value);
+            }
+        });
 //      btnuser->setGeometry(this->rect().toRect());
 //      btnuser->setText("Test User");
 //      QGraphicsProxyWidget *proxy = scene()->addWidget(btnuser);
 
-      audioLevelSliderProxy = new QGraphicsProxyWidget(this); // parent can be NULL
-      audioLevelSliderProxy->setWidget(audioLevelSlider);
+        audioLevelSliderProxy = new QGraphicsProxyWidget(this); // parent can be NULL
+        audioLevelSliderProxy->setWidget(audioLevelSlider);
 
-      audioLevelSliderProxy->setData(mediaTypeIndex, mediaType);
-      audioLevelSliderProxy->setData(itemTypeIndex, "SubAudioLevelSlider");
+        audioLevelSliderProxy->setData(mediaTypeIndex, mediaType);
+        audioLevelSliderProxy->setData(itemTypeIndex, "SubAudioLevelSlider");
 
-      audioLevelSlider->setMinimumHeight(this->boundingRect().height() * 0.6);
-      audioLevelSlider->setMaximumHeight(this->boundingRect().height() * 0.6);
+        audioLevelSlider->setMinimumHeight(this->boundingRect().height() * 0.6);
+        audioLevelSlider->setMaximumHeight(this->boundingRect().height() * 0.6);
 
-      audioLevelSlider->setStyleSheet("background-color: rgba(0,0,0,0)");
+        audioLevelSlider->setStyleSheet("background-color: rgba(0,0,0,0)");
     }
 
-      setTextItem(QTime(), QTime());
+    setTextItem(QTime(), QTime());
 }
 
 void MGroupRectItem::setTextItem(QTime time, QTime totalTime)

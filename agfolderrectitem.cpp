@@ -151,8 +151,6 @@ void AGFolderRectItem::processAction(QString action)
 
         connect(urlLineEdit, &QLineEdit::editingFinished, [=] ()
         {
-            qDebug()<<__func__<<urlLineEdit->text();
-
             formatComboBox->clear();
 
             AGProcessAndThread *process = new AGProcessAndThread(this);
@@ -169,8 +167,6 @@ void AGFolderRectItem::processAction(QString action)
 
                 formatValues.removeAll("");
 
-                qDebug()<<outputString.split("  ");
-
                 if (formatValues.count() > 3 || outputString.contains("Error", Qt::CaseInsensitive))
                 {
                     formatComboBox->addItem(formatValues.join(", "));
@@ -184,13 +180,6 @@ void AGFolderRectItem::processAction(QString action)
                 //249          webm       audio only tiny   60k , opus @ 50k (48000Hz), 1.64MiB
                 if (event == "finished")
                 {
-//                    qDebug()<<process->log;
-
-//                    int format_code
-//                    for (int i=0; i<process->log.count(); i++)
-//                    {
-//                        if (process->log[i].contains("format code"))
-//                    }
                 }
             });
             process->start();
@@ -198,9 +187,6 @@ void AGFolderRectItem::processAction(QString action)
 
         connect(okButton, &QPushButton::clicked, [=] (bool /*checked*/)
         {
-//            QPushButton *button = qobject_cast<QPushButton *)sender();
-//            qDebug()<<"Download Media Clicked"<<checked<<urlLineEdit->text();
-
             //            QSettings().setValue("DownloadMediaURL", text);
             //            QSettings().sync();
 
@@ -216,10 +202,7 @@ void AGFolderRectItem::processAction(QString action)
 
             if (audioOnlyCheckBox->isChecked())
             {
-//                if (mp3Mp4CheckBox->isChecked())
-//                    command += " -x --audio-format m4a";
-//                else
-                    command += " -x";
+                command += " -x";
             }
             else
             {
@@ -228,22 +211,11 @@ void AGFolderRectItem::processAction(QString action)
                     QStringList formatValues = formatComboBox->currentText().split(",");
                     command += " -f " + formatValues[0];
                 }
-//                if (mp3Mp4CheckBox->isChecked())
-//                    command += " -f \"bestvideo[ext=mp4]+bestaudio[ext=mp3]/mp4\"";
             }
 
             command += " -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text();
 
             process->command("Download media", command);
-
-//            if (audioOnlyCheckBox->isChecked())
-//                process->command("Download media", "youtube-dl -x -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
-////            process->command("Download media", "youtube-dl.exe -x --audio-format mp3 -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
-//            else
-//                process->command("Download media", "youtube-dl -o \"" + fileInfo.absoluteFilePath() + "/MSKRecycleBin/%(title)s.%(ext)s\" " + urlLineEdit->text());
-////                process->command("Download media", "youtube-dl.exe -f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + urlLineEdit->text());
-
-//            //            process->command("Download media", "youtube-dl.exe -f \"bestvideo+bestaudio/mp4\" -o \"" + fileInfo.absoluteFilePath() + "/%(title)s.%(ext)s\" " + text);
 
             processes<<process;
             connect(process, &AGProcessAndThread::processOutput, this, &AGFolderRectItem::onProcessOutput);
@@ -307,12 +279,10 @@ void AGFolderRectItem::processAction(QString action)
     }
     else
         AGViewRectItem::processAction(action);
-
 }
 
 void AGFolderRectItem::onItemRightClicked(QPoint pos)
 {
-
     fileContextMenu->clear();
 
     fileContextMenu->addAction(new QAction("Property manager",fileContextMenu));
