@@ -1,34 +1,44 @@
 Primary process
 - (delete ini file)
-- Install MSK
-- Start MSK
-- Select folder
-	- Zoom in / out
+- Install MSK (mediasidekick.org -> github releases)
+- Start MSK (start, scroll to M)
+- Full screen
+- Select folder (schakenbosch)
+	- resize window 
 - Select video
 - Play video
-	- Increase / decrease volume
-	- Increase / decrease speed
-	- Slider (shift-left-mouse)
-	- Stop
+	- Slider (drag)
+	- (Stop) 
 - Add clip
     - change in
     - change out
 - Add another 2 clips
+	- stop clips
+- Save
+- Download from youtube
+	- Add clips matching length
+- Zoom in / out (to see created exports)
+
+- toggle views, go to Timeline view
+- Open export window
+	- Set transition Time
+	- Export lossless and play
+	- Export set watermark
+	- Export encode and play
+	- Export shotcut and play (open app)
+	- Export premiere and play
+
+
+*********
+
+Video
+	- (Increase / decrease volume)
+	- (Increase / decrease speed)
+Clips 
 - Undo / Redo
 - Add rating
 - Add keywords
-- Save
 - Enter filter
-- toggle views, go to Timeline view
-- Open export window
-- Set transition Time
-- Download from youtube
-- Add clips matching length
-- Show scales
-- Zoom out (to see created exports)
-- Export set watermark
-	- Export lossless and play
-	- Export encode and play
-	- Export shotcut and play
-	- Export premiere and play
 
+App
+- Show scales

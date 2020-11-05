@@ -175,12 +175,12 @@ void AGMediaFileRectItem::setTextItem(QTime time, QTime totalTime)
                     subLogItem->setHtml(tr("<p>%1<span style=\"color:red\";>%2</span></p><p><small><i>%3</i></small></p><p><small><i>%4</i></small></p><p><small><i>%5</i></small></p>").arg(
                                             fileInfo.fileName(), newString,
                                             QTime::fromMSecsSinceStartOfDay(position).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString() + createDateString,
-                                            ffmpegPropertyMap["Width"].value + " * " + ffmpegPropertyMap["Height"].value + " @ " + ffmpegPropertyMap["VideoFrameRate"].value + "fps",
+                                            ffmpegPropertyMap["Width"].value + " * " + ffmpegPropertyMap["Height"].value + " @ " + ffmpegPropertyMap["VideoFrameRate"].value + "fps (" + exiftoolPropertyMap["FileSize"].value + ")",
                                             lastOutputString));
                 }
                 else if (AGlobal().audioExtensions.contains(fileInfo.suffix(), Qt::CaseInsensitive))
                 {
-                    QString audioParams = exiftoolPropertyMap["AudioBitrate"].value + " / " + exiftoolPropertyMap["SampleRate"].value + " / " + exiftoolPropertyMap["ChannelMode"].value + " / " + exiftoolPropertyMap["AudioChannels"].value;
+                    QString audioParams = exiftoolPropertyMap["AudioBitrate"].value + " / " + exiftoolPropertyMap["SampleRate"].value + " / " + exiftoolPropertyMap["ChannelMode"].value + " / " + exiftoolPropertyMap["AudioChannels"].value + " (" + exiftoolPropertyMap["FileSize"].value + ")";
                     subLogItem->setHtml(tr("<p>%1<span style=\"color:red\";>%2</span></p><p><small><i>%3</i></small></p><p><small><i>%4</i></small></p><p><small><i>%5</i></small></p>").arg(
                                             fileInfo.fileName(), newString,
                                             QTime::fromMSecsSinceStartOfDay(position).toString() + " / " + QTime::fromMSecsSinceStartOfDay(duration).toString(),
@@ -830,13 +830,13 @@ void AGMediaFileRectItem::onItemRightClicked(QPoint pos)
                                                          "<li><b>Example</b>: e.g. lossless trim of ReelSteady Go files results in files with incorrect length and incorrect keyframes. Use Trim Encode in this case!</li>"
                                                                "</ul>").arg(fileContextMenu->actions().last()->text()));
 
-        fileContextMenu->addAction(new QAction("Encode", fileContextMenu));
+        fileContextMenu->addAction(new QAction("Encode to MP4", fileContextMenu));
         fileContextMenu->actions().last()->setIcon(QIcon(QPixmap::fromImage(QImage(":/Spinner.gif"))));
         connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
         {
             initPlayer(false);
 
-            QString targetFileName = fileInfo.completeBaseName() + "EN." + fileInfo.suffix();
+            QString targetFileName = fileInfo.completeBaseName() + "EN.mp4";// + fileInfo.suffix();
 
             QStringList ffmpegFiles;
             QStringList ffmpegClips;
