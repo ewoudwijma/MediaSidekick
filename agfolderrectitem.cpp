@@ -478,6 +478,40 @@ void AGFolderRectItem::onItemRightClicked(QPoint pos)
 
     });
 
+    fileContextMenu->addAction(new QAction("Fast clips",fileContextMenu));
+    fileContextMenu->actions().last()->setIcon(qApp->style()->standardIcon(QStyle::SP_DirOpenIcon));
+    fileContextMenu->actions().last()->setShortcut(QKeySequence(tr("Ctrl+C")));
+    connect(fileContextMenu->actions().last(), &QAction::triggered, [=]()
+    {
+//        foreach (AGClipRectItem *clipItem, fileGroup->timelineGroupItem->clips)
+//        {
+
+//        }
+        foreach (QGraphicsItem *item, scene()->items())
+        {
+            if (item->data(mediaTypeIndex).toString() == "MediaFile" && item->data(itemTypeIndex).toString() == "Base")
+            {
+                AGMediaFileRectItem *mediaItem = (AGMediaFileRectItem *)item;
+
+//                mediaItem->processAction("actionPlay_Pause");
+
+                if (mediaItem->m_player == nullptr)
+                    mediaItem->initPlayer(false);
+
+                for (int position = 10000; position<mediaItem->duration - 3000; position=position+10000) {
+                    mediaItem->m_player->setPosition(position);
+
+                    qDebug()<<"Fast clips"<<mediaItem->fileInfo.fileName()<<mediaItem->m_player->position();
+                    mediaItem->processAction("actionIn");
+
+                }
+
+
+            }
+        }
+    });
+
+
     fileContextMenu->addSeparator();
 
     AGViewRectItem::onItemRightClicked(pos);
