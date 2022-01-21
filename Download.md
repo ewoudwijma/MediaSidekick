@@ -1,6 +1,8 @@
+---
 layout: page
 title: "Download"
 permalink: /Download/
+---
 
 # Header 1
 ## Header 2
