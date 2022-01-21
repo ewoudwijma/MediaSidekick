@@ -5,6 +5,11 @@
 
 ## Welcome to GitHub Pages for MediaSidekick
 
+[home](https://ewoudwijma.github.io/MediaSidekick/)
+[Quickstart](https://docs.github.com/en/pages/quickstart)
+[Add new page](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/adding-content-to-your-github-pages-site-using-jekyll#about-content-in-jekyll-sites)
+[About github pages](https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#publishing-sources-for-github-pages-sites)
+
 
 You can use the [editor on GitHub](https://github.com/ewoudwijma/MediaSidekick/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
