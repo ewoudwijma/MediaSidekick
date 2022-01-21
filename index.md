@@ -1,7 +1,10 @@
+[__About__](about.md)
+[__Download__](Download.md)
+[__Features__](Download.md)
+[__Roadmap__](Roadmap.md)
+
 ## Welcome to GitHub Pages for MediaSidekick
 
-[__PageA__](Download.md)
-[__Roadmap__](Roadmap.md)
 
 You can use the [editor on GitHub](https://github.com/ewoudwijma/MediaSidekick/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
