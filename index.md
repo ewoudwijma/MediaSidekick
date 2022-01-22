@@ -1,7 +1,11 @@
+[__Home__](https://ewoudwijma.github.io/MediaSidekick/)
 [__About__](about.md)
 [__Download__](download.md)
 [__Features__](features.md)
 [__Roadmap__](roadmap.md)
+[__Edit__](https://github.com/ewoudwijma/MediaSidekick/edit/gh-pages/index.md)
+
+# Home
 
 Media Sidekick is a free desktop application aimed at minimizing the time between shooting and publishing videos. Media Sidekick prepares raw video for efficient editing in your preferred video editor. Media Sidekick is tuned for action camera footage having a lot of raw video which needs to compressed to a small video showing the best of it.
 
