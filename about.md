@@ -17,28 +17,28 @@ Media Sidekick is vendor independent by using exif data and subtitle files (.srt
 
 Media Sidekick looks similar to a conventional video editor. Differences are:
 
-# A folder is a playlist, no need to create your own playlist
-# Does not support effects and transitions, only defines a preset for it which will show up in your video editor
-# No editing in the timeline, the timeline is auto-generated in real time.
-# Better support for file and metadata management
+- A folder is a playlist, no need to create your own playlist
+- Does not support effects and transitions, only defines a preset for it which will show up in your video editor
+- No editing in the timeline, the timeline is auto-generated in real time.
+- Better support for file and metadata management
 
 Typical process
 
-# Rename and trim video files
-# Create clips
-# Rate, tag, reorder, remove alikes and filtering of clips
-# Fine tune the timeline by filtering clips and adding a transition
-# Export previews (lossless or encoded)
-# Export video editor project file
+- Rename and trim video files
+- Create clips
+- Rate, tag, reorder, remove alikes and filtering of clips
+- Fine tune the timeline by filtering clips and adding a transition
+- Export previews (lossless or encoded)
+- Export video editor project file
 
 What remains to be done in a conventional video editor is:
 
-# Nothing if you are satisfied with the results created by Media Sidekick
-# Export to desired output format or upload to YouTube or other platforms
-# Fine tune clips and transitions
-# Add filters and or tune filters
-# Add additional video or audio tracks
-# …
+- Nothing if you are satisfied with the results created by Media Sidekick
+- Export to desired output format or upload to YouTube or other platforms
+- Fine tune clips and transitions
+- Add filters and or tune filters
+- Add additional video or audio tracks
+- …
 
 Click for features
 
