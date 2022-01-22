@@ -5,7 +5,7 @@
 [__Roadmap__](roadmap.md)
 [__Edit__](https://github.com/ewoudwijma/MediaSidekick/edit/gh-pages/index.md)
 
-![logo](/least-github-pages/assets/cropped-fiprelogo-1.png)
+<img src="/docs/assets/images/cropped-fiprelogo-1.png" width="100" height="100" />
 
 # Home
 
