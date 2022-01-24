@@ -16,12 +16,11 @@ Media Sidekick is a free desktop application aimed at minimizing the time betwee
 [Download Media Sidekick](about.md)
 
 See how it works:
-[yt](https://www.youtube.com/embed/gKcK0U6PNyI?feature=oembed)
 <iframe width="560" height="315" src="https://www.youtube.com/embed/gKcK0U6PNyI" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
 Media Sidekick is a new product and still under development. It’s full power will become clear when version 1 will be released. Until then you can join the ride by enjoying the productivity gains it is already offering and be part of the further development by reporting issues and ideas in the [issue tool on github](https://github.com/ewoudwijma/MediaSidekick/issues).
 
-![Image](MediaSidekick052-2048x1169.png)
+![Image](/docs/assets/images/MediaSidekick052-2048x1169.png)
 
 
 ## Welcome to GitHub Pages for MediaSidekick
