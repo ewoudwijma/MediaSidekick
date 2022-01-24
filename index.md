@@ -5,7 +5,7 @@
 [__Roadmap__](roadmap.md)
 [__Edit__](https://github.com/ewoudwijma/MediaSidekick/edit/gh-pages/index.md)
 
-<link rel="shortcut icon" type="image/png" href="fiprelogo.ico">
+<link rel="shortcut icon" type="image/png" href="/docs/assets/images/fiprelogo.ico">
 
 # Home
 
