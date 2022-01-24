@@ -42,5 +42,5 @@ What remains to be done in a conventional video editor is:
 
 Click for features
 
-Media Sidekick is created by Ewoud Wijma.
+Media Sidekick is created by [Ewoud Wijma]{https://nl.linkedin.com/in/ewoudwijma).
 
