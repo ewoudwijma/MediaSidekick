@@ -17,24 +17,18 @@ Media Sidekick is a free desktop application aimed at minimizing the time betwee
 
 See how it works:
 [yt](https://www.youtube.com/embed/gKcK0U6PNyI?feature=oembed)
-
+<iframe width="560" height="315" src="https://www.youtube.com/embed/gKcK0U6PNyI" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
 Media Sidekick is a new product and still under development. It’s full power will become clear when version 1 will be released. Until then you can join the ride by enjoying the productivity gains it is already offering and be part of the further development by reporting issues and ideas in the [issue tool on github](https://github.com/ewoudwijma/MediaSidekick/issues).
 
-
+![Image](MediaSidekick052-2048x1169.png)
 
 
 ## Welcome to GitHub Pages for MediaSidekick
 
-[home](https://ewoudwijma.github.io/MediaSidekick/)
 [Quickstart](https://docs.github.com/en/pages/quickstart)
 [Add new page](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/adding-content-to-your-github-pages-site-using-jekyll#about-content-in-jekyll-sites)
 [About github pages](https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#publishing-sources-for-github-pages-sites)
-
-
-You can use the [editor on GitHub](https://github.com/ewoudwijma/MediaSidekick/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
 ### Markdown
 
