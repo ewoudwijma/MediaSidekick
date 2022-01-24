@@ -17,7 +17,7 @@ Files can be trimmed based on the clips made for this file. For each clip, a new
 
 The new file contains the specific clip plus some seconds before and after. Also all metadata from the source file will be copied (incl location, camera and author data)
 
-<picture>
+picture...
 
 Trimming is useful for:
 
