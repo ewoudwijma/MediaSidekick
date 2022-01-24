@@ -40,7 +40,7 @@ What remains to be done in a conventional video editor is:
 - Add additional video or audio tracks
 - …
 
-Click for features
+[Click for features](features.md)
 
 Media Sidekick is created by [Ewoud Wijma]{https://nl.linkedin.com/in/ewoudwijma).
 
