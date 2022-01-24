@@ -7,15 +7,15 @@
 
 # Roadmap
 
-The table below shows what has been realised and what is planned. Ideas for future features or priorities? Please comment below or add to the github issue list.
+The table below shows what has been realised and what is planned. Ideas for future features or priorities? Please comment below or add to the [github issue list](https://github.com/ewoudwijma/MediaSidekick/issues).
 
 |Date|Release|Features|
 |--- |--- |--- |
-|13-11-2019|0.0.1|Initial release<br>Windows (64-bit)<br>Export to Shotcut<br>Export to Adobe Premiere<br>Export Lossless and Encode using FFMpeg|
+|13-11-2019|0.0.1|Initial release<br>Windows (64-bit)<br>Export to [Shotcut](https://shotcut.org/)<br>Export to [Adobe Premiere](https://www.adobe.com/products/premiere.html)<br>Export Lossless and Encode using [FFMpeg](https://www.ffmpeg.org/)|
 |18-12-2019|0.1.0|Improved installer<br>Audio track Watermark|
 |25-12-2019|0.1.1|Context sensitive help|
 |18-01-2020|0.2.0|Property Editor|
-|20-02-2020|0.3.0|Wideview by Derperview<br>Mac / OSX ACVC Recycle Bin|
+|20-02-2020|0.3.0|Wideview by [Derperview](https://github.com/banelle/derperview)<br>Mac / OSX ACVC Recycle Bin|
 |24-03-202017-07-2020|0.4.x|Re-branded from ACVC to Media Sidekick<br>Move from classical to graphical interface|
 |15-08-2020|0.5.0|Graphical interface edit clips <br>Youtube downloads<br>Undo and redo(classical interface dismissed)|
 |2021|1.0.0|Move to open source|
